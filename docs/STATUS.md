@@ -4,6 +4,8 @@
 
 ไฟล์นี้คือสถานะที่ใช้ส่งต่อระหว่าง Claude และ Codex ทุกงานที่จบให้แก้ไฟล์นี้ก่อน commit
 
+Repo: https://github.com/dscary99-stack/Pixel-Game · งาน Phase A อยู่ใน PR จาก branch `claude/phase-a` (merge แล้วใช้ `main` เป็นฐาน)
+
 ## ทำแล้ว
 
 | ส่วน | ไฟล์ | หมายเหตุ |
