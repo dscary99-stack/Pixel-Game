@@ -31,6 +31,7 @@ npm run smoke:world    # end-to-end การเดิน 2 ผู้เล่�
 npm run smoke:encounter # end-to-end เดินเข้าทุ่ง → สู้ฝูง → กลับที่เดิม (ไฟต์ส่วนตัว O05) กับ wrangler dev
 npm run smoke:character # end-to-end สร้างตัวละคร → จับคู่ใจ → จัดทีม → HP ติดตัว → แพ้กลับเมืองพัก กับ wrangler dev
 npm run smoke:equipment # end-to-end ของเริ่มต้น → ใส่/ถอด → stat ในไฟต์ → ล็อกระหว่างไฟต์ กับ wrangler dev
+npm run smoke:town     # end-to-end ใส่/ถอด Sigil (เสียเหรียญ ในเมือง) → ขายของให้ NPC → ในทุ่งถูกปฏิเสธ กับ wrangler dev
 ```
 
 ## กติกาการแก้โค้ด

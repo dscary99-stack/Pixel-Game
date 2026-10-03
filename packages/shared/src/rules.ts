@@ -123,6 +123,19 @@ export const RULES = {
     // Encounters (Phase C). Hunting speed numbers are P12 assumptions.
     packRespawnMs: provisional(60_000, "P12", "a visible pack is re-rolled this often; a player who fought it waits for the next one"),
     engageRangeTiles: provisional(1, "P10", "must stand next to (or on) the pack to start a fight"),
+    // Sigil removal (chapter 05 §4, chapter 06). Coins per Sigil by the equipment's required level:
+    // [fromLevelInclusive, coins]. Lv50/120/200 = 3 hours of the chapter 06 manual net example;
+    // the Lv1 tier has no source number and is a pure prototype guess.
+    sigilRemovalCostTiers: provisional(
+      [
+        [1, 300],
+        [50, 10_800],
+        [120, 37_800],
+        [200, 95_000],
+      ] as const,
+      "P08",
+      "fixed by item level, never by market price or the player's income; values are P12 assumptions",
+    ),
   },
   unresolved: {
     tradeLevelGap: open<number>("O01", "user range 20–40; proposal +30"),

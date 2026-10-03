@@ -24,7 +24,7 @@ import {
 } from "@pmrpg/shared";
 import { ELEMENT_COLOR } from "./battle-scene";
 import type { CharacterApi, CharacterBundle } from "./character-api";
-import { equipmentPanel, teamPanel, vitals } from "./character-ui";
+import { equipmentPanel, shopPanel, teamPanel, vitals } from "./character-ui";
 import type { WorldTransport } from "./world-transport";
 
 const W = 960;
@@ -99,7 +99,7 @@ export class WorldScene extends Phaser.Scene {
     this.hud = this.add.text(8, 40, "", style).setScrollFactor(0).setDepth(100);
     this.notice = this.add.text(W / 2, H - 40, "", { ...style, fontSize: "15px" }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
     this.add
-      .text(W - 8, 8, `ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · T ทีม · E อุปกรณ์" : ""}`, style)
+      .text(W - 8, 8, `ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · T ทีม · E อุปกรณ์ · B ร้าน (ในเมือง)" : ""}`, style)
       .setOrigin(1, 0)
       .setScrollFactor(0)
       .setDepth(100);
@@ -111,6 +111,7 @@ export class WorldScene extends Phaser.Scene {
     kb.on("keydown-TWO", () => this.switchChannel(2));
     kb.on("keydown-T", () => void this.openTeam());
     kb.on("keydown-E", () => void this.openEquipment());
+    kb.on("keydown-B", () => void this.openShop());
     if (this.api !== null) {
       const button = (x: number, label: string, open: () => Promise<void>) =>
         this.add
@@ -123,7 +124,8 @@ export class WorldScene extends Phaser.Scene {
             void open();
           });
       const team = button(8, "ทีมคู่ใจ (T)", () => this.openTeam());
-      button(team.x + team.width + 8, "อุปกรณ์ (E)", () => this.openEquipment());
+      const gear = button(team.x + team.width + 8, "อุปกรณ์ (E)", () => this.openEquipment());
+      button(gear.x + gear.width + 8, "ร้าน (B)", () => this.openShop());
     }
     this.input.on("pointerdown", (p: Phaser.Input.Pointer) => this.tapMove(p));
 
@@ -356,7 +358,7 @@ export class WorldScene extends Phaser.Scene {
     const c = this.bundle?.character;
     if (c === undefined) return void this.hud.setText(where);
     const v = vitals(c, this.bundle?.equipment ?? []);
-    this.hud.setText(`${where}\n${c.name} Lv${c.level} · HP ${v.hp}/${v.maxHp} · MP ${v.mp}/${v.maxMp} · ทีม ${c.team.length}/5`);
+    this.hud.setText(`${where}\n${c.name} Lv${c.level} · HP ${v.hp}/${v.maxHp} · MP ${v.mp}/${v.maxMp} · ทีม ${c.team.length}/5 · เหรียญ ${this.bundle?.coins ?? 0}`);
   }
 
   private async reloadCharacter() {
@@ -377,6 +379,14 @@ export class WorldScene extends Phaser.Scene {
   private openEquipment() {
     return this.withPanel("เปลี่ยนอุปกรณ์ได้นอกไฟต์เท่านั้น", async (api, bundle) => {
       await equipmentPanel(api, bundle);
+    });
+  }
+
+  /** NPC shop; only in town (the server checks the stored position too). */
+  private async openShop() {
+    if (this.map !== null && this.map.kind !== "town") return this.flash("ร้านอยู่ในเมือง");
+    return this.withPanel("ขายของได้นอกไฟต์เท่านั้น", async (api, bundle) => {
+      await shopPanel(api, bundle);
     });
   }
 

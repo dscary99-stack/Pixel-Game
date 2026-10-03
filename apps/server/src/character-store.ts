@@ -97,6 +97,7 @@ interface EquipmentRow {
   refine_level: number;
   lock_state: EquipmentView["lockState"];
   slot: EquipSlot | null;
+  sigil_sockets_json: string;
 }
 
 export type CreateResult =
@@ -251,14 +252,14 @@ export class CharacterStore {
   async equipment(accountId: string): Promise<EquipmentView[]> {
     const { results } = await this.db
       .prepare(
-        `SELECT e.id, e.definition_id, e.refine_level, e.lock_state, ce.slot
+        `SELECT e.id, e.definition_id, e.refine_level, e.lock_state, e.sigil_sockets_json, ce.slot
          FROM equipment_instances e
          LEFT JOIN character_equipment ce ON ce.equipment_instance_id = e.id
          WHERE e.owner_id = ? ORDER BY e.definition_id, e.id`,
       )
       .bind(accountId)
       .all<EquipmentRow>();
-    return results.map((r) => ({ id: r.id, definitionId: r.definition_id, refineLevel: r.refine_level, lockState: r.lock_state, slot: r.slot }));
+    return results.map((r) => ({ id: r.id, definitionId: r.definition_id, refineLevel: r.refine_level, lockState: r.lock_state, slot: r.slot, sigils: JSON.parse(r.sigil_sockets_json) as string[] }));
   }
 
   async equip(accountId: string, raw: unknown): Promise<EquipResult> {
@@ -270,7 +271,7 @@ export class CharacterStore {
     if (row.version !== expectedVersion) return { status: "rejected", reason: "STALE_VERSION", message: "the character changed; reload and try again" };
 
     const owned = await this.equipment(accountId);
-    const byId = new Map(owned.map((e) => [e.id, { id: e.id, definitionId: e.definitionId, sigilSockets: [] as string[] }]));
+    const byId = new Map(owned.map((e) => [e.id, { id: e.id, definitionId: e.definitionId, sigilSockets: e.sigils }]));
     if (instanceId !== null && !byId.has(instanceId)) return { status: "rejected", reason: "NOT_OWNER", message: "that equipment is not yours" };
     const current: Loadout = Object.fromEntries(owned.filter((e) => e.slot !== null).map((e) => [e.slot, e.id]));
     const plan = planEquip(this.rules, current, slot, instanceId, byId, this.content.equipment, this.content.sigils, row.level);

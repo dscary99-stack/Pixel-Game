@@ -1,6 +1,6 @@
-# สถานะงาน — Phase A + Battle settlement + Phase B (walking slice) + Phase C แรก (encounter) + Phase D แรก (ตัวละคร + อุปกรณ์)
+# สถานะงาน — Phase A + Battle settlement + Phase B (walking slice) + Phase C แรก (encounter) + Phase D แรก (ตัวละคร + อุปกรณ์ + Sigil/เหรียญ)
 
-อัปเดต: 3 ตุลาคม 2026 · ผู้ทำล่าสุด: Claude · ระยะ: **D แรก — ตัวละคร ทีม และอุปกรณ์ 12 ช่องที่บันทึกจริง** (บท02, บท03 §3–§4, บท05, บท13 §1 D) ต่อจาก C แรก
+อัปเดต: 3 ตุลาคม 2026 · ผู้ทำล่าสุด: Claude · ระยะ: **D แรก — ตัวละคร ทีม อุปกรณ์ 12 ช่อง, Sigil และเหรียญที่บันทึกจริง** (บท02, บท03 §3–§4, บท05, บท06, บท13 §1 D) ต่อจาก C แรก
 
 ไฟล์นี้คือสถานะที่ใช้ส่งต่อระหว่าง Claude และ Codex ทุกงานที่จบให้แก้ไฟล์นี้ก่อน commit
 
@@ -46,11 +46,17 @@ Repo: https://github.com/dscary99-stack/Pixel-Game · Phase A merge แล้ว
 | อุปกรณ์ใน D1 | `apps/server/migrations/0006_equipment.sql`, `src/character-store.ts` | `equipment_instances` (1 แถวต่อชิ้น, `created_operation_id` UNIQUE, lock_state/lock_ref) + `character_equipment` (PK ตัวละคร+ช่อง, ชิ้นหนึ่งอยู่ได้ช่องเดียว); `equip` ตรวจ version เดียวกับทีม (`gear_hash` เป็นเครื่องหมายผู้ชนะ), ห้ามเปลี่ยนระหว่างไฟต์, ตรวจเจ้าของ+ไม่ถูกล็อกใน batch เดียว |
 | ดรอปอุปกรณ์ + ล็อก | `src/reward-ledger.ts`, `src/economy.ts` | kill line ที่เป็น `equip:` → สร้าง instance ทีละชิ้น id `eq:<entitlement>:<line>:<n>` ไม่ลง item ledger; `reserve` ล็อกชิ้นที่ใส่อยู่กับ reservation (hash รวม gear เฉพาะเมื่อมี), `settle`/`release` ปลดล็อกพร้อมคู่ใจ |
 | API + client อุปกรณ์ | `src/index.ts`, `apps/client/src/character-{api,ui}.ts`, `world-scene.ts` | `PUT /character/equipment`, `GET /character` มี `equipment`; หน้าอุปกรณ์ (ปุ่ม/คีย์ E) 12 ช่อง + กระเป๋า กดใส่/ถอดทีละครั้ง server ตัดสิน; HUD คิด HP/MP สูงสุดรวมอุปกรณ์; log ไฟต์แสดงชื่อของดรอป; dev แจกของเริ่มต้น 4 ชิ้นครั้งเดียวต่อบัญชี |
+| Sigil + ร้าน (shared) | `packages/shared/src/sigil.ts`, `rules.ts` (`sigilRemovalCostTiers` P08) | `sigilCapacity` = min(ช่องของชิ้น, อาวุธ 4/อื่น 1), `planSigilInstall` (ต้องเป็นไอเทม kind sigil ที่ผูก `sigilId`, เข้ากลุ่ม, ช่องว่าง; ชื่อซ้ำได้ C24), `sigilRemovalCost` ตามเลเวลของชิ้น, `sellQuote` ตาม `vendorPrice` (0 = ร้านไม่รับ) |
+| เหรียญ + บริการในเมือง | `apps/server/migrations/0007_coins_and_sigils.sql`, `src/town-services.ts` | `coin_ledger` แบบเดียวกับ item ledger; `service_operations` 1 แถวต่อคำขอ (บัญชี+operationId) เป็นตัวยึดของ batch; ขายให้ NPC (ในเมือง ไม่อยู่ในไฟต์ ของพอ), ใส่ Sigil (ชิ้นของเรา ไม่ล็อก ช่องตรงกับที่เห็น มีตราในกระเป๋า; นอกไฟต์ที่ไหนก็ได้), ถอด Sigil (ในเมือง จ่ายเหรียญตามราคาที่แสดง ตรากลับเข้ากระเป๋า P08); ส่งซ้ำได้ผลเดิม, id เดิมแต่คำขอต่าง → `PAYLOAD_MISMATCH` |
+| API + client Sigil/ร้าน | `src/index.ts`, `apps/client/src/character-{api,ui}.ts`, `world-scene.ts` | `POST /character/equipment/sigil`, `/character/equipment/sigil/remove`, `/town/sell`; `GET /character` มี `coins` และ `bag`; หน้าอุปกรณ์มีส่วน "ตรา Sigil" (ช่องต่อชิ้น, ใส่, ถอดพร้อมยืนยันราคา); ร้าน (ปุ่ม/คีย์ B เฉพาะในเมือง); HUD แสดงเหรียญ; dev แจกตราจิ้งจอก 2 ตุ่น 1 และ 1000 เหรียญครั้งเดียว |
 | Reconciler | `apps/server/src/index.ts` (`scheduled`, cron ทุกนาที) | reservation ที่ค้าง `reserved` เกิน 2 นาที → ถาม DO ก่อน; DO ไม่มีไฟต์ → เขียน tombstone แล้วจึงคืนของ; ไฟต์ที่เริ่มแล้วไม่ถูกแตะ |
 
 ## ผลตรวจล่าสุด
 
-- `npm run check` ผ่าน: typecheck 3 แพ็กเกจ, **178 tests ผ่าน** (shared 101, server 77), Vite build, `wrangler deploy --dry-run` (D1 + BATTLE + MAP + cron)
+- `npm run check` ผ่าน: typecheck 3 แพ็กเกจ, **192 tests ผ่าน** (shared 106, server 86), Vite build, `wrangler deploy --dry-run` (D1 + BATTLE + MAP + cron)
+- Test ใหม่ Sigil/เหรียญ (+14): ช่องตามชิ้นใต้เพดาน 4/1, ใส่ชื่อซ้ำได้, ไม่เข้ากัน/ไม่ใช่ตรา/ช่องเต็ม, ไอเทมตราทุกชิ้นชี้กลับ Sigil, ค่าถอดตาม tier เลเวล, ร้านไม่รับเครื่องจับและตรา; server: ขายได้เหรียญครั้งเดียวแม้ส่งซ้ำ/พร้อมกัน, id เดิมคำขอต่างถูกปฏิเสธ, ของไม่พอ/นอกเมือง/ระหว่างไฟต์ไม่เขียนอะไร, ขายแย่งของชุดเดียวกันได้คนเดียว, ใส่ตราหักตรา 1 ดวงครั้งเดียว, ใส่แย่งช่องสุดท้ายได้อันเดียวเสียตราดวงเดียว, ถอดจ่ายเหรียญคืนตรา, ราคาเปลี่ยน/เหรียญไม่พอ/ช่องว่าง/นอกเมือง/ระหว่างไฟต์ (ของถูกล็อก) ถูกปฏิเสธ
+- `npm run smoke:town` (ใหม่) กับ `wrangler dev`: dev เริ่ม 1000 เหรียญ + ตรา, ใส่ตราจิ้งจอกที่ดาบไม้ได้ ส่งซ้ำ `replayed`, เสื้อ → `SIGIL_INCOMPATIBLE`, ดาบเต็ม → `SIGIL_SLOTS_FULL`, ราคาผิด → `COST_CHANGED`, ถอดในเมืองจ่าย 300 เหลือ 700, ขายยา 1 ได้ 10 → 710, ขายตรา → `NOT_SELLABLE`; ในทุ่ง ขาย/ถอด → `NOT_IN_TOWN` แต่ใส่ตราได้; `smoke:equipment` ยังผ่าน
+- ภาพหน้าจอ (`/mnt/project-files/pixel-game-screenshots/sigil-*.png`, `shop-*.png`): ใส่ตราสองดวงชื่อซ้ำในธนู, หน้ายืนยันบอกค่าถอด 300 เหรียญ, ร้านขายยาได้เหรียญ, HUD แสดงเหรียญ (console มีแค่ 404 ก่อนสร้างตัวละคร)
 - Test ใหม่อุปกรณ์ (+16): ของ EXAMPLE ผ่าน schema/ใช้ stat ที่สูตรรู้จัก, ทุก loot table ชี้ของที่มีจริง, อาวุธใส่ได้ทั้งสองมือแต่ผิดช่องถูกปฏิเสธ, ธนูสองมือถอดดาบ+โล่ในครั้งเดียวและกันใส่มือรอง, เลเวลไม่ถึง, ย้ายเครื่องประดับ 1→2, ถอด, gear เข้า maxHp/patk และระยะตีตามอาวุธ; server: ดรอป 2 ชิ้นได้ 2 แถวครั้งเดียวแม้ส่งซ้ำ/พร้อมกัน และไม่ลง item ledger, dev gear แจกครั้งเดียว, ของคนอื่น/ผิดช่อง/เลเวล/input เสีย/ไม่มีตัวละคร, เขียนพร้อมกันจาก version เดียวกันผ่านอันเดียวและใช้ version ร่วมกับทีม, ระหว่างไฟต์ `IN_BATTLE` + ชิ้นที่ใส่ถูกล็อกกับ reservation แล้วปลดตอน settle/release, จองของคนอื่นได้ `NOT_OWNER`
 - `npm run smoke:equipment` (ใหม่) กับ `wrangler dev`: บัญชีใหม่มีของเริ่มต้น 4 ชิ้นในกระเป๋า, ใส่ดาบแล้วไม้เท้าสองมือแทนที่, ใส่เสื้อ, ผิดช่อง `SLOT_MISMATCH`, version เก่า `STALE_VERSION`; ในไฟต์จริงที่ทุ่ง ผู้เล่นมี maxHp 680 (650+30), maxMp 150 (140+10), MATK 62 (50+12), PDEF 24 (20+4), ระยะ ranged; เปลี่ยนของกลางไฟต์ `IN_BATTLE`; ชนะแล้วของกลับเป็น `free` และถอดได้; `smoke:character` และ `smoke:encounter` ยังผ่าน
 - ภาพหน้าจออุปกรณ์ (`/mnt/project-files/pixel-game-screenshots/gear-*.png`): หน้าอุปกรณ์ว่าง, ใส่ไม้เท้า+เสื้อแล้ว stat เปลี่ยน, ใส่ดาบมือรองขณะถือสองมือถูกปฏิเสธ `TWO_HAND_BLOCKS_OFFHAND`, HUD HP 680/680, ไฟต์ที่ใส่ของ (console มีแค่ 404 ก่อนสร้างตัวละครและ 409 ของการปฏิเสธที่ตั้งใจ)
@@ -109,6 +115,11 @@ Repo: https://github.com/dscary99-stack/Pixel-Game · Phase A merge แล้ว
 | A34 | เข้าหมู่บ้าน = พักฟื้น HP/MP เต็มทั้งตัวละครและคู่ใจที่ไม่ได้อยู่ในไฟต์; ไม่มีค่าใช้จ่าย | บท03 §3 "เมือง/จุดพักฟื้นฟรี" |
 | A35 | แพ้ทั้งทีม → ย้ายไปจุดเกิดหมู่บ้านแล้วพัก (ไม่หัก EXP/ของ) | บท03 §3 |
 | A36 | ตัวละครล้มแต่คู่ใจยังยืน → สู้ต่อได้; ทั้งทีมล้ม → ต้องกลับไปพักก่อนเข้าไฟต์ใหม่ | บท03 §3 |
+| A44 | ค่าถอด Sigil ตามเลเวลของอุปกรณ์: Lv1–49 = 300, Lv50 = 10,800, Lv120 = 37,800, Lv200 = 95,000 เหรียญ/ดวง (Lv50/120/200 = 3 ชม. กำไรสุทธิ manual ตามตัวอย่างบท06; Lv1 เดาเพื่อต้นแบบ) | P08, P12 |
+| A45 | ใส่ Sigil ได้ทุกที่นอกไฟต์ (บท05 กำหนดเฉพาะการถอดว่าทำในเมือง); ใส่ได้ทั้งชิ้นที่สวมอยู่และในกระเป๋า | บท05 §4, P15 |
+| A46 | NPC รับซื้อตาม `vendorPrice` ต่อชิ้น ไม่มีภาษี; ไม่รับเครื่องจับและตรา Sigil (`vendorPrice` 0); อุปกรณ์ยังขายไม่ได้ | บท06 |
+| A47 | "อยู่ในเมือง" = ตำแหน่งที่บันทึกใน D1 (`player_positions.map_id`) เป็นแผนที่ kind `town` | บท07 |
+| A48 | ตราตุ่นเสบียงย้ายจากรองเท้าเป็นเครื่องประดับตามตารางบท05 §5; ชื่อตราเป็น "ตรา" + ชื่อ species | EXAMPLE |
 | A37 | ตุ่นเสบียง Lv2 และนกกระดิ่ง Lv3 (EXAMPLE) ใช้ kit จากบท04 §2 แต่สกิลที่ต้องใช้ระบบที่ยังไม่มี (buff/cleanse/ลดต้นทุน) เป็น passive ว่างไว้ก่อน | EXAMPLE |
 | A38 | อุปกรณ์ให้แค่ stat พื้นฐาน (`baseStats`) เข้าสูตร derived; ยังไม่มี affix/rarity/refine/ผล Sigil | บท05 |
 | A39 | ทุกอาชีพใส่อาวุธได้ทุกแบบและถือสองอาวุธมือเดียวได้ (O09 กติกา dual wield ตามอาชีพยัง OPEN) | O09 |
@@ -142,7 +153,9 @@ O01–O04 (trade gap, effective level, Rebirth) ไม่เกี่ยวก�
 - ภาพโลกเป็นสี่เหลี่ยมสีตาม tile ยังไม่มี tileset, y-sort จริง, occlusion (บท10 §2)
 - ไฟต์ที่ถูกทิ้งกลางคัน (ปิดเกมไม่กลับมา) ค้าง `active` ตลอด บัญชีนั้นเปิดไฟต์ใหม่ไม่ได้ เพราะนโยบาย pause/disconnect (O11) และ stalemate/หนี (O15) ยังเปิดอยู่; client dev จึงใช้บัญชีใหม่ทุกครั้งที่โหลดหน้า
 - ยังไม่มีเครื่องมือผู้ดูแลสำหรับ outbox `failed` (ดูได้จาก `view.settlement.failed` เท่านั้น)
-- อุปกรณ์ยังไม่มี affix, rarity, ตีบวก, ติดตั้ง/ถอด Sigil, ขาย/ทิ้ง/แลก, ภาพบนตัวละคร (12 layers); ล็อก `in_escrow` มีในตารางแต่ยังไม่มีตลาด
+- ผลของ Sigil ยังไม่ทำงาน (ไม่มีระบบ effect/proc/shared cooldown) ใส่แล้วตัวเลขไม่เปลี่ยน UI บอกไว้; ยังไม่มีการแสดง cap ก่อนใส่ (บท05 §5) เพราะยังไม่มี effect
+- ยังไม่มีร้านขายของให้ผู้เล่น (ซื้อยา/เครื่องจับ) เพราะบท06 ยังไม่มีราคาซื้อ; เหรียญตอนนี้ใช้แค่ค่าถอด Sigil
+- อุปกรณ์ยังไม่มี affix, rarity, ตีบวก, ขาย/ทิ้ง/แลก, ภาพบนตัวละคร (12 layers); ล็อก `in_escrow` มีในตารางแต่ยังไม่มีตลาด
 - ของเริ่มต้นนอก dev ยังไม่มี (ทั้งยาและอุปกรณ์); ของ EXAMPLE ห้าม publish
 - `grant` ยังไม่ตรวจว่า entitlement มาจากไฟต์ที่มี reservation ของผู้รับ (DO เป็นผู้เรียกคนเดียวผ่าน binding ภายใน)
 - Cron reconciler ทดสอบผ่าน `/dev/reconcile` ไม่ได้รันผ่าน cron จริง
@@ -155,7 +168,8 @@ O01–O04 (trade gap, effective level, Rebirth) ไม่เกี่ยวก�
 ## งานถัดไปที่แนะนำ
 
 1. EXP และเลเวลอัป (ตัวละคร + คู่ใจทั้ง 5 ได้ EXP ของตัวเอง บท04 §4) และแต้มสเตตัส +3/เลเวล ตาม P03 — รอผู้ใช้เลือกว่าจะใช้สูตรชั่วคราวหรือรอตาราง
-2. อุปกรณ์ขั้นต่อไป: ติดตั้ง Sigil (บท05 §2), affix/rarity, ขาย/ทิ้ง, gear layers บนตัวละคร
-3. ตัดสิน O15 (cooldown tick, revive, หนี, status tick, stalemate) และ O11 (นโยบายหลุดกลางไฟต์) แล้วเพิ่ม status effects และทางปิดไฟต์ที่ถูกทิ้ง
-4. Art proof หนึ่งตัวละคร 4 ทิศ + gear 12 layers + tileset หนึ่งชุด (บท10, ค้างจาก Phase A)
-5. ชุดเริ่มต้นของตัวละครใหม่ (ยา/เครื่องจับ) และ auth (O11) เพื่อเปิดนอก dev
+2. ระบบ effect ของ Sigil/passive (stack policy, proc budget, shared cooldown บท05 §5) แล้วให้ตราตัวอย่างมีผลจริง
+3. ร้านขายของ (ราคาซื้อยา/เครื่องจับ) และชุดเริ่มต้นนอก dev; affix/rarity, gear layers บนตัวละคร
+4. ตัดสิน O15 (cooldown tick, revive, หนี, status tick, stalemate) และ O11 (นโยบายหลุดกลางไฟต์) แล้วเพิ่ม status effects และทางปิดไฟต์ที่ถูกทิ้ง
+5. Art proof หนึ่งตัวละคร 4 ทิศ + gear 12 layers + tileset หนึ่งชุด (บท10, ค้างจาก Phase A)
+6. auth (O11) เพื่อเปิดนอก dev

@@ -22,8 +22,10 @@
  */
 import {
   DEV_FIXTURE_RULES,
+  DEV_STARTER_COINS,
   DEV_STARTER_EQUIPMENT,
   DEV_STARTER_ITEMS,
+  DEV_STARTER_SIGILS,
   EXAMPLE_START_MAP,
   PRODUCTION_RULES,
   devPlayer,
@@ -38,6 +40,7 @@ import { Economy } from "./economy";
 
 import { mapObjectName } from "./map-do";
 import { WorldStore } from "./world-store";
+import { TownServices, type ServiceResult } from "./town-services";
 
 export { BattleDurableObject } from "./battle-do";
 export { MapChannelDurableObject } from "./map-do";
@@ -50,12 +53,16 @@ const rulesFor = (env: Env) => (env.ENVIRONMENT === "dev" ? DEV_FIXTURE_RULES : 
 const economyFor = (env: Env) => new Economy(env.DB, rulesFor(env));
 const CONTENT = exampleContentMaps();
 const charactersFor = (env: Env) => new CharacterStore(env.DB, rulesFor(env), CONTENT);
+const TOWNS = [...exampleMapRegistry().values()].filter((m) => m.kind === "town").map((m) => m.id);
+const townFor = (env: Env) => new TownServices(env.DB, rulesFor(env), CONTENT, TOWNS);
 
 /** DEV ONLY: dev accounts appear on first use with a starter bag and starter gear; real account creation waits for O11. */
 async function devStarter(env: Env, accountId: string): Promise<void> {
   if (env.ENVIRONMENT !== "dev") return;
   await economyFor(env).devGrant(`devstarter:${accountId}`, accountId, DEV_STARTER_ITEMS);
   await charactersFor(env).devGrantEquipment(`devgear:${accountId}`, accountId, DEV_STARTER_EQUIPMENT);
+  await economyFor(env).devGrant(`devsigils:${accountId}`, accountId, DEV_STARTER_SIGILS);
+  await townFor(env).devGrantCoins(`devcoins:${accountId}`, accountId, DEV_STARTER_COINS);
 }
 
 /** Release reservations whose battle never started (the DO confirms and tombstones first). */
@@ -81,7 +88,7 @@ export default {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/dev/")) return devRoute(request, env, url);
     if (url.pathname.startsWith("/world/")) return worldRoute(request, env, url);
-    if (url.pathname === "/character" || url.pathname.startsWith("/character/")) return characterRoute(request, env, url);
+    if (url.pathname === "/character" || url.pathname.startsWith("/character/") || url.pathname === "/town/sell") return characterRoute(request, env, url);
     const m = url.pathname.match(/^\/battles\/([a-z0-9_:-]{1,80})(?:\/([a-z-]+))?$/);
     if (m === null) return json(404, { error: "NOT_FOUND" });
     const battleId = m[1]!;
@@ -151,7 +158,13 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
   if (request.method === "GET" && url.pathname === "/character") {
     const character = await store.get(accountId);
     if (character === null) return json(404, { error: "NO_CHARACTER" });
-    return json(200, { character, companions: await store.companions(accountId), equipment: await store.equipment(accountId) });
+    return json(200, {
+      character,
+      companions: await store.companions(accountId),
+      equipment: await store.equipment(accountId),
+      coins: await townFor(env).coins(accountId),
+      bag: await economyFor(env).balances(accountId),
+    });
   }
   const body = await readJson(request);
   if (body === undefined) return json(400, { error: "INVALID_REQUEST" });
@@ -165,12 +178,21 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
     if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
     return json(200, r);
   }
+  if (request.method === "POST" && url.pathname === "/character/equipment/sigil") return serviceReply(env, accountId, await townFor(env).installSigil(accountId, body));
+  if (request.method === "POST" && url.pathname === "/character/equipment/sigil/remove") return serviceReply(env, accountId, await townFor(env).removeSigil(accountId, body));
+  if (request.method === "POST" && url.pathname === "/town/sell") return serviceReply(env, accountId, await townFor(env).sell(accountId, body));
   if (request.method === "PUT" && url.pathname === "/character/equipment") {
     const r = await store.equip(accountId, body);
     if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
     return json(200, r);
   }
   return json(404, { error: "NOT_FOUND" });
+}
+
+/** A town service answer with the caller's fresh coin balance. */
+async function serviceReply(env: Env, accountId: string, r: ServiceResult<unknown>): Promise<Response> {
+  if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
+  return json(200, { ...r, coins: await townFor(env).coins(accountId) });
 }
 
 /** Fallback name for a player who has not created a character: the account id without its prefix. */

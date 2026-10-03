@@ -47,3 +47,13 @@ export const DEV_STARTER_ITEMS: Record<string, number> = {
   "item:supply_mole_capture": 3,
   "item:bell_bird_capture": 3,
 };
+
+/**
+ * DEV ONLY: a few Sigils and coins so install/removal can be tried without ~2000 kills per Sigil
+ * (chapter 06 rates). Granted under their own operation ids, never outside dev.
+ */
+export const DEV_STARTER_SIGILS: Record<string, number> = {
+  "item:ember_fox_sigil": 2,
+  "item:supply_mole_sigil": 1,
+};
+export const DEV_STARTER_COINS = 1000;

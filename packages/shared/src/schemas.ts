@@ -167,12 +167,18 @@ export const ItemDefinitionSchema = z
     /** capture: the one species this item captures (species-specific capture items, chapter 04 §3). */
     captureSpeciesId: SpeciesId.optional(),
     captureQuality: z.number().positive().optional(),
+    /** sigil: the Sigil this item installs (chapter 05 §4). */
+    sigilId: SigilId.optional(),
+    /** Coins an NPC pays per unit (chapter 06); 0 = the NPC does not buy it. */
     vendorPrice: z.number().int().min(0),
   })
   .strict()
   .superRefine((it, ctx) => {
     if (it.kind === "capture" && (it.captureSpeciesId === undefined || it.captureQuality === undefined)) {
       ctx.addIssue({ code: "custom", message: "capture item needs captureSpeciesId and captureQuality" });
+    }
+    if ((it.kind === "sigil") !== (it.sigilId !== undefined)) {
+      ctx.addIssue({ code: "custom", message: "sigil items, and only they, name a sigilId" });
     }
     if (it.kind === "heal" && it.healHp === undefined) {
       ctx.addIssue({ code: "custom", message: "heal item needs healHp" });

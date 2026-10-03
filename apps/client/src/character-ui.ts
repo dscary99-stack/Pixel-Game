@@ -12,15 +12,23 @@ import {
   deriveStats,
   exampleContentMaps,
   gearBonuses,
+  sellQuote,
+  sigilCapacity,
+  sigilFits,
+  sigilRemovalCost,
   wornGear,
+  PRODUCTION_RULES,
   type CharacterView,
   type Element,
   type EquipSlot,
   type EquipmentView,
+  type SigilGroup,
 } from "@pmrpg/shared";
 import { ApiError, type CharacterApi, type CharacterBundle } from "./character-api";
 
-const { species, equipment: equipmentDefs } = exampleContentMaps();
+const { species, equipment: equipmentDefs, items: itemDefs, sigils: sigilDefs } = exampleContentMaps();
+/** Display only: the client shows socket counts and prices, the server applies its own rules. */
+const RULES = PRODUCTION_RULES;
 
 export const ELEMENT_TH: Record<Element, string> = {
   FIRE: "ไฟ",
@@ -59,7 +67,8 @@ const CSS = `
 .pm-slot b { display: block; font-size: 11px; color: #a9a3c4; font-weight: normal; }
 .pm-slot button { margin-top: 4px; min-height: 30px; padding: 2px 8px; font-size: 12px; border-radius: 4px; border: 1px solid #463f6b; background: #322b4d; color: #fff; cursor: pointer; }
 .pm-stats { font-size: 13px; color: #d8d4ea; margin: 10px 0; line-height: 1.6; }
-.pm-list li .pm-grow { flex: 1; }
+.pm-list li .pm-grow { flex: 1 1 220px; }
+.pm-list[data-section=sigils] li { flex-wrap: wrap; }
 .pm-list li button { min-height: 34px; padding: 4px 10px; font-size: 13px; border-radius: 6px; border: 1px solid #463f6b; background: #2f7a4a; color: #fff; cursor: pointer; }
 .pm-list li button:disabled { background: #322b4d; opacity: 0.6; cursor: default; }
 `;
@@ -198,6 +207,24 @@ const STAT_TH: Record<string, string> = {
   CRIT_DAMAGE: "แรงคริ",
 };
 
+const GROUP_TH: Record<SigilGroup, string> = {
+  HEADGEAR: "หมวกทั้ง 3 ช่อง",
+  ARMS: "แขน",
+  ARMOR: "เสื้อเกราะ",
+  FEET: "รองเท้า",
+  WEAPON_PHYSICAL_MELEE: "อาวุธกายระยะใกล้",
+  WEAPON_PHYSICAL_RANGED: "อาวุธกายระยะไกล",
+  WEAPON_MAGIC: "อาวุธเวท",
+  WEAPON_SUPPORT: "อาวุธสนับสนุน",
+  WEAPON_PHYSICAL: "อาวุธกาย",
+  WEAPON_ANY: "อาวุธทุกแบบ",
+  SHIELD: "โล่",
+  OFFHAND_OTHER: "ของมือรอง",
+  ACCESSORY: "เครื่องประดับ",
+  BACK: "หลัง",
+  AURA: "ออร่า",
+};
+
 const statLine = (stats: Record<string, number | undefined>) =>
   Object.entries(stats)
     .filter(([, v]) => v !== undefined && v !== 0)
@@ -214,6 +241,22 @@ export function equipmentPanel(api: CharacterApi, start: CharacterBundle): Promi
     const { panel, close } = overlay();
     let bundle = start;
     let busy = false;
+
+    /** A Sigil action, then a fresh copy of everything it touched. */
+    const service = async (call: () => Promise<unknown>) => {
+      if (busy) return;
+      busy = true;
+      error.textContent = "";
+      try {
+        await call();
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+      } finally {
+        bundle = (await api.get().catch(() => null)) ?? bundle;
+        busy = false;
+        draw();
+      }
+    };
 
     const send = async (slot: EquipSlot, instanceId: string | null) => {
       if (busy) return;
@@ -297,6 +340,64 @@ export function equipmentPanel(api: CharacterApi, start: CharacterBundle): Promi
       }
       body.append(list);
       body.append(el("div", { class: "pm-note" }, "อุปกรณ์เป็นของตัวอย่าง (EXAMPLE) · อาวุธสองมือจะถอดของมือรองให้ · เปลี่ยนได้นอกไฟต์เท่านั้น"));
+      drawSigils();
+    };
+
+    const pieceName = (p: EquipmentView) => equipmentDefs.get(p.definitionId)?.name.th ?? p.definitionId;
+    const drawSigils = () => {
+      body.append(el("label", {}, `ตรา Sigil · เหรียญ ${bundle.coins.toLocaleString()}`));
+      const list = el("ul", { class: "pm-list", "data-section": "sigils" });
+      // Installed Sigils, per piece that has sockets.
+      for (const p of bundle.equipment) {
+        const def = equipmentDefs.get(p.definitionId);
+        if (def === undefined) continue;
+        const cap = sigilCapacity(RULES, def);
+        if (cap === 0) continue;
+        const li = el("li", { "data-sockets": p.definitionId });
+        const names = p.sigils.map((s) => sigilDefs.get(s)?.name.th ?? s);
+        li.append(el("span", { class: "pm-grow" }, `${pieceName(p)}${p.slot ? " (ใส่อยู่)" : ""} · ช่อง ${p.sigils.length}/${cap}${names.length ? ` · ${names.join(", ")}` : ""}`));
+        const cost = sigilRemovalCost(RULES, def);
+        p.sigils.forEach((s, i) => {
+          const b = el("button", { type: "button" }, `ถอดช่อง ${i + 1} (${cost} เหรียญ)`);
+          b.disabled = bundle.coins < cost;
+          if (b.disabled) b.title = `ต้องมี ${cost} เหรียญ`;
+          b.addEventListener("click", () => {
+            // The cost is shown before confirming (chapter 05 §4); the server refuses a different price.
+            if (!window.confirm(`ถอด${sigilDefs.get(s)?.name.th ?? s} ออกจาก${pieceName(p)}\nค่าถอด ${cost} เหรียญ (มี ${bundle.coins}) · ตรากลับเข้ากระเป๋า ไม่แตก\nถอดได้ในเมืองเท่านั้น`)) return;
+            void service(() => api.removeSigil(p.id, i, cost));
+          });
+          li.append(b);
+        });
+        list.append(li);
+      }
+      // Sigils in the bag, with the pieces they fit that still have a free socket.
+      for (const [itemId, qty] of Object.entries(bundle.bag)) {
+        const it = itemDefs.get(itemId);
+        const sg = it?.kind === "sigil" && it.sigilId ? sigilDefs.get(it.sigilId) : undefined;
+        if (sg === undefined || qty <= 0) continue;
+        const li = el("li", { "data-sigil": itemId });
+        li.append(el("span", { class: "pm-grow" }, `${sg.name.th} ×${qty} · ใส่ได้กับ${sg.equipGroups.map((g) => GROUP_TH[g]).join("/")}`));
+        const targets = bundle.equipment.filter((p) => {
+          const def = equipmentDefs.get(p.definitionId);
+          return def !== undefined && sigilFits(def, sg) && p.sigils.length < sigilCapacity(RULES, def);
+        });
+        if (targets.length === 0) li.append(el("span", { class: "pm-note" }, "ไม่มีอุปกรณ์ที่ใส่ได้/ช่องเต็ม"));
+        for (const p of targets) {
+          const b = el("button", { type: "button" }, `ใส่${pieceName(p)}`);
+          b.addEventListener("click", () => void service(() => api.installSigil(p.id, itemId)));
+          li.append(b);
+        }
+        list.append(li);
+      }
+      if (list.childElementCount === 0) list.append(el("li", {}, "ยังไม่มีอุปกรณ์ที่มีช่อง Sigil"));
+      body.append(list);
+      body.append(
+        el(
+          "div",
+          { class: "pm-note" },
+          "ผลของ Sigil ยังไม่ทำงาน (ยังไม่มีระบบ effect) ใส่แล้วตัวเลขยังไม่เปลี่ยน · ใส่ซ้ำชื่อเดิมได้ · ถอดเสียเหรียญตามระดับของอุปกรณ์ ทำได้ในเมือง",
+        ),
+      );
     };
     draw();
   });
@@ -376,5 +477,77 @@ export function teamPanel(api: CharacterApi, bundle: CharacterBundle): Promise<C
         save.disabled = false;
       }
     });
+  });
+}
+
+/**
+ * Town shop: sell items to the NPC for coins (chapter 06: the coin source). Prices come from the
+ * item's vendorPrice; the server checks the bag, the location and the price again.
+ */
+export function shopPanel(api: CharacterApi, start: CharacterBundle): Promise<CharacterBundle> {
+  return new Promise((resolve) => {
+    const { panel, close } = overlay();
+    let bundle = start;
+    let busy = false;
+    const body = el("div");
+    const error = el("div", { class: "pm-error", role: "alert" });
+    const actions = el("div", { class: "pm-actions" });
+    const sellAll = el("button", { type: "button" }, "ขายวัสดุทั้งหมด");
+    const done = el("button", { type: "button", class: "primary" }, "ปิด");
+    actions.append(sellAll, done);
+    panel.append(el("h2", {}, "ร้านรับซื้อของ"), body, error, actions);
+    done.addEventListener("click", () => {
+      close();
+      resolve(bundle);
+    });
+
+    const sellable = () =>
+      Object.entries(bundle.bag)
+        .filter(([id, q]) => q > 0 && (itemDefs.get(id)?.vendorPrice ?? 0) > 0)
+        .map(([id, q]) => ({ def: itemDefs.get(id)!, quantity: q }));
+
+    const sell = async (lines: { itemId: string; quantity: number }[]) => {
+      if (busy || lines.length === 0) return;
+      busy = true;
+      error.textContent = "";
+      try {
+        const r = await api.sell(lines);
+        error.textContent = "";
+        note.textContent = `ขายได้ ${r.result.total} เหรียญ`;
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+      } finally {
+        bundle = (await api.get().catch(() => null)) ?? bundle;
+        busy = false;
+        draw();
+      }
+    };
+    sellAll.addEventListener("click", () =>
+      void sell(sellable().filter((s) => s.def.kind === "material").map((s) => ({ itemId: s.def.id, quantity: s.quantity }))),
+    );
+
+    const note = el("div", { class: "pm-note" });
+    const draw = () => {
+      body.replaceChildren();
+      body.append(el("div", { class: "pm-stats" }, `เหรียญ ${bundle.coins.toLocaleString()}`), note);
+      const list = el("ul", { class: "pm-list" });
+      const rows = sellable();
+      if (rows.length === 0) list.append(el("li", {}, "ไม่มีของที่ร้านรับซื้อ (เครื่องจับและตรา Sigil ร้านไม่รับ)"));
+      for (const { def, quantity } of rows) {
+        const li = el("li", { "data-item": def.id });
+        li.append(el("span", { class: "pm-grow" }, `${def.name.th} ×${quantity} · ชิ้นละ ${def.vendorPrice}`));
+        const one = el("button", { type: "button" }, `ขาย 1 (+${def.vendorPrice})`);
+        one.addEventListener("click", () => void sell([{ itemId: def.id, quantity: 1 }]));
+        const quote = sellQuote([{ itemId: def.id, quantity }], itemDefs);
+        const all = el("button", { type: "button" }, `ขายหมด (+${quote.ok ? quote.total : 0})`);
+        all.addEventListener("click", () => void sell([{ itemId: def.id, quantity }]));
+        li.append(one, all);
+        list.append(li);
+      }
+      body.append(list);
+      body.append(el("div", { class: "pm-note" }, "\"เหรียญ\" เป็นชื่อชั่วคราว · ราคาเป็นค่าทดลอง (P12) · ขายได้ในเมืองเท่านั้น"));
+      sellAll.disabled = !rows.some((r) => r.def.kind === "material");
+    };
+    draw();
   });
 }

@@ -13,6 +13,7 @@ export * from "./content/equipment";
 export * from "./dev-fixtures";
 export * from "./character";
 export * from "./equipment";
+export * from "./sigil";
 export * from "./world/map";
 export * from "./world/movement";
 export * from "./world/channel";

@@ -130,6 +130,8 @@ export interface EquipmentView {
   refineLevel: number;
   lockState: EquipmentInstance["lockState"];
   slot: EquipSlot | null;
+  /** Installed Sigil ids, in socket order. */
+  sigils: string[];
 }
 
 /** The worn pieces' definitions and the main-hand weapon, for `playerSetup` and the HUD. */

@@ -79,7 +79,7 @@ export const EXAMPLE_SIGILS: SigilDefinition[] = [
   sigil("sigil:armor_crab", "species:armor_crab", ["SHIELD"], 0.0005),
   sigil("sigil:ember_fox", "species:ember_fox", ["WEAPON_PHYSICAL"], 0.0002),
   sigil("sigil:lantern_snail", "species:lantern_snail", ["WEAPON_SUPPORT"], 0.0001),
-  sigil("sigil:supply_mole", "species:supply_mole", ["FEET"], 0.0005),
+  sigil("sigil:supply_mole", "species:supply_mole", ["ACCESSORY"], 0.0005),
   sigil("sigil:bell_bird", "species:bell_bird", ["BACK"], 0.0005),
 ];
 
@@ -98,7 +98,7 @@ export const EXAMPLE_ITEMS: ItemDefinition[] = [
     }),
   ),
   ...EXAMPLE_SIGILS.map(
-    (s): ItemDefinition => ({ id: `item:${s.id.slice("sigil:".length)}_sigil`, ...meta, name: { th: `ตรา${s.id}` }, kind: "sigil", vendorPrice: 0 }),
+    (s): ItemDefinition => ({ id: `item:${s.id.slice("sigil:".length)}_sigil`, ...meta, name: s.name, kind: "sigil", sigilId: s.id, vendorPrice: 0 }),
   ),
   { id: "item:crab_shell", ...meta, name: { th: "กระดองปู" }, kind: "material", vendorPrice: 5 },
   { id: "item:fox_tail_ash", ...meta, name: { th: "เถ้าหางจิ้งจอก" }, kind: "material", vendorPrice: 6 },
@@ -229,7 +229,7 @@ function sigil(id: string, sourceSpeciesId: string, equipGroups: SigilDefinition
   return {
     id,
     ...meta,
-    name: { th: `ตรา${id}` },
+    name: { th: `ตรา${EXAMPLE_SPECIES.find((sp) => sp.id === sourceSpeciesId)?.name.th ?? id}` },
     sourceSpeciesId,
     equipGroups,
     effectIds: [`effect:${id.slice("sigil:".length)}`],
