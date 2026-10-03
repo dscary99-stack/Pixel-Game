@@ -169,7 +169,7 @@ export const RULES = {
       "P06",
       "chapter 04 §5: skill level N needs companion level unlocks[N-1]; in a fight the companion's fighting level decides",
     ),
-    skillPowerPercentPerLevel: provisional(4, "P06", "each skill level above 1 adds this % to the skill's coefficient only (not MP cost or cooldown)"),
+    skillPowerPercentPerLevel: provisional(4, "P06", "default step for a skill without its own levelSteps: +% coefficient per level above 1"),
     skillMasteryPerEnemy: provisional(1, "P06", "mastery each companion that started a won fight gets per enemy defeated or captured in it"),
     skillMasteryCap: provisional(5_000, "P06", "a companion's unspent mastery stops here"),
     skillTrainCost: provisional(
@@ -182,7 +182,8 @@ export const RULES = {
       "P06",
       "training always succeeds once paid (chapter 04 §5); mastery is the companion's pool, spent on the skill the player picks",
     ),
-    bondPerVictory: provisional(2, "P06", "each companion that started a won fight; never lost to defeat or time offline"),
+    bondPerVictory: provisional(2, "P06", "each companion that started a won fight and did not fall in it"),
+    bondLossOnFall: provisional(2, "P06", "Nut 2026-10-03: a companion knocked out in a fight loses Bond (once per fight, any outcome); never below 0; time offline never lowers it"),
     bondTierSize: provisional(200, "P06", "chapter 04 §6 tiers: 0–199, 200–399, 400–599, 600–799, 800–1000"),
     bondTierBonusPercent: provisional([0, 1, 2, 3, 5] as const, "P06", "small capped bonus on the archetype's stat, per tier"),
     // Party (chapter 08 "Party", P02): bonus while partners hunt on the same map and channel.

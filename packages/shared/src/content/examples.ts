@@ -11,6 +11,7 @@ import type {
   LootTable,
   SigilDefinition,
   SkillDefinition,
+  SkillLevelStep,
   SpeciesDefinition,
 } from "../schemas";
 
@@ -24,11 +25,18 @@ export const EXAMPLE_SKILLS: SkillDefinition[] = [
   skill("skill:crab_innate_mp_refund", "รับแทนสำเร็จลดMPครั้งหน้า", "passive"),
   // Ember fox (จิ้งจอกสะเก็ด)
   dmg("skill:fox_mark_bite", "กัดติดmark", "physical", 1.2, 0, "FIRE", "melee", 4, 0),
-  dmg("skill:fox_light_volley", "หมู่เบา", "physical", 0.9, 5, "FIRE", "ranged", 5, 0),
-  dmg("skill:fox_consume_mark", "กินmarkโจมตีหนัก", "physical", 1.6, 0, "FIRE", "melee", 10, 2),
+  // EXAMPLE level tables (each skill grows its own way, chapter 04 §5): the volley spreads to more targets.
+  steps(dmg("skill:fox_light_volley", "หมู่เบา", "physical", 0.9, 5, "FIRE", "ranged", 5, 0), [
+    ["power", 5], ["power", 5], ["power", 5], ["extra_targets", 1], ["power", 5], ["power", 5], ["mp_cost", -1], ["extra_targets", 1], ["power", 10],
+  ]),
+  steps(dmg("skill:fox_consume_mark", "กินmarkโจมตีหนัก", "physical", 1.6, 0, "FIRE", "melee", 10, 2), [
+    ["power", 6], ["power", 6], ["mp_cost", -2], ["power", 6], ["power", 6], ["cooldown", -1], ["power", 6], ["power", 6], ["power", 10],
+  ]),
   skill("skill:fox_innate_kill_heal", "กำจัดเป้าหมายmarkแล้วฮีลเล็ก", "passive"),
   // Lantern snail (หอยตะเกียง)
-  heal("skill:snail_single_heal", "ฮีลเดี่ยว", 1.2, 20, 8),
+  steps(heal("skill:snail_single_heal", "ฮีลเดี่ยว", 1.2, 20, 8), [
+    ["power", 5], ["power", 5], ["mp_cost", -2], ["power", 5], ["power", 5], ["power", 5], ["extra_targets", 1], ["power", 5], ["mp_cost", -2],
+  ]),
   dmg("skill:snail_glare", "ส่องลดหลบ", "magic", 0.8, 0, "WATER", "ranged", 5, 0),
   skill("skill:snail_ally_shield", "โล่เพื่อน", "passive"),
   skill("skill:snail_innate_mp_return", "โล่หมดอายุคืนMP", "passive"),
@@ -144,6 +152,11 @@ export const EXAMPLE_LOOT_TABLES: LootTable[] = EXAMPLE_SPECIES.map((s) => {
 });
 
 // ---------------------------------------------------------------- helpers
+
+/** Level 2–10 steps in order, one per level. */
+function steps(s: SkillDefinition, list: [SkillLevelStep["kind"], number][]): SkillDefinition {
+  return { ...s, levelSteps: list.map(([kind, value], i) => ({ atLevel: i + 2, kind, value })) };
+}
 
 function skill(id: string, th: string, kind: "passive"): SkillDefinition {
   return { id, ...meta, name: { th }, kind, ownerKind: "companion", targetRule: "none", range: "melee", mpCost: 0, cooldown: 0, effectSequence: [], tags: [] };

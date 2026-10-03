@@ -7,7 +7,7 @@
  */
 import { applyBond, bondBonusPercent } from "../bond";
 import { companionCombatProfile } from "../companion-growth";
-import { effectiveSkillLevel, masteryForVictory, skillPowerPercent, speciesSkillSlots, trainedSkillLevel } from "../skill-training";
+import { effectiveSkillLevel, masteryForVictory, skillLevelMods, speciesSkillSlots, trainedSkillLevel } from "../skill-training";
 import { NO_AUTO_POLICY, type AutoBattlePolicy } from "./auto-policy";
 import { computeDamage, computeHeal, critChanceBp, hitChanceBp } from "../damage";
 import { rollLoot } from "../loot";
@@ -445,11 +445,15 @@ function doAttack(ctx: Ctx, actor: BattleUnit, target: BattleUnit, _skill: null)
 function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUnit): void {
   if (!actor.skillIds.includes(skillId)) reject("INVALID_COMMAND", `${actor.unitId} has no skill ${skillId}`);
   const skill = requireActiveSkill(ctx.content, skillId);
-  if (skill.cooldown > 0 && ctx.rules.unresolved.cooldownTick.value === null) {
+  // What the skill's level adds, by its own table (chapter 04 §5; Nut 2026-10-03).
+  const mods = skillLevelMods(ctx.rules, skill, actor.skillLevels?.[skillId] ?? 1);
+  const mpCost = Math.max(0, skill.mpCost + mods.mpCost);
+  const cooldown = Math.max(0, skill.cooldown + mods.cooldown);
+  if (cooldown > 0 && ctx.rules.unresolved.cooldownTick.value === null) {
     reject("UNRESOLVED_RULE", "skill cooldown tick point is OPEN (O15)");
   }
   if ((actor.cooldowns[skillId] ?? 0) > 0) reject("ON_COOLDOWN", `${skillId} ready in ${actor.cooldowns[skillId]} turns`);
-  if (actor.mp < skill.mpCost) reject("INSUFFICIENT_RESOURCE", `needs ${skill.mpCost} MP`);
+  if (actor.mp < mpCost) reject("INSUFFICIENT_RESOURCE", `needs ${mpCost} MP`);
   const effect = skill.effectSequence[0]!;
   if (skill.effectSequence.length !== 1) reject("UNRESOLVED_RULE", "multi-effect skills wait for O15 (multi-hit, chains)");
 
@@ -462,18 +466,33 @@ function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUni
     if (!active(target)) reject("INVALID_TARGET", "heals do not revive (chapter 03 §6)");
   }
 
-  actor.mp -= skill.mpCost;
-  if (skill.cooldown > 0) actor.cooldowns[skillId] = skill.cooldown;
+  actor.mp -= mpCost;
+  if (cooldown > 0) actor.cooldowns[skillId] = cooldown;
 
-  // A skill level adds power only: the coefficient grows, MP cost and cooldown stay (chapter 04 §5).
-  const coefficient = (effect.coefficient * (100 + skillPowerPercent(ctx.rules, actor.skillLevels?.[skillId] ?? 1))) / 100;
-  if (effect.kind === "damage") {
-    strike(ctx, actor, target, "skill", skillId, { ...effect, coefficient });
-  } else {
-    const amount = computeHeal(actor.stats.support, coefficient, effect.flat);
-    const applied = Math.min(amount, target.stats.maxHp - target.hp); // overheal discarded
-    target.hp += applied;
-    actionEvent(ctx, actor, "skill", target, { skillId, heal: applied, targetHpAfter: target.hp });
+  const coefficient = (effect.coefficient * (100 + mods.powerPercent)) / 100;
+  // Extra targets from the skill's level: the chosen target first, then more of the same side, each
+  // resolved on its own (its own hit and crit). Picked by the server, never by the client: enemies in
+  // formation order (front row first), allies by lowest HP share. Self-only skills never spread.
+  const extra =
+    mods.extraTargets <= 0 || skill.targetRule === "self"
+      ? []
+      : effect.kind === "damage"
+        ? validTargets(ctx.s, "enemy", skill.range)
+            .filter((u) => u.unitId !== target.unitId)
+            .sort((a, b) => (a.row === b.row ? a.slot - b.slot : a.row === "front" ? -1 : 1))
+        : ctx.s.units
+            .filter((u) => u.side === actor.side && active(u) && u.unitId !== target.unitId)
+            .sort((a, b) => a.hp / a.stats.maxHp - b.hp / b.stats.maxHp || (a.unitId < b.unitId ? -1 : 1));
+  for (const t of [target, ...extra.slice(0, mods.extraTargets)]) {
+    if (!active(t)) continue;
+    if (effect.kind === "damage") {
+      strike(ctx, actor, t, "skill", skillId, { ...effect, coefficient });
+    } else {
+      const amount = computeHeal(actor.stats.support, coefficient, effect.flat);
+      const applied = Math.min(amount, t.stats.maxHp - t.hp); // overheal discarded
+      t.hp += applied;
+      actionEvent(ctx, actor, "skill", t, { skillId, heal: applied, targetHpAfter: t.hp });
+    }
   }
 }
 
@@ -512,6 +531,7 @@ function strike(
 function knockOut(ctx: Ctx, u: BattleUnit): void {
   u.ko = true;
   u.guarding = false;
+  if (u.kind === "companion") u.fell = true;
   ctx.emit({ type: "UnitKnockedOut", unitId: u.unitId });
   if (u.side !== "enemy") return;
   if (ctx.s.resolutions[u.unitId] !== undefined) throw new Error(`enemy ${u.unitId} resolved twice`);
@@ -662,7 +682,7 @@ function checkEnd(ctx: Ctx): void {
 function endBattle(ctx: Ctx, outcome: "victory" | "defeat" | "fled"): void {
   const s = ctx.s;
   s.status = outcome;
-  if (outcome === "victory") victoryRewards(ctx);
+  companionResults(ctx, outcome);
   // Buffs, guard and cooldowns end with the fight; HP/MP carry over (chapter 03 §3).
   for (const u of s.units) {
     u.guarding = false;
@@ -680,17 +700,23 @@ function endBattle(ctx: Ctx, outcome: "victory" | "defeat" | "fled"): void {
 }
 
 /**
- * Bond and skill mastery for a won fight (chapter 04 §5–§6): every companion that started it, KO'd
- * or not. Mastery counts enemies defeated or captured, so heal or buff loops add nothing.
+ * Bond and skill mastery when a fight ends (chapter 04 §5–§6), for every companion that started it.
+ * Mastery: won fights only, KO'd or not, counted per enemy defeated or captured (heal or buff loops add
+ * nothing). Bond: a companion that fell in the fight loses some, whatever the outcome (Nut 2026-10-03);
+ * one that stayed up through a win gains some; nothing else changes it.
  */
-function victoryRewards(ctx: Ctx): void {
+function companionResults(ctx: Ctx, outcome: "victory" | "defeat" | "fled"): void {
+  const p = ctx.rules.provisional;
+  const won = outcome === "victory";
+  const mastery = won ? masteryForVictory(ctx.rules, Object.keys(ctx.s.resolutions).length) : 0;
   const companions: Record<string, { bond: number; mastery: number }> = {};
-  const mastery = masteryForVictory(ctx.rules, Object.keys(ctx.s.resolutions).length);
   for (const u of ctx.s.units) {
-    if (u.kind === "companion" && u.instanceId !== null) companions[u.instanceId] = { bond: ctx.rules.provisional.bondPerVictory.value, mastery };
+    if (u.kind !== "companion" || u.instanceId === null) continue;
+    const bond = u.fell === true ? -p.bondLossOnFall.value : won ? p.bondPerVictory.value : 0;
+    if (bond !== 0 || mastery !== 0) companions[u.instanceId] = { bond, mastery };
   }
   if (Object.keys(companions).length === 0) return;
-  const entitlement: Entitlement = { entitlementId: `${ctx.s.battleId}:all:victory`, kind: "victory", companions };
+  const entitlement: Entitlement = { entitlementId: `${ctx.s.battleId}:all:result`, kind: "fight_result", companions };
   ctx.s.entitlements.push(entitlement);
   ctx.emit({ type: "RewardEntitled", entitlement });
 }

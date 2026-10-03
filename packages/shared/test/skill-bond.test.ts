@@ -9,7 +9,11 @@ import {
   deriveStats,
   effectiveSkillLevel,
   skillLevelCap,
+  skillLevelMods,
+  skillLevelStep,
   skillTrainCost,
+  SkillDefinitionSchema,
+  type SkillLevelStep,
   type BattleState,
   type KernelResult,
 } from "../src/index";
@@ -102,6 +106,69 @@ describe("Bond (chapter 04 §6, C11, P06)", () => {
       if (cmd === null) break;
       s = ok(applyCommand(rules, c, s, cmd, { source: "auto" })).state;
     }
-    expect(s.entitlements.some((e) => e.kind === "victory")).toBe(false);
+    expect(s.entitlements.some((e) => e.kind === "fight_result")).toBe(false);
+  });
+});
+
+describe("per-skill level tables (Nut 2026-10-03: each skill grows its own way)", () => {
+  const volley = c.skills.get("skill:fox_light_volley")!;
+
+  it("adds what the skill's own table says; other skills get the default power step", () => {
+    expect(skillLevelMods(rules, volley, 1)).toEqual({ powerPercent: 0, mpCost: 0, cooldown: 0, extraTargets: 0 });
+    expect(skillLevelMods(rules, volley, 5)).toEqual({ powerPercent: 15, mpCost: 0, cooldown: 0, extraTargets: 1 });
+    expect(skillLevelMods(rules, volley, 10)).toEqual({ powerPercent: 35, mpCost: -1, cooldown: 0, extraTargets: 2 });
+    expect(skillLevelStep(rules, volley, 5)).toEqual({ atLevel: 5, kind: "extra_targets", value: 1 });
+    expect(skillLevelMods(rules, c.skills.get("skill:fox_mark_bite")!, 4)).toMatchObject({ powerPercent: 12, extraTargets: 0 });
+  });
+
+  it("refuses tables that skip a level, add the wrong way, or take MP below 0", () => {
+    const steps = (list: [SkillLevelStep["kind"], number][]) => list.map(([kind, value], i) => ({ atLevel: i + 2, kind, value }));
+    const good = steps(Array.from({ length: 9 }, () => ["power", 5] as [SkillLevelStep["kind"], number]));
+    expect(SkillDefinitionSchema.safeParse({ ...volley, levelSteps: good }).success).toBe(true);
+    expect(SkillDefinitionSchema.safeParse({ ...volley, levelSteps: good.slice(1) }).success).toBe(false);
+    expect(SkillDefinitionSchema.safeParse({ ...volley, levelSteps: [...good.slice(0, 8), { atLevel: 10, kind: "mp_cost", value: 2 }] }).success).toBe(false);
+    expect(SkillDefinitionSchema.safeParse({ ...volley, levelSteps: [...good.slice(0, 8), { atLevel: 10, kind: "mp_cost", value: -9 }] }).success).toBe(false);
+  });
+
+  it("hits more targets at the level that adds them, each with its own roll, and costs less MP", () => {
+    const enemies = [
+      { unitId: "e1", speciesId: "species:armor_crab", element: "EARTH" as const, row: "front" as const, slot: 0 },
+      { unitId: "e2", speciesId: "species:ember_fox", element: "FIRE" as const, row: "front" as const, slot: 1 },
+      { unitId: "e3", speciesId: "species:ember_fox", element: "FIRE" as const, row: "back" as const, slot: 0 },
+    ];
+    const cast = (trained: number) => {
+      // A Lv200 companion with a Lv200 character uses every trained level.
+      const inst = { ...companion("m1", "species:ember_fox", "FIRE", 200), trainedSkillLevels: { "skill:fox_light_volley": trained } };
+      const setup = baseSetup({ enemies, companions: [{ instance: inst, row: "back", slot: 0 }] });
+      setup.player.level = 200;
+      let s: BattleState = ok(createBattle(rules, c, setup)).state;
+      for (let i = 0; i < 20 && currentActor(s)?.unitId !== "ally:m1"; i++) s = ok(applyCommand(rules, c, s, chooseAutoCommand(s)!, { source: "player" })).state;
+      const mp = s.units.find((u) => u.unitId === "ally:m1")!.mp;
+      const r = ok(applyCommand(rules, c, s, { type: "skill", actorId: "ally:m1", skillId: "skill:fox_light_volley", targetId: "e2" }, { source: "player" }));
+      const hits = r.events.filter((e) => e.type === "ActionResolved" && e.actorId === "ally:m1").map((e) => (e.type === "ActionResolved" ? e.targetId : null));
+      return { hits, mpSpent: mp - r.state.units.find((u) => u.unitId === "ally:m1")!.mp };
+    };
+    expect(cast(1)).toEqual({ hits: ["e2"], mpSpent: 5 });
+    // Lv5: the chosen target, then the next one in formation order (front row first).
+    expect(cast(5).hits).toEqual(["e2", "e1"]);
+    expect(cast(10)).toEqual({ hits: ["e2", "e1", "e3"], mpSpent: 4 });
+  });
+});
+
+describe("Bond goes down when a companion falls (Nut 2026-10-03)", () => {
+  it("a companion knocked out loses Bond whatever the outcome; one that stayed up through a win gains", () => {
+    // A Lv1 companion with 1 HP left falls at the first enemy hit it takes; Auto plays the fight out.
+    const weak = { instance: { ...companion("m1", "species:lantern_snail", "WATER", 1), bond: 100 }, row: "front" as const, slot: 0, hp: 1 };
+    const sturdy = { instance: { ...companion("m2", "species:armor_crab", "EARTH", 30), bond: 100 }, row: "front" as const, slot: 2 };
+    let s: BattleState = ok(createBattle(rules, c, baseSetup({ companions: [weak, sturdy] }))).state;
+    for (let i = 0; i < 500 && s.status === "active"; i++) s = ok(applyCommand(rules, c, s, chooseAutoCommand(s)!, { source: "auto" })).state;
+    const result = s.entitlements.find((e) => e.kind === "fight_result");
+    const fell = s.units.find((u) => u.unitId === "ally:m1")!.fell === true;
+    const m2fell = s.units.find((u) => u.unitId === "ally:m2")!.fell === true;
+    expect(result?.kind).toBe("fight_result");
+    if (result?.kind !== "fight_result") throw new Error();
+    expect(result.companions.m1?.bond).toBe(fell ? -2 : s.status === "victory" ? 2 : 0);
+    expect(result.companions.m2?.bond ?? 0).toBe(m2fell ? -2 : s.status === "victory" ? 2 : 0);
+    expect(fell).toBe(true);
   });
 });

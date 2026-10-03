@@ -63,6 +63,20 @@ export const HealEffectSchema = z
   .object({ kind: z.literal("heal"), coefficient: z.number().positive(), flat: z.number().min(0) })
   .strict();
 
+/**
+ * What one skill level adds (chapter 04 §5; Nut 2026-10-03: "หลากหลาย ขึ้นอยู่กับ skill ของแต่ละตัว").
+ * power: +% on the coefficient; mp_cost / cooldown: change (negative = cheaper / faster);
+ * extra_targets: more targets of the same side, each resolved on its own.
+ */
+export const SkillLevelStepSchema = z
+  .object({
+    atLevel: z.number().int().min(2).max(10),
+    kind: z.enum(["power", "mp_cost", "cooldown", "extra_targets"]),
+    value: z.number().int(),
+  })
+  .strict();
+export type SkillLevelStep = z.infer<typeof SkillLevelStepSchema>;
+
 export const SkillDefinitionSchema = z
   .object({
     id: SkillId,
@@ -78,9 +92,23 @@ export const SkillDefinitionSchema = z
     cooldown: z.number().int().min(0),
     effectSequence: z.array(z.discriminatedUnion("kind", [DamageEffectSchema, HealEffectSchema])),
     tags: z.array(z.string()),
+    /** One step per level 2–10 when present; absent = the default power step (rules). */
+    levelSteps: z.array(SkillLevelStepSchema).optional(),
   })
   .strict()
   .superRefine((s, ctx) => {
+    if (s.levelSteps !== undefined) {
+      const levels = s.levelSteps.map((x) => x.atLevel).sort((a, b) => a - b);
+      if (levels.join(",") !== "2,3,4,5,6,7,8,9,10") ctx.addIssue({ code: "custom", message: "levelSteps needs exactly one step for each level 2–10" });
+      const sum = (k: SkillLevelStep["kind"]) => s.levelSteps!.filter((x) => x.kind === k).reduce((n, x) => n + x.value, 0);
+      if (s.mpCost + sum("mp_cost") < 0) ctx.addIssue({ code: "custom", message: "levelSteps would take MP cost below 0" });
+      if (s.cooldown + sum("cooldown") < 0) ctx.addIssue({ code: "custom", message: "levelSteps would take cooldown below 0" });
+      for (const x of s.levelSteps) {
+        const ok = x.kind === "power" || x.kind === "extra_targets" ? x.value > 0 : x.value < 0;
+        if (!ok) ctx.addIssue({ code: "custom", message: `level ${x.atLevel} ${x.kind} step must ${x.kind === "power" || x.kind === "extra_targets" ? "add" : "reduce"}` });
+      }
+      if (sum("extra_targets") > 4) ctx.addIssue({ code: "custom", message: "at most 4 extra targets" });
+    }
     if (s.kind === "passive" && (s.effectSequence.length > 0 || s.mpCost > 0)) {
       ctx.addIssue({ code: "custom", message: "passive skills have no direct effect sequence or MP cost in Phase A" });
     }

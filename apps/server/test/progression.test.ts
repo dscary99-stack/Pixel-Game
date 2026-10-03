@@ -167,10 +167,10 @@ describe("companion growth (P05)", () => {
   });
 });
 
-describe("Bond and skill mastery from a won fight (chapter 04 §5–§6)", () => {
+describe("Bond and skill mastery when a fight ends (chapter 04 §5–§6)", () => {
   const victory = (bond: number, mastery: number): Entitlement => ({
-    entitlementId: `${BATTLE}:all:victory`,
-    kind: "victory",
+    entitlementId: `${BATTLE}:all:result`,
+    kind: "fight_result",
     companions: { "mon:mole": { bond, mastery }, "mon:bird": { bond, mastery }, "mon:home": { bond, mastery } },
   });
   const row = (id: string) => db.prepare(`SELECT bond, skill_mastery FROM monster_instances WHERE id = ?`).get(id);
@@ -182,6 +182,14 @@ describe("Bond and skill mastery from a won fight (chapter 04 §5–§6)", () =>
     expect(row("mon:bird")).toEqual({ bond: 2, skill_mastery: 3 });
     expect(row("mon:home")).toEqual({ bond: 0, skill_mastery: 0 });
     expect(await eco.grant(victory(9, 9), A)).toMatchObject({ status: "rejected", reason: "PAYLOAD_MISMATCH" });
+  });
+
+  it("a fall takes Bond down, never below 0 (Nut 2026-10-03)", async () => {
+    db.prepare(`UPDATE monster_instances SET bond = 1 WHERE id = 'mon:mole'`).run();
+    db.prepare(`UPDATE monster_instances SET bond = 10 WHERE id = 'mon:bird'`).run();
+    await eco.grant(victory(-2, 0), A);
+    expect(row("mon:mole")).toEqual({ bond: 0, skill_mastery: 0 });
+    expect(row("mon:bird")).toEqual({ bond: 8, skill_mastery: 0 });
   });
 
   it("stops at Bond 1000 and the mastery cap", async () => {

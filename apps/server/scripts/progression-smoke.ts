@@ -75,7 +75,7 @@ if (pet !== undefined) {
   b = await me();
   const p = b.companions.find((x: Msg) => x.id === pet.id);
   out.secondFight = { outcome: second.state.status, exp: second.state.entitlements.reduce((n: number, e: Msg) => n + (e.exp ?? 0), 0) };
-  out.companion = { level: p.currentLevel, xp: p.xp, bond: p.bond, skillMastery: p.skillMastery, victory: second.state.entitlements.find((e: Msg) => e.kind === "victory")?.companions ?? null };
+  out.companion = { level: p.currentLevel, xp: p.xp, bond: p.bond, skillMastery: p.skillMastery, result: second.state.entitlements.find((e: Msg) => e.kind === "fight_result")?.companions ?? null };
   // Skill training is a town NPC service: in the field it is refused before anything is charged.
   out.trainInField = (await http("POST", "/town/skill", { operationId: `skill_${run}`, companionId: pet.id, skillId: "skill:mole_light_heal", expectedLevel: 1 })).body.error;
 }

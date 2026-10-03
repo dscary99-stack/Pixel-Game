@@ -8,7 +8,8 @@
  *   buffs in a loop earn nothing). It is one pool per companion; the player picks which skill to train.
  * - Training spends mastery + coins + the species' material, at the town NPC, outside fights, and
  *   always succeeds once paid.
- * - A level adds only power (the skill's coefficient), never MP cost or cooldown at the same time.
+ * - Each level adds one thing, set per skill (Nut 2026-10-03): power, cheaper MP, shorter cooldown or
+ *   more targets (`levelSteps`). A skill without its own table gets the default power step.
  * - Rebirth and trade keep trained levels, but a fight uses min(trained, the cap at the level the
  *   companion fights at), so a Lv1 companion after Rebirth cannot use skill Lv10.
  */
@@ -17,7 +18,7 @@ import { OperationIdSchema } from "./character";
 import { expForLevel } from "./progression";
 import { speciesMaterialItem } from "./rebirth";
 import type { RulesConfig } from "./rules";
-import type { ItemDefinition, LootTable, SpeciesDefinition } from "./schemas";
+import type { ItemDefinition, LootTable, SkillDefinition, SkillLevelStep, SpeciesDefinition } from "./schemas";
 
 export const SKILL_MAX_LEVEL = 10;
 
@@ -56,9 +57,33 @@ export function effectiveSkillLevel(rules: RulesConfig, trained: number, fightin
   return Math.max(1, Math.min(trained, skillLevelCap(rules, fightingLevel)));
 }
 
-/** Extra % on the skill's coefficient at this level (Lv1 = 0). */
-export function skillPowerPercent(rules: RulesConfig, level: number): number {
-  return Math.max(0, level - 1) * rules.provisional.skillPowerPercentPerLevel.value;
+/** The one step a skill gains when it reaches `level` (2–10). */
+export function skillLevelStep(rules: RulesConfig, skill: Pick<SkillDefinition, "levelSteps">, level: number): SkillLevelStep {
+  return (
+    skill.levelSteps?.find((x) => x.atLevel === level) ?? { atLevel: level, kind: "power", value: rules.provisional.skillPowerPercentPerLevel.value }
+  );
+}
+
+export interface SkillLevelMods {
+  /** +% on the coefficient. */
+  powerPercent: number;
+  /** Change to MP cost and cooldown (≤ 0). */
+  mpCost: number;
+  cooldown: number;
+  extraTargets: number;
+}
+
+/** Everything a skill has gained by this level (Lv1 = nothing). */
+export function skillLevelMods(rules: RulesConfig, skill: Pick<SkillDefinition, "levelSteps">, level: number): SkillLevelMods {
+  const m: SkillLevelMods = { powerPercent: 0, mpCost: 0, cooldown: 0, extraTargets: 0 };
+  for (let l = 2; l <= Math.min(level, SKILL_MAX_LEVEL); l++) {
+    const x = skillLevelStep(rules, skill, l);
+    if (x.kind === "power") m.powerPercent += x.value;
+    else if (x.kind === "mp_cost") m.mpCost += x.value;
+    else if (x.kind === "cooldown") m.cooldown += x.value;
+    else m.extraTargets += x.value;
+  }
+  return m;
 }
 
 /** Mastery each companion that started a won fight gets for it. */

@@ -157,15 +157,15 @@ export class RewardLedger {
           .bind(amount, expCap(this.rules, "companion"), recipientId, companionId, battleId, recipientId, id, recipientId, hash),
       );
     }
-    // Bond and skill mastery for a won fight (chapter 04 §5–§6), each up to its cap, for companions the
-    // battle's reservation lists and the recipient still owns.
-    if (entitlement.kind === "victory") {
+    // Bond (up or down, kept within 0–1000) and skill mastery (up to its cap) when a fight ends
+    // (chapter 04 §5–§6), for companions the battle's reservation lists and the recipient still owns.
+    if (entitlement.kind === "fight_result") {
       for (const [companionId, g] of Object.entries(entitlement.companions)) {
-        if (g.bond <= 0 && g.mastery <= 0) continue;
+        if (g.bond === 0 && g.mastery <= 0) continue;
         stmts.push(
           this.db
             .prepare(
-              `UPDATE monster_instances SET bond = MIN(bond + ?, ?), skill_mastery = MIN(skill_mastery + ?, ?)
+              `UPDATE monster_instances SET bond = MAX(0, MIN(bond + ?, ?)), skill_mastery = MIN(skill_mastery + ?, ?)
                WHERE owner_id = ? AND id = ? AND id IN (SELECT value FROM json_each(json_extract(${loadout}, '$.companionIds'))) AND ${OWN_RECEIPT}`,
             )
             .bind(g.bond, BOND_MAX, g.mastery, this.rules.provisional.skillMasteryCap.value, recipientId, companionId, battleId, recipientId, id, recipientId, hash),

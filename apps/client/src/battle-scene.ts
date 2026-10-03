@@ -247,8 +247,11 @@ export class BattleScene extends Phaser.Scene {
         if (r.kind === "capture") {
           return this.pushLog(`สิทธิ์คู่ใจใหม่: ${CONTENT.species.get(r.speciesId)?.name.th ?? r.speciesId} Lv${r.level}${expText(r.exp)}`);
         }
-        const g = Object.values(r.companions)[0];
-        return g === undefined ? undefined : this.pushLog(`คู่ใจทุกตัวในไฟต์: Bond +${g.bond}, ความชำนาญสกิล +${g.mastery}`);
+        const parts = Object.entries(r.companions).map(([id, g]) => {
+          const name = this.name(`ally:${id}`);
+          return `${name} Bond ${g.bond >= 0 ? "+" : ""}${g.bond}${g.mastery > 0 ? ` ความชำนาญ +${g.mastery}` : ""}`;
+        });
+        return this.pushLog(`คู่ใจ: ${parts.join(", ")}`);
       }
       case "BattleEnded":
         return this.pushLog(`จบไฟต์: ${e.outcome}`);

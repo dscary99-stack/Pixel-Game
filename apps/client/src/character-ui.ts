@@ -13,7 +13,10 @@ import {
   BOND_STAT,
   BOND_TIER_NAMES,
   effectiveSkillLevel,
-  skillPowerPercent,
+  skillLevelMods,
+  skillLevelStep,
+  type SkillLevelMods,
+  type SkillLevelStep,
   skillTrainCost,
   speciesSkillSlots,
   trainedSkillLevel,
@@ -879,6 +882,25 @@ export function rebirthPanel(api: CharacterApi, start: CharacterBundle): Promise
   });
 }
 
+/** One skill level step in Thai: what the next level adds. */
+function stepText(x: SkillLevelStep): string {
+  if (x.kind === "power") return `พลัง +${x.value}%`;
+  if (x.kind === "mp_cost") return `MP ${x.value}`;
+  if (x.kind === "cooldown") return `cooldown ${x.value} เทิร์น`;
+  return `เป้าหมาย +${x.value}`;
+}
+
+/** Everything a skill has gained by its level, in Thai. */
+function modsText(m: SkillLevelMods): string {
+  const parts = [
+    m.powerPercent > 0 ? `พลัง +${m.powerPercent}%` : "",
+    m.mpCost < 0 ? `MP ${m.mpCost}` : "",
+    m.cooldown < 0 ? `cooldown ${m.cooldown}` : "",
+    m.extraTargets > 0 ? `เป้าหมาย +${m.extraTargets}` : "",
+  ].filter((x) => x !== "");
+  return parts.length === 0 ? "ยังไม่มีโบนัส" : parts.join(" ");
+}
+
 const BOND_STAT_TH = { maxHp: "HP", patk: "ATK", matk: "MATK", support: "พลังซัพพอร์ต", spd: "SPD" } as const;
 
 /**
@@ -903,7 +925,7 @@ export function skillPanel(api: CharacterApi, start: CharacterBundle, inTown: bo
       el(
         "div",
         { class: "pm-note" },
-        `ชนะไฟต์: คู่ใจทุกตัวในไฟต์ได้ความชำนาญ +${RULES.provisional.skillMasteryPerEnemy.value} ต่อศัตรูที่กำจัด/จับ และ Bond +${RULES.provisional.bondPerVictory.value} · ฝึกสกิลที่ NPC ในเมือง (ความชำนาญ + เหรียญ + วัสดุ species) สำเร็จแน่นอน · เลเวลสกิลเพิ่มพลัง +${RULES.provisional.skillPowerPercentPerLevel.value}% ต่อขั้น และใช้ได้ไม่เกินที่เลเวลคู่ใจตอนสู้อนุญาต${inTown ? "" : " · ตอนนี้อยู่นอกเมือง ดูได้อย่างเดียว"}`,
+        `ชนะไฟต์: คู่ใจทุกตัวในไฟต์ได้ความชำนาญ +${RULES.provisional.skillMasteryPerEnemy.value} ต่อศัตรูที่กำจัด/จับ และ Bond +${RULES.provisional.bondPerVictory.value} (ตัวที่ล้มในไฟต์ Bond −${RULES.provisional.bondLossOnFall.value}) · ฝึกสกิลที่ NPC ในเมือง (ความชำนาญ + เหรียญ + วัสดุ species) สำเร็จแน่นอน · แต่ละสกิลได้ของต่างกันต่อขั้น (พลัง/MP/cooldown/เป้าหมาย) และใช้ได้ไม่เกินที่เลเวลคู่ใจตอนสู้อนุญาต${inTown ? "" : " · ตอนนี้อยู่นอกเมือง ดูได้อย่างเดียว"}`,
       ),
       body,
       error,
@@ -953,7 +975,7 @@ export function skillPanel(api: CharacterApi, start: CharacterBundle, inTown: bo
           const eff = effectiveSkillLevel(RULES, lv, fighting);
           const kind = i === 3 ? "ติดตัว" : def?.kind === "active" ? "ใช้งาน" : "ติดตัว";
           const row = el("li", { "data-skill": skillId });
-          const power = def?.kind === "active" ? ` · พลัง +${skillPowerPercent(RULES, eff)}%` : " · (ผลติดตัวยังไม่ทำงานในไฟต์)";
+          const power = def === undefined ? "" : def.kind === "active" ? ` · ${modsText(skillLevelMods(RULES, def, eff))}` : " · (ผลติดตัวยังไม่ทำงานในไฟต์)";
           const head = `${def?.name.th ?? skillId} [${kind}] Lv${lv}${eff < lv ? ` (ใช้ได้ Lv${eff})` : ""}${power}`;
           const cost = skillTrainCost(RULES, sp, skillId, lv, { lootTables, items: itemDefs });
           if (!cost.ok) {
@@ -976,7 +998,7 @@ export function skillPanel(api: CharacterApi, start: CharacterBundle, inTown: bo
             el(
               "span",
               {},
-              `${head} · ถัดไป: ความชำนาญ ${cost.mastery} + ${cost.coins.toLocaleString()} เหรียญ + ${itemDefs.get(cost.materialItemId)?.name.th ?? cost.materialItemId} ${have}/${cost.materialQty}${missing.length > 0 ? ` (${missing.join(", ")})` : ""}`,
+              `${head} · Lv${cost.nextLevel}: ${def === undefined ? "" : stepText(skillLevelStep(RULES, def, cost.nextLevel))} ใช้ ความชำนาญ ${cost.mastery} + ${cost.coins.toLocaleString()} เหรียญ + ${itemDefs.get(cost.materialItemId)?.name.th ?? cost.materialItemId} ${have}/${cost.materialQty}${missing.length > 0 ? ` (${missing.join(", ")})` : ""}`,
             ),
             go,
           );

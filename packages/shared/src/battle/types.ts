@@ -36,6 +36,8 @@ export interface BattleUnit {
   skillLevels?: Record<string, number>;
   /** Companions only: the Bond % already applied to `stats` (shown in the UI). */
   bondPercent?: number;
+  /** Companions only: knocked out at some point in this fight (Bond goes down, Nut 2026-10-03). */
+  fell?: boolean;
   basicAttackRange: Range;
   ko: boolean;
   /** Captured enemies leave the fight without kill loot. */
@@ -77,10 +79,10 @@ export type Entitlement =
       companionExp?: Record<string, number>;
     }
   | {
-      /** `${battleId}:all:victory` — one per won fight (chapter 04 §5–§6). */
+      /** `${battleId}:all:result` — one per ended fight that changes a companion (chapter 04 §5–§6). */
       entitlementId: string;
-      kind: "victory";
-      /** Per companion instance that started the fight: Bond gained and skill mastery gained. */
+      kind: "fight_result";
+      /** Per companion instance that started the fight: Bond change (negative after a fall) and mastery gained. */
       companions: Record<string, { bond: number; mastery: number }>;
       /** No EXP here: it came with each enemy's own entitlement. */
       exp?: undefined;
