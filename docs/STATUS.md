@@ -1,4 +1,4 @@
-# สถานะงาน — Phase A + Battle settlement + Phase B (walking slice) + Phase C แรก (encounter) + Phase D แรก (ตัวละคร + อุปกรณ์ + Sigil/เหรียญ + EXP/เลเวล + Auto Hunt + การเติบโตคู่ใจ/Rebirth/ปาร์ตี้)
+# สถานะงาน — Phase A + Battle settlement + Phase B (walking slice) + Phase C แรก (encounter) + Phase D แรก (ตัวละคร + อุปกรณ์ + Sigil/เหรียญ + EXP/เลเวล + Auto Hunt + การเติบโตคู่ใจ/Rebirth/ปาร์ตี้ + เลเวลสกิล/Bond)
 
 อัปเดต: 3 ตุลาคม 2026 · ผู้ทำล่าสุด: Claude · ระยะ: **D แรก — ตัวละคร ทีม อุปกรณ์ 12 ช่อง, Sigil, เหรียญ และ EXP/เลเวล/แต้มสเตตัสที่บันทึกจริง** (บท02, บท03 §3–§4, บท05, บท06, บท13 §1 D) ต่อจาก C แรก
 
@@ -59,11 +59,15 @@ Repo: https://github.com/dscary99-stack/Pixel-Game · Phase A merge แล้ว
 | การเติบโตคู่ใจ + effective level | `packages/shared/src/companion-growth.ts`, `battle/kernel.ts`, migration `0008_companion_growth.sql`, `character-store.ts`, `reward-ledger.ts` | นัทให้คิดเอง: +3 แต้ม/เลเวล สุ่มลงตามน้ำหนักสาย จาก `growthSeed` ที่ server สุ่มตอนจับ (stats = ฟังก์ชันของ seed, สาย, เลเวล, ขั้น Rebirth); ในไฟต์ใช้ min(เลเวล, เลเวลตัวละคร+10), EXP คิดจากเลเวลจริง; รายละเอียด `docs/design/COMPANION_GROWTH_PARTY_REBIRTH.md` |
 | Rebirth คู่ใจ | `packages/shared/src/rebirth.ts`, `town-services.ts` (`rebirth`), migration `0009_companion_rebirth.sql`, `POST /town/rebirth`, client `rebirthPanel` (R) | 3 ขั้น +4/+7/+10% รวม; ต้อง Lv200 + ตัวละคร Lv100/150/200 + เหรียญ 50k/150k/400k + วัสดุ species 30/60/100; ในเมือง นอกไฟต์; batch เดียว anchor ที่ `service_operations` + ตรวจขั้นที่ผู้เล่นเห็น (กดซ้ำ/แข่งกันได้ครั้งเดียว) |
 | ปาร์ตี้ | `packages/shared/src/party.ts`, `loot.ts`, migration `0010_parties.sql`, `src/party-store.ts`, `map-do.ts` (`partyBonusFor`), `GET/POST /party`, `/party/join`, `/party/leave`, client `partyPanel` (P) | สูงสุด 4 คน เข้าด้วยรหัส; ตอนเริ่มไฟต์นับเพื่อนในแผนที่+channel เดียวกันที่เพิ่งเริ่มไฟต์ใน 5 นาที แล้วล็อก EXP +5%/คน (≤15%) และวัสดุทั่วไป +2%/คน (≤6%, สัมพัทธ์, คูณ Auto ครั้งเดียว) ไว้ใน state ของไฟต์ |
+| เลเวลสกิลคู่ใจ + Bond | `packages/shared/src/skill-training.ts`, `bond.ts`, `battle/kernel.ts` (`victoryRewards`, พลังสกิล, Bond ในสเตตัส), migration `0011_skill_training.sql`, `reward-ledger.ts` (entitlement `victory`), `town-services.ts` (`trainSkill`), `POST /town/skill`, client `skillPanel` (K) | ชนะไฟต์: คู่ใจทุกตัวที่เริ่มไฟต์ได้ Bond +2 และความชำนาญ +1 ต่อศัตรูที่กำจัด/จับ (ครั้งเดียวผ่าน receipt, เฉพาะตัวใน reservation); ฝึกสกิล 3+innate ที่ NPC ในเมือง ด้วยความชำนาญ+เหรียญ+วัสดุ species ตามตาราง (gate ตามบท04 §5) สำเร็จแน่นอน batch เดียว; ในไฟต์เลเวลสกิล = min(ที่ฝึก, เพดานที่ effective level) และให้พลัง +4%/ขั้น; Bond 5 ขั้น โบนัส 0/1/2/3/5% บนค่าหลักของสาย; รายละเอียด `docs/design/SKILL_LEVELS_BOND.md` |
 | Reconciler | `apps/server/src/index.ts` (`scheduled`, cron ทุกนาที) | reservation ที่ค้าง `reserved` เกิน 2 นาที → ถาม DO ก่อน; DO ไม่มีไฟต์ → เขียน tombstone แล้วจึงคืนของ; ไฟต์ที่เริ่มแล้วไม่ถูกแตะ |
 
 ## ผลตรวจล่าสุด
 
-- `npm run check` ผ่าน: typecheck 3 แพ็กเกจ, **239 tests ผ่าน** (shared 132, server 107), Vite build, `wrangler deploy --dry-run` (D1 + BATTLE + MAP + cron)
+- `npm run check` ผ่าน: typecheck 3 แพ็กเกจ, **252 tests ผ่าน** (shared 139, server 113), Vite build, `wrangler deploy --dry-run` (D1 + BATTLE + MAP + cron)
+- Test ใหม่รอบเลเวลสกิล/Bond (+13): ตารางปลดล็อก, เพดานตาม effective level (Lv1 หลัง Rebirth ใช้สกิล 10 ไม่ได้), ราคาและการปฏิเสธ (สกิลชนิดอื่น/เกิน 10), พลังเพิ่มเฉพาะ coefficient ไม่แตะ MP, ขั้น Bond และโบนัสในไฟต์, ไม่มี victory เมื่อไม่มีคู่ใจ; ledger ใส่ Bond/ความชำนาญครั้งเดียวแม้ส่งพร้อมกัน เฉพาะตัวในไฟต์ และหยุดที่เพดาน; ฝึกสกิล: จ่ายครั้งเดียว replay/แข่งกันได้ครั้งเดียว, gate เลเวล, ความชำนาญ/เหรียญ/วัสดุ/เมือง/ไฟต์ไม่ผ่านแล้วไม่เขียนอะไร
+- `npm run smoke:progression` (เพิ่ม): ไฟต์ที่สองชนะ → คู่ใจได้ Bond 2 ความชำนาญ 1 ตาม entitlement `victory`; ฝึกสกิลในทุ่ง → `NOT_IN_TOWN`; smoke อื่นทุกตัวผ่านหลัง migration 0011
+- ภาพหน้าจอ: `skill-1-panel.png`, `skill-2-trained.png` (ฝึกโล่กระแทก 1→3, ใช้ได้ Lv2 เพราะสู้เป็น Lv11), `skill-3-team-bond.png`
 - Test ใหม่รอบคำตอบนัท (+21): ตั้งค่า/readiness ของ Auto Hunt (MP, HP คู่ใจ, ยาหมด), autopilot ใช้ยาตามกฎไม่เกินจำนวนและไม่แตะของจับ, `/auto` ถูกคุมจังหวะ (`TOO_FAST`); การเติบโตคู่ใจ (งบเท่ากันทุก seed/สาย, deterministic, ลำดับสายตามบท04 เฉลี่ย 100 seed, โบนัส Rebirth ไม่ทบ), effective level ในไฟต์ (Lv50 กับตัวละคร Lv20 สู้เป็น Lv30, EXP ใช้ 50); capture ได้ seed ครั้งเดียวแม้ grant ซ้ำ/พร้อมกัน, syncLevels เก็บสเตตัสตามเส้นทาง; Rebirth (คิดเงิน+วัสดุครั้งเดียว, replay, สองคำขอแข่งได้ครั้งเดียว, ทุกเงื่อนไขไม่ผ่านไม่เขียนอะไร, เกิน 3 ขั้น); ปาร์ตี้ (ตั้ง/เข้า/ออก/ลบเมื่อว่าง, แข่งกันเข้าที่ว่างสุดท้ายได้คนเดียว, นับเฉพาะคนที่เพิ่งสู้), loot โบนัสวัสดุ (ไม่มีโบนัส = RNG เหมือนเดิม, +6% ทำให้วัสดุเพิ่ม ~6% ของอื่นไม่เปลี่ยน), EXP ไฟต์ปาร์ตี้ ×1.15
 - `npm run smoke:auto` (รันใหม่): ตั้งกฎยาเล็ก 1 ขวด/ไฟต์ → server ใช้ 1 ขวดพอดี; ที่เหลือผ่านเหมือนเดิม; smoke เดิมทุกตัวปรับให้รอจังหวะ Auto แล้วผ่าน (server, encounter, character, equipment, progression, town, world)
 - `npm run smoke:party` (ใหม่): ไม่มีตัวละคร → `NO_CHARACTER`, รหัสผิด → `NO_SUCH_PARTY`; B สู้ก่อนไม่ได้โบนัส, A สู้ต่อในแผนที่เดียวกันได้ `{partners:1, EXP +5%, วัสดุ +2%}`, คนนอกปาร์ตี้ไม่ได้
@@ -152,6 +156,8 @@ Repo: https://github.com/dscary99-stack/Pixel-Game · Phase A merge แล้ว
 | A61 | คู่ใจเดิมก่อน migration 0008 ใช้ id เป็น seed และสเตตัสเปลี่ยนเป็นตามเส้นทางทันที (ต้นแบบยังไม่มีผู้เล่นจริง) | P05 |
 | A62 | Rebirth ยังไม่มีบททดสอบ (O04) และ variant สกิล/innate/cosmetic รอระบบสกิล; ทำได้ที่เมืองไหนก็ได้ที่มี NPC (ตอนนี้ทุกเมือง) | บท04 §7 |
 | A63 | ปาร์ตี้ไม่มีหัวหน้า/เตะ/เชิญจากแผนที่ ใช้รหัสเข้า; "เพิ่งสู้" = เริ่มไฟต์ (มี encounter claim) ภายใน 5 นาที | P02 |
+| A64 | เลเวลสกิล/Bond ตามข้อเสนอ Claude: ความชำนาญก้อนเดียวต่อคู่ใจ (+1/ศัตรูในไฟต์ที่ชนะ, เพดาน 5,000) ผู้เล่นเลือกลงสกิลเอง, ราคาฝึก 10L ความชำนาญ + 100L² เหรียญ + L วัสดุ, พลัง +4%/ขั้น, Bond +2/ชนะ และ 0/1/2/3/5% (control ใช้ SPD แทน effect hit ชั่วคราว) ทั้งหมด PROVISIONAL | P06 |
+| A65 | passive/innate ฝึกเลเวลได้แต่ยังไม่มีผลในไฟต์ (ยังไม่มีระบบ trigger); Bond จากสำรวจครั้งแรก/บอสครั้งแรก/ของโปรด และการรีเซ็ตเมื่อโอน รอระบบที่เกี่ยวข้อง | บท04 §6 |
 | A44 | ค่าถอด Sigil ตามเลเวลของอุปกรณ์: Lv1–49 = 300, Lv50 = 10,800, Lv120 = 37,800, Lv200 = 95,000 เหรียญ/ดวง (Lv50/120/200 = 3 ชม. กำไรสุทธิ manual ตามตัวอย่างบท06; Lv1 เดาเพื่อต้นแบบ) | P08, P12 |
 | A45 | ใส่ Sigil ได้ทุกที่นอกไฟต์ (บท05 กำหนดเฉพาะการถอดว่าทำในเมือง); ใส่ได้ทั้งชิ้นที่สวมอยู่และในกระเป๋า | บท05 §4, P15 |
 | A46 | NPC รับซื้อตาม `vendorPrice` ต่อชิ้น ไม่มีภาษี; ไม่รับเครื่องจับและตรา Sigil (`vendorPrice` 0); อุปกรณ์ยังขายไม่ได้ | บท06 |
@@ -178,7 +184,7 @@ O02–O04 นัทให้ Claude คิดเอง (3 ต.ค. 2026) ย้�
 
 - ยังไม่มี status effect (stun/sleep/poison), shield, passive/innate trigger, บอสหลาย action, AoE
 - ตาราง EXP ผู้เล่นและคู่ใจยังเป็นข้อเสนอที่ยังไม่ playtest (สมมติ 120 ตัว/ชม.); ยังไม่มี EXP ราย species/Elite/Boss, Daily/Weekly
-- ยังไม่มี Bond, variant สกิลจาก Rebirth, บททดสอบ Rebirth, อัปสกิล, รีเซ็ตแต้ม, Class2 ที่ Lv50
+- ยังไม่มี variant สกิลจาก Rebirth, บททดสอบ Rebirth, ผลของ passive/innate, Bond จากสำรวจ/บอส/ของโปรด, รีเซ็ตแต้ม, Class2 ที่ Lv50; Auto Battle ยังตีธรรมดาอย่างเดียว ไม่ใช้สกิล
 - นอก dev ยังเข้าเกมไม่ได้เพราะ auth (O11) ยังไม่เลือก ทุก request ได้ 401
 - ยังไม่มีของเริ่มต้นสำหรับตัวละครใหม่นอก dev (ยา/เครื่องจับ): dev แจกให้ทุกบัญชีเพื่อทดสอบ; ชุดเริ่มต้นจริงยังไม่ได้ออกแบบ
 - อาชีพ/เผ่ายังไม่มีสกิลหรือ passive เฉพาะ; ยังไม่มีหน้าจัดตำแหน่งทีม, ปล่อยคู่ใจ, ตั้งชื่อเล่น
@@ -205,7 +211,7 @@ O02–O04 นัทให้ Claude คิดเอง (3 ต.ค. 2026) ย้�
 
 ## งานถัดไปที่แนะนำ
 
-1. ให้นัทตรวจตัวเลขใน `docs/design/COMPANION_GROWTH_PARTY_REBIRTH.md` (น้ำหนักสาย, +10, ราคา Rebirth, หน้าต่างปาร์ตี้) แล้ว playtest; ระบบสกิล/Bond เพื่อทำ variant ของ Rebirth
+1. ให้นัทตรวจตัวเลขใน `docs/design/COMPANION_GROWTH_PARTY_REBIRTH.md` และ `docs/design/SKILL_LEVELS_BOND.md` (ข้อ 4 มีคำถาม) แล้ว playtest; variant สกิลจาก Rebirth เมื่อนัทเลือกรูปแบบ
 2. ระบบ effect ของ Sigil/passive (stack policy, proc budget, shared cooldown บท05 §5) แล้วให้ตราตัวอย่างมีผลจริง
 3. ร้านขายของ (ราคาซื้อยา/เครื่องจับ) และชุดเริ่มต้นนอก dev; affix/rarity, gear layers บนตัวละคร
 4. ตัดสิน O15 (cooldown tick, revive, หนี, status tick, stalemate) และ O11 (นโยบายหลุดกลางไฟต์) แล้วเพิ่ม status effects และทางปิดไฟต์ที่ถูกทิ้ง

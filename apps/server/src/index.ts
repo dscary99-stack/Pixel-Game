@@ -13,6 +13,7 @@
  *   POST /character                create the character (idempotent on operationId; one per account)
  *   GET  /party, POST /party, POST /party/join {partyId}, POST /party/leave   party (P02)
  *   POST /town/rebirth             companion Rebirth at the town NPC (operationId, companionId, expectedStage)
+ *   POST /town/skill               train one companion skill a level (operationId, companionId, skillId, expectedLevel)
  *   PUT  /character/team           set the team (expectedVersion; ≤5, no duplicate species, outside fights)
  *   GET  /world/where              where the caller's character is saved (map + channel)
  *   GET  /world/:mapId/:channel    WebSocket into that Map Channel DO (walking, presence)
@@ -201,6 +202,7 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
   if (request.method === "POST" && url.pathname === "/character/equipment/sigil/remove") return serviceReply(env, accountId, await townFor(env).removeSigil(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/sell") return serviceReply(env, accountId, await townFor(env).sell(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/rebirth") return serviceReply(env, accountId, await townFor(env).rebirth(accountId, body));
+  if (request.method === "POST" && url.pathname === "/town/skill") return serviceReply(env, accountId, await townFor(env).trainSkill(accountId, body));
   if (request.method === "PUT" && url.pathname === "/character/stats") {
     const r = await store.allocate(accountId, body);
     if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });

@@ -7,6 +7,16 @@ import {
   exampleMapRegistry,
   type PartyView,
   rebirthCost,
+  applyBond,
+  bondBonusPercent,
+  bondTier,
+  BOND_STAT,
+  BOND_TIER_NAMES,
+  effectiveSkillLevel,
+  skillPowerPercent,
+  skillTrainCost,
+  speciesSkillSlots,
+  trainedSkillLevel,
   expForLevel,
   PRIMARY_KEYS,
   companionCombatProfile,
@@ -40,7 +50,7 @@ import {
 import { ApiError, type CharacterApi, type CharacterBundle } from "./character-api";
 
 const maps = exampleMapRegistry();
-const { species, equipment: equipmentDefs, items: itemDefs, sigils: sigilDefs } = exampleContentMaps();
+const { species, equipment: equipmentDefs, items: itemDefs, sigils: sigilDefs, skills: skillDefs } = exampleContentMaps();
 /** Display only: the client shows socket counts and prices, the server applies its own rules. */
 const RULES = PRODUCTION_RULES;
 
@@ -74,6 +84,9 @@ const CSS = `
 .pm-list { list-style: none; padding: 0; margin: 0; }
 .pm-item-rule { border: 1px solid #322b4d; border-radius: 6px; padding: 8px; margin: 6px 0; }
 .pm-list li { display: flex; align-items: center; gap: 10px; padding: 8px; border-bottom: 1px solid #322b4d; }
+.pm-list li.pm-skill-pet { display: block; }
+.pm-list li.pm-skill-pet > div { font-weight: bold; margin-bottom: 4px; }
+.pm-list li.pm-skill-pet li span { flex: 1 1 auto; }
 .pm-list li.ko { opacity: 0.6; }
 .pm-list input { width: 20px; height: 20px; }
 .pm-dot { width: 14px; height: 14px; border-radius: 3px; flex: none; }
@@ -451,7 +464,8 @@ export function teamPanel(api: CharacterApi, bundle: CharacterBundle): Promise<C
       const sp = species.get(c.speciesId);
       // What it fights with: effective level (≤ character Lv + gap) and the growth stats there.
       const prof = sp === undefined ? { level: c.currentLevel, primaryStats: c.primaryStats } : companionCombatProfile(RULES, sp, c, bundle.character.level);
-      const maxHp = deriveStats(prof.level, prof.primaryStats).maxHp;
+      const base = deriveStats(prof.level, prof.primaryStats);
+      const maxHp = sp === undefined ? base.maxHp : applyBond(RULES, sp.archetype, c.bond, base).maxHp;
       const hp = c.hp ?? maxHp;
       const li = el("li", hp <= 0 ? { class: "ko" } : {});
       const box = el("input", { type: "checkbox", value: c.id, id: `pm-${c.id}` });
@@ -465,7 +479,7 @@ export function teamPanel(api: CharacterApi, bundle: CharacterBundle): Promise<C
       dot.style.background = ELEMENT_CSS[c.element];
       const bar = expProgress(RULES, "companion", c.xp);
       const exp = bar.need === null ? "EXP สูงสุด" : `EXP ${bar.into.toLocaleString()}/${bar.need.toLocaleString()}`;
-      const label = el("label", { for: `pm-${c.id}` }, `${sp?.name.th ?? c.speciesId}${c.rebirthStage > 0 ? ` ★R${c.rebirthStage}` : ""} · ${ELEMENT_TH[c.element]} · Lv${c.currentLevel}${prof.level < c.currentLevel ? ` (สู้เป็น Lv${prof.level})` : ""} (${exp}) · HP ${hp}/${maxHp}${hp <= 0 ? " (ล้ม พักในเมือง)" : ""} · ${PRIMARY_KEYS.map((k) => `${k} ${prof.primaryStats[k]}`).join(" ")}`);
+      const label = el("label", { for: `pm-${c.id}` }, `${sp?.name.th ?? c.speciesId}${c.rebirthStage > 0 ? ` ★R${c.rebirthStage}` : ""} · ${ELEMENT_TH[c.element]} · Lv${c.currentLevel}${prof.level < c.currentLevel ? ` (สู้เป็น Lv${prof.level})` : ""} (${exp}) · HP ${hp}/${maxHp}${hp <= 0 ? " (ล้ม พักในเมือง)" : ""} · Bond ${c.bond} ${BOND_TIER_NAMES[bondTier(RULES, c.bond)]} · ${PRIMARY_KEYS.map((k) => `${k} ${prof.primaryStats[k]}`).join(" ")}`);
       label.style.margin = "0";
       li.append(box, dot, label);
       list.append(li);
@@ -856,6 +870,119 @@ export function rebirthPanel(api: CharacterApi, start: CharacterBundle): Promise
           }
         });
         li.append(el("span", {}, `${text}${missing.length > 0 ? ` (${missing.join(", ")})` : ""}`), go);
+        ul.append(li);
+      }
+      if (bundle.companions.length === 0) ul.append(el("li", {}, "ยังไม่มีคู่ใจ"));
+      body.append(ul);
+    };
+    draw();
+  });
+}
+
+const BOND_STAT_TH = { maxHp: "HP", patk: "ATK", matk: "MATK", support: "พลังซัพพอร์ต", spd: "SPD" } as const;
+
+/**
+ * Companion skills and Bond (chapter 04 §5–§6). Shows every skill's trained level, the level it
+ * works at in a fight, and what the next level costs; training happens at the town NPC only.
+ * The server checks everything again and charges once.
+ */
+export function skillPanel(api: CharacterApi, start: CharacterBundle, inTown: boolean): Promise<void> {
+  return new Promise((resolve) => {
+    const { panel, close } = overlay();
+    let bundle = start;
+    let busy = false;
+    const ops = new Map<string, string>();
+    const { lootTables } = exampleContentMaps();
+    const body = el("div");
+    const error = el("div", { class: "pm-error", role: "alert" });
+    const done = el("button", { type: "button", class: "primary" }, "ปิด");
+    const actions = el("div", { class: "pm-actions" });
+    actions.append(done);
+    panel.append(
+      el("h2", {}, "สกิลและ Bond คู่ใจ"),
+      el(
+        "div",
+        { class: "pm-note" },
+        `ชนะไฟต์: คู่ใจทุกตัวในไฟต์ได้ความชำนาญ +${RULES.provisional.skillMasteryPerEnemy.value} ต่อศัตรูที่กำจัด/จับ และ Bond +${RULES.provisional.bondPerVictory.value} · ฝึกสกิลที่ NPC ในเมือง (ความชำนาญ + เหรียญ + วัสดุ species) สำเร็จแน่นอน · เลเวลสกิลเพิ่มพลัง +${RULES.provisional.skillPowerPercentPerLevel.value}% ต่อขั้น และใช้ได้ไม่เกินที่เลเวลคู่ใจตอนสู้อนุญาต${inTown ? "" : " · ตอนนี้อยู่นอกเมือง ดูได้อย่างเดียว"}`,
+      ),
+      body,
+      error,
+      actions,
+    );
+    done.addEventListener("click", () => {
+      close();
+      resolve();
+    });
+    const train = async (companionId: string, skillId: string, level: number) => {
+      if (busy) return;
+      busy = true;
+      error.textContent = "";
+      const key = `${companionId}:${skillId}:${level}`;
+      const op = ops.get(key) ?? `skill_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
+      ops.set(key, op);
+      try {
+        await api.trainSkill(op, companionId, skillId, level);
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+      } finally {
+        bundle = (await api.get().catch(() => null)) ?? bundle;
+        busy = false;
+        draw();
+      }
+    };
+    const draw = () => {
+      body.replaceChildren();
+      const ul = el("ul", { class: "pm-list" });
+      for (const c of bundle.companions) {
+        const sp = species.get(c.speciesId);
+        if (sp === undefined) continue;
+        const fighting = companionCombatProfile(RULES, sp, c, bundle.character.level).level;
+        const li = el("li", { "data-companion": c.id, class: "pm-skill-pet" });
+        const bonus = bondBonusPercent(RULES, c.bond);
+        li.append(
+          el(
+            "div",
+            {},
+            `${sp.name.th}${c.rebirthStage > 0 ? ` ★R${c.rebirthStage}` : ""} · Lv${c.currentLevel}${fighting < c.currentLevel ? ` (สู้เป็น Lv${fighting})` : ""} · Bond ${c.bond}/1000 ${BOND_TIER_NAMES[bondTier(RULES, c.bond)]}${bonus > 0 ? ` (${BOND_STAT_TH[BOND_STAT[sp.archetype]]} +${bonus}%)` : ""} · ความชำนาญ ${c.skillMastery}`,
+          ),
+        );
+        const rows = el("ul", { class: "pm-list" });
+        speciesSkillSlots(sp).forEach((skillId, i) => {
+          const def = skillDefs.get(skillId);
+          const lv = trainedSkillLevel(c.trainedSkillLevels, skillId);
+          const eff = effectiveSkillLevel(RULES, lv, fighting);
+          const kind = i === 3 ? "ติดตัว" : def?.kind === "active" ? "ใช้งาน" : "ติดตัว";
+          const row = el("li", { "data-skill": skillId });
+          const power = def?.kind === "active" ? ` · พลัง +${skillPowerPercent(RULES, eff)}%` : " · (ผลติดตัวยังไม่ทำงานในไฟต์)";
+          const head = `${def?.name.th ?? skillId} [${kind}] Lv${lv}${eff < lv ? ` (ใช้ได้ Lv${eff})` : ""}${power}`;
+          const cost = skillTrainCost(RULES, sp, skillId, lv, { lootTables, items: itemDefs });
+          if (!cost.ok) {
+            row.append(el("span", {}, `${head} · สูงสุดแล้ว`));
+            rows.append(row);
+            return;
+          }
+          const have = bundle.bag[cost.materialItemId] ?? 0;
+          const missing = [
+            inTown ? "" : "ต้องอยู่ในเมือง",
+            c.xp < cost.companionExp ? `คู่ใจต้อง Lv${cost.companionLevel}` : "",
+            c.skillMastery < cost.mastery ? "ความชำนาญไม่พอ" : "",
+            bundle.coins < cost.coins ? "เหรียญไม่พอ" : "",
+            have < cost.materialQty ? "วัสดุไม่พอ" : "",
+          ].filter((x) => x !== "");
+          const go = el("button", { type: "button" }, `ฝึก → Lv${cost.nextLevel}`);
+          go.disabled = missing.length > 0;
+          go.addEventListener("click", () => void train(c.id, skillId, lv));
+          row.append(
+            el(
+              "span",
+              {},
+              `${head} · ถัดไป: ความชำนาญ ${cost.mastery} + ${cost.coins.toLocaleString()} เหรียญ + ${itemDefs.get(cost.materialItemId)?.name.th ?? cost.materialItemId} ${have}/${cost.materialQty}${missing.length > 0 ? ` (${missing.join(", ")})` : ""}`,
+            ),
+            go,
+          );
+          rows.append(row);
+        });
+        li.append(rows);
         ul.append(li);
       }
       if (bundle.companions.length === 0) ul.append(el("li", {}, "ยังไม่มีคู่ใจ"));

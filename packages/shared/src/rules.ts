@@ -162,6 +162,29 @@ export const RULES = {
       "P05",
       "was O04; Nut delegated 2026-10-03: per stage 1/2/3; the trial (บททดสอบ) is not built yet",
     ),
+    // Skill levels and Bond (chapter 04 §5–§6, P06). Gate table from chapter 04 §5; costs, mastery and
+    // Bond numbers are Claude's proposal (docs/design/SKILL_LEVELS_BOND.md), PROVISIONAL.
+    skillLevelUnlocks: provisional(
+      [1, 10, 20, 35, 50, 75, 100, 130, 160, 190] as const,
+      "P06",
+      "chapter 04 §5: skill level N needs companion level unlocks[N-1]; in a fight the companion's fighting level decides",
+    ),
+    skillPowerPercentPerLevel: provisional(4, "P06", "each skill level above 1 adds this % to the skill's coefficient only (not MP cost or cooldown)"),
+    skillMasteryPerEnemy: provisional(1, "P06", "mastery each companion that started a won fight gets per enemy defeated or captured in it"),
+    skillMasteryCap: provisional(5_000, "P06", "a companion's unspent mastery stops here"),
+    skillTrainCost: provisional(
+      {
+        // Index = current level - 1 (training 1→2 uses index 0, 9→10 uses index 8).
+        mastery: [10, 20, 30, 40, 50, 60, 70, 80, 90],
+        coins: [100, 400, 900, 1_600, 2_500, 3_600, 4_900, 6_400, 8_100],
+        speciesMaterial: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+      } as const,
+      "P06",
+      "training always succeeds once paid (chapter 04 §5); mastery is the companion's pool, spent on the skill the player picks",
+    ),
+    bondPerVictory: provisional(2, "P06", "each companion that started a won fight; never lost to defeat or time offline"),
+    bondTierSize: provisional(200, "P06", "chapter 04 §6 tiers: 0–199, 200–399, 400–599, 600–799, 800–1000"),
+    bondTierBonusPercent: provisional([0, 1, 2, 3, 5] as const, "P06", "small capped bonus on the archetype's stat, per tier"),
     // Party (chapter 08 "Party", P02): bonus while partners hunt on the same map and channel.
     partyMaxMembers: provisional(4, "P02"),
     partyExpPercentPerMember: provisional(5, "P02", "per eligible additional member"),

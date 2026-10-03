@@ -14,7 +14,10 @@ import {
   rebirthCost,
   RemoveSigilRequestSchema,
   SellRequestSchema,
+  SkillTrainRequestSchema,
   planSigilInstall,
+  skillTrainCost,
+  trainedSkillLevel,
   sellQuote,
   sigilItemFor,
   sigilRemovalCost,
@@ -35,7 +38,7 @@ export interface TownContent {
   lootTables: ReadonlyMap<string, LootTable>;
 }
 
-type Kind = "npc_sell" | "sigil_install" | "sigil_remove" | "companion_rebirth";
+type Kind = "npc_sell" | "sigil_install" | "sigil_remove" | "companion_rebirth" | "skill_train";
 
 export type ServiceRejection =
   | "INVALID_REQUEST"
@@ -56,6 +59,9 @@ export type ServiceRejection =
   | "NO_MATERIAL"
   | "LEVEL_TOO_LOW"
   | "PLAYER_LEVEL_TOO_LOW"
+  | "MAX_SKILL_LEVEL"
+  | "NOT_SPECIES_SKILL"
+  | "MASTERY_TOO_LOW"
   | "CHANGED";
 
 export type ServiceResult<T> = { status: "done"; replayed: boolean; result: T } | { status: "rejected"; reason: ServiceRejection; message: string };
@@ -68,6 +74,12 @@ export interface RebirthResult {
   companionId: string;
   stage: number;
   paid: { coins: number; itemId: string; quantity: number };
+}
+export interface SkillTrainResult {
+  companionId: string;
+  skillId: string;
+  level: number;
+  paid: { mastery: number; coins: number; itemId: string; quantity: number };
 }
 export interface SigilResult {
   equipmentId: string;
@@ -350,6 +362,107 @@ export class TownServices {
       if ((ch?.xp ?? 0) < cost.playerExp) return reject("PLAYER_LEVEL_TOO_LOW", `your character must be Lv${cost.playerLevel}`);
       if ((await this.coins(accountId)) < cost.coins) return reject("INSUFFICIENT_COINS", `Rebirth costs ${cost.coins} coins`);
       return reject("INSUFFICIENT_ITEMS", `Rebirth needs ${cost.materialQty} ${cost.materialItemId}`);
+    });
+  }
+
+  // ------------------------------------------------------------------ skill training
+
+  /**
+   * Train one companion skill a level (chapter 04 §5): in town, outside fights, with the companion's
+   * level at the gate, its mastery, coins and the species' material. One batch like Rebirth: the
+   * anchor checks every guard (including the level the player saw), then everything is charged and
+   * the level written. A retry replays; a second request for the same level finds it changed.
+   */
+  async trainSkill(accountId: string, raw: unknown): Promise<ServiceResult<SkillTrainResult>> {
+    const parsed = SkillTrainRequestSchema.safeParse(raw);
+    if (!parsed.success) return reject("INVALID_REQUEST", issues(parsed.error));
+    const { operationId, companionId, skillId, expectedLevel } = parsed.data;
+    const hash = await hashJson({ kind: "skill_train", companionId, skillId, expectedLevel });
+    const prior = await this.prior<SkillTrainResult>(accountId, operationId, hash);
+    if (prior !== null) return prior;
+
+    const pet = await this.db
+      .prepare(`SELECT species_id, trained_skill_levels_json FROM monster_instances WHERE id = ? AND owner_id = ?`)
+      .bind(companionId, accountId)
+      .first<{ species_id: string; trained_skill_levels_json: string }>();
+    const species = pet === null ? undefined : this.content.species.get(pet.species_id);
+    if (pet === null || species === undefined) return reject("NOT_OWNER", "that companion is not yours");
+    const cost = skillTrainCost(this.rules, species, skillId, expectedLevel, this.content);
+    if (!cost.ok) return reject(cost.code, cost.message);
+    const current = trainedSkillLevel(JSON.parse(pet.trained_skill_levels_json) as Record<string, number>, skillId);
+    if (current !== expectedLevel) return reject("CHANGED", "the skill changed; reload and try again");
+
+    const result: SkillTrainResult = {
+      companionId,
+      skillId,
+      level: cost.nextLevel,
+      paid: { mastery: cost.mastery, coins: cost.coins, itemId: cost.materialItemId, quantity: cost.materialQty },
+    };
+    // skillId is one of the species' own ids (checked above); the JSON path quotes it for the colon.
+    const path = `$."${skillId}"`;
+    const levelNow = `COALESCE(json_extract(trained_skill_levels_json, ?), 1)`;
+    const guards = [
+      this.inTown(),
+      `NOT ${OPEN_BATTLE}`,
+      `EXISTS (SELECT 1 FROM monster_instances WHERE id = ? AND owner_id = ? AND lock_state = 'free' AND ${levelNow} = ? AND skill_mastery >= ? AND xp >= ?)`,
+      `(SELECT COALESCE(SUM(delta), 0) FROM coin_ledger WHERE account_id = ?) >= ?`,
+      `(SELECT COALESCE(SUM(delta), 0) FROM item_ledger WHERE account_id = ? AND item_id = ?) >= ?`,
+    ];
+    const args = [
+      accountId,
+      ...this.townMapIds,
+      accountId,
+      companionId,
+      accountId,
+      path,
+      expectedLevel,
+      cost.mastery,
+      cost.companionExp,
+      accountId,
+      cost.coins,
+      accountId,
+      cost.materialItemId,
+      cost.materialQty,
+    ];
+    const ledgerId = `svc:${accountId}:${operationId}`;
+    const at = this.now();
+    const ours = this.ours(accountId, operationId, hash);
+    await this.db.batch([
+      this.anchor(accountId, operationId, "skill_train", hash, result, guards, args),
+      this.db
+        .prepare(
+          `INSERT INTO coin_ledger (operation_id, line_no, account_id, delta, reason, created_at)
+           SELECT ?, 0, ?, ?, 'skill_train', ? WHERE ${ours.sql} ON CONFLICT DO NOTHING`,
+        )
+        .bind(ledgerId, accountId, -cost.coins, at, ...ours.args),
+      this.db
+        .prepare(
+          `INSERT INTO item_ledger (operation_id, line_no, account_id, item_id, delta, reason, created_at)
+           SELECT ?, 0, ?, ?, ?, 'skill_train', ? WHERE ${ours.sql} ON CONFLICT DO NOTHING`,
+        )
+        .bind(ledgerId, accountId, cost.materialItemId, -cost.materialQty, at, ...ours.args),
+      this.db
+        .prepare(
+          `UPDATE monster_instances
+           SET skill_mastery = skill_mastery - ?, trained_skill_levels_json = json_set(trained_skill_levels_json, ?, ?)
+           WHERE id = ? AND owner_id = ? AND ${levelNow} = ? AND ${ours.sql}`,
+        )
+        .bind(cost.mastery, path, cost.nextLevel, companionId, accountId, path, expectedLevel, ...ours.args),
+    ]);
+    return this.outcome(accountId, operationId, hash, async () => {
+      const why = await this.whereAndFight(accountId);
+      if (why !== null) return why;
+      const now = await this.db
+        .prepare(`SELECT ${levelNow} AS level, skill_mastery, xp, lock_state FROM monster_instances WHERE id = ? AND owner_id = ?`)
+        .bind(path, companionId, accountId)
+        .first<{ level: number; skill_mastery: number; xp: number; lock_state: string }>();
+      if (now === null) return reject("NOT_OWNER", "that companion is not yours");
+      if (now.level !== expectedLevel) return reject("CHANGED", "the skill changed; reload and try again");
+      if (now.lock_state !== "free") return reject("ASSET_LOCKED", "that companion is busy");
+      if (now.xp < cost.companionExp) return reject("LEVEL_TOO_LOW", `skill Lv${cost.nextLevel} needs the companion at Lv${cost.companionLevel}`);
+      if (now.skill_mastery < cost.mastery) return reject("MASTERY_TOO_LOW", `needs ${cost.mastery} mastery`);
+      if ((await this.coins(accountId)) < cost.coins) return reject("INSUFFICIENT_COINS", `training costs ${cost.coins} coins`);
+      return reject("INSUFFICIENT_ITEMS", `training needs ${cost.materialQty} ${cost.materialItemId}`);
     });
   }
 

@@ -64,6 +64,7 @@ interface InstanceRow {
   growth_history_version: number;
   growth_seed: string | null;
   trained_skill_levels_json: string;
+  skill_mastery?: number;
   bond: number;
   origin_json: string;
   ownership_version: number;
@@ -447,6 +448,7 @@ function toInstance(r: InstanceRow): StoredInstance {
     growthHistoryVersion: r.growth_history_version,
     growthSeed: r.growth_seed ?? r.id,
     trainedSkillLevels: JSON.parse(r.trained_skill_levels_json) as Record<string, number>,
+    skillMastery: r.skill_mastery ?? 0,
     bond: r.bond,
     originRecord: JSON.parse(r.origin_json) as MonsterInstance["originRecord"],
     ownershipVersion: r.ownership_version,

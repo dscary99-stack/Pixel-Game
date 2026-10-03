@@ -304,11 +304,15 @@ describe("rewards and Auto Battle", () => {
     const { state, events } = autoToEnd(rules, c, ok(createBattle(rules, c, baseSetup({ companions: team }))).state);
     expect(state.status).toBe("victory");
     const ids = state.entitlements.map((e) => e.entitlementId);
-    expect(ids.sort()).toEqual(["battle:test:e1:defeated", "battle:test:e2:defeated"]);
-    expect(events.filter((e) => e.type === "RewardEntitled")).toHaveLength(2);
+    expect(ids.sort()).toEqual(["battle:test:all:victory", "battle:test:e1:defeated", "battle:test:e2:defeated"]);
+    expect(events.filter((e) => e.type === "RewardEntitled")).toHaveLength(3);
+    // The won fight adds Bond and mastery (one per enemy resolved) for every companion that started it.
+    expect(state.entitlements.find((e) => e.kind === "victory")).toMatchObject({
+      companions: { m1: { bond: 2, mastery: 2 }, m2: { bond: 2, mastery: 2 }, m3: { bond: 2, mastery: 2 } },
+    });
     // Every companion that started the fight has its own award; Lv30 companions get the full award
     // from these low-level enemies (proposal §5).
-    for (const e of state.entitlements) {
+    for (const e of state.entitlements.filter((x) => x.kind !== "victory")) {
       expect(e.exp).toBeGreaterThan(0);
       expect(e.companionExp).toEqual({ m1: e.exp, m2: e.exp, m3: e.exp });
     }

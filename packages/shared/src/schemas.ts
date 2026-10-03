@@ -147,7 +147,10 @@ export const MonsterInstanceSchema = z
     growthHistoryVersion: z.number().int().min(1),
     /** Picked by the server when the companion is created; the whole growth path follows from it. */
     growthSeed: z.string().min(1),
+    /** Trained level per skill (3 skills + innate); missing = 1. A fight caps it by level (skill-training.ts). */
     trainedSkillLevels: z.record(SkillId, z.number().int().min(1).max(10)),
+    /** Unspent mastery from won fights, spent on the skill the player picks (chapter 04 §5). */
+    skillMastery: z.number().int().min(0),
     bond: z.number().int().min(0).max(1000),
     originRecord: z
       .object({ kind: z.enum(["capture", "starter", "event"]), battleId: z.string().optional(), at: z.string() })

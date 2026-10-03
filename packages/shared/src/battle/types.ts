@@ -32,6 +32,10 @@ export interface BattleUnit {
   mp: number;
   /** Active skills this unit may use. */
   skillIds: string[];
+  /** Companions only: the level each skill works at in this fight (trained, capped by `level`). Missing = 1. */
+  skillLevels?: Record<string, number>;
+  /** Companions only: the Bond % already applied to `stats` (shown in the UI). */
+  bondPercent?: number;
   basicAttackRange: Range;
   ko: boolean;
   /** Captured enemies leave the fight without kill loot. */
@@ -71,6 +75,16 @@ export type Entitlement =
       /** A capture gives the same EXP as a kill, without kill loot (chapter 04 §3 proposal). */
       exp?: number;
       companionExp?: Record<string, number>;
+    }
+  | {
+      /** `${battleId}:all:victory` — one per won fight (chapter 04 §5–§6). */
+      entitlementId: string;
+      kind: "victory";
+      /** Per companion instance that started the fight: Bond gained and skill mastery gained. */
+      companions: Record<string, { bond: number; mastery: number }>;
+      /** No EXP here: it came with each enemy's own entitlement. */
+      exp?: undefined;
+      companionExp?: undefined;
     };
 
 export interface BattleState {

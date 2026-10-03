@@ -19,6 +19,8 @@ export * from "./progression";
 export * from "./companion-growth";
 export * from "./rebirth";
 export * from "./party";
+export * from "./skill-training";
+export * from "./bond";
 export * from "./world/map";
 export * from "./world/movement";
 export * from "./world/channel";

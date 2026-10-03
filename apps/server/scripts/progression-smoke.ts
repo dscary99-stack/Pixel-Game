@@ -1,5 +1,6 @@
 // End-to-end EXP check against `wrangler dev`: fights give EXP to the character and the team,
-// the level follows, and stat points are spent with a version check (not mid-fight).
+// the level follows, stat points are spent with a version check (not mid-fight), and a won fight
+// adds Bond and skill mastery (chapter 04 §5–§6).
 // Run `npm run db:migrate:local` and `npm run dev:server` first, then `npm run smoke:progression`.
 import { expProgress, unspentPoints, PRODUCTION_RULES as R } from "@pmrpg/shared";
 import { api, approach, autoToEnd, battleCall, lastPacks, run, toField, type Client, type Msg, AUTO_GAP_MS, sleep } from "./smoke-lib";
@@ -74,7 +75,9 @@ if (pet !== undefined) {
   b = await me();
   const p = b.companions.find((x: Msg) => x.id === pet.id);
   out.secondFight = { outcome: second.state.status, exp: second.state.entitlements.reduce((n: number, e: Msg) => n + (e.exp ?? 0), 0) };
-  out.companion = { level: p.currentLevel, xp: p.xp };
+  out.companion = { level: p.currentLevel, xp: p.xp, bond: p.bond, skillMastery: p.skillMastery, victory: second.state.entitlements.find((e: Msg) => e.kind === "victory")?.companions ?? null };
+  // Skill training is a town NPC service: in the field it is refused before anything is charged.
+  out.trainInField = (await http("POST", "/town/skill", { operationId: `skill_${run}`, companionId: pet.id, skillId: "skill:mole_light_heal", expectedLevel: 1 })).body.error;
 }
 out.character = { level: b.character.level, xp: b.character.xp };
 

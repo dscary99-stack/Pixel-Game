@@ -90,6 +90,10 @@ export class CharacterApi {
     return this.call<{ coins: number; result: { stage: number } }>("POST", "/town/rebirth", { operationId, companionId, expectedStage });
   }
 
+  trainSkill(operationId: string, companionId: string, skillId: string, expectedLevel: number) {
+    return this.call<{ coins: number; result: { level: number } }>("POST", "/town/skill", { operationId, companionId, skillId, expectedLevel });
+  }
+
   private async call<T>(method: string, path: string, body?: unknown): Promise<T> {
     const res = await fetch(`${this.base}${path}`, {
       method,

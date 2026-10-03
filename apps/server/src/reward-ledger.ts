@@ -6,7 +6,7 @@
  * equipment created_operation_id UNIQUE. Goal: the business effect happens once. The network may still
  * deliver twice; that is fine.
  */
-import { COMPANION_GROWTH_VERSION, expCap, type Entitlement, type RulesConfig } from "@pmrpg/shared";
+import { BOND_MAX, COMPANION_GROWTH_VERSION, expCap, type Entitlement, type RulesConfig } from "@pmrpg/shared";
 
 /** The subset of the D1 API we use, so tests can run it on node:sqlite. */
 export interface SqlBound {
@@ -101,7 +101,7 @@ export class RewardLedger {
             .bind(id, i, recipientId, line.itemId, line.quantity, at, id, recipientId, hash),
         );
       });
-    } else {
+    } else if (entitlement.kind === "capture") {
       // Captured companions start at the confirmed initial level with Bond 0 (C09, C11). The server
       // picks the growth seed here; a replayed grant keeps the first row (ON CONFLICT DO NOTHING).
       const start = this.rules.provisional.primaryStatStart.value;
@@ -156,6 +156,21 @@ export class RewardLedger {
           )
           .bind(amount, expCap(this.rules, "companion"), recipientId, companionId, battleId, recipientId, id, recipientId, hash),
       );
+    }
+    // Bond and skill mastery for a won fight (chapter 04 §5–§6), each up to its cap, for companions the
+    // battle's reservation lists and the recipient still owns.
+    if (entitlement.kind === "victory") {
+      for (const [companionId, g] of Object.entries(entitlement.companions)) {
+        if (g.bond <= 0 && g.mastery <= 0) continue;
+        stmts.push(
+          this.db
+            .prepare(
+              `UPDATE monster_instances SET bond = MIN(bond + ?, ?), skill_mastery = MIN(skill_mastery + ?, ?)
+               WHERE owner_id = ? AND id = ? AND id IN (SELECT value FROM json_each(json_extract(${loadout}, '$.companionIds'))) AND ${OWN_RECEIPT}`,
+            )
+            .bind(g.bond, BOND_MAX, g.mastery, this.rules.provisional.skillMasteryCap.value, recipientId, companionId, battleId, recipientId, id, recipientId, hash),
+        );
+      }
     }
     await this.db.batch(stmts);
 

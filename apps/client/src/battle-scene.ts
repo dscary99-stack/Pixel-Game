@@ -239,10 +239,17 @@ export class BattleScene extends Phaser.Scene {
         return this.pushLog(`จับ ${this.name(e.targetId)}: ${e.success ? "สำเร็จ (ได้ Lv1)" : "ไม่สำเร็จ"} โอกาส ${(e.probability * 100).toFixed(0)}%`);
       case "EnemyDefeated":
         return this.pushLog(`${this.name(e.unitId)} ถูกกำจัด`);
-      case "RewardEntitled":
-        return e.entitlement.kind === "kill"
-          ? this.pushLog(`สิทธิ์รางวัล: ${e.entitlement.items.map((i) => `${lootName(i.itemId)}×${i.quantity}`).join(", ") || "ไม่มีของ"}${expText(e.entitlement.exp)}`)
-          : this.pushLog(`สิทธิ์คู่ใจใหม่: ${CONTENT.species.get(e.entitlement.speciesId)?.name.th ?? e.entitlement.speciesId} Lv${e.entitlement.level}${expText(e.entitlement.exp)}`);
+      case "RewardEntitled": {
+        const r = e.entitlement;
+        if (r.kind === "kill") {
+          return this.pushLog(`สิทธิ์รางวัล: ${r.items.map((i) => `${lootName(i.itemId)}×${i.quantity}`).join(", ") || "ไม่มีของ"}${expText(r.exp)}`);
+        }
+        if (r.kind === "capture") {
+          return this.pushLog(`สิทธิ์คู่ใจใหม่: ${CONTENT.species.get(r.speciesId)?.name.th ?? r.speciesId} Lv${r.level}${expText(r.exp)}`);
+        }
+        const g = Object.values(r.companions)[0];
+        return g === undefined ? undefined : this.pushLog(`คู่ใจทุกตัวในไฟต์: Bond +${g.bond}, ความชำนาญสกิล +${g.mastery}`);
+      }
       case "BattleEnded":
         return this.pushLog(`จบไฟต์: ${e.outcome}`);
       default:

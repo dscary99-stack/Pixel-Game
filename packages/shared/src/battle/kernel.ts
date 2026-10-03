@@ -5,7 +5,9 @@
  * new state + events. Same setup + same seed + same commands => identical results.
  * The Battle Durable Object owns persistence, idempotency and auth; this file owns the rules.
  */
+import { applyBond, bondBonusPercent } from "../bond";
 import { companionCombatProfile } from "../companion-growth";
+import { effectiveSkillLevel, masteryForVictory, skillPowerPercent, speciesSkillSlots, trainedSkillLevel } from "../skill-training";
 import { NO_AUTO_POLICY, type AutoBattlePolicy } from "./auto-policy";
 import { computeDamage, computeHeal, critChanceBp, hitChanceBp } from "../damage";
 import { rollLoot } from "../loot";
@@ -139,7 +141,12 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
     const sp = content.species.get(inst.speciesId) ?? reject("MISSING_REFERENCE", `species ${inst.speciesId}`);
     if (!sp.allowedElements.includes(inst.element)) reject("INVALID_COMMAND", `${inst.id} has element outside species`);
     const { level, primaryStats } = companionCombatProfile(rules, sp, inst, p.level);
-    const stats = deriveStats(level, primaryStats);
+    const bondPercent = bondBonusPercent(rules, inst.bond);
+    const stats = applyBond(rules, sp.archetype, inst.bond, deriveStats(level, primaryStats));
+    // Trained skill levels work only up to what the fighting level allows (chapter 04 §5).
+    const skillLevels = Object.fromEntries(
+      speciesSkillSlots(sp).map((id) => [id, effectiveSkillLevel(rules, trainedSkillLevel(inst.trainedSkillLevels, id), level)]),
+    );
     units.push({
       unitId: `ally:${inst.id}`,
       side: "ally",
@@ -157,6 +164,8 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
       hp: clampResource(c.hp, stats.maxHp),
       mp: clampResource(c.mp, stats.maxMp),
       skillIds: sp.skillIds.filter((id) => content.skills.get(id)?.kind === "active"),
+      skillLevels,
+      bondPercent,
       basicAttackRange: sp.basicAttackRange,
       ko: (c.hp ?? stats.maxHp) <= 0,
       retired: false,
@@ -456,10 +465,12 @@ function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUni
   actor.mp -= skill.mpCost;
   if (skill.cooldown > 0) actor.cooldowns[skillId] = skill.cooldown;
 
+  // A skill level adds power only: the coefficient grows, MP cost and cooldown stay (chapter 04 §5).
+  const coefficient = (effect.coefficient * (100 + skillPowerPercent(ctx.rules, actor.skillLevels?.[skillId] ?? 1))) / 100;
   if (effect.kind === "damage") {
-    strike(ctx, actor, target, "skill", skillId, effect);
+    strike(ctx, actor, target, "skill", skillId, { ...effect, coefficient });
   } else {
-    const amount = computeHeal(actor.stats.support, effect.coefficient, effect.flat);
+    const amount = computeHeal(actor.stats.support, coefficient, effect.flat);
     const applied = Math.min(amount, target.stats.maxHp - target.hp); // overheal discarded
     target.hp += applied;
     actionEvent(ctx, actor, "skill", target, { skillId, heal: applied, targetHpAfter: target.hp });
@@ -651,6 +662,7 @@ function checkEnd(ctx: Ctx): void {
 function endBattle(ctx: Ctx, outcome: "victory" | "defeat" | "fled"): void {
   const s = ctx.s;
   s.status = outcome;
+  if (outcome === "victory") victoryRewards(ctx);
   // Buffs, guard and cooldowns end with the fight; HP/MP carry over (chapter 03 §3).
   for (const u of s.units) {
     u.guarding = false;
@@ -665,6 +677,22 @@ function endBattle(ctx: Ctx, outcome: "victory" | "defeat" | "fled"): void {
     consumed: { ...s.consumed },
     unusedReserved: Object.fromEntries(Object.entries(s.bag).filter(([, q]) => q > 0)),
   });
+}
+
+/**
+ * Bond and skill mastery for a won fight (chapter 04 §5–§6): every companion that started it, KO'd
+ * or not. Mastery counts enemies defeated or captured, so heal or buff loops add nothing.
+ */
+function victoryRewards(ctx: Ctx): void {
+  const companions: Record<string, { bond: number; mastery: number }> = {};
+  const mastery = masteryForVictory(ctx.rules, Object.keys(ctx.s.resolutions).length);
+  for (const u of ctx.s.units) {
+    if (u.kind === "companion" && u.instanceId !== null) companions[u.instanceId] = { bond: ctx.rules.provisional.bondPerVictory.value, mastery };
+  }
+  if (Object.keys(companions).length === 0) return;
+  const entitlement: Entitlement = { entitlementId: `${ctx.s.battleId}:all:victory`, kind: "victory", companions };
+  ctx.s.entitlements.push(entitlement);
+  ctx.emit({ type: "RewardEntitled", entitlement });
 }
 
 // ================================================================ auto battle

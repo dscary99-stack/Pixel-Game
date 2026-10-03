@@ -17,7 +17,7 @@ let charId: string;
 const BATTLE = "battle:x";
 // The kernel puts a per-companion award on each entitlement; "mon:home" is listed too, to show the
 // ledger only pays companions that are in the battle's reservation.
-const kill = (enemy: string, exp: number, pets: number = exp): Entitlement => ({
+const kill = (enemy: string, exp: number, pets: number = exp): Extract<Entitlement, { kind: "kill" }> => ({
   entitlementId: `${BATTLE}:${enemy}:defeated`,
   kind: "kill",
   enemyUnitId: enemy,
@@ -164,5 +164,29 @@ describe("companion growth (P05)", () => {
     const r = row("mon:mole");
     expect(r.current_level).toBe(12);
     expect(JSON.parse(r.primary_stats_json)).toEqual(companionPrimaryStats(PRODUCTION_RULES, "support", "mon:mole", 12, 0));
+  });
+});
+
+describe("Bond and skill mastery from a won fight (chapter 04 §5–§6)", () => {
+  const victory = (bond: number, mastery: number): Entitlement => ({
+    entitlementId: `${BATTLE}:all:victory`,
+    kind: "victory",
+    companions: { "mon:mole": { bond, mastery }, "mon:bird": { bond, mastery }, "mon:home": { bond, mastery } },
+  });
+  const row = (id: string) => db.prepare(`SELECT bond, skill_mastery FROM monster_instances WHERE id = ?`).get(id);
+
+  it("adds once for companions in the fight only, even when granted again or at the same time", async () => {
+    await Promise.all([eco.grant(victory(2, 3), A), eco.grant(victory(2, 3), A)]);
+    await eco.grant(victory(2, 3), A);
+    expect(row("mon:mole")).toEqual({ bond: 2, skill_mastery: 3 });
+    expect(row("mon:bird")).toEqual({ bond: 2, skill_mastery: 3 });
+    expect(row("mon:home")).toEqual({ bond: 0, skill_mastery: 0 });
+    expect(await eco.grant(victory(9, 9), A)).toMatchObject({ status: "rejected", reason: "PAYLOAD_MISMATCH" });
+  });
+
+  it("stops at Bond 1000 and the mastery cap", async () => {
+    db.prepare(`UPDATE monster_instances SET bond = 999, skill_mastery = ? WHERE id = 'mon:mole'`).run(PRODUCTION_RULES.provisional.skillMasteryCap.value - 1);
+    await eco.grant(victory(2, 3), A);
+    expect(row("mon:mole")).toEqual({ bond: 1000, skill_mastery: PRODUCTION_RULES.provisional.skillMasteryCap.value });
   });
 });
