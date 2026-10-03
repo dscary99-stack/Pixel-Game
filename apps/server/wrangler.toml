@@ -25,3 +25,7 @@ migrations_dir = "migrations"
 # Staging/production must override ENVIRONMENT and remove DEV_AUTH.
 [env.staging.vars]
 ENVIRONMENT = "staging"
+
+# Reconciler: releases reservations whose battle never started (src/index.ts `scheduled`).
+[triggers]
+crons = ["* * * * *"]

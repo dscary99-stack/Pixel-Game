@@ -35,7 +35,7 @@ function setup(): BattleSetup {
 
 async function newRoom(storage = new MemoryStorage()) {
   const room = new BattleRoom(storage, DEV_FIXTURE_RULES, content, "dev");
-  await room.create(setup());
+  await room.create(setup(), "res:room");
   return { room, storage };
 }
 
@@ -54,7 +54,7 @@ const accepted = (r: CommandResponse) => {
 describe("BattleRoom (server authority)", () => {
   it("creates idempotently and keeps the RNG state private", async () => {
     const { room } = await newRoom();
-    const again = await room.create(setup());
+    const again = await room.create(setup(), "res:room");
     expect(again.state.battleId).toBe("battle:room");
     expect(JSON.stringify(await room.view(OWNER))).not.toContain('"rng"');
   });
@@ -142,7 +142,7 @@ describe("BattleRoom (server authority)", () => {
 
   it("returns UNRESOLVED_RULE for capture on production rules (O07 open)", async () => {
     const room = new BattleRoom(new MemoryStorage(), PRODUCTION_RULES, content, "staging");
-    await room.create(setup());
+    await room.create(setup(), "res:room");
     const s = await room.view(OWNER);
     // Player SPD 120 beats both example enemies, so the player acts first.
     expect(await room.actor()).toBe("player");

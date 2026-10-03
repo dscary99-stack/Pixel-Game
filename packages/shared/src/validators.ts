@@ -42,7 +42,9 @@ export type ErrorCode =
   | "ON_COOLDOWN"
   | "AUTO_CAPTURE_FORBIDDEN"
   | "SESSION_REVOKED"
-  | "FIXTURE_RULES_IN_PRODUCTION";
+  | "FIXTURE_RULES_IN_PRODUCTION"
+  // Battle reservation lifecycle (chapter 11 §3).
+  | "RESERVATION_RELEASED";
 
 export interface ValidationIssue {
   code: ErrorCode;

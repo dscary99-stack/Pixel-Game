@@ -8,6 +8,9 @@
  * - commandId idempotency (a retry returns the stored answer; nothing is re-rolled or re-used)
  * - expectedStateVersion (STALE_STATE)
  * - persisting state + events + the answer in one atomic write before acking
+ * - the settlement outbox: activation, every entitlement and the final settlement are written as
+ *   outbox entries in that same atomic write, then delivered to the economy service (D1) with
+ *   retries until each has a receipt (chapter 11 §3 steps 3, 6–8)
  */
 import {
   CommandEnvelopeSchema,
@@ -22,11 +25,14 @@ import {
   type BattleSetup,
   type BattleState,
   type CommandResponse,
+  type Entitlement,
   type ErrorCode,
   type PublicBattleState,
   type RulesConfig,
 } from "@pmrpg/shared";
 import { z } from "zod";
+import type { ActivateResult, Settlement, SettleResult } from "./economy";
+import type { GrantResult } from "./reward-ledger";
 
 /** Minimal storage contract. `putMany` must be atomic (DO storage.put(entries) is). */
 export interface RoomStorage {
@@ -42,11 +48,44 @@ interface StoredCommand {
   response: CommandResponse;
 }
 
+/** The part of the economy service (economy.ts) the battle journal delivers to. */
+export interface EconomyPort {
+  activate(reservationId: string): Promise<ActivateResult>;
+  grant(entitlement: Entitlement, recipientId: string): Promise<GrantResult>;
+  settle(settlement: Settlement): Promise<SettleResult>;
+}
+
+/**
+ * One delivery owed to the economy service. `pending` until a receipt (or an equivalent
+ * "already done" answer) comes back; `failed` when the economy refused it for good, which stops
+ * settlement and needs an operator, never a silent re-roll.
+ */
+export type OutboxEntry =
+  | { kind: "activate"; reservationId: string; status: OutboxStatus; detail?: string }
+  | { kind: "grant"; entitlement: Entitlement; recipientId: string; status: OutboxStatus; detail?: string }
+  | { kind: "settle"; settlement: Settlement; status: OutboxStatus; detail?: string };
+export type OutboxStatus = "pending" | "delivered" | "failed";
+
+export interface OutboxSummary {
+  pending: number;
+  delivered: number;
+  failed: number;
+  /** True once the final settlement reached the economy service. */
+  settled: boolean;
+}
+
 const K = {
   state: "state",
+  reservation: "reservation",
+  /** Written by the reconciler's probe when no battle exists; the battle can never start after it. */
+  voided: "voided",
   session: (account: string) => `session:${account}`,
   command: (id: string) => `cmd:${id}`,
   event: (seq: number) => `ev:${String(seq).padStart(8, "0")}`,
+  outbox: "out:",
+  activate: "out:0:activate",
+  grant: (entitlementId: string) => `out:1:grant:${entitlementId}`,
+  settle: "out:2:settle",
 };
 
 export class RoomError extends Error {
@@ -71,17 +110,42 @@ export class BattleRoom {
     }
   }
 
-  /** Idempotent: creating the same battle twice returns the existing one. */
-  async create(setup: BattleSetup): Promise<{ state: PublicBattleState; events: BattleEvent[] }> {
+  /**
+   * Idempotent: creating the same battle twice returns the existing one.
+   * `reservationId` is the economy reservation (D1) that holds this battle's bag and companions;
+   * the setup's bag must be the reserved bag. Activation is queued in the same write.
+   */
+  async create(setup: BattleSetup, reservationId: string): Promise<{ state: PublicBattleState; events: BattleEvent[] }> {
     const existing = await this.storage.get<BattleState>(K.state);
     if (existing !== undefined) {
       if (existing.battleId !== setup.battleId) throw new RoomError("INVALID_COMMAND", "room already holds another battle");
+      if ((await this.storage.get<string>(K.reservation)) !== reservationId) throw new RoomError("INVALID_COMMAND", "battle holds another reservation");
       return { state: publicView(existing), events: await this.eventsSince(0) };
+    }
+    if ((await this.storage.get<boolean>(K.voided)) === true) {
+      throw new RoomError("RESERVATION_RELEASED", "this battle was voided and its reservation released");
     }
     const r = createBattle(this.rules, this.content, setup);
     if (!r.ok) throw new RoomError(r.code, r.message);
-    await this.storage.putMany({ [K.state]: r.state, ...eventEntries(r.events), [K.session(setup.player.accountId)]: 0 });
+    await this.storage.putMany({
+      [K.state]: r.state,
+      ...eventEntries(r.events),
+      [K.session(setup.player.accountId)]: 0,
+      [K.reservation]: reservationId,
+      [K.activate]: { kind: "activate", reservationId, status: "pending" } satisfies OutboxEntry,
+    });
     return { state: publicView(r.state), events: r.events };
+  }
+
+  /**
+   * Reconciler probe for a reservation that was never activated. If the battle exists it has
+   * started (activation is just not delivered yet) and nothing may be released. If not, the room
+   * records a tombstone first, so a late create can never start a battle whose items went back.
+   */
+  async probe(): Promise<"started" | "voided"> {
+    if ((await this.storage.get<BattleState>(K.state)) !== undefined) return "started";
+    await this.storage.putMany({ [K.voided]: true });
+    return "voided";
   }
 
   /** A reconnect claims a new generation; commands from older generations are refused. */
@@ -156,13 +220,109 @@ export class BattleRoom {
       events: r.events,
       replayed: false,
     };
-    // One atomic write: state, events and the stored answer. Ack only after it lands.
+    // One atomic write: state, events, the stored answer and what the economy is now owed.
+    // Ack only after it lands.
     await this.storage.putMany({
       [K.state]: r.state,
       ...eventEntries(r.events),
       [K.command(env.commandId)]: { payload, response } satisfies StoredCommand,
+      ...(await this.outboxFor(r.state, r.events)),
     });
     return response;
+  }
+
+  /** Outbox entries for the entitlements and the battle end a command produced. */
+  private async outboxFor(state: BattleState, events: BattleEvent[]): Promise<Record<string, OutboxEntry>> {
+    const out: Record<string, OutboxEntry> = {};
+    for (const e of events) {
+      if (e.type === "RewardEntitled") {
+        out[K.grant(e.entitlement.entitlementId)] = { kind: "grant", entitlement: e.entitlement, recipientId: state.ownerAccountId, status: "pending" };
+      } else if (e.type === "BattleEnded") {
+        const reservationId = await this.storage.get<string>(K.reservation);
+        if (reservationId === undefined) throw new Error("battle has no reservation");
+        out[K.settle] = {
+          kind: "settle",
+          status: "pending",
+          settlement: {
+            reservationId,
+            battleId: state.battleId,
+            accountId: state.ownerAccountId,
+            outcome: e.outcome,
+            unused: e.unusedReserved,
+            allies: e.allies,
+            entitlementIds: state.entitlements.map((x) => x.entitlementId),
+          },
+        };
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Delivers what the economy service is owed, in order: activation, then every entitlement, then
+   * the settlement (only once all entitlements have receipts, so items come back and locks open
+   * only after rewards are safe). Safe to call repeatedly: every economy call is idempotent, and a
+   * crash between a D1 commit and the local mark just gets an "already" answer next time.
+   * A transient error leaves the entry pending; the caller schedules the next attempt.
+   */
+  async drainOutbox(economy: EconomyPort): Promise<OutboxSummary> {
+    const entries = await this.storage.list<OutboxEntry>(K.outbox);
+    const mark = async (key: string, entry: OutboxEntry, status: OutboxStatus, detail?: string) => {
+      const next = { ...entry, status, ...(detail === undefined ? {} : { detail }) } as OutboxEntry;
+      entries.set(key, next);
+      await this.storage.putMany({ [key]: next });
+    };
+    const attempt = async (key: string, entry: OutboxEntry, run: () => Promise<OutboxStatus | [OutboxStatus, string]>) => {
+      try {
+        const r = await run();
+        const [status, detail] = Array.isArray(r) ? r : [r, undefined];
+        if (status !== "pending") await mark(key, entry, status, detail);
+      } catch {
+        // Transient (network, D1 busy). Stay pending; the next drain retries the same payload.
+      }
+    };
+
+    // Keys sort as activate < grants < settle.
+    for (const [key, entry] of [...entries].sort(([a], [b]) => (a < b ? -1 : 1))) {
+      if (entry.status !== "pending") continue;
+      if (entry.kind === "activate") {
+        await attempt(key, entry, async () => {
+          const r = await economy.activate(entry.reservationId);
+          return r.status === "active" ? "delivered" : ["failed", `reservation is ${r.current ?? "missing"}`];
+        });
+        if (entries.get(key)?.status !== "delivered") break;
+      } else if (entry.kind === "grant") {
+        await attempt(key, entry, async () => {
+          const r = await economy.grant(entry.entitlement, entry.recipientId);
+          return r.status === "rejected" ? ["failed", r.reason] : "delivered";
+        });
+      } else {
+        const blocked = [...entries].some(([k, e]) => k !== key && e.status !== "delivered");
+        if (blocked) break;
+        await attempt(key, entry, async () => {
+          const r = await economy.settle(entry.settlement);
+          if (r.status !== "rejected") return "delivered";
+          // Receipts not visible yet is a retry, not a refusal.
+          return r.reason === "RECEIPTS_MISSING" ? "pending" : ["failed", r.reason];
+        });
+      }
+    }
+    return this.outboxSummary(entries);
+  }
+
+  async outbox(): Promise<OutboxSummary> {
+    return this.outboxSummary(await this.storage.list<OutboxEntry>(K.outbox));
+  }
+
+  private outboxSummary(entries: Map<string, OutboxEntry>): OutboxSummary {
+    const all = [...entries.values()];
+    const count = (s: OutboxStatus) => all.filter((e) => e.status === s).length;
+    return {
+      pending: count("pending"),
+      delivered: count("delivered"),
+      failed: count("failed"),
+      settled: all.some((e) => e.kind === "settle" && e.status === "delivered"),
+    };
   }
 
   /** Whose turn it is, for the client UI. */

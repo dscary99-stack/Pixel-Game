@@ -5,11 +5,13 @@ import { HttpTransport, LocalPreviewTransport, type BattleTransport } from "./tr
 
 // `?server` talks to `wrangler dev` through the Vite proxy (or `?server=https://host`);
 // without it the page runs a local, non-authoritative preview.
+// Each page load is a fresh dev account: an account with an unfinished battle cannot start
+// another one (reservation lock), and abandoning a fight has no policy yet (O11/O15).
 const params = new URLSearchParams(location.search);
 const server = params.get("server");
 const transport: BattleTransport =
   server !== null
-    ? new HttpTransport(server, `battle:${crypto.randomUUID().slice(0, 8)}`, "acct:dev_player")
+    ? new HttpTransport(server, `battle:${crypto.randomUUID().slice(0, 8)}`, `acct:dev_${crypto.randomUUID().slice(0, 8)}`)
     : new LocalPreviewTransport(previewSetup(params.get("seed") ?? "preview"));
 
 const game = new Phaser.Game({

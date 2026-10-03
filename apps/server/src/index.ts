@@ -7,18 +7,49 @@
  *   GET  /battles/:id/events?since=N
  *   POST /battles/:id/commands     CommandEnvelope
  *   POST /battles/:id/auto         Auto Battle step; the open client's heartbeat drives it
+ *   GET  /dev/inventory?battle=ID  (dev only) the caller's D1 item balances and that battle's reservation
+ *   POST /dev/reconcile            (dev only) run the reconciler now, ignoring reservation age
+ *
+ * Starting a battle (chapter 11 §3): the economy (D1) reserves the bag and companions first, then
+ * the Battle DO is created from that reservation and queues activation in its own outbox. If the
+ * create step never lands, the scheduled reconciler asks the DO and releases only a reservation
+ * whose battle provably never started.
  */
-import type { BattleSetup } from "@pmrpg/shared";
+import { DEV_FIXTURE_RULES, PRODUCTION_RULES, type BattleSetup } from "@pmrpg/shared";
 import { resolveAccount } from "./auth";
 import type { Env, RoomOp, RoomReply } from "./battle-do";
+import { Economy } from "./economy";
 
 export { BattleDurableObject } from "./battle-do";
 
 const MAX_BODY_BYTES = 4096;
+/** PROVISIONAL ops setting: a reservation still not activated after this long is checked. */
+const RESERVATION_STALE_MS = 2 * 60_000;
+
+const economyFor = (env: Env) => new Economy(env.DB, env.ENVIRONMENT === "dev" ? DEV_FIXTURE_RULES : PRODUCTION_RULES);
+
+/** Release reservations whose battle never started (the DO confirms and tombstones first). */
+async function reconcile(env: Env, staleMs: number): Promise<{ checked: number; released: string[] }> {
+  const economy = economyFor(env);
+  const stale = await economy.staleReserved(new Date(Date.now() - staleMs).toISOString());
+  const released: string[] = [];
+  for (const r of stale) {
+    const verdict = await env.BATTLE.get(env.BATTLE.idFromName(r.battleId)).probe();
+    if (verdict !== "voided") continue; // started: activation is still in that battle's outbox
+    const out = await economy.release(r.reservationId);
+    if (out.status !== "rejected") released.push(r.reservationId);
+  }
+  return { checked: stale.length, released };
+}
 
 export default {
+  async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
+    await reconcile(env, RESERVATION_STALE_MS);
+  },
+
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
+    if (url.pathname.startsWith("/dev/")) return devRoute(request, env, url);
     const m = url.pathname.match(/^\/battles\/([a-z0-9_:-]{1,80})(?:\/([a-z-]+))?$/);
     if (m === null) return json(404, { error: "NOT_FOUND" });
     const battleId = m[1]!;
@@ -36,7 +67,14 @@ export default {
       if (body === undefined) return json(413, { error: "BODY_TOO_LARGE_OR_INVALID" });
       if (action === "dev-create") {
         if (env.ENVIRONMENT !== "dev") return json(404, { error: "NOT_FOUND" });
-        op = { kind: "create", setup: devSetup(battleId, accountId) };
+        const setup = devSetup(battleId, accountId);
+        const economy = economyFor(env);
+        // DEV ONLY: stock a new dev account once with the example bag (one battle's worth).
+        await economy.devGrant(`devgrant:${accountId}`, accountId, setup.bag);
+        const reservationId = `res:${battleId}`;
+        const reserved = await economy.reserve({ reservationId, accountId, battleId, bag: setup.bag, companionIds: [] });
+        if (reserved.status === "rejected") return json(409, { error: reserved.reason });
+        op = { kind: "create", setup, reservationId };
       } else op = { kind: action === "commands" ? "command" : "auto", body };
     } else return json(405, { error: "METHOD_NOT_ALLOWED" });
 
@@ -45,6 +83,21 @@ export default {
     return reply.ok ? json(200, reply.body) : json(409, { error: reply.code, message: reply.message });
   },
 } satisfies ExportedHandler<Env>;
+
+async function devRoute(request: Request, env: Env, url: URL): Promise<Response> {
+  if (env.ENVIRONMENT !== "dev") return json(404, { error: "NOT_FOUND" });
+  const accountId = resolveAccount(request, env);
+  if (accountId === null) return json(401, { error: "UNAUTHENTICATED" });
+  if (request.method === "GET" && url.pathname === "/dev/inventory") {
+    const economy = economyFor(env);
+    const balances = await economy.balances(accountId);
+    const battleId = url.searchParams.get("battle");
+    const reservation = battleId === null ? null : await economy.reservation(`res:${battleId}`);
+    return json(200, { balances, reservation });
+  }
+  if (request.method === "POST" && url.pathname === "/dev/reconcile") return json(200, await reconcile(env, 0));
+  return json(404, { error: "NOT_FOUND" });
+}
 
 async function readJson(request: Request): Promise<unknown | undefined> {
   const text = await request.text();

@@ -12,6 +12,7 @@ import type { Entitlement, RulesConfig } from "@pmrpg/shared";
 export interface SqlBound {
   first<T = Record<string, unknown>>(): Promise<T | null>;
   run(): Promise<unknown>;
+  all<T = Record<string, unknown>>(): Promise<{ results: T[] }>;
 }
 export interface SqlDb {
   prepare(sql: string): { bind(...values: unknown[]): SqlBound };
@@ -26,8 +27,13 @@ export type GrantResult =
   | { status: "already_granted"; entitlementId: string }
   | { status: "rejected"; entitlementId: string; reason: "PAYLOAD_MISMATCH" };
 
-export async function payloadHash(e: Entitlement): Promise<string> {
-  const bytes = new TextEncoder().encode(stableStringify(e));
+export function payloadHash(e: Entitlement): Promise<string> {
+  return hashJson(e);
+}
+
+/** SHA-256 of a key-order-independent JSON encoding. */
+export async function hashJson(v: unknown): Promise<string> {
+  const bytes = new TextEncoder().encode(stableStringify(v));
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
