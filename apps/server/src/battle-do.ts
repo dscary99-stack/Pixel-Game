@@ -7,7 +7,7 @@
  * slow or failing D1 never delays combat acks and only one drain runs at a time per battle.
  */
 import { DurableObject } from "cloudflare:workers";
-import { DEV_FIXTURE_RULES, PRODUCTION_RULES, exampleContentMaps, type BattleSetup, type RulesConfig } from "@pmrpg/shared";
+import { DEV_FIXTURE_RULES, PRODUCTION_RULES, exampleContentMaps, type AutoBattlePolicy, type BattleSetup, type RulesConfig } from "@pmrpg/shared";
 import { BattleRoom, RoomError, type Environment, type OutboxSummary, type RoomStorage } from "./battle-room";
 import { Economy } from "./economy";
 
@@ -101,7 +101,7 @@ export class BattleDurableObject extends DurableObject<Env> {
             body: { state: await this.room.view(accountId), actor: await this.room.actor(), settlement: await this.kickOutbox(), autopilot: await this.room.autopilot() },
           };
         case "autopilot": {
-          await this.room.setAutopilot(accountId, op.on);
+          await this.room.setAutopilot(accountId, op.on, op.policy);
           // Start pacing now; the alarm keeps itself going while autopilot is on and the fight is live.
           if (op.on) await this.ctx.storage.setAlarm(Date.now() + this.actionMs);
           return { ok: true, body: { autopilot: op.on } };
@@ -130,6 +130,6 @@ export type RoomOp =
   | { kind: "events"; cursor: number }
   | { kind: "command"; body: unknown }
   | { kind: "auto"; body: unknown }
-  | { kind: "autopilot"; on: boolean };
+  | { kind: "autopilot"; on: boolean; policy?: AutoBattlePolicy };
 
 export type RoomReply = { ok: true; body: unknown } | { ok: false; code: string; message: string };

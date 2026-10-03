@@ -14,6 +14,7 @@ export type Element = z.infer<typeof ElementSchema>;
 export const RankSchema = z.enum(["NORMAL", "ELITE", "BOSS"]);
 export const ContentStatusSchema = z.enum(["draft", "validated", "published", "retired"]);
 export const ArchetypeSchema = z.enum(["tank", "physical", "magic", "support", "control"]);
+export type Archetype = z.infer<typeof ArchetypeSchema>;
 
 const id = (prefix: string) =>
   z.string().regex(new RegExp(`^${prefix}:[a-z0-9_]+$`), `expected id like "${prefix}:snake_case"`);
@@ -140,9 +141,12 @@ export const MonsterInstanceSchema = z
     xp: z.number().int().min(0),
     rebirthStage: z.number().int().min(0),
     element: ElementSchema,
-    /** Server-rolled growth results; the client never picks a seed. */
+    /** Server-rolled growth results at the current level; the client never picks a seed. */
     primaryStats: PrimaryStatsSchema,
+    /** 1 = flat start stats (before growth); 2 = stats from growthSeed (companion-growth.ts). */
     growthHistoryVersion: z.number().int().min(1),
+    /** Picked by the server when the companion is created; the whole growth path follows from it. */
+    growthSeed: z.string().min(1),
     trainedSkillLevels: z.record(SkillId, z.number().int().min(1).max(10)),
     bond: z.number().int().min(0).max(1000),
     originRecord: z

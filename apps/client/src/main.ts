@@ -74,6 +74,7 @@ function previewSetup(seed: string): BattleSetup {
     element,
     primaryStats: { STR: 16, VIT: 16, INT: 12, DEX: 12, AGI: 12, SPI: 16 },
     growthHistoryVersion: 1,
+    growthSeed: "seed:fixture",
     trainedSkillLevels: {},
     bond: 0,
     originRecord: { kind: "starter", at: "2026-10-03T00:00:00Z" },

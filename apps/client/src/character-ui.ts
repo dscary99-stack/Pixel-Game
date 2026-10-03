@@ -4,6 +4,8 @@
  * comes with the art pass (chapter 10 §4).
  */
 import {
+  PRIMARY_KEYS,
+  companionCombatProfile,
   AutoHuntSettingsSchema,
   type AutoHuntSettings,
   CLASS1_DEFINITIONS,
@@ -65,6 +67,7 @@ const CSS = `
 .pm-error { color: #ff8a8a; min-height: 18px; margin-top: 10px; font-size: 14px; }
 .pm-note { color: #a9a3c4; font-size: 12px; margin-top: 6px; }
 .pm-list { list-style: none; padding: 0; margin: 0; }
+.pm-item-rule { border: 1px solid #322b4d; border-radius: 6px; padding: 8px; margin: 6px 0; }
 .pm-list li { display: flex; align-items: center; gap: 10px; padding: 8px; border-bottom: 1px solid #322b4d; }
 .pm-list li.ko { opacity: 0.6; }
 .pm-list input { width: 20px; height: 20px; }
@@ -441,7 +444,9 @@ export function teamPanel(api: CharacterApi, bundle: CharacterBundle): Promise<C
 
     for (const c of bundle.companions) {
       const sp = species.get(c.speciesId);
-      const maxHp = deriveStats(c.currentLevel, c.primaryStats).maxHp;
+      // What it fights with: effective level (≤ character Lv + gap) and the growth stats there.
+      const prof = sp === undefined ? { level: c.currentLevel, primaryStats: c.primaryStats } : companionCombatProfile(RULES, sp, c, bundle.character.level);
+      const maxHp = deriveStats(prof.level, prof.primaryStats).maxHp;
       const hp = c.hp ?? maxHp;
       const li = el("li", hp <= 0 ? { class: "ko" } : {});
       const box = el("input", { type: "checkbox", value: c.id, id: `pm-${c.id}` });
@@ -455,7 +460,7 @@ export function teamPanel(api: CharacterApi, bundle: CharacterBundle): Promise<C
       dot.style.background = ELEMENT_CSS[c.element];
       const bar = expProgress(RULES, "companion", c.xp);
       const exp = bar.need === null ? "EXP สูงสุด" : `EXP ${bar.into.toLocaleString()}/${bar.need.toLocaleString()}`;
-      const label = el("label", { for: `pm-${c.id}` }, `${sp?.name.th ?? c.speciesId} · ${ELEMENT_TH[c.element]} · Lv${c.currentLevel} (${exp}) · HP ${hp}/${maxHp}${hp <= 0 ? " (ล้ม พักในเมือง)" : ""}`);
+      const label = el("label", { for: `pm-${c.id}` }, `${sp?.name.th ?? c.speciesId}${c.rebirthStage > 0 ? ` ★R${c.rebirthStage}` : ""} · ${ELEMENT_TH[c.element]} · Lv${c.currentLevel}${prof.level < c.currentLevel ? ` (สู้เป็น Lv${prof.level})` : ""} (${exp}) · HP ${hp}/${maxHp}${hp <= 0 ? " (ล้ม พักในเมือง)" : ""} · ${PRIMARY_KEYS.map((k) => `${k} ${prof.primaryStats[k]}`).join(" ")}`);
       label.style.margin = "0";
       li.append(box, dot, label);
       list.append(li);
@@ -698,8 +703,39 @@ export function autoHuntPanel(speciesIds: readonly string[]): Promise<AutoHuntSe
     const stops = list("หยุดและแจ้งเมื่อเห็นฝูงที่หัวฝูงเป็น (ไว้กดจับเอง)", saved.stopOnSpecies, "stops");
     panel.append(el("label", {}, "ขนาดฝูงสูงสุด"));
     const size = choices(panel, [1, 2, 3, 5, 10].map((n) => ({ value: String(n), label: `${n} ตัว` })), String(saved.maxPackSize));
+    const pct = (n: number) => ({ value: String(n), label: n === 0 ? "ไม่หยุด" : `${n}%` });
     panel.append(el("label", {}, "หยุดเมื่อ HP ตัวละครต่ำกว่า (ตรวจก่อนเริ่มฝูงถัดไป)"));
-    const hp = choices(panel, [0, 20, 30, 50, 70].map((n) => ({ value: String(n), label: n === 0 ? "ไม่หยุด" : `${n}%` })), String(saved.stopBelowHpPercent));
+    const hp = choices(panel, [0, 20, 30, 50, 70].map(pct), String(saved.stopBelowHpPercent));
+    panel.append(el("label", {}, "หยุดเมื่อ MP ตัวละครต่ำกว่า"));
+    const mp = choices(panel, [0, 10, 20, 30, 50].map(pct), String(saved.stopBelowMpPercent));
+    panel.append(el("label", {}, "หยุดเมื่อ HP คู่ใจตัวใดตัวหนึ่งต่ำกว่า"));
+    const compHp = choices(panel, [0, 20, 30, 50, 70].map(pct), String(saved.stopBelowCompanionHpPercent));
+    // Items Auto may use (chapter 08: allowed items, when, and how many per fight).
+    panel.append(el("label", {}, "ยาที่ให้ Auto ใช้ (ตัวละครเป็นคนใช้ ใช้ได้เมื่อถึงตาตัวละคร)"));
+    const healItems = [...itemDefs.values()].filter((d) => d.kind === "heal");
+    const ruleRows = healItems.map((d) => {
+      const prev = saved.itemRules.find((r) => r.itemId === d.id);
+      const row = el("div", { class: "pm-item-rule", "data-item": d.id });
+      const on = el("input", { type: "checkbox", id: `pm-rule-${d.id}` });
+      on.checked = prev !== undefined;
+      const name = el("label", { for: on.id }, ` ${d.name.th}`);
+      name.prepend(on);
+      row.append(name);
+      row.append(el("div", { class: "pm-note" }, "ใช้กับ"));
+      const target = choices(row, [{ value: "ally", label: "เพื่อนที่ HP ต่ำสุด" }, { value: "self", label: "ตัวเองเท่านั้น" }], prev?.target ?? "ally");
+      row.append(el("div", { class: "pm-note" }, "เมื่อ HP ต่ำกว่า"));
+      const below = choices(row, [20, 30, 40, 50, 70].map((n) => ({ value: String(n), label: `${n}%` })), String(prev?.hpBelowPercent ?? 40));
+      row.append(el("div", { class: "pm-note" }, "ไม่เกินต่อไฟต์"));
+      const max = choices(row, [1, 2, 3, 5, 10].map((n) => ({ value: String(n), label: `${n} ชิ้น` })), String(prev?.maxPerFight ?? 3));
+      panel.append(row);
+      return () =>
+        on.checked ? [{ itemId: d.id, target: target() as "ally" | "self", hpBelowPercent: Number(below()), maxPerFight: Number(max()) }] : [];
+    });
+    const itemsOut = el("input", { type: "checkbox", id: "pm-items-out" });
+    itemsOut.checked = saved.stopWhenItemsOut;
+    const itemsOutRow = el("label", { for: "pm-items-out" });
+    itemsOutRow.append(itemsOut, document.createTextNode(" หยุดเมื่อยาที่เลือกหมด"));
+    panel.append(itemsOutRow);
     const elite = el("input", { type: "checkbox", id: "pm-elite" });
     elite.checked = saved.allowElite;
     const eliteRow = el("label", { for: "pm-elite" });
@@ -720,6 +756,10 @@ export function autoHuntPanel(speciesIds: readonly string[]): Promise<AutoHuntSe
         stopOnSpecies: stops(),
         maxPackSize: Number(size()),
         stopBelowHpPercent: Number(hp()),
+        stopBelowMpPercent: Number(mp()),
+        stopBelowCompanionHpPercent: Number(compHp()),
+        itemRules: ruleRows.flatMap((r) => r()),
+        stopWhenItemsOut: itemsOut.checked,
         allowElite: elite.checked,
       });
       try {
@@ -731,4 +771,13 @@ export function autoHuntPanel(speciesIds: readonly string[]): Promise<AutoHuntSe
       resolve(settings);
     });
   });
+}
+
+/** The Auto item rules saved with the Auto Hunt settings; manual Auto Battle uses the same ones. */
+export function savedAutoPolicy(): { itemRules: AutoHuntSettings["itemRules"] } {
+  try {
+    return { itemRules: AutoHuntSettingsSchema.parse(JSON.parse(localStorage.getItem("pm-auto-hunt") ?? "{}")).itemRules };
+  } catch {
+    return { itemRules: [] };
+  }
 }

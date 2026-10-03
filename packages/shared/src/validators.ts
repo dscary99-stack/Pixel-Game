@@ -41,6 +41,8 @@ export type ErrorCode =
   | "INSUFFICIENT_RESOURCE"
   | "ON_COOLDOWN"
   | "AUTO_CAPTURE_FORBIDDEN"
+  /** Auto Battle asked again before the server's action cadence allows. */
+  | "TOO_FAST"
   | "SESSION_REVOKED"
   | "FIXTURE_RULES_IN_PRODUCTION"
   // Battle reservation lifecycle (chapter 11 §3).

@@ -5,6 +5,8 @@
  * new state + events. Same setup + same seed + same commands => identical results.
  * The Battle Durable Object owns persistence, idempotency and auth; this file owns the rules.
  */
+import { companionCombatProfile } from "../companion-growth";
+import { NO_AUTO_POLICY, type AutoBattlePolicy } from "./auto-policy";
 import { computeDamage, computeHeal, critChanceBp, hitChanceBp } from "../damage";
 import { rollLoot } from "../loot";
 import { companionExp, killExp } from "../progression";
@@ -136,7 +138,8 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
     if (inst.ownerId !== p.accountId) reject("NOT_OWNER", `${inst.id} is not owned by ${p.accountId}`);
     const sp = content.species.get(inst.speciesId) ?? reject("MISSING_REFERENCE", `species ${inst.speciesId}`);
     if (!sp.allowedElements.includes(inst.element)) reject("INVALID_COMMAND", `${inst.id} has element outside species`);
-    const stats = deriveStats(inst.currentLevel, inst.primaryStats);
+    const { level, primaryStats } = companionCombatProfile(rules, sp, inst, p.level);
+    const stats = deriveStats(level, primaryStats);
     units.push({
       unitId: `ally:${inst.id}`,
       side: "ally",
@@ -144,7 +147,8 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
       name: sp.name.th,
       speciesId: sp.id,
       instanceId: inst.id,
-      level: inst.currentLevel,
+      level,
+      actualLevel: inst.currentLevel,
       element: inst.element,
       rank: null,
       row: c.row,
@@ -277,7 +281,7 @@ function expAwards(ctx: Ctx, wildLevel: number): { exp: number; companionExp: Re
   const exp = killExp(ctx.rules, wildLevel);
   const perCompanion: Record<string, number> = {};
   for (const a of ctx.s.units) {
-    if (a.side === "ally" && a.instanceId !== null) perCompanion[a.instanceId] = companionExp(ctx.rules, exp, a.level, wildLevel);
+    if (a.side === "ally" && a.instanceId !== null) perCompanion[a.instanceId] = companionExp(ctx.rules, exp, a.actualLevel ?? a.level, wildLevel);
   }
   return { exp, companionExp: perCompanion };
 }
@@ -660,12 +664,29 @@ function endBattle(ctx: Ctx, outcome: "victory" | "defeat" | "fled"): void {
 // ================================================================ auto battle
 
 /**
- * Auto Battle policy for the current ally (C14): basic attack on the lowest-HP valid enemy.
+ * Auto Battle for the current ally (C14). First the player's item rules, in order (chapter 08:
+ * only allowed items, only below the set HP, at most the set count per fight; items are the
+ * character's action), then a basic attack on the lowest-HP valid enemy.
  * Never captures (C15), never flees.
  */
-export function chooseAutoCommand(state: BattleState): BattleCommand | null {
+export function chooseAutoCommand(
+  state: BattleState,
+  content?: Pick<BattleContent, "items">,
+  policy: AutoBattlePolicy = NO_AUTO_POLICY,
+): BattleCommand | null {
   const actor = currentActor(state);
   if (actor === null || actor.side !== "ally") return null;
+  if (actor.kind === "player" && content !== undefined) {
+    for (const rule of policy.itemRules) {
+      if (content.items.get(rule.itemId)?.kind !== "heal") continue;
+      if ((state.bag[rule.itemId] ?? 0) <= 0 || (state.consumed[rule.itemId] ?? 0) >= rule.maxPerFight) continue;
+      const pool = rule.target === "self" ? [actor] : state.units.filter((u) => u.side === "ally" && active(u));
+      const low = pool
+        .filter((u) => active(u) && u.hp * 100 < rule.hpBelowPercent * u.stats.maxHp)
+        .sort((a, b) => a.hp / a.stats.maxHp - b.hp / b.stats.maxHp)[0];
+      if (low !== undefined) return { type: "item", actorId: actor.unitId, itemId: rule.itemId, targetId: low.unitId };
+    }
+  }
   const targets = validTargets(state, "enemy", actor.basicAttackRange);
   if (targets.length === 0) return null;
   const target = targets.reduce((best, u) => (u.hp < best.hp ? u : best));

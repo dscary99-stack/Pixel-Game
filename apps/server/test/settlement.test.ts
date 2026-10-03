@@ -8,6 +8,12 @@ import { BattleRoom, MemoryStorage, RoomError, type EconomyPort, type OutboxEntr
 import { Economy } from "../src/economy";
 import { SqliteD1, freshDb, type Db } from "./sqlite-d1";
 
+/** A clock that moves 1 s per read, so Auto is never early in these tests. */
+const ticking = () => {
+  let t = 0;
+  return () => (t += 1000);
+};
+
 const OWNER = "acct:owner";
 const BATTLE = "battle:s1";
 const RES = `res:${BATTLE}`;
@@ -50,7 +56,7 @@ beforeEach(async () => {
   eco = new Economy(new SqliteD1(db), DEV_FIXTURE_RULES, () => "2026-10-03T00:00:00Z");
   await eco.devGrant("seed", OWNER, { "item:small_potion": 5, "item:armor_crab_capture": 2 });
   storage = new MemoryStorage();
-  room = new BattleRoom(storage, DEV_FIXTURE_RULES, content, "dev");
+  room = new BattleRoom(storage, DEV_FIXTURE_RULES, content, "dev", ticking());
 });
 
 async function startBattle() {

@@ -2,7 +2,7 @@
 // fight it to the end, come back to the same spot. Private fights (O05): the pack stays visible
 // to the other player. Run `npm run db:migrate:local` and `npm run dev:server` first, then
 // `npm run smoke:encounter`.
-import { approach, api, connect, lastPacks, run, sleep, toField, type Msg } from "./smoke-lib";
+import { approach, api, connect, lastPacks, run, sleep, toField, type Msg, AUTO_GAP_MS } from "./smoke-lib";
 
 const acct = (n: string) => `acct:e${run}_${n}`;
 const out: Record<string, unknown> = {};
@@ -84,6 +84,7 @@ out.leaderMatches = view.state.units.find((u: Msg) => u.unitId === "e1").species
   view.state.units.find((u: Msg) => u.unitId === "e1").element === target.leader.element;
 let n = 0;
 while (view.state.status === "active" && n < 300) {
+  await sleep(AUTO_GAP_MS);
   const r = await call("POST", "/auto", { commandId: crypto.randomUUID(), sessionGeneration: gen, expectedStateVersion: view.state.stateVersion });
   if (r.status !== "accepted") throw new Error(JSON.stringify(r));
   view = await call("GET", "");

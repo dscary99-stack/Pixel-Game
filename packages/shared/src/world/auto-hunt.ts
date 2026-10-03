@@ -15,6 +15,7 @@ import type { RulesConfig } from "../rules";
 import { portalAt, type MapDefinition, type TilePos } from "./map";
 import { findPathWhere, type Direction } from "./movement";
 import { inEngageRange, type VisiblePack } from "./encounter";
+import { AutoItemRuleSchema } from "../battle/auto-policy";
 
 const SpeciesRef = z.string().regex(/^species:[a-z0-9_]+$/);
 
@@ -28,8 +29,16 @@ export const AutoHuntSettingsSchema = z
     allowElite: z.boolean().default(false),
     /** Stop and tell the player when a pack led by one of these is in sight (for a manual capture). */
     stopOnSpecies: z.array(SpeciesRef).max(20).default([]),
-    /** Stop between fights when the character's HP is below this percent of max. */
+    /** Stop between fights when the character's HP is below this percent of max (0 = never). */
     stopBelowHpPercent: z.number().int().min(0).max(90).default(30),
+    /** Stop between fights when the character's MP is below this percent of max (0 = never). */
+    stopBelowMpPercent: z.number().int().min(0).max(90).default(0),
+    /** Stop between fights when any team companion's HP is below this percent of max (0 = never). */
+    stopBelowCompanionHpPercent: z.number().int().min(0).max(90).default(0),
+    /** Items Auto may use in fights, in priority order (chapter 08 allowed items / max spend). */
+    itemRules: z.array(AutoItemRuleSchema).max(5).default([]),
+    /** Stop between fights once every item in the rules has run out. */
+    stopWhenItemsOut: z.boolean().default(false),
   })
   .strict();
 export type AutoHuntSettings = z.infer<typeof AutoHuntSettingsSchema>;
@@ -41,6 +50,12 @@ export type AutoStopReason =
   | "FOUND_SPECIES"
   /** The character's HP fell below the setting between fights. */
   | "LOW_HP"
+  /** The character's MP fell below the setting between fights. */
+  | "LOW_MP"
+  /** A team companion's HP fell below the setting between fights. */
+  | "COMPANION_LOW_HP"
+  /** Every item in the item rules has run out. */
+  | "ITEMS_OUT"
   /** Everyone in the team is knocked out. */
   | "NEED_REST"
   /** The team lost; the player is sent back to town. */
@@ -107,4 +122,34 @@ export function planAutoHunt(rules: RulesConfig, map: MapDefinition, pos: TilePo
   );
   if (path === null || reached === undefined) return { kind: "unreachable" };
   return { kind: "walk", packId: reached.packId, path };
+}
+
+/** HP/MP of one unit between fights. */
+export interface Vital {
+  hp: number;
+  maxHp: number;
+  mp: number;
+  maxMp: number;
+}
+
+/**
+ * Whether the team may start the next Auto Hunt fight (chapter 08 stop conditions), checked between
+ * fights. `itemsOwned` is what the account holds of each item named in the item rules.
+ */
+export function autoHuntReadiness(
+  settings: AutoHuntSettings,
+  character: Vital,
+  companions: readonly Vital[],
+  itemsOwned: Readonly<Record<string, number>>,
+): { stop: AutoStopReason; detail?: string } | null {
+  const below = (v: number, max: number, pct: number) => pct > 0 && v * 100 < pct * max;
+  if (character.hp <= 0 && companions.every((c) => c.hp <= 0)) return { stop: "NEED_REST" };
+  if (below(character.hp, character.maxHp, settings.stopBelowHpPercent)) return { stop: "LOW_HP", detail: `${character.hp}/${character.maxHp}` };
+  if (below(character.mp, character.maxMp, settings.stopBelowMpPercent)) return { stop: "LOW_MP", detail: `${character.mp}/${character.maxMp}` };
+  const weak = companions.find((c) => below(c.hp, c.maxHp, settings.stopBelowCompanionHpPercent));
+  if (weak !== undefined) return { stop: "COMPANION_LOW_HP", detail: `${weak.hp}/${weak.maxHp}` };
+  if (settings.stopWhenItemsOut && settings.itemRules.length > 0 && settings.itemRules.every((r) => (itemsOwned[r.itemId] ?? 0) <= 0)) {
+    return { stop: "ITEMS_OUT" };
+  }
+  return null;
 }

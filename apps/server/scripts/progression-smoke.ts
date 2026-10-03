@@ -2,7 +2,7 @@
 // the level follows, and stat points are spent with a version check (not mid-fight).
 // Run `npm run db:migrate:local` and `npm run dev:server` first, then `npm run smoke:progression`.
 import { expProgress, unspentPoints, PRODUCTION_RULES as R } from "@pmrpg/shared";
-import { api, approach, autoToEnd, battleCall, lastPacks, run, toField, type Client, type Msg } from "./smoke-lib";
+import { api, approach, autoToEnd, battleCall, lastPacks, run, toField, type Client, type Msg, AUTO_GAP_MS, sleep } from "./smoke-lib";
 
 const account = `acct:p${run}`;
 const H = { "content-type": "application/json", "x-dev-account": account };
@@ -47,6 +47,7 @@ const first = await fight(A, "gate_moles", async (battleId) => {
     const enemy = view.state.units.find((u: Msg) => u.side === "enemy" && !u.ko && !u.retired);
     if (view.state.status !== "active" || enemy === undefined) return;
     if (view.actor !== "player") {
+      await sleep(AUTO_GAP_MS);
       await call("POST", "/auto", { commandId: crypto.randomUUID(), sessionGeneration: gen, expectedStateVersion: view.state.stateVersion });
       continue;
     }

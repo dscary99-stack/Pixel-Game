@@ -2,7 +2,7 @@
 // player to a pack, plays the fight, records it as `auto_hunt`, then walks on to the next pack;
 // a hand step stops it, and closing the page stops it (no offline farming). Run
 // `npm run db:migrate:local` and `npm run dev:server` first, then `npm run smoke:auto`.
-import { api, battleCall, connect, run, sleep, toField, type Msg } from "./smoke-lib";
+import { api, battleCall, connect, run, sleep, toField, type Msg, AUTO_GAP_MS } from "./smoke-lib";
 
 const account = `acct:h${run}`;
 const out: Record<string, unknown> = {};
@@ -33,7 +33,8 @@ out.noTargets = (await A.wait((m) => m.t === "auto", 4000, from)).reason;
 // Start: the server walks (autoMoved) and opens a fight by itself.
 from = A.inbox.length;
 const startPos = { ...A.pos };
-A.send({ t: "autoHunt", settings: { stopBelowHpPercent: 0 } });
+// Item rule: the character may drink one small potion a fight, on itself, below 95% HP.
+A.send({ t: "autoHunt", settings: { stopBelowHpPercent: 0, itemRules: [{ itemId: "item:small_potion", target: "self", hpBelowPercent: 95, maxPerFight: 1 }] } });
 out.started = (await A.wait((m) => m.t === "auto", 4000, from)).on;
 const enc = await A.wait((m) => m.t === "encounter", 30_000, from);
 out.serverSteps = A.inbox.slice(from).filter((m) => m.t === "autoMoved").length;
@@ -49,6 +50,7 @@ for (let i = 0; i < 300 && view.state.status === "active"; i++) {
 out.fight1 = { status: view.state.status, autopilot: view.autopilot ?? null };
 const events: Msg[] = (await call("GET", "/events?since=0")).events;
 out.serverActions = events.filter((e) => e.type === "ActionResolved").length;
+out.potionsUsedByAuto = events.filter((e) => e.type === "ItemConsumed").length;
 out.rewardOrigin = events.find((e) => e.type === "RewardEntitled")?.entitlement.originMode ?? null;
 
 // After the result pause it walks on and starts the next fight.
@@ -70,6 +72,7 @@ const call2 = battleCall(account, enc2.battleId);
 const gen = (await call2("POST", "/session")).sessionGeneration;
 let v = await call2("GET", "");
 for (let n = 0; v.state.status === "active" && n < 300; n++) {
+  await sleep(AUTO_GAP_MS);
   const r = await call2("POST", "/auto", { commandId: crypto.randomUUID(), sessionGeneration: gen, expectedStateVersion: v.state.stateVersion });
   if (r.status !== "accepted") throw new Error(JSON.stringify(r));
   v = await call2("GET", "");

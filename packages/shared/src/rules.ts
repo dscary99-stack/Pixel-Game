@@ -74,6 +74,12 @@ export const RULES = {
       "O05",
       "user decision 2026-10-03: everyone sees the same packs, each player who engages gets a private fight; no kill-stealing",
     ),
+    autoHuntDisconnectGraceMs: confirmed(0, "O11", "user decision 2026-10-03: Auto Hunt stops the moment the connection closes; no grace"),
+    autoHuntSameCadence: confirmed(
+      true,
+      "C14",
+      "user decision 2026-10-03: an Auto Hunt fight is a real fight with Auto on, at the same action cadence as Auto Battle",
+    ),
   },
   provisional: {
     autoHuntLootRetention: provisional(0.7, "P01", "multiplier, applied once per candidate; not 0.70%"),
@@ -123,9 +129,40 @@ export const RULES = {
     // Encounters (Phase C). Hunting speed numbers are P12 assumptions.
     packRespawnMs: provisional(60_000, "P12", "a visible pack is re-rolled this often; a player who fought it waits for the next one"),
     engageRangeTiles: provisional(1, "P10", "must stand next to (or on) the pack to start a fight"),
-    // Auto Hunt pacing (chapter 08: the server, not the client's frame rate, sets the action cadence).
-    // Prototype values so a watching client can show each action; not a farming limit or quota.
-    autoBattleActionMs: provisional(700, "P01", "server-paced Auto Hunt battle: one ally action per this many ms"),
+    // Auto pacing (chapter 08: the server, not the client's frame rate, sets the action cadence).
+    // One cadence for Auto Battle and Auto Hunt (user decision 2026-10-03); not a farming limit.
+    // Companion growth, effective level and Rebirth. Nut delegated these on 2026-10-03 ("คิดให้เลย");
+    // the numbers are Claude's proposal in docs/design/COMPANION_GROWTH_PARTY_REBIRTH.md, PROVISIONAL.
+    companionGrowthWeights: provisional(
+      {
+        tank: { STR: 17, VIT: 40, INT: 7, DEX: 10, AGI: 8, SPI: 18 },
+        physical: { STR: 38, VIT: 14, INT: 5, DEX: 20, AGI: 18, SPI: 5 },
+        magic: { STR: 4, VIT: 12, INT: 40, DEX: 16, AGI: 8, SPI: 20 },
+        support: { STR: 5, VIT: 20, INT: 14, DEX: 7, AGI: 16, SPI: 38 },
+        control: { STR: 5, VIT: 9, INT: 12, DEX: 18, AGI: 36, SPI: 20 },
+      } as const,
+      "P05",
+      "each level-up point lands on a stat by these archetype weights (chapter 04 §4 order); same total for everyone",
+    ),
+    companionGrowthPointsPerLevel: provisional(3, "P05", "same budget as the player's stat points; only the split is random"),
+    companionEffectiveLevelGap: provisional(
+      10,
+      "P05",
+      "was O02; Nut delegated 2026-10-03: a companion fights at min(level, player level + 10); same 10 as the companion EXP gap",
+    ),
+    maxRebirths: provisional(3, "P05", "was O03; Nut delegated 2026-10-03: three stages, the O03 proposal"),
+    rebirthBonusPercent: provisional([4, 7, 10] as const, "P05", "O03 proposal: total bonus over base primary stats at stage 1/2/3; not added together"),
+    rebirthRequirements: provisional(
+      {
+        companionLevel: 200,
+        playerLevel: [100, 150, 200],
+        coins: [50_000, 150_000, 400_000],
+        speciesMaterial: [30, 60, 100],
+      } as const,
+      "P05",
+      "was O04; Nut delegated 2026-10-03: per stage 1/2/3; the trial (บททดสอบ) is not built yet",
+    ),
+    autoBattleActionMs: provisional(700, "P01", "Auto Battle and Auto Hunt: one ally action per this many ms"),
     autoHuntResultPauseMs: provisional(1500, "P01", "after an Auto Hunt fight ends, the result stays on screen this long before walking on"),
     // EXP and levels. The player table is Nut's "exp-proposal-1.0" (docs/design/EXP_DESIGN_LV001_200.md,
     // 2026-10-03, PROVISIONAL): minutes per level from linear anchors, times 2 reference kills a minute,
@@ -168,8 +205,6 @@ export const RULES = {
   },
   unresolved: {
     tradeLevelGap: open<number>("O01", "user range 20–40; proposal +30"),
-    companionEffectiveLevelGap: open<number>("O02"),
-    maxRebirths: open<number>("O03"),
     captureRates: open<CaptureRateTable>("O07", "rank bounds and HP factor table"),
     cooldownTick: open<CooldownTickPolicy>("O15", "cooldown counter tick point"),
     fleeChance: open<number>("O15", "flee formula"),

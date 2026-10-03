@@ -36,6 +36,7 @@ export function companion(id: string, speciesId: string, element: MonsterInstanc
     element,
     primaryStats: { STR: 18, VIT: 16, INT: 12, DEX: 14, AGI: 14, SPI: 14 },
     growthHistoryVersion: 1,
+    growthSeed: "seed:fixture",
     trainedSkillLevels: {},
     bond: 0,
     originRecord: { kind: "starter", at: "2026-10-03T00:00:00Z" },

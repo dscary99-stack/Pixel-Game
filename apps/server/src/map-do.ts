@@ -27,6 +27,8 @@ import {
   packEnemies,
   packInstanceId,
   companionSetups,
+  autoHuntReadiness,
+  companionCombatProfile,
   deriveStats,
   gearBonuses,
   mapHasTargets,
@@ -450,7 +452,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
       const status = await this.battleStatus(account, presence.battleId);
       if (status === "active") {
         if (auto.piloting !== presence.battleId) {
-          await this.battle(presence.battleId).handle(account, { kind: "autopilot", on: true });
+          await this.battle(presence.battleId).handle(account, { kind: "autopilot", on: true, policy: { itemRules: auto.settings.itemRules } });
           this.setAuto(ws, { ...auto, piloting: presence.battleId });
         }
         return;
@@ -467,11 +469,18 @@ export class MapChannelDurableObject extends DurableObject<Env> {
       const loadout = await this.characters.loadout(account);
       if (loadout === null) return this.stopAuto(ws, "NO_CHARACTER");
       const { character, instances, worn } = loadout;
-      const alive = (hp: number | null) => hp === null || hp > 0;
-      if (!alive(character.hp) && ![...instances.values()].some((i) => alive(i.hp))) return this.stopAuto(ws, "NEED_REST");
-      const maxHp = deriveStats(character.level, character.primaryStats, gearBonuses(worn.defs)).maxHp;
-      const hp = character.hp ?? maxHp;
-      if (hp * 100 < auto.settings.stopBelowHpPercent * maxHp) return this.stopAuto(ws, "LOW_HP", { detail: `${hp}/${maxHp}` });
+      const vital = (s: { maxHp: number; maxMp: number }, hp: number | null, mp: number | null) => ({ hp: hp ?? s.maxHp, maxHp: s.maxHp, mp: mp ?? s.maxMp, maxMp: s.maxMp });
+      const owned = auto.settings.itemRules.length > 0 ? await this.economy.balances(account) : {};
+      const verdict = autoHuntReadiness(
+        auto.settings,
+        vital(deriveStats(character.level, character.primaryStats, gearBonuses(worn.defs)), character.hp, character.mp),
+        [...instances.values()].map((i) => {
+          const prof = companionCombatProfile(this.rules, this.content.species.get(i.speciesId)!, i, character.level);
+          return vital(deriveStats(prof.level, prof.primaryStats), i.hp, i.mp);
+        }),
+        owned,
+      );
+      if (verdict !== null) return this.stopAuto(ws, verdict.stop, verdict.detail === undefined ? {} : { detail: verdict.detail });
       this.setAuto(ws, { ...auto, checked: true });
     }
 

@@ -5,6 +5,8 @@ export const api = process.env.API ?? "http://127.0.0.1:8787";
 const wsBase = api.replace(/^http/, "ws");
 export const run = Date.now().toString(36);
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+/** The server holds Auto to one action per autoBattleActionMs (same cadence as Auto Hunt). */
+export const AUTO_GAP_MS = PRODUCTION_RULES.provisional.autoBattleActionMs.value + 20;
 export const maps = exampleMapRegistry();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type Msg = any;
@@ -103,6 +105,7 @@ export async function autoToEnd(account: string, battleId: string): Promise<Msg>
   const gen = (await call("POST", "/session")).sessionGeneration;
   let view = await call("GET", "");
   for (let n = 0; view.state.status === "active" && n < 300; n++) {
+    await sleep(AUTO_GAP_MS);
     const r = await call("POST", "/auto", { commandId: crypto.randomUUID(), sessionGeneration: gen, expectedStateVersion: view.state.stateVersion });
     if (r.status !== "accepted") throw new Error(JSON.stringify(r));
     view = await call("GET", "");

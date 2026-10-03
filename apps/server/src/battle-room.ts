@@ -16,6 +16,9 @@ import {
   CommandEnvelopeSchema,
   applyCommand,
   chooseAutoCommand,
+  AutoBattlePolicySchema,
+  NO_AUTO_POLICY,
+  type AutoBattlePolicy,
   createBattle,
   currentActor,
   publicView,
@@ -79,6 +82,8 @@ const K = {
   reservation: "reservation",
   /** Auto Hunt: the server plays the ally turns itself, one per alarm tick. */
   autopilot: "autopilot",
+  autopolicy: "autopolicy",
+  lastAutoAt: "lastAutoAt",
   /** Written by the reconciler's probe when no battle exists; the battle can never start after it. */
   voided: "voided",
   session: (account: string) => `session:${account}`,
@@ -105,6 +110,7 @@ export class BattleRoom {
     private readonly rules: RulesConfig,
     private readonly content: BattleContent,
     env: Environment,
+    private readonly now: () => number = Date.now,
   ) {
     // Chapter 12 validator 8: OPEN rules filled by fixtures never run outside dev.
     if (env !== "dev" && rules.fixtureOverrides.length > 0) {
@@ -205,7 +211,12 @@ export class BattleRoom {
     let command: BattleCommand | null;
     if ("command" in env) command = env.command as BattleCommand;
     else {
-      command = chooseAutoCommand(state);
+      // Auto Battle runs at the server's cadence, the same as Auto Hunt (chapter 08); a faster
+      // client gets TOO_FAST and simply asks again. A little slack absorbs network jitter.
+      const last = await this.storage.get<number>(K.lastAutoAt);
+      const gap = this.rules.provisional.autoBattleActionMs.value - AUTO_JITTER_MS;
+      if (last !== undefined && this.now() - last < gap) return rejectNow("TOO_FAST", `Auto acts once per ${this.rules.provisional.autoBattleActionMs.value} ms`);
+      command = chooseAutoCommand(state, this.content, env.policy);
       if (command === null) return rejectNow("BATTLE_OVER", "nothing to do");
     }
     const r = applyCommand(this.rules, this.content, state, command, { source: kind, causeId: env.commandId });
@@ -228,6 +239,7 @@ export class BattleRoom {
       [K.state]: r.state,
       ...eventEntries(r.events),
       [K.command(env.commandId)]: { payload, response } satisfies StoredCommand,
+      ...(kind === "auto" ? { [K.lastAutoAt]: this.now() } : {}),
       ...(await this.outboxFor(r.state, r.events)),
     });
     return response;
@@ -237,10 +249,10 @@ export class BattleRoom {
    * Auto Hunt switch, set by the Map Channel for the owner. Off hands the fight back to the player;
    * the reward mode fixed at the start never changes (chapter 08).
    */
-  async setAutopilot(accountId: string, on: boolean): Promise<void> {
+  async setAutopilot(accountId: string, on: boolean, policy: AutoBattlePolicy = NO_AUTO_POLICY): Promise<void> {
     const state = await this.requireState();
     if (state.ownerAccountId !== accountId) throw new RoomError("NOT_OWNER", "not your battle");
-    await this.storage.putMany({ [K.autopilot]: on });
+    await this.storage.putMany({ [K.autopilot]: on, [K.autopolicy]: AutoBattlePolicySchema.parse(policy) });
   }
 
   async autopilot(): Promise<boolean> {
@@ -256,7 +268,8 @@ export class BattleRoom {
     if (!(await this.autopilot())) return "idle";
     const state = await this.requireState();
     if (state.status !== "active") return "over";
-    const command = chooseAutoCommand(state);
+    const policy = (await this.storage.get<AutoBattlePolicy>(K.autopolicy)) ?? NO_AUTO_POLICY;
+    const command = chooseAutoCommand(state, this.content, policy);
     if (command === null) return "idle";
     const r = applyCommand(this.rules, this.content, state, command, { source: "auto", causeId: `autopilot:${state.stateVersion}` });
     if (!r.ok) return "idle";
@@ -370,8 +383,17 @@ export class BattleRoom {
   }
 }
 
+/** Slack on the Auto cadence for network jitter. */
+const AUTO_JITTER_MS = 100;
+
 const AutoEnvelope = z
-  .object({ commandId: z.string().uuid(), sessionGeneration: z.number().int().min(0), expectedStateVersion: z.number().int().min(0) })
+  .object({
+    commandId: z.string().uuid(),
+    sessionGeneration: z.number().int().min(0),
+    expectedStateVersion: z.number().int().min(0),
+    /** The page's Auto Battle item rules (chapter 08); none = basic attacks only. */
+    policy: AutoBattlePolicySchema.optional(),
+  })
   .strict();
 
 function eventEntries(events: BattleEvent[]): Record<string, BattleEvent> {

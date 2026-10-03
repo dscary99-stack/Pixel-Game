@@ -13,6 +13,7 @@ import {
   currentActor,
   exampleContentMaps,
   publicView,
+  type AutoBattlePolicy,
   type BattleCommand,
   type BattleEvent,
   type BattleSetup,
@@ -30,7 +31,8 @@ export interface BattleTransport {
   readonly label: string;
   start(): Promise<{ snapshot: Snapshot; events: BattleEvent[] }>;
   send(command: BattleCommand): Promise<{ response: CommandResponse; snapshot: Snapshot }>;
-  autoStep(): Promise<{ response: CommandResponse; snapshot: Snapshot }>;
+  /** One Auto Battle action; the server holds it to its cadence (TOO_FAST means ask again later). */
+  autoStep(policy?: AutoBattlePolicy): Promise<{ response: CommandResponse; snapshot: Snapshot }>;
   /** Events after `since` and a fresh view: used while the server plays the fight (Auto Hunt). */
   poll(since: number): Promise<{ snapshot: Snapshot; events: BattleEvent[] }>;
 }
@@ -53,8 +55,8 @@ export class LocalPreviewTransport implements BattleTransport {
     return this.apply(command, "player");
   }
 
-  async autoStep() {
-    const cmd = chooseAutoCommand(this.state);
+  async autoStep(policy?: AutoBattlePolicy) {
+    const cmd = chooseAutoCommand(this.state, this.content, policy);
     if (cmd === null) return { response: this.reject("BATTLE_OVER", "nothing to do"), snapshot: this.snapshot() };
     return this.apply(cmd, "auto");
   }
@@ -122,8 +124,8 @@ export class HttpTransport implements BattleTransport {
     return { response, snapshot: this.snap };
   }
 
-  async autoStep() {
-    const response = await this.call<CommandResponse>("POST", "auto", this.envelope({}));
+  async autoStep(policy?: AutoBattlePolicy) {
+    const response = await this.call<CommandResponse>("POST", "auto", this.envelope(policy === undefined ? {} : { policy }));
     await this.refresh();
     return { response, snapshot: this.snap };
   }

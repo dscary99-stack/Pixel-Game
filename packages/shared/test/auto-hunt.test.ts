@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   AutoHuntSettingsSchema,
+  autoHuntReadiness,
   MapChannel,
   PRODUCTION_RULES as R,
   WorldClientMessageSchema,
@@ -43,7 +44,21 @@ const walk = (from: TilePos, dirs: readonly string[]) => {
 
 describe("Auto Hunt settings (chapter 08, PROVISIONAL)", () => {
   it("defaults: any species, any size, no Elite, stop below 30% HP", () => {
-    expect(defaults).toEqual({ targetSpecies: [], maxPackSize: 10, allowElite: false, stopOnSpecies: [], stopBelowHpPercent: 30 });
+    expect(defaults).toEqual({
+      targetSpecies: [],
+      maxPackSize: 10,
+      allowElite: false,
+      stopOnSpecies: [],
+      stopBelowHpPercent: 30,
+      stopBelowMpPercent: 0,
+      stopBelowCompanionHpPercent: 0,
+      itemRules: [],
+      stopWhenItemsOut: false,
+    });
+    expect(AutoHuntSettingsSchema.parse({ itemRules: [{ itemId: "item:small_potion" }] }).itemRules).toEqual([
+      { itemId: "item:small_potion", target: "ally", hpBelowPercent: 40, maxPerFight: 3 },
+    ]);
+    expect(AutoHuntSettingsSchema.safeParse({ itemRules: [{ itemId: "item:small_potion", maxPerFight: 0 }] }).success).toBe(false);
     expect(AutoHuntSettingsSchema.safeParse({ maxPackSize: 11 }).success).toBe(false);
     expect(AutoHuntSettingsSchema.safeParse({ targetSpecies: ["mole"] }).success).toBe(false);
     expect(AutoHuntSettingsSchema.safeParse({ autoCapture: true }).success).toBe(false);
@@ -120,5 +135,24 @@ describe("server steps (MapChannel.autoStep)", () => {
     // Not while in a fight.
     ch.setBattle("acct:b", "battle:x");
     expect(ch.autoStep("acct:b", "S", 20_000).kind).toBe("rejected");
+  });
+});
+
+describe("autoHuntReadiness (between fights)", () => {
+  const full = { hp: 100, maxHp: 100, mp: 50, maxMp: 50 };
+  it("follows each stop setting, and 0 means never", () => {
+    expect(autoHuntReadiness(defaults, full, [], {})).toBeNull();
+    expect(autoHuntReadiness(defaults, { ...full, hp: 29 }, [], {})).toEqual({ stop: "LOW_HP", detail: "29/100" });
+    expect(autoHuntReadiness({ ...defaults, stopBelowHpPercent: 0 }, { ...full, hp: 1 }, [], {})).toBeNull();
+    expect(autoHuntReadiness({ ...defaults, stopBelowMpPercent: 50 }, { ...full, mp: 24 }, [], {})?.stop).toBe("LOW_MP");
+    const s = { ...defaults, stopBelowCompanionHpPercent: 50 };
+    expect(autoHuntReadiness(s, full, [{ ...full, hp: 60 }, { ...full, hp: 40 }], {})).toEqual({ stop: "COMPANION_LOW_HP", detail: "40/100" });
+    expect(autoHuntReadiness({ ...defaults, stopBelowHpPercent: 0 }, { ...full, hp: 0 }, [{ ...full, hp: 0 }], {})?.stop).toBe("NEED_REST");
+  });
+  it("stops when every allowed item has run out, only if asked", () => {
+    const rules = [{ itemId: "item:small_potion", target: "ally" as const, hpBelowPercent: 40, maxPerFight: 3 }];
+    expect(autoHuntReadiness({ ...defaults, itemRules: rules }, full, [], {})).toBeNull();
+    expect(autoHuntReadiness({ ...defaults, itemRules: rules, stopWhenItemsOut: true }, full, [], {})?.stop).toBe("ITEMS_OUT");
+    expect(autoHuntReadiness({ ...defaults, itemRules: rules, stopWhenItemsOut: true }, full, [], { "item:small_potion": 1 })).toBeNull();
   });
 });

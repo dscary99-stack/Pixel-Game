@@ -18,7 +18,10 @@ export interface BattleUnit {
   speciesId: string | null;
   /** MonsterInstance id for companions; null for player and wild enemies. */
   instanceId: string | null;
+  /** The level this unit fights at (a companion's effective level, O02). */
   level: number;
+  /** Companions only: the real level, for EXP (it can be above `level`). */
+  actualLevel?: number;
   element: Element;
   rank: Rank | null;
   row: Row;

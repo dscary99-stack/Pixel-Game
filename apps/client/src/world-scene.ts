@@ -61,6 +61,9 @@ const AUTO_STOP_TEXT: Record<AutoStopReason, string> = {
   PLAYER_STOPPED: "หยุดล่าอัตโนมัติแล้ว",
   FOUND_SPECIES: "เจอมอนสเตอร์ที่ตั้งไว้ให้หยุด",
   LOW_HP: "HP ต่ำกว่าที่ตั้งไว้ หยุดล่าอัตโนมัติ",
+  LOW_MP: "MP ต่ำกว่าที่ตั้งไว้ หยุดล่าอัตโนมัติ",
+  COMPANION_LOW_HP: "HP คู่ใจต่ำกว่าที่ตั้งไว้ หยุดล่าอัตโนมัติ",
+  ITEMS_OUT: "ยาที่ตั้งให้ใช้หมดแล้ว หยุดล่าอัตโนมัติ",
   NEED_REST: "ทุกคนในทีมล้มอยู่ กลับไปพักในหมู่บ้านก่อน",
   DEFEATED: "แพ้ไฟต์ กลับไปพักที่หมู่บ้าน",
   NO_TARGETS: "ไม่มีฝูงที่ตรงกับที่ตั้งไว้ในแผนที่นี้",
@@ -202,7 +205,7 @@ export class WorldScene extends Phaser.Scene {
         if (m.on) this.flash("เริ่มล่าอัตโนมัติ (กด H หรือเดินเองเพื่อหยุด)");
         else {
           const found = m.reason === "FOUND_SPECIES" && m.detail ? ` (${this.species.get(m.detail)?.name.th ?? m.detail})` : "";
-          const extra = m.reason === "REFUSED" && m.detail ? ` (${m.detail})` : m.reason === "LOW_HP" && m.detail ? ` (HP ${m.detail})` : "";
+          const extra = m.reason === "REFUSED" && m.detail ? ` (${m.detail})` : (m.reason === "LOW_HP" || m.reason === "COMPANION_LOW_HP") && m.detail ? ` (HP ${m.detail})` : m.reason === "LOW_MP" && m.detail ? ` (MP ${m.detail})` : "";
           this.flash(`${AUTO_STOP_TEXT[m.reason ?? "PLAYER_STOPPED"]}${found}${extra}`);
           // A fight in progress goes back to the player's hands.
           if (this.scene.isActive("battle")) (this.scene.get("battle") as BattleScene).setWatch(false);

@@ -4,8 +4,9 @@
  * it never computes damage, loot, capture or ownership itself (chapter 11 §1).
  */
 import Phaser from "phaser";
-import { exampleContentMaps, type BattleCommand, type BattleEvent, type BattleUnit, type Element, type PublicBattleState } from "@pmrpg/shared";
+import { DEV_FIXTURE_RULES, exampleContentMaps, type BattleCommand, type BattleEvent, type BattleUnit, type Element, type PublicBattleState } from "@pmrpg/shared";
 import type { BattleTransport, Snapshot } from "./transport";
+import { savedAutoPolicy } from "./character-ui";
 
 const CONTENT = exampleContentMaps();
 /** Display name for a loot line: item or equipment, falling back to the id. */
@@ -94,7 +95,8 @@ export class BattleScene extends Phaser.Scene {
     this.autoButton = this.button(16 + 5 * 92, 470, "Auto: ปิด", () => this.toggleAuto());
 
     // Auto only runs while this page is open and visible (C14: no offline farming).
-    this.time.addEvent({ delay: 650, loop: true, callback: () => void this.autoTick() });
+    // The server holds Auto to one action per autoBattleActionMs, the same as Auto Hunt.
+    this.time.addEvent({ delay: DEV_FIXTURE_RULES.provisional.autoBattleActionMs.value, loop: true, callback: () => void this.autoTick() });
     const onHide = () => {
       if (document.visibilityState !== "visible" && this.autoOn) this.toggleAuto();
     };
@@ -162,7 +164,9 @@ export class BattleScene extends Phaser.Scene {
     if (!this.autoOn || this.busy || this.snap?.state.status !== "active") return;
     this.busy = true;
     try {
-      const { response, snapshot } = await this.transport.autoStep();
+      const { response, snapshot } = await this.transport.autoStep(savedAutoPolicy());
+      // Early by a little: the next tick asks again.
+      if (response.status === "rejected" && response.reasonCode === "TOO_FAST") return;
       this.apply(snapshot, response.status === "accepted" ? response.events : [], response);
     } finally {
       this.busy = false;

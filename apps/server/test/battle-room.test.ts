@@ -3,6 +3,12 @@ import { DEV_FIXTURE_RULES, PRODUCTION_RULES, exampleContentMaps, type BattleSet
 import { BattleRoom, MemoryStorage, RoomError } from "../src/battle-room";
 import { resolveAccount } from "../src/auth";
 
+/** A clock that moves 1 s per read, so Auto is never early in these tests. */
+const ticking = () => {
+  let t = 0;
+  return () => (t += 1000);
+};
+
 const content = exampleContentMaps();
 const OWNER = "acct:owner";
 
@@ -34,7 +40,7 @@ function setup(): BattleSetup {
 }
 
 async function newRoom(storage = new MemoryStorage()) {
-  const room = new BattleRoom(storage, DEV_FIXTURE_RULES, content, "dev");
+  const room = new BattleRoom(storage, DEV_FIXTURE_RULES, content, "dev", ticking());
   await room.create(setup(), "res:room");
   return { room, storage };
 }
@@ -188,6 +194,30 @@ describe("Auto Hunt autopilot (chapter 08)", () => {
     // Rewards and the settlement are queued exactly as for player commands.
     expect(storage.data.has("out:2:settle")).toBe(true);
     expect([...storage.data.keys()].filter((k) => k.startsWith("out:1:grant:")).length).toBe(state.entitlements.length);
+  });
+
+  it("uses only the allowed items, below the set HP, at most the set count per fight", async () => {
+    const { room } = await newRoom();
+    await room.setAutopilot(OWNER, true, { itemRules: [{ itemId: "item:small_potion", target: "self", hpBelowPercent: 95, maxPerFight: 2 }] });
+    for (let i = 0; i < 200 && (await room.autopilotStep()) === "acted"; i++);
+    const end = await room.view(OWNER);
+    expect(end.status).not.toBe("active");
+    expect(end.consumed).toEqual({ "item:small_potion": 2 });
+    // The capture item in the bag is never touched (C15).
+    expect(end.bag["item:armor_crab_capture"]).toBe(2);
+  });
+
+  it("Auto Battle from a page is held to the same cadence as Auto Hunt", async () => {
+    let t = 0;
+    const room = new BattleRoom(new MemoryStorage(), DEV_FIXTURE_RULES, content, "dev", () => t);
+    await room.create(setup(), "res:cadence");
+    const auto = async () => room.command(OWNER, { commandId: crypto.randomUUID(), sessionGeneration: 0, expectedStateVersion: (await room.view(OWNER)).stateVersion }, "auto");
+    accepted(await auto());
+    expect(await auto()).toMatchObject({ status: "rejected", reasonCode: "TOO_FAST" });
+    t += DEV_FIXTURE_RULES.provisional.autoBattleActionMs.value;
+    accepted(await auto());
+    // A player's own command is never held back.
+    accepted(await room.command(OWNER, potion((await room.view(OWNER)).stateVersion)));
   });
 
   it("switched off mid-fight stops at once and the player can take over", async () => {

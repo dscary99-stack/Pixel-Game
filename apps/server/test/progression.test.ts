@@ -2,7 +2,7 @@
  * EXP through reward receipts, level sync and stat allocation on the D1 migrations (node:sqlite).
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { PRODUCTION_RULES, exampleContentMaps, expCap, expForLevel, type Entitlement } from "@pmrpg/shared";
+import { COMPANION_GROWTH_VERSION, PRODUCTION_RULES, companionPrimaryStats, exampleContentMaps, expCap, expForLevel, type Entitlement } from "@pmrpg/shared";
 import { CharacterStore } from "../src/character-store";
 import { Economy } from "../src/economy";
 import { SqliteD1, freshDb, type Db } from "./sqlite-d1";
@@ -31,9 +31,9 @@ const xp = (table: string, id: string) => (db.prepare(`SELECT xp FROM ${table} W
 
 function pet(id: string, speciesId: string) {
   db.prepare(
-    `INSERT INTO monster_instances (id, species_id, owner_id, current_level, element, primary_stats_json, origin_json, created_operation_id)
-     VALUES (?, ?, ?, 1, 'EARTH', '{"STR":10,"VIT":10,"INT":10,"DEX":10,"AGI":10,"SPI":10}', '{"kind":"capture","at":"x"}', ?)`,
-  ).run(id, speciesId, A, `seed:${id}`);
+    `INSERT INTO monster_instances (id, species_id, owner_id, current_level, element, primary_stats_json, origin_json, created_operation_id, growth_seed, growth_history_version)
+     VALUES (?, ?, ?, 1, 'EARTH', '{"STR":10,"VIT":10,"INT":10,"DEX":10,"AGI":10,"SPI":10}', '{"kind":"capture","at":"x"}', ?, ?, 2)`,
+  ).run(id, speciesId, A, `seed:${id}`, id);
 }
 
 beforeEach(async () => {
@@ -135,5 +135,34 @@ describe("stat allocation (P03)", () => {
     db.prepare("UPDATE characters SET xp = ? WHERE id = ?").run(expForLevel(PRODUCTION_RULES, "player", 2), charId);
     await eco.reserve({ reservationId: "res:battle:y", accountId: A, battleId: "battle:y", bag: {}, companionIds: [] });
     expect(await store.allocate(A, { expectedVersion: 1, stats: { STR: 13, VIT: 10, INT: 10, DEX: 10, AGI: 10, SPI: 10 } })).toMatchObject({ reason: "IN_BATTLE" });
+  });
+});
+
+describe("companion growth (P05)", () => {
+  const row = (id: string) =>
+    db.prepare("SELECT growth_seed, growth_history_version, primary_stats_json, current_level FROM monster_instances WHERE id = ?").get(id) as {
+      growth_seed: string;
+      growth_history_version: number;
+      primary_stats_json: string;
+      current_level: number;
+    };
+
+  it("a capture gets a server-picked growth seed once; a replayed grant keeps the first", async () => {
+    const cap: Entitlement = { entitlementId: `${BATTLE}:e2:captured`, kind: "capture", enemyUnitId: "e2", speciesId: "species:bell_bird", element: "WIND", level: 1 };
+    await eco.grant(cap, A);
+    const first = row(`mon:${cap.entitlementId}`);
+    await eco.grant(cap, A);
+    await Promise.all([eco.grant(cap, A), eco.grant(cap, A)]);
+    expect(row(`mon:${cap.entitlementId}`)).toEqual(first);
+    expect(first.growth_history_version).toBe(COMPANION_GROWTH_VERSION);
+    expect(first.growth_seed).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it("levelling up stores the stats from the growth path (here the id is the seed, as migration 0008 backfills)", async () => {
+    db.prepare("UPDATE monster_instances SET xp = ? WHERE id = ?").run(expForLevel(PRODUCTION_RULES, "companion", 12), "mon:mole");
+    await store.syncLevels(A);
+    const r = row("mon:mole");
+    expect(r.current_level).toBe(12);
+    expect(JSON.parse(r.primary_stats_json)).toEqual(companionPrimaryStats(PRODUCTION_RULES, "support", "mon:mole", 12, 0));
   });
 });

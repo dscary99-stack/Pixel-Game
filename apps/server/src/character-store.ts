@@ -10,6 +10,8 @@
  *   `planEquip` decides slots, level and two-hand rules, the batch re-checks ownership and locks.
  */
 import {
+  COMPANION_GROWTH_VERSION,
+  companionPrimaryStats,
   AllocateStatsRequestSchema,
   CreateCharacterRequestSchema,
   levelForExp,
@@ -60,6 +62,7 @@ interface InstanceRow {
   element: MonsterInstance["element"];
   primary_stats_json: string;
   growth_history_version: number;
+  growth_seed: string | null;
   trained_skill_levels_json: string;
   bond: number;
   origin_json: string;
@@ -161,9 +164,12 @@ export class CharacterStore {
   async syncLevels(accountId: string): Promise<void> {
     const ch = await this.db.prepare(`SELECT id, xp, level FROM characters WHERE account_id = ?`).bind(accountId).first<{ id: string; xp: number; level: number }>();
     const { results: pets } = await this.db
-      .prepare(`SELECT id, xp, current_level AS level FROM monster_instances WHERE owner_id = ?`)
+      .prepare(
+        `SELECT id, xp, current_level AS level, species_id, growth_seed, growth_history_version, rebirth_stage
+         FROM monster_instances WHERE owner_id = ?`,
+      )
       .bind(accountId)
-      .all<{ id: string; xp: number; level: number }>();
+      .all<{ id: string; xp: number; level: number; species_id: string; growth_seed: string | null; growth_history_version: number; rebirth_stage: number }>();
     const stmts: SqlBound[] = [];
     if (ch !== null) {
       const level = levelForExp(this.rules, "player", ch.xp);
@@ -171,7 +177,18 @@ export class CharacterStore {
     }
     for (const p of pets) {
       const level = levelForExp(this.rules, "companion", p.xp);
-      if (level > p.level) stmts.push(this.db.prepare(`UPDATE monster_instances SET current_level = ? WHERE id = ? AND current_level < ?`).bind(level, p.id, level));
+      if (level <= p.level) continue;
+      // The stored stats are a cache of the growth path at the new level (companion-growth.ts).
+      const sp = this.content.species.get(p.species_id);
+      const stats =
+        sp !== undefined && p.growth_history_version >= COMPANION_GROWTH_VERSION
+          ? JSON.stringify(companionPrimaryStats(this.rules, sp.archetype, p.growth_seed ?? p.id, level, p.rebirth_stage))
+          : null;
+      stmts.push(
+        this.db
+          .prepare(`UPDATE monster_instances SET current_level = ?, primary_stats_json = COALESCE(?, primary_stats_json) WHERE id = ? AND current_level < ?`)
+          .bind(level, stats, p.id, level),
+      );
     }
     if (stmts.length > 0) await this.db.batch(stmts);
   }
@@ -428,6 +445,7 @@ function toInstance(r: InstanceRow): StoredInstance {
     element: r.element,
     primaryStats: JSON.parse(r.primary_stats_json) as PrimaryStats,
     growthHistoryVersion: r.growth_history_version,
+    growthSeed: r.growth_seed ?? r.id,
     trainedSkillLevels: JSON.parse(r.trained_skill_levels_json) as Record<string, number>,
     bond: r.bond,
     originRecord: JSON.parse(r.origin_json) as MonsterInstance["originRecord"],

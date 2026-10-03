@@ -6,7 +6,7 @@
  * equipment created_operation_id UNIQUE. Goal: the business effect happens once. The network may still
  * deliver twice; that is fine.
  */
-import { expCap, type Entitlement, type RulesConfig } from "@pmrpg/shared";
+import { COMPANION_GROWTH_VERSION, expCap, type Entitlement, type RulesConfig } from "@pmrpg/shared";
 
 /** The subset of the D1 API we use, so tests can run it on node:sqlite. */
 export interface SqlBound {
@@ -102,16 +102,18 @@ export class RewardLedger {
         );
       });
     } else {
-      // Captured companions start at the confirmed initial level with Bond 0 (C09, C11).
-      // Phase A assumption: Lv1 primary stats = the P03 start value; growth weights are still OPEN.
+      // Captured companions start at the confirmed initial level with Bond 0 (C09, C11). The server
+      // picks the growth seed here; a replayed grant keeps the first row (ON CONFLICT DO NOTHING).
       const start = this.rules.provisional.primaryStatStart.value;
       const stats = { STR: start, VIT: start, INT: start, DEX: start, AGI: start, SPI: start };
+      const growthSeed = crypto.randomUUID();
       stmts.push(
         this.db
           .prepare(
             `INSERT INTO monster_instances
-               (id, species_id, owner_id, current_level, element, primary_stats_json, origin_json, created_operation_id)
-             SELECT ?, ?, ?, ?, ?, ?, ?, ? WHERE ${OWN_RECEIPT} ON CONFLICT DO NOTHING`,
+               (id, species_id, owner_id, current_level, element, primary_stats_json, origin_json, created_operation_id,
+                growth_seed, growth_history_version)
+             SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${OWN_RECEIPT} ON CONFLICT DO NOTHING`,
           )
           .bind(
             `mon:${id}`,
@@ -122,6 +124,8 @@ export class RewardLedger {
             JSON.stringify(stats),
             JSON.stringify({ kind: "capture", battleId: id.split(":").slice(0, -2).join(":"), at }),
             id,
+            growthSeed,
+            COMPANION_GROWTH_VERSION,
             id,
             recipientId,
             hash,

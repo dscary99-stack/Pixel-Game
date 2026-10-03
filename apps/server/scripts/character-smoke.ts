@@ -1,7 +1,7 @@
 // End-to-end Phase D check against `wrangler dev`: make a character, rest in town, capture a
 // companion, put it in the team, fight with it, see HP carry over, lose and wake up in town.
 // Run `npm run db:migrate:local` and `npm run dev:server` first, then `npm run smoke:character`.
-import { approach, api, autoToEnd, battleCall, connect, lastPacks, run, sleep, toField, type Client, type Msg } from "./smoke-lib";
+import { approach, api, autoToEnd, battleCall, connect, lastPacks, run, sleep, toField, type Client, type Msg, AUTO_GAP_MS } from "./smoke-lib";
 
 const account = `acct:c${run}`;
 const H = { "content-type": "application/json", "x-dev-account": account };
@@ -60,6 +60,7 @@ for (const spawnId of ["gate_moles", "gate_birds"]) {
       const enemy = view.state.units.find((u: Msg) => u.side === "enemy" && !u.ko && !u.retired);
       if (enemy === undefined) return;
       if (view.actor !== "player") {
+        await sleep(AUTO_GAP_MS);
         await call("POST", "/auto", { commandId: crypto.randomUUID(), sessionGeneration: gen, expectedStateVersion: view.state.stateVersion });
         continue;
       }

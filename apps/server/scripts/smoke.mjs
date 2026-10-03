@@ -35,6 +35,8 @@ out.oldSession = (await call("POST", "/commands", { ...potion, commandId: crypto
 out.intruder = (await call("GET", "", undefined, { ...H, "x-dev-account": "acct:other" })).body.error;
 let steps = 0;
 while (view.state.status === "active" && steps < 300) {
+  // The server holds Auto to one action per autoBattleActionMs (700 ms).
+  await new Promise((r) => setTimeout(r, 720));
   const r = await call("POST", "/auto", { commandId: crypto.randomUUID(), sessionGeneration: gen, expectedStateVersion: view.state.stateVersion });
   if (r.body.status !== "accepted") { out.autoReject = r.body; break; }
   view = (await call("GET", "")).body; steps++;
