@@ -6,7 +6,8 @@
  *   character level is the licence (O04). The trial (บททดสอบ) is not built yet.
  * - Level goes back to 1 and EXP to 0; species, element, history, Bond, owner and growth seed stay,
  *   so the same growth path repeats with the stage's bonus on top (+4/+7/+10% total).
- * - Skill variants per stage (R1 skill, R2 innate, R3 extra + cosmetic) wait on the skill system.
+ * - Each stage may come with two variant branches (R1 a skill, R2 the innate, R3 another skill +
+ *   a cosmetic with an effect); the player picks one at the Rebirth and can switch later for coins.
  */
 import { z } from "zod";
 import { OperationIdSchema } from "./character";
@@ -20,9 +21,26 @@ export const RebirthRequestSchema = z
     companionId: z.string().min(1).max(120),
     /** The stage the player saw; a second click after the first landed is refused, not repeated. */
     expectedStage: z.number().int().min(0),
+    /** The branch for the new stage, when the species has variants for it (chapter 04 §7). */
+    branch: z.enum(["A", "B"]).optional(),
   })
   .strict();
 export type RebirthRequest = z.infer<typeof RebirthRequestSchema>;
+
+/** Switch the branch of a stage already reached (Nut 2026-10-03: allowed, a coin sink). */
+export const RebirthBranchRequestSchema = z
+  .object({
+    operationId: OperationIdSchema,
+    companionId: z.string().min(1).max(120),
+    stage: z.number().int().min(1).max(3),
+    /** The branch the player saw, and the one they want. */
+    expectedBranch: z.enum(["A", "B"]),
+    branch: z.enum(["A", "B"]),
+    /** The price the player saw; a changed price is refused. */
+    expectedCost: z.number().int().min(0),
+  })
+  .strict();
+export type RebirthBranchRequest = z.infer<typeof RebirthBranchRequestSchema>;
 
 /** The species' own material: the first material in its loot table's species pool. */
 export function speciesMaterialItem(

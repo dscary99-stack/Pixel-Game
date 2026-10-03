@@ -18,7 +18,7 @@ import { OperationIdSchema } from "./character";
 import { expForLevel } from "./progression";
 import { speciesMaterialItem } from "./rebirth";
 import type { RulesConfig } from "./rules";
-import type { ItemDefinition, LootTable, SkillDefinition, SkillLevelStep, SpeciesDefinition } from "./schemas";
+import type { ItemDefinition, LootTable, MonsterInstance, RebirthVariant, SkillDefinition, SkillLevelStep, SpeciesDefinition } from "./schemas";
 
 export const SKILL_MAX_LEVEL = 10;
 
@@ -134,4 +134,48 @@ export function skillTrainCost(
     companionLevel,
     companionExp: expForLevel(rules, "companion", companionLevel),
   };
+}
+
+// ---------------------------------------------------------------- Rebirth variants (chapter 04 §7)
+
+export interface KitSlot {
+  /** The species' own skill in this slot; trained levels are kept under this id. */
+  baseId: string;
+  /** What the companion uses in this fight: the base skill or the chosen Rebirth variant. */
+  skillId: string;
+  /** The stage whose variant is in use, if any. */
+  variantStage: number | null;
+}
+
+/** The variant entry for one Rebirth stage of a species, if it has one. */
+export function rebirthVariantFor(species: SpeciesDefinition, stage: number): RebirthVariant | undefined {
+  return species.rebirthVariants?.find((v) => v.stage === stage);
+}
+
+/**
+ * The companion's 3 skills + innate for a fight. A stage's chosen branch replaces its base skill once
+ * the companion has that Rebirth and fights at the stage's unlock level (Nut OK'd 20/50/100), so a
+ * fresh Lv1 after Rebirth still uses the base kit until it grows into the variant.
+ */
+export function companionKit(
+  rules: RulesConfig,
+  species: SpeciesDefinition,
+  inst: Pick<MonsterInstance, "rebirthStage" | "rebirthChoices">,
+  fightingLevel: number,
+): KitSlot[] {
+  const unlock = rules.provisional.rebirthVariantUnlockLevels.value;
+  return speciesSkillSlots(species).map((baseId) => {
+    const v = species.rebirthVariants?.find((x) => x.replaces === baseId);
+    const branch = v === undefined ? undefined : inst.rebirthChoices[String(v.stage) as "1" | "2" | "3"];
+    const pick = v?.options.find((o) => o.branch === branch);
+    if (v === undefined || pick === undefined || inst.rebirthStage < v.stage || fightingLevel < unlock[v.stage - 1]!) {
+      return { baseId, skillId: baseId, variantStage: null };
+    }
+    return { baseId, skillId: pick.skillId, variantStage: v.stage };
+  });
+}
+
+/** Coins to switch the branch of a stage at the NPC (a coin sink, Nut 2026-10-03). */
+export function rebirthBranchChangeCost(rules: RulesConfig, stage: number): number {
+  return rules.provisional.rebirthBranchChangeCoins.value[stage - 1]!;
 }

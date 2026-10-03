@@ -36,7 +36,9 @@ const at = (mapId: string) =>
        ON CONFLICT (account_id) DO UPDATE SET map_id = excluded.map_id`,
     )
     .run(A, mapId);
-const req = (operationId: string, expectedStage = 0) => ({ operationId, companionId: PET, expectedStage });
+// The crab has variants at every stage (EXAMPLE), so each Rebirth names a branch.
+const req = (operationId: string, expectedStage = 0, branch: "A" | "B" = "A") => ({ operationId, companionId: PET, expectedStage, branch });
+const choices = () => JSON.parse((db.prepare("SELECT rebirth_choices_json AS c FROM monster_instances WHERE id = ?").get(PET) as { c: string }).c);
 
 beforeEach(async () => {
   db = freshDb();
@@ -61,7 +63,7 @@ describe("companion Rebirth (chapter 04 §7)", () => {
     expect(await town.rebirth(A, req("rebirth_0001"))).toMatchObject({
       status: "done",
       replayed: false,
-      result: { stage: 1, paid: { coins: 50_000, itemId: "item:crab_shell", quantity: 30 } },
+      result: { stage: 1, branch: "A", paid: { coins: 50_000, itemId: "item:crab_shell", quantity: 30 } },
     });
     expect(await town.rebirth(A, req("rebirth_0001"))).toMatchObject({ status: "done", replayed: true });
     await Promise.all([town.rebirth(A, req("rebirth_0001")), town.rebirth(A, req("rebirth_0001"))]);
@@ -70,6 +72,7 @@ describe("companion Rebirth (chapter 04 §7)", () => {
     const p = pet();
     expect(p).toMatchObject({ rebirth_stage: 1, current_level: 1, xp: 0, bond: 321, element: "EARTH", growth_seed: "g1" });
     expect(JSON.parse(p.primary_stats_json)).toEqual(companionPrimaryStats(R, "tank", "g1", 1, 1));
+    expect(choices()).toEqual({ "1": "A" });
     expect(await town.rebirth(A, { ...req("rebirth_0001"), expectedStage: 1 })).toMatchObject({ reason: "PAYLOAD_MISMATCH" });
   });
 
@@ -102,5 +105,41 @@ describe("companion Rebirth (chapter 04 §7)", () => {
   it("stops at the third Rebirth", async () => {
     db.prepare("UPDATE monster_instances SET rebirth_stage = 3 WHERE id = ?").run(PET);
     expect(await town.rebirth(A, req("rebirth_max", 3))).toMatchObject({ reason: "MAX_REBIRTH" });
+  });
+});
+
+describe("Rebirth variants (chapter 04 §7; Nut 2026-10-03)", () => {
+  const branchReq = (operationId: string, expectedBranch: "A" | "B", branch: "A" | "B", expectedCost = 20_000) => ({
+    operationId,
+    companionId: PET,
+    stage: 1,
+    expectedBranch,
+    branch,
+    expectedCost,
+  });
+
+  it("a stage with variants needs a branch, and one without refuses it", async () => {
+    expect(await town.rebirth(A, { operationId: "rebirth_nobranch", companionId: PET, expectedStage: 0 })).toMatchObject({ reason: "BRANCH_REQUIRED" });
+    db.prepare("UPDATE monster_instances SET species_id = 'species:supply_mole' WHERE id = ?").run(PET);
+    expect(await town.rebirth(A, req("rebirth_mole"))).toMatchObject({ reason: "NO_VARIANT" });
+  });
+
+  it("switches a reached stage's branch for coins once, at the shown price, in town only", async () => {
+    await town.rebirth(A, req("rebirth_b1", 0, "B"));
+    expect(choices()).toEqual({ "1": "B" });
+    expect(await town.changeRebirthBranch(A, branchReq("branch_wrongprice", "B", "A", 1))).toMatchObject({ reason: "COST_CHANGED" });
+    expect(await town.changeRebirthBranch(A, branchReq("branch_same", "B", "B"))).toMatchObject({ reason: "SAME_BRANCH" });
+    at("map:dawn_field");
+    expect(await town.changeRebirthBranch(A, branchReq("branch_away", "B", "A"))).toMatchObject({ reason: "NOT_IN_TOWN" });
+    at(TOWN);
+    const r = await Promise.all([town.changeRebirthBranch(A, branchReq("branch_1", "B", "A")), town.changeRebirthBranch(A, branchReq("branch_1", "B", "A"))]);
+    expect(r.map((x) => x.status)).toEqual(["done", "done"]);
+    expect(choices()).toEqual({ "1": "A" });
+    expect(await town.coins(A)).toBe(100_000 - 50_000 - 20_000);
+    // The old branch is gone, so a stale second switch is refused and charges nothing.
+    expect(await town.changeRebirthBranch(A, branchReq("branch_2", "B", "A"))).toMatchObject({ reason: "CHANGED" });
+    expect(await town.coins(A)).toBe(30_000);
+    // A stage not reached yet cannot be switched.
+    expect(await town.changeRebirthBranch(A, { ...branchReq("branch_3", "A", "B", 60_000), stage: 2 })).toMatchObject({ reason: "CHANGED" });
   });
 });

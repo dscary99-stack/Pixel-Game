@@ -36,6 +36,8 @@ export interface BattleUnit {
   skillLevels?: Record<string, number>;
   /** Companions only: the Bond % already applied to `stats` (shown in the UI). */
   bondPercent?: number;
+  /** Companions only: the stage-3 Rebirth look, drawn by the client (Nut 2026-10-03: with an effect). */
+  cosmetic?: { effect: string; color: string };
   /** Companions only: knocked out at some point in this fight (Bond goes down, Nut 2026-10-03). */
   fell?: boolean;
   basicAttackRange: Range;
@@ -153,6 +155,8 @@ export type BattleEventBody =
     }
   | { type: "ItemConsumed"; itemId: string; remaining: number }
   | { type: "UnitKnockedOut"; unitId: string }
+  /** A side effect of an action on its user or target (lifesteal, recoil, MP restore). */
+  | { type: "ResourceChanged"; unitId: string; source: "lifesteal" | "recoil" | "restore_mp"; hp: number; mp: number; hpAfter: number; mpAfter: number }
   | { type: "EnemyDefeated"; unitId: string; speciesId: string }
   | { type: "CaptureResolved"; targetId: string; speciesId: string; success: boolean; probability: number }
   | { type: "RewardEntitled"; entitlement: Entitlement }

@@ -9,7 +9,10 @@
 import {
   COMPANION_GROWTH_VERSION,
   InstallSigilRequestSchema,
+  RebirthBranchRequestSchema,
   RebirthRequestSchema,
+  rebirthBranchChangeCost,
+  rebirthVariantFor,
   companionPrimaryStats,
   rebirthCost,
   RemoveSigilRequestSchema,
@@ -38,7 +41,7 @@ export interface TownContent {
   lootTables: ReadonlyMap<string, LootTable>;
 }
 
-type Kind = "npc_sell" | "sigil_install" | "sigil_remove" | "companion_rebirth" | "skill_train";
+type Kind = "npc_sell" | "sigil_install" | "sigil_remove" | "companion_rebirth" | "skill_train" | "rebirth_branch";
 
 export type ServiceRejection =
   | "INVALID_REQUEST"
@@ -62,6 +65,9 @@ export type ServiceRejection =
   | "MAX_SKILL_LEVEL"
   | "NOT_SPECIES_SKILL"
   | "MASTERY_TOO_LOW"
+  | "BRANCH_REQUIRED"
+  | "NO_VARIANT"
+  | "SAME_BRANCH"
   | "CHANGED";
 
 export type ServiceResult<T> = { status: "done"; replayed: boolean; result: T } | { status: "rejected"; reason: ServiceRejection; message: string };
@@ -73,7 +79,15 @@ export interface SellResult {
 export interface RebirthResult {
   companionId: string;
   stage: number;
+  /** The branch picked for the new stage, when it has variants. */
+  branch: "A" | "B" | null;
   paid: { coins: number; itemId: string; quantity: number };
+}
+export interface RebirthBranchResult {
+  companionId: string;
+  stage: number;
+  branch: "A" | "B";
+  paid: number;
 }
 export interface SkillTrainResult {
   companionId: string;
@@ -277,7 +291,8 @@ export class TownServices {
     const parsed = RebirthRequestSchema.safeParse(raw);
     if (!parsed.success) return reject("INVALID_REQUEST", issues(parsed.error));
     const { operationId, companionId, expectedStage } = parsed.data;
-    const hash = await hashJson({ kind: "companion_rebirth", companionId, expectedStage });
+    const branch = parsed.data.branch ?? null;
+    const hash = await hashJson({ kind: "companion_rebirth", companionId, expectedStage, ...(branch === null ? {} : { branch }) });
     const prior = await this.prior<RebirthResult>(accountId, operationId, hash);
     if (prior !== null) return prior;
 
@@ -290,8 +305,12 @@ export class TownServices {
     if (pet.rebirth_stage !== expectedStage) return reject("CHANGED", "the companion changed; reload and try again");
     const cost = rebirthCost(this.rules, species, expectedStage, this.content);
     if (!cost.ok) return reject(cost.code, cost.message);
+    // A stage with variants needs the player's branch; one without takes none (chapter 04 §7).
+    const hasVariant = rebirthVariantFor(species, cost.nextStage) !== undefined;
+    if (hasVariant && branch === null) return reject("BRANCH_REQUIRED", `pick branch A or B for Rebirth ${cost.nextStage}`);
+    if (!hasVariant && branch !== null) return reject("NO_VARIANT", `${species.id} has no variants at Rebirth ${cost.nextStage}`);
 
-    const result: RebirthResult = { companionId, stage: cost.nextStage, paid: { coins: cost.coins, itemId: cost.materialItemId, quantity: cost.materialQty } };
+    const result: RebirthResult = { companionId, stage: cost.nextStage, branch, paid: { coins: cost.coins, itemId: cost.materialItemId, quantity: cost.materialQty } };
     const guards = [
       this.inTown(),
       `NOT ${OPEN_BATTLE}`,
@@ -342,10 +361,21 @@ export class TownServices {
         .prepare(
           `UPDATE monster_instances
            SET rebirth_stage = ?, current_level = 1, xp = 0, hp = NULL, mp = NULL,
-               primary_stats_json = COALESCE(?, primary_stats_json)
+               primary_stats_json = COALESCE(?, primary_stats_json),
+               rebirth_choices_json = CASE WHEN ? IS NULL THEN rebirth_choices_json ELSE json_set(rebirth_choices_json, ?, ?) END
            WHERE id = ? AND owner_id = ? AND rebirth_stage = ? AND ${ours.sql}`,
         )
-        .bind(cost.nextStage, stats === null ? null : JSON.stringify(stats), companionId, accountId, expectedStage, ...ours.args),
+        .bind(
+          cost.nextStage,
+          stats === null ? null : JSON.stringify(stats),
+          branch,
+          `$."${cost.nextStage}"`,
+          branch,
+          companionId,
+          accountId,
+          expectedStage,
+          ...ours.args,
+        ),
     ]);
     return this.outcome(accountId, operationId, hash, async () => {
       const why = await this.whereAndFight(accountId);
@@ -362,6 +392,72 @@ export class TownServices {
       if ((ch?.xp ?? 0) < cost.playerExp) return reject("PLAYER_LEVEL_TOO_LOW", `your character must be Lv${cost.playerLevel}`);
       if ((await this.coins(accountId)) < cost.coins) return reject("INSUFFICIENT_COINS", `Rebirth costs ${cost.coins} coins`);
       return reject("INSUFFICIENT_ITEMS", `Rebirth needs ${cost.materialQty} ${cost.materialItemId}`);
+    });
+  }
+
+  // ------------------------------------------------------------------ Rebirth branch change
+
+  /**
+   * Switch a reached stage's variant branch at the town NPC (chapter 04 §7; Nut 2026-10-03: allowed,
+   * as a coin sink). Same guards as other services plus the branch the player saw and the price.
+   */
+  async changeRebirthBranch(accountId: string, raw: unknown): Promise<ServiceResult<RebirthBranchResult>> {
+    const parsed = RebirthBranchRequestSchema.safeParse(raw);
+    if (!parsed.success) return reject("INVALID_REQUEST", issues(parsed.error));
+    const { operationId, companionId, stage, expectedBranch, branch, expectedCost } = parsed.data;
+    const hash = await hashJson({ kind: "rebirth_branch", companionId, stage, expectedBranch, branch, expectedCost });
+    const prior = await this.prior<RebirthBranchResult>(accountId, operationId, hash);
+    if (prior !== null) return prior;
+    if (branch === expectedBranch) return reject("SAME_BRANCH", "that branch is already in use");
+
+    const pet = await this.db
+      .prepare(`SELECT species_id FROM monster_instances WHERE id = ? AND owner_id = ?`)
+      .bind(companionId, accountId)
+      .first<{ species_id: string }>();
+    const species = pet === null ? undefined : this.content.species.get(pet.species_id);
+    if (pet === null || species === undefined) return reject("NOT_OWNER", "that companion is not yours");
+    if (rebirthVariantFor(species, stage) === undefined) return reject("NO_VARIANT", `${species.id} has no variants at Rebirth ${stage}`);
+    const cost = rebirthBranchChangeCost(this.rules, stage);
+    if (cost !== expectedCost) return reject("COST_CHANGED", `switching costs ${cost} coins`);
+
+    const result: RebirthBranchResult = { companionId, stage, branch, paid: cost };
+    const path = `$."${stage}"`;
+    const guards = [
+      this.inTown(),
+      `NOT ${OPEN_BATTLE}`,
+      `EXISTS (SELECT 1 FROM monster_instances WHERE id = ? AND owner_id = ? AND lock_state = 'free' AND rebirth_stage >= ? AND json_extract(rebirth_choices_json, ?) = ?)`,
+      `(SELECT COALESCE(SUM(delta), 0) FROM coin_ledger WHERE account_id = ?) >= ?`,
+    ];
+    const args = [accountId, ...this.townMapIds, accountId, companionId, accountId, stage, path, expectedBranch, accountId, cost];
+    const ledgerId = `svc:${accountId}:${operationId}`;
+    const at = this.now();
+    const ours = this.ours(accountId, operationId, hash);
+    await this.db.batch([
+      this.anchor(accountId, operationId, "rebirth_branch", hash, result, guards, args),
+      this.db
+        .prepare(
+          `INSERT INTO coin_ledger (operation_id, line_no, account_id, delta, reason, created_at)
+           SELECT ?, 0, ?, ?, 'rebirth_branch', ? WHERE ${ours.sql} ON CONFLICT DO NOTHING`,
+        )
+        .bind(ledgerId, accountId, -cost, at, ...ours.args),
+      this.db
+        .prepare(
+          `UPDATE monster_instances SET rebirth_choices_json = json_set(rebirth_choices_json, ?, ?)
+           WHERE id = ? AND owner_id = ? AND json_extract(rebirth_choices_json, ?) = ? AND ${ours.sql}`,
+        )
+        .bind(path, branch, companionId, accountId, path, expectedBranch, ...ours.args),
+    ]);
+    return this.outcome(accountId, operationId, hash, async () => {
+      const why = await this.whereAndFight(accountId);
+      if (why !== null) return why;
+      const now = await this.db
+        .prepare(`SELECT rebirth_stage, json_extract(rebirth_choices_json, ?) AS b, lock_state FROM monster_instances WHERE id = ? AND owner_id = ?`)
+        .bind(path, companionId, accountId)
+        .first<{ rebirth_stage: number; b: string | null; lock_state: string }>();
+      if (now === null) return reject("NOT_OWNER", "that companion is not yours");
+      if (now.rebirth_stage < stage || now.b !== expectedBranch) return reject("CHANGED", "the companion changed; reload and try again");
+      if (now.lock_state !== "free") return reject("ASSET_LOCKED", "that companion is busy");
+      return reject("INSUFFICIENT_COINS", `switching costs ${cost} coins`);
     });
   }
 

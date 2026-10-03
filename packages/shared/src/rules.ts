@@ -186,6 +186,18 @@ export const RULES = {
     bondLossOnFall: provisional(2, "P06", "Nut 2026-10-03: a companion knocked out in a fight loses Bond (once per fight, any outcome); never below 0; time offline never lowers it"),
     bondTierSize: provisional(200, "P06", "chapter 04 §6 tiers: 0–199, 200–399, 400–599, 600–799, 800–1000"),
     bondTierBonusPercent: provisional([0, 1, 2, 3, 5] as const, "P06", "small capped bonus on the archetype's stat, per tier"),
+    // Rebirth variants (chapter 04 §7). Nut 2026-10-03: unlock levels OK; changing a branch is allowed and
+    // is a coin sink; the stage-3 cosmetic has an effect. Prices are Claude's proposal.
+    rebirthVariantUnlockLevels: provisional(
+      [20, 50, 100] as const,
+      "P05",
+      "Nut OK'd 2026-10-03: the R1/R2/R3 variant works once the companion fights at this level; before it the base skill is used",
+    ),
+    rebirthBranchChangeCoins: provisional(
+      [20_000, 60_000, 160_000] as const,
+      "P05",
+      "coins to switch the branch of stage 1/2/3 at the town NPC (Nut: a coin sink); 40% of that stage's Rebirth price",
+    ),
     // Party (chapter 08 "Party", P02): bonus while partners hunt on the same map and channel.
     partyMaxMembers: provisional(4, "P02"),
     partyExpPercentPerMember: provisional(5, "P02", "per eligible additional member"),

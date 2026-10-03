@@ -77,6 +77,7 @@ function previewSetup(seed: string): BattleSetup {
     growthSeed: "seed:fixture",
     trainedSkillLevels: {},
     skillMastery: 0,
+    rebirthChoices: {},
     bond: 0,
     originRecord: { kind: "starter", at: "2026-10-03T00:00:00Z" },
     ownershipVersion: 1,

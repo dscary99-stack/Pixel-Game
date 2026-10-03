@@ -270,6 +270,7 @@ export class BattleScene extends Phaser.Scene {
           if (u.side === "enemy") this.selectedTarget = u.unitId;
           this.render(this.snap.state);
         });
+        if (u.cosmetic !== undefined) this.drawCosmetic(body, u.cosmetic);
         const ring = this.add.rectangle(x, y, 60, 68).setStrokeStyle(2, 0xffffff).setVisible(false);
         this.add.rectangle(x, y + 36, 52, 6, 0x0b0a12);
         const hpBar = this.add.rectangle(x - 25, y + 36, 50, 4, 0x6be36b).setOrigin(0, 0.5);
@@ -291,6 +292,28 @@ export class BattleScene extends Phaser.Scene {
     if (state.status !== "active" && this.onExit !== null && this.exitButton === null && !this.watching) {
       const exit = this.onExit;
       this.exitButton = this.button(W - 200, 20, "กลับไปเดินต่อ", () => exit()).setFixedSize(184, 48).setBackgroundColor("#2f7a4a");
+    }
+  }
+
+  /**
+   * Stage-3 Rebirth look (placeholder art until the pixel pass): a pulsing glow in the species' colour
+   * plus a small looping effect, drawn where the unit stands when the fight opens.
+   */
+  private drawCosmetic(body: Phaser.GameObjects.Rectangle, c: { effect: string; color: string }) {
+    const color = Number.parseInt(c.color.slice(1), 16);
+    // Same depth as the body but drawn just under it, so the field background stays behind both.
+    const glow = this.add.ellipse(body.x, body.y + 4, 78, 86, color, 1);
+    this.children.moveBelow(glow, body);
+    this.tweens.add({ targets: glow, alpha: { from: 0.25, to: 0.6 }, scale: { from: 0.95, to: 1.08 }, duration: 900, yoyo: true, repeat: -1 });
+    if (c.effect === "ripple" || c.effect === "aura") {
+      const ring = this.add.ellipse(body.x, body.y + 28, 44, 14).setStrokeStyle(3, color);
+      this.children.moveBelow(ring, body);
+      this.tweens.add({ targets: ring, scaleX: 2, scaleY: 2, alpha: { from: 0.9, to: 0 }, duration: 1200, repeat: -1 });
+    } else {
+      for (let i = 0; i < 4; i++) {
+        const dot = this.add.rectangle(body.x - 18 + i * 12, body.y + 20, 4, 4, color);
+        this.tweens.add({ targets: dot, y: body.y - 36, alpha: { from: 1, to: 0 }, duration: 1000 + i * 150, delay: i * 200, repeat: -1 });
+      }
     }
   }
 

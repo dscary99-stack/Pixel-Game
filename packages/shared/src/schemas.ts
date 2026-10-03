@@ -56,11 +56,32 @@ export const DamageEffectSchema = z
     coefficient: z.number().positive(),
     flat: z.number().min(0),
     element: ElementSchema,
+    // Optional primitives (docs/design/SKILL_PRIMITIVES_CATALOG.md). None needs a status or tick rule.
+    /** Ignore this % of the target's defense (capped by P04 armorPenetrationCapPct). */
+    penetrationPct: z.number().int().min(1).max(100).optional(),
+    /** Added to the hit chance before the clamp. */
+    accuracyBonusPct: z.number().int().min(1).max(100).optional(),
+    /** Added to the crit chance before the clamp. */
+    critBonusPct: z.number().int().min(1).max(100).optional(),
+    /** Extra damage % when the target's HP share before the hit is below `belowHpPct`. */
+    execute: z.object({ belowHpPct: z.number().int().min(1).max(99), bonusPct: z.number().int().min(1).max(200) }).strict().optional(),
+    /** The user heals this % of the damage dealt. */
+    lifestealPct: z.number().int().min(1).max(100).optional(),
+    /** The user loses this % of the damage dealt, never below 1 HP. */
+    recoilPct: z.number().int().min(1).max(100).optional(),
   })
   .strict();
 
+export type DamageEffect = z.infer<typeof DamageEffectSchema>;
+
 export const HealEffectSchema = z
-  .object({ kind: z.literal("heal"), coefficient: z.number().positive(), flat: z.number().min(0) })
+  .object({
+    kind: z.literal("heal"),
+    coefficient: z.number().positive(),
+    flat: z.number().min(0),
+    /** Also restores this much MP to each healed target. */
+    restoreMp: z.number().int().min(1).optional(),
+  })
   .strict();
 
 /**
@@ -94,6 +115,8 @@ export const SkillDefinitionSchema = z
     tags: z.array(z.string()),
     /** One step per level 2–10 when present; absent = the default power step (rules). */
     levelSteps: z.array(SkillLevelStepSchema).optional(),
+    /** A Rebirth variant of this base skill (chapter 04 §7): same role, played differently. */
+    variantOf: SkillId.optional(),
   })
   .strict()
   .superRefine((s, ctx) => {
@@ -120,6 +143,29 @@ export type SkillDefinition = z.infer<typeof SkillDefinitionSchema>;
 
 // ---------------------------------------------------------------- species
 
+/** One Rebirth stage's two branches (chapter 04 §7): R1 a skill, R2 the innate, R3 another skill. */
+export const RebirthVariantSchema = z
+  .object({
+    stage: z.number().int().min(1).max(3),
+    replaces: SkillId,
+    options: z.array(z.object({ branch: z.enum(["A", "B"]), skillId: SkillId }).strict()).length(2),
+  })
+  .strict();
+export type RebirthVariant = z.infer<typeof RebirthVariantSchema>;
+export type RebirthBranch = "A" | "B";
+
+/** The stage-3 look (Nut 2026-10-03: with an effect). `effect` is an art key the client draws. */
+export const RebirthCosmeticSchema = z
+  .object({
+    id: z.string().min(1),
+    name: LocalizedName,
+    effect: z.enum(["aura", "sparkle", "flame", "ripple", "leaf"]),
+    /** #rrggbb tint for the effect. */
+    color: z.string().regex(/^#[0-9a-f]{6}$/),
+  })
+  .strict();
+export type RebirthCosmetic = z.infer<typeof RebirthCosmeticSchema>;
+
 export const SpeciesDefinitionSchema = z
   .object({
     id: SpeciesId,
@@ -143,6 +189,9 @@ export const SpeciesDefinitionSchema = z
     /** Wild combat stat block at fixedWildLevel. Prototype numbers, not balance targets. */
     wildPrimaryStats: PrimaryStatsSchema,
     basicAttackRange: z.enum(["melee", "ranged"]),
+    /** Rebirth variants, one entry per stage that has them (validator checks the kit rules). */
+    rebirthVariants: z.array(RebirthVariantSchema).max(3).optional(),
+    rebirthCosmetic: RebirthCosmeticSchema.optional(),
   })
   .strict();
 export type SpeciesDefinition = z.infer<typeof SpeciesDefinitionSchema>;
@@ -175,6 +224,8 @@ export const MonsterInstanceSchema = z
     growthHistoryVersion: z.number().int().min(1),
     /** Picked by the server when the companion is created; the whole growth path follows from it. */
     growthSeed: z.string().min(1),
+    /** Branch picked per Rebirth stage that has variants ("1" → "A"); changeable at the NPC for coins. */
+    rebirthChoices: z.partialRecord(z.enum(["1", "2", "3"]), z.enum(["A", "B"])),
     /** Trained level per skill (3 skills + innate); missing = 1. A fight caps it by level (skill-training.ts). */
     trainedSkillLevels: z.record(SkillId, z.number().int().min(1).max(10)),
     /** Unspent mastery from won fights, spent on the skill the player picks (chapter 04 §5). */

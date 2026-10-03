@@ -7,6 +7,9 @@ import {
   exampleMapRegistry,
   type PartyView,
   rebirthCost,
+  rebirthBranchChangeCost,
+  rebirthVariantFor,
+  companionKit,
   applyBond,
   bondBonusPercent,
   bondTier,
@@ -88,6 +91,8 @@ const CSS = `
 .pm-item-rule { border: 1px solid #322b4d; border-radius: 6px; padding: 8px; margin: 6px 0; }
 .pm-list li { display: flex; align-items: center; gap: 10px; padding: 8px; border-bottom: 1px solid #322b4d; }
 .pm-list li.pm-skill-pet { display: block; }
+.pm-branch { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 4px 0; }
+.pm-branch span { flex: 1 1 260px; }
 .pm-list li.pm-skill-pet > div { font-weight: bold; margin-bottom: 4px; }
 .pm-list li.pm-skill-pet li span { flex: 1 1 auto; }
 .pm-list li.ko { opacity: 0.6; }
@@ -822,7 +827,7 @@ export function rebirthPanel(api: CharacterApi, start: CharacterBundle): Promise
     actions.append(done);
     panel.append(
       el("h2", {}, "จุติคู่ใจ (Rebirth)"),
-      el("div", { class: "pm-note" }, "คู่ใจ Lv200 กลับเป็น Lv1 เส้นทางเติบโตเดิม + โบนัสสเตตัส (ขั้น 1/2/3 = +4/+7/+10% รวม) · ธาตุ Bond ประวัติคงเดิม · ทำในเมือง นอกไฟต์"),
+      el("div", { class: "pm-note" }, `คู่ใจ Lv200 กลับเป็น Lv1 เส้นทางเติบโตเดิม + โบนัสสเตตัส (ขั้น 1/2/3 = +4/+7/+10% รวม) · ธาตุ Bond ประวัติ เลเวลสกิลคงเดิม · แต่ละขั้นเลือกสายสกิล A/B (R1 สกิล, R2 innate, R3 สกิล + ลวดลายมีเอฟเฟกต์) ใช้ได้เมื่อสู้ถึง Lv${RULES.provisional.rebirthVariantUnlockLevels.value.join("/")} · เปลี่ยนสายทีหลังได้ด้วยเหรียญ · ทำในเมือง นอกไฟต์`),
       body,
       error,
       actions,
@@ -831,17 +836,56 @@ export function rebirthPanel(api: CharacterApi, start: CharacterBundle): Promise
       close();
       resolve(bundle);
     });
+    const run = async (key: string, prefix: string, call: (op: string) => Promise<unknown>) => {
+      if (busy) return;
+      busy = true;
+      error.textContent = "";
+      const op = ops.get(key) ?? `${prefix}_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
+      ops.set(key, op);
+      try {
+        await call(op);
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+      } finally {
+        bundle = (await api.get().catch(() => null)) ?? bundle;
+        busy = false;
+        draw();
+      }
+    };
+    const skillName = (id: string) => skillDefs.get(id)?.name.th ?? id;
+    const unlock = RULES.provisional.rebirthVariantUnlockLevels.value;
     const draw = () => {
       body.replaceChildren();
       const ul = el("ul", { class: "pm-list" });
       for (const c of bundle.companions) {
         const sp = species.get(c.speciesId);
         if (sp === undefined) continue;
-        const li = el("li", { "data-companion": c.id });
-        const cost = rebirthCost(RULES, sp, c.rebirthStage, { lootTables, items: itemDefs });
+        const li = el("li", { "data-companion": c.id, class: "pm-skill-pet" });
         const name = `${sp.name.th} ★R${c.rebirthStage} · Lv${c.currentLevel}`;
+        li.append(el("div", {}, name));
+        // Branches already taken: switching is a coin sink (Nut 2026-10-03).
+        for (const v of sp.rebirthVariants ?? []) {
+          if (v.stage > c.rebirthStage) continue;
+          const now = c.rebirthChoices[String(v.stage) as "1" | "2" | "3"];
+          if (now === undefined) continue;
+          const other = v.options.find((o) => o.branch !== now)!;
+          const price = rebirthBranchChangeCost(RULES, v.stage);
+          const row = el("div", { class: "pm-branch", "data-stage": String(v.stage) });
+          const sw = el("button", { type: "button" }, `เปลี่ยนเป็น ${other.branch} (${price.toLocaleString()} เหรียญ)`);
+          sw.disabled = bundle.coins < price;
+          sw.addEventListener("click", () =>
+            void run(`${c.id}:branch:${v.stage}:${now}`, "branch", (op) => api.changeRebirthBranch(op, c.id, v.stage, now, other.branch, price)),
+          );
+          row.append(
+            el("span", {}, `R${v.stage} สาย ${now}: ${skillName(v.options.find((o) => o.branch === now)!.skillId)} (ใช้ได้เมื่อสู้ Lv${unlock[v.stage - 1]}+) · อีกสาย: ${skillName(other.skillId)}`),
+            sw,
+          );
+          li.append(row);
+        }
+        if (c.rebirthStage >= 3 && sp.rebirthCosmetic !== undefined) li.append(el("div", { class: "pm-note" }, `ลวดลาย R3: ${sp.rebirthCosmetic.name.th} (เอฟเฟกต์ ${sp.rebirthCosmetic.effect})`));
+        const cost = rebirthCost(RULES, sp, c.rebirthStage, { lootTables, items: itemDefs });
         if (!cost.ok) {
-          li.append(el("span", {}, `${name} · จุติครบแล้ว`));
+          li.append(el("div", {}, "จุติครบแล้ว"));
           ul.append(li);
           continue;
         }
@@ -852,27 +896,20 @@ export function rebirthPanel(api: CharacterApi, start: CharacterBundle): Promise
           bundle.coins < cost.coins ? "เหรียญไม่พอ" : "",
           have < cost.materialQty ? "วัสดุไม่พอ" : "",
         ].filter((x) => x !== "");
-        const text = `${name} → R${cost.nextStage} · ${cost.coins.toLocaleString()} เหรียญ + ${itemDefs.get(cost.materialItemId)?.name.th ?? cost.materialItemId} ${have}/${cost.materialQty}`;
-        const go = el("button", { type: "button" }, "จุติ");
-        go.disabled = missing.length > 0;
-        go.addEventListener("click", async () => {
-          if (busy) return;
-          busy = true;
-          error.textContent = "";
-          const key = `${c.id}:${c.rebirthStage}`;
-          const op = ops.get(key) ?? `rebirth_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
-          ops.set(key, op);
-          try {
-            await api.rebirth(op, c.id, c.rebirthStage);
-          } catch (e) {
-            error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
-          } finally {
-            bundle = (await api.get().catch(() => null)) ?? bundle;
-            busy = false;
-            draw();
-          }
-        });
-        li.append(el("span", {}, `${text}${missing.length > 0 ? ` (${missing.join(", ")})` : ""}`), go);
+        const text = `→ R${cost.nextStage} · ${cost.coins.toLocaleString()} เหรียญ + ${itemDefs.get(cost.materialItemId)?.name.th ?? cost.materialItemId} ${have}/${cost.materialQty}`;
+        const next = el("div", { class: "pm-branch" });
+        next.append(el("span", {}, `${text}${missing.length > 0 ? ` (${missing.join(", ")})` : ""}`));
+        const variant = rebirthVariantFor(sp, cost.nextStage);
+        const key = `${c.id}:${c.rebirthStage}`;
+        // A stage with variants: pick one branch at the Rebirth (it can be switched later for coins).
+        const options = variant === undefined ? [{ label: "จุติ", branch: undefined }] : variant.options.map((o) => ({ label: `จุติ สาย ${o.branch}: ${skillName(o.skillId)}`, branch: o.branch }));
+        for (const o of options) {
+          const go = el("button", { type: "button" }, o.label);
+          go.disabled = missing.length > 0;
+          go.addEventListener("click", () => void run(`${key}:${o.branch ?? "-"}`, "rebirth", (op) => api.rebirth(op, c.id, c.rebirthStage, o.branch)));
+          next.append(go);
+        }
+        li.append(next);
         ul.append(li);
       }
       if (bundle.companions.length === 0) ul.append(el("li", {}, "ยังไม่มีคู่ใจ"));
@@ -969,14 +1006,18 @@ export function skillPanel(api: CharacterApi, start: CharacterBundle, inTown: bo
           ),
         );
         const rows = el("ul", { class: "pm-list" });
+        // The kit in a fight now, with any Rebirth variant that has unlocked (chapter 04 §7).
+        const kit = companionKit(RULES, sp, c, fighting);
         speciesSkillSlots(sp).forEach((skillId, i) => {
-          const def = skillDefs.get(skillId);
+          const inUse = kit[i]?.skillId ?? skillId;
+          const def = skillDefs.get(inUse);
           const lv = trainedSkillLevel(c.trainedSkillLevels, skillId);
           const eff = effectiveSkillLevel(RULES, lv, fighting);
           const kind = i === 3 ? "ติดตัว" : def?.kind === "active" ? "ใช้งาน" : "ติดตัว";
           const row = el("li", { "data-skill": skillId });
           const power = def === undefined ? "" : def.kind === "active" ? ` · ${modsText(skillLevelMods(RULES, def, eff))}` : " · (ผลติดตัวยังไม่ทำงานในไฟต์)";
-          const head = `${def?.name.th ?? skillId} [${kind}] Lv${lv}${eff < lv ? ` (ใช้ได้ Lv${eff})` : ""}${power}`;
+          const variantNote = inUse === skillId ? "" : ` (สาย R${kit[i]!.variantStage} แทน ${skillDefs.get(skillId)?.name.th ?? skillId})`;
+          const head = `${def?.name.th ?? skillId}${variantNote} [${kind}] Lv${lv}${eff < lv ? ` (ใช้ได้ Lv${eff})` : ""}${power}`;
           const cost = skillTrainCost(RULES, sp, skillId, lv, { lootTables, items: itemDefs });
           if (!cost.ok) {
             row.append(el("span", {}, `${head} · สูงสุดแล้ว`));

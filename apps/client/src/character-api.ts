@@ -86,8 +86,24 @@ export class CharacterApi {
   }
 
   /** Companion Rebirth at the town NPC. The panel keeps one operation id per companion and stage. */
-  rebirth(operationId: string, companionId: string, expectedStage: number) {
-    return this.call<{ coins: number; result: { stage: number } }>("POST", "/town/rebirth", { operationId, companionId, expectedStage });
+  rebirth(operationId: string, companionId: string, expectedStage: number, branch?: "A" | "B") {
+    return this.call<{ coins: number; result: { stage: number } }>("POST", "/town/rebirth", {
+      operationId,
+      companionId,
+      expectedStage,
+      ...(branch === undefined ? {} : { branch }),
+    });
+  }
+
+  changeRebirthBranch(operationId: string, companionId: string, stage: number, expectedBranch: "A" | "B", branch: "A" | "B", expectedCost: number) {
+    return this.call<{ coins: number; result: { branch: "A" | "B" } }>("POST", "/town/rebirth/branch", {
+      operationId,
+      companionId,
+      stage,
+      expectedBranch,
+      branch,
+      expectedCost,
+    });
   }
 
   trainSkill(operationId: string, companionId: string, skillId: string, expectedLevel: number) {

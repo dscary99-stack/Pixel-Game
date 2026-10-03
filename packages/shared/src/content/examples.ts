@@ -10,6 +10,7 @@ import type {
   ItemDefinition,
   LootTable,
   SigilDefinition,
+  DamageEffect,
   SkillDefinition,
   SkillLevelStep,
   SpeciesDefinition,
@@ -50,6 +51,19 @@ export const EXAMPLE_SKILLS: SkillDefinition[] = [
   skill("skill:bird_cleanse", "cleanse1ชนิด", "passive"),
   dmg("skill:bird_back_peck", "โจมตีหลัง", "physical", 1.0, 0, "WIND", "ranged", 4, 0),
   skill("skill:bird_innate_resist", "cleanseครั้งแรกให้resist", "passive"),
+  // Rebirth variants (chapter 04 §7, EXAMPLE): same role, played differently. Crab follows chapter 04's example.
+  variant(skill("skill:crab_shield_thick", "โล่หนา (โล่มาก ใช้MPสูง)", "passive"), "skill:crab_self_shield"),
+  variant(skill("skill:crab_shield_shared", "โล่บางแชร์ (โล่บางให้เพื่อนด้วย)", "passive"), "skill:crab_self_shield"),
+  variant(skill("skill:crab_innate_mp_surge", "รับแทนสำเร็จคืนMPมากขึ้น", "passive"), "skill:crab_innate_mp_refund"),
+  variant(skill("skill:crab_innate_small_heal", "รับแทนสำเร็จฮีลเล็กแทน", "passive"), "skill:crab_innate_mp_refund"),
+  variant(dmg("skill:crab_pierce_bash", "กระแทกเจาะเกราะ", "physical", 1.3, 0, "EARTH", "melee", 6, 0, { penetrationPct: 30 }), "skill:crab_shield_bash"),
+  variant(dmg("skill:crab_light_bash", "กระแทกประหยัดโล่", "physical", 1.15, 0, "EARTH", "melee", 3, 0), "skill:crab_shield_bash"),
+  variant(dmg("skill:fox_blood_bite", "กัดดูดเลือด", "physical", 1.1, 0, "FIRE", "melee", 4, 0, { lifestealPct: 30 }), "skill:fox_mark_bite"),
+  variant(dmg("skill:fox_keen_bite", "กัดแม่นคม", "physical", 1.15, 0, "FIRE", "melee", 4, 0, { accuracyBonusPct: 15, critBonusPct: 15 }), "skill:fox_mark_bite"),
+  variant(skill("skill:fox_innate_kill_haste", "กำจัดเป้าหมายmarkแล้วเร็วขึ้น", "passive"), "skill:fox_innate_kill_heal"),
+  variant(skill("skill:fox_innate_kill_mp", "กำจัดเป้าหมายmarkแล้วคืนMP", "passive"), "skill:fox_innate_kill_heal"),
+  variant(dmg("skill:fox_final_blaze", "ปิดฉากเพลิง", "physical", 1.5, 0, "FIRE", "melee", 10, 2, { execute: { belowHpPct: 35, bonusPct: 60 } }), "skill:fox_consume_mark"),
+  variant(dmg("skill:fox_reckless_dash", "พุ่งเสี่ยงตาย", "physical", 2.2, 0, "FIRE", "melee", 10, 2, { recoilPct: 20 }), "skill:fox_consume_mark"),
   // Player prototype skill
   dmg("skill:player_power_strike", "ฟันแรง", "physical", 1.6, 0, "NEUTRAL", "melee", 8, 0),
 ];
@@ -59,12 +73,26 @@ export const EXAMPLE_SPECIES: SpeciesDefinition[] = [
     "skill:crab_take_hit",
     "skill:crab_self_shield",
     "skill:crab_shield_bash",
-  ], "skill:crab_innate_mp_refund", 0.25, { STR: 14, VIT: 20, INT: 8, DEX: 10, AGI: 8, SPI: 10 }, "melee"),
+  ], "skill:crab_innate_mp_refund", 0.25, { STR: 14, VIT: 20, INT: 8, DEX: 10, AGI: 8, SPI: 10 }, "melee", {
+    rebirthVariants: [
+      rv(1, "skill:crab_self_shield", "skill:crab_shield_thick", "skill:crab_shield_shared"),
+      rv(2, "skill:crab_innate_mp_refund", "skill:crab_innate_mp_surge", "skill:crab_innate_small_heal"),
+      rv(3, "skill:crab_shield_bash", "skill:crab_pierce_bash", "skill:crab_light_bash"),
+    ],
+    rebirthCosmetic: { id: "cosmetic:crab_r3", name: { th: "กระดองคลื่นน้ำ" }, effect: "ripple", color: "#5fb3ff" },
+  }),
   species("species:ember_fox", "จิ้งจอกสะเก็ด", 8, "physical", ["FIRE", "WIND", "SHADOW"], [
     "skill:fox_mark_bite",
     "skill:fox_light_volley",
     "skill:fox_consume_mark",
-  ], "skill:fox_innate_kill_heal", 0.2, { STR: 20, VIT: 12, INT: 8, DEX: 16, AGI: 18, SPI: 8 }, "melee"),
+  ], "skill:fox_innate_kill_heal", 0.2, { STR: 20, VIT: 12, INT: 8, DEX: 16, AGI: 18, SPI: 8 }, "melee", {
+    rebirthVariants: [
+      rv(1, "skill:fox_mark_bite", "skill:fox_blood_bite", "skill:fox_keen_bite"),
+      rv(2, "skill:fox_innate_kill_heal", "skill:fox_innate_kill_haste", "skill:fox_innate_kill_mp"),
+      rv(3, "skill:fox_consume_mark", "skill:fox_final_blaze", "skill:fox_reckless_dash"),
+    ],
+    rebirthCosmetic: { id: "cosmetic:fox_r3", name: { th: "หางเปลวเพลิง" }, effect: "flame", color: "#ff7a3d" },
+  }),
   species("species:lantern_snail", "หอยตะเกียง", 5, "support", ["WATER", "LIGHT"], [
     "skill:snail_single_heal",
     "skill:snail_glare",
@@ -172,6 +200,7 @@ function dmg(
   range: "melee" | "ranged",
   mpCost: number,
   cooldown: number,
+  primitives: Partial<Omit<DamageEffect, "kind" | "damageType" | "coefficient" | "flat" | "element">> = {},
 ): SkillDefinition {
   return {
     id,
@@ -183,7 +212,7 @@ function dmg(
     range,
     mpCost,
     cooldown,
-    effectSequence: [{ kind: "damage", damageType, coefficient, flat, element }],
+    effectSequence: [{ kind: "damage", damageType, coefficient, flat, element, ...primitives }],
     tags: [],
   };
 }
@@ -215,6 +244,7 @@ function species(
   captureBaseRate: number,
   wildPrimaryStats: SpeciesDefinition["wildPrimaryStats"],
   basicAttackRange: "melee" | "ranged",
+  extra: Pick<SpeciesDefinition, "rebirthVariants" | "rebirthCosmetic"> = {},
 ): SpeciesDefinition {
   const slug = id.slice("species:".length);
   return {
@@ -235,7 +265,16 @@ function species(
     artId: `art:${slug}`,
     wildPrimaryStats,
     basicAttackRange,
+    ...extra,
   };
+}
+
+function variant(s: SkillDefinition, of: string): SkillDefinition {
+  return { ...s, variantOf: of };
+}
+
+function rv(stage: number, replaces: string, a: string, b: string): NonNullable<SpeciesDefinition["rebirthVariants"]>[number] {
+  return { stage, replaces, options: [{ branch: "A", skillId: a }, { branch: "B", skillId: b }] };
 }
 
 function sigil(id: string, sourceSpeciesId: string, equipGroups: SigilDefinition["equipGroups"], p: number): SigilDefinition {

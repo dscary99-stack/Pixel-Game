@@ -7,14 +7,14 @@
  */
 import { applyBond, bondBonusPercent } from "../bond";
 import { companionCombatProfile } from "../companion-growth";
-import { effectiveSkillLevel, masteryForVictory, skillLevelMods, speciesSkillSlots, trainedSkillLevel } from "../skill-training";
+import { companionKit, effectiveSkillLevel, masteryForVictory, skillLevelMods, trainedSkillLevel } from "../skill-training";
 import { NO_AUTO_POLICY, type AutoBattlePolicy } from "./auto-policy";
 import { computeDamage, computeHeal, critChanceBp, hitChanceBp } from "../damage";
 import { rollLoot } from "../loot";
 import { companionExp, killExp } from "../progression";
 import { Rng, seedRng } from "../rng";
 import type { RulesConfig } from "../rules";
-import type { ItemDefinition, LootTable, SkillDefinition, SpeciesDefinition } from "../schemas";
+import type { DamageEffect, ItemDefinition, LootTable, SkillDefinition, SpeciesDefinition } from "../schemas";
 import { deriveStats } from "../stats";
 import { validateEnemyCount, validateTeam, type ErrorCode } from "../validators";
 import type {
@@ -143,9 +143,12 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
     const { level, primaryStats } = companionCombatProfile(rules, sp, inst, p.level);
     const bondPercent = bondBonusPercent(rules, inst.bond);
     const stats = applyBond(rules, sp.archetype, inst.bond, deriveStats(level, primaryStats));
-    // Trained skill levels work only up to what the fighting level allows (chapter 04 §5).
+    // The kit with any Rebirth variant now in use (chapter 04 §7); a variant keeps its base skill's
+    // trained level, which works only up to what the fighting level allows (chapter 04 §5).
+    const kit = companionKit(rules, sp, inst, level);
+    for (const k of kit) if (!content.skills.has(k.skillId)) reject("MISSING_REFERENCE", `skill ${k.skillId}`);
     const skillLevels = Object.fromEntries(
-      speciesSkillSlots(sp).map((id) => [id, effectiveSkillLevel(rules, trainedSkillLevel(inst.trainedSkillLevels, id), level)]),
+      kit.map((k) => [k.skillId, effectiveSkillLevel(rules, trainedSkillLevel(inst.trainedSkillLevels, k.baseId), level)]),
     );
     units.push({
       unitId: `ally:${inst.id}`,
@@ -163,9 +166,12 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
       stats,
       hp: clampResource(c.hp, stats.maxHp),
       mp: clampResource(c.mp, stats.maxMp),
-      skillIds: sp.skillIds.filter((id) => content.skills.get(id)?.kind === "active"),
+      skillIds: kit.map((k) => k.skillId).filter((id) => content.skills.get(id)?.kind === "active"),
       skillLevels,
       bondPercent,
+      ...(inst.rebirthStage >= 3 && sp.rebirthCosmetic !== undefined
+        ? { cosmetic: { effect: sp.rebirthCosmetic.effect, color: sp.rebirthCosmetic.color } }
+        : {}),
       basicAttackRange: sp.basicAttackRange,
       ko: (c.hp ?? stats.maxHp) <= 0,
       retired: false,
@@ -492,6 +498,11 @@ function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUni
       const applied = Math.min(amount, t.stats.maxHp - t.hp); // overheal discarded
       t.hp += applied;
       actionEvent(ctx, actor, "skill", t, { skillId, heal: applied, targetHpAfter: t.hp });
+      const mp = Math.min(effect.restoreMp ?? 0, t.stats.maxMp - t.mp);
+      if (mp > 0) {
+        t.mp += mp;
+        ctx.emit({ type: "ResourceChanged", unitId: t.unitId, source: "restore_mp", hp: 0, mp, hpAfter: t.hp, mpAfter: t.mp });
+      }
     }
   }
 }
@@ -502,17 +513,23 @@ function strike(
   target: BattleUnit,
   action: "attack" | "skill",
   skillId: string | null,
-  eff: { damageType: "physical" | "magic"; coefficient: number; flat: number; element: BattleUnit["element"] },
+  eff: { damageType: "physical" | "magic"; coefficient: number; flat: number; element: BattleUnit["element"] } & Partial<
+    Pick<DamageEffect, "penetrationPct" | "accuracyBonusPct" | "critBonusPct" | "execute" | "lifestealPct" | "recoilPct">
+  >,
 ): void {
   const rules = ctx.rules;
-  const hit = ctx.rng.chanceBp(hitChanceBp(rules, actor.stats.accuracyPct, target.stats.evasionPct));
+  const hit = ctx.rng.chanceBp(hitChanceBp(rules, actor.stats.accuracyPct, target.stats.evasionPct, eff.accuracyBonusPct ?? 0));
   if (!hit) {
     actionEvent(ctx, actor, action, target, { skillId, hit: false, crit: false, damage: 0 });
     return;
   }
-  const crit = ctx.rng.chanceBp(critChanceBp(rules, actor.stats.critPct));
+  const crit = ctx.rng.chanceBp(critChanceBp(rules, actor.stats.critPct + (eff.critBonusPct ?? 0)));
   const physical = eff.damageType === "physical";
+  const hpBefore = target.hp;
+  const executing = eff.execute !== undefined && hpBefore * 100 < eff.execute.belowHpPct * target.stats.maxHp;
   const breakdown = computeDamage(rules, {
+    ...(eff.penetrationPct === undefined ? {} : { defenseModifiers: { penetrationPct: eff.penetrationPct } }),
+    ...(executing ? { outgoingMultiplier: (100 + eff.execute!.bonusPct) / 100 } : {}),
     attackPower: physical ? actor.stats.patk : actor.stats.matk,
     skillCoefficient: eff.coefficient,
     skillFlat: eff.flat,
@@ -525,6 +542,22 @@ function strike(
   });
   target.hp = Math.max(0, target.hp - breakdown.final);
   actionEvent(ctx, actor, action, target, { skillId, hit: true, crit, damage: breakdown.final, breakdown, targetHpAfter: target.hp });
+  // Lifesteal and recoil work on the damage that landed, not on overkill.
+  const dealt = hpBefore - target.hp;
+  if (eff.lifestealPct !== undefined && dealt > 0 && active(actor)) {
+    const gain = Math.min(Math.floor((dealt * eff.lifestealPct) / 100), actor.stats.maxHp - actor.hp);
+    if (gain > 0) {
+      actor.hp += gain;
+      ctx.emit({ type: "ResourceChanged", unitId: actor.unitId, source: "lifesteal", hp: gain, mp: 0, hpAfter: actor.hp, mpAfter: actor.mp });
+    }
+  }
+  if (eff.recoilPct !== undefined && dealt > 0) {
+    const loss = Math.min(Math.floor((dealt * eff.recoilPct) / 100), actor.hp - 1);
+    if (loss > 0) {
+      actor.hp -= loss;
+      ctx.emit({ type: "ResourceChanged", unitId: actor.unitId, source: "recoil", hp: -loss, mp: 0, hpAfter: actor.hp, mpAfter: actor.mp });
+    }
+  }
   if (target.hp === 0) knockOut(ctx, target);
 }
 
