@@ -72,6 +72,11 @@ export class CharacterApi {
     return this.call<{ coins: number; result: { total: number } }>("POST", "/town/sell", { operationId: opId("sell"), lines });
   }
 
+  /** Companion Rebirth at the town NPC. The panel keeps one operation id per companion and stage. */
+  rebirth(operationId: string, companionId: string, expectedStage: number) {
+    return this.call<{ coins: number; result: { stage: number } }>("POST", "/town/rebirth", { operationId, companionId, expectedStage });
+  }
+
   private async call<T>(method: string, path: string, body?: unknown): Promise<T> {
     const res = await fetch(`${this.base}${path}`, {
       method,

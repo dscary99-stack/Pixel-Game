@@ -11,6 +11,7 @@
  *   POST /dev/reconcile            (dev only) run the reconciler now, ignoring reservation age
  *   GET  /character                the caller's character, team and owned companions (404 NO_CHARACTER)
  *   POST /character                create the character (idempotent on operationId; one per account)
+ *   POST /town/rebirth             companion Rebirth at the town NPC (operationId, companionId, expectedStage)
  *   PUT  /character/team           set the team (expectedVersion; ≤5, no duplicate species, outside fights)
  *   GET  /world/where              where the caller's character is saved (map + channel)
  *   GET  /world/:mapId/:channel    WebSocket into that Map Channel DO (walking, presence)
@@ -88,7 +89,7 @@ export default {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/dev/")) return devRoute(request, env, url);
     if (url.pathname.startsWith("/world/")) return worldRoute(request, env, url);
-    if (url.pathname === "/character" || url.pathname.startsWith("/character/") || url.pathname === "/town/sell") return characterRoute(request, env, url);
+    if (url.pathname === "/character" || url.pathname.startsWith("/character/") || url.pathname.startsWith("/town/")) return characterRoute(request, env, url);
     const m = url.pathname.match(/^\/battles\/([a-z0-9_:-]{1,80})(?:\/([a-z-]+))?$/);
     if (m === null) return json(404, { error: "NOT_FOUND" });
     const battleId = m[1]!;
@@ -181,6 +182,7 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
   if (request.method === "POST" && url.pathname === "/character/equipment/sigil") return serviceReply(env, accountId, await townFor(env).installSigil(accountId, body));
   if (request.method === "POST" && url.pathname === "/character/equipment/sigil/remove") return serviceReply(env, accountId, await townFor(env).removeSigil(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/sell") return serviceReply(env, accountId, await townFor(env).sell(accountId, body));
+  if (request.method === "POST" && url.pathname === "/town/rebirth") return serviceReply(env, accountId, await townFor(env).rebirth(accountId, body));
   if (request.method === "PUT" && url.pathname === "/character/stats") {
     const r = await store.allocate(accountId, body);
     if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });

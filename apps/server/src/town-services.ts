@@ -7,7 +7,11 @@
  * retry with the same id returns the stored result; the same id with another payload is refused.
  */
 import {
+  COMPANION_GROWTH_VERSION,
   InstallSigilRequestSchema,
+  RebirthRequestSchema,
+  companionPrimaryStats,
+  rebirthCost,
   RemoveSigilRequestSchema,
   SellRequestSchema,
   planSigilInstall,
@@ -16,8 +20,10 @@ import {
   sigilRemovalCost,
   type EquipmentDefinition,
   type ItemDefinition,
+  type LootTable,
   type RulesConfig,
   type SigilDefinition,
+  type SpeciesDefinition,
 } from "@pmrpg/shared";
 import { hashJson, type SqlBound, type SqlDb } from "./reward-ledger";
 
@@ -25,9 +31,11 @@ export interface TownContent {
   items: ReadonlyMap<string, ItemDefinition>;
   equipment: ReadonlyMap<string, EquipmentDefinition>;
   sigils: ReadonlyMap<string, SigilDefinition>;
+  species: ReadonlyMap<string, SpeciesDefinition>;
+  lootTables: ReadonlyMap<string, LootTable>;
 }
 
-type Kind = "npc_sell" | "sigil_install" | "sigil_remove";
+type Kind = "npc_sell" | "sigil_install" | "sigil_remove" | "companion_rebirth";
 
 export type ServiceRejection =
   | "INVALID_REQUEST"
@@ -44,6 +52,10 @@ export type ServiceRejection =
   | "SIGIL_SLOTS_FULL"
   | "NO_SUCH_SOCKET"
   | "COST_CHANGED"
+  | "MAX_REBIRTH"
+  | "NO_MATERIAL"
+  | "LEVEL_TOO_LOW"
+  | "PLAYER_LEVEL_TOO_LOW"
   | "CHANGED";
 
 export type ServiceResult<T> = { status: "done"; replayed: boolean; result: T } | { status: "rejected"; reason: ServiceRejection; message: string };
@@ -51,6 +63,11 @@ export type ServiceResult<T> = { status: "done"; replayed: boolean; result: T } 
 export interface SellResult {
   sold: { itemId: string; quantity: number; coins: number }[];
   total: number;
+}
+export interface RebirthResult {
+  companionId: string;
+  stage: number;
+  paid: { coins: number; itemId: string; quantity: number };
 }
 export interface SigilResult {
   equipmentId: string;
@@ -233,6 +250,106 @@ export class TownServices {
       if (why !== null) return why;
       if ((await this.coins(accountId)) < cost) return reject("INSUFFICIENT_COINS", `removal costs ${cost} coins`);
       return this.whySigilRefused(accountId, equipmentId, piece.sigil_sockets_json, null);
+    });
+  }
+
+  // ------------------------------------------------------------------ companion Rebirth
+
+  /**
+   * Rebirth one companion (chapter 04 §7): in town, outside fights, at max level, with the licence
+   * level, coins and the species' material. One batch: the anchor checks every guard (including the
+   * stage the player saw), then coins and material are charged and the companion goes back to Lv1
+   * with the next stage. A retry replays; a second request for the same stage finds it changed.
+   */
+  async rebirth(accountId: string, raw: unknown): Promise<ServiceResult<RebirthResult>> {
+    const parsed = RebirthRequestSchema.safeParse(raw);
+    if (!parsed.success) return reject("INVALID_REQUEST", issues(parsed.error));
+    const { operationId, companionId, expectedStage } = parsed.data;
+    const hash = await hashJson({ kind: "companion_rebirth", companionId, expectedStage });
+    const prior = await this.prior<RebirthResult>(accountId, operationId, hash);
+    if (prior !== null) return prior;
+
+    const pet = await this.db
+      .prepare(`SELECT species_id, rebirth_stage, growth_seed, growth_history_version FROM monster_instances WHERE id = ? AND owner_id = ?`)
+      .bind(companionId, accountId)
+      .first<{ species_id: string; rebirth_stage: number; growth_seed: string | null; growth_history_version: number }>();
+    const species = pet === null ? undefined : this.content.species.get(pet.species_id);
+    if (pet === null || species === undefined) return reject("NOT_OWNER", "that companion is not yours");
+    if (pet.rebirth_stage !== expectedStage) return reject("CHANGED", "the companion changed; reload and try again");
+    const cost = rebirthCost(this.rules, species, expectedStage, this.content);
+    if (!cost.ok) return reject(cost.code, cost.message);
+
+    const result: RebirthResult = { companionId, stage: cost.nextStage, paid: { coins: cost.coins, itemId: cost.materialItemId, quantity: cost.materialQty } };
+    const guards = [
+      this.inTown(),
+      `NOT ${OPEN_BATTLE}`,
+      `EXISTS (SELECT 1 FROM monster_instances WHERE id = ? AND owner_id = ? AND lock_state = 'free' AND rebirth_stage = ? AND xp >= ?)`,
+      `EXISTS (SELECT 1 FROM characters WHERE account_id = ? AND xp >= ?)`,
+      `(SELECT COALESCE(SUM(delta), 0) FROM coin_ledger WHERE account_id = ?) >= ?`,
+      `(SELECT COALESCE(SUM(delta), 0) FROM item_ledger WHERE account_id = ? AND item_id = ?) >= ?`,
+    ];
+    const args = [
+      accountId,
+      ...this.townMapIds,
+      accountId,
+      companionId,
+      accountId,
+      expectedStage,
+      cost.companionExp,
+      accountId,
+      cost.playerExp,
+      accountId,
+      cost.coins,
+      accountId,
+      cost.materialItemId,
+      cost.materialQty,
+    ];
+    // Same growth path from Lv1 again, with the new stage's bonus (companion-growth.ts).
+    const stats =
+      pet.growth_history_version >= COMPANION_GROWTH_VERSION
+        ? companionPrimaryStats(this.rules, species.archetype, pet.growth_seed ?? companionId, 1, cost.nextStage)
+        : null;
+    const ledgerId = `svc:${accountId}:${operationId}`;
+    const at = this.now();
+    const ours = this.ours(accountId, operationId, hash);
+    await this.db.batch([
+      this.anchor(accountId, operationId, "companion_rebirth", hash, result, guards, args),
+      this.db
+        .prepare(
+          `INSERT INTO coin_ledger (operation_id, line_no, account_id, delta, reason, created_at)
+           SELECT ?, 0, ?, ?, 'companion_rebirth', ? WHERE ${ours.sql} ON CONFLICT DO NOTHING`,
+        )
+        .bind(ledgerId, accountId, -cost.coins, at, ...ours.args),
+      this.db
+        .prepare(
+          `INSERT INTO item_ledger (operation_id, line_no, account_id, item_id, delta, reason, created_at)
+           SELECT ?, 0, ?, ?, ?, 'companion_rebirth', ? WHERE ${ours.sql} ON CONFLICT DO NOTHING`,
+        )
+        .bind(ledgerId, accountId, cost.materialItemId, -cost.materialQty, at, ...ours.args),
+      this.db
+        .prepare(
+          `UPDATE monster_instances
+           SET rebirth_stage = ?, current_level = 1, xp = 0, hp = NULL, mp = NULL,
+               primary_stats_json = COALESCE(?, primary_stats_json)
+           WHERE id = ? AND owner_id = ? AND rebirth_stage = ? AND ${ours.sql}`,
+        )
+        .bind(cost.nextStage, stats === null ? null : JSON.stringify(stats), companionId, accountId, expectedStage, ...ours.args),
+    ]);
+    return this.outcome(accountId, operationId, hash, async () => {
+      const why = await this.whereAndFight(accountId);
+      if (why !== null) return why;
+      const now = await this.db
+        .prepare(`SELECT rebirth_stage, xp, lock_state FROM monster_instances WHERE id = ? AND owner_id = ?`)
+        .bind(companionId, accountId)
+        .first<{ rebirth_stage: number; xp: number; lock_state: string }>();
+      if (now === null) return reject("NOT_OWNER", "that companion is not yours");
+      if (now.rebirth_stage !== expectedStage) return reject("CHANGED", "the companion changed; reload and try again");
+      if (now.lock_state !== "free") return reject("ASSET_LOCKED", "that companion is busy");
+      if (now.xp < cost.companionExp) return reject("LEVEL_TOO_LOW", `the companion must be Lv${cost.companionLevel}`);
+      const ch = await this.db.prepare(`SELECT xp FROM characters WHERE account_id = ?`).bind(accountId).first<{ xp: number }>();
+      if ((ch?.xp ?? 0) < cost.playerExp) return reject("PLAYER_LEVEL_TOO_LOW", `your character must be Lv${cost.playerLevel}`);
+      if ((await this.coins(accountId)) < cost.coins) return reject("INSUFFICIENT_COINS", `Rebirth costs ${cost.coins} coins`);
+      return reject("INSUFFICIENT_ITEMS", `Rebirth needs ${cost.materialQty} ${cost.materialItemId}`);
     });
   }
 

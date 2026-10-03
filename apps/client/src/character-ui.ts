@@ -4,6 +4,8 @@
  * comes with the art pass (chapter 10 §4).
  */
 import {
+  rebirthCost,
+  expForLevel,
   PRIMARY_KEYS,
   companionCombatProfile,
   AutoHuntSettingsSchema,
@@ -780,4 +782,82 @@ export function savedAutoPolicy(): { itemRules: AutoHuntSettings["itemRules"] } 
   } catch {
     return { itemRules: [] };
   }
+}
+
+/**
+ * Companion Rebirth at the town NPC (chapter 04 §7). Shows each companion's next stage, what it
+ * costs and what is missing; the server checks everything again and charges once.
+ */
+export function rebirthPanel(api: CharacterApi, start: CharacterBundle): Promise<CharacterBundle> {
+  return new Promise((resolve) => {
+    const { panel, close } = overlay();
+    let bundle = start;
+    let busy = false;
+    const ops = new Map<string, string>();
+    const { lootTables } = exampleContentMaps();
+    const body = el("div");
+    const error = el("div", { class: "pm-error", role: "alert" });
+    const done = el("button", { type: "button", class: "primary" }, "ปิด");
+    const actions = el("div", { class: "pm-actions" });
+    actions.append(done);
+    panel.append(
+      el("h2", {}, "จุติคู่ใจ (Rebirth)"),
+      el("div", { class: "pm-note" }, "คู่ใจ Lv200 กลับเป็น Lv1 เส้นทางเติบโตเดิม + โบนัสสเตตัส (ขั้น 1/2/3 = +4/+7/+10% รวม) · ธาตุ Bond ประวัติคงเดิม · ทำในเมือง นอกไฟต์"),
+      body,
+      error,
+      actions,
+    );
+    done.addEventListener("click", () => {
+      close();
+      resolve(bundle);
+    });
+    const draw = () => {
+      body.replaceChildren();
+      const ul = el("ul", { class: "pm-list" });
+      for (const c of bundle.companions) {
+        const sp = species.get(c.speciesId);
+        if (sp === undefined) continue;
+        const li = el("li", { "data-companion": c.id });
+        const cost = rebirthCost(RULES, sp, c.rebirthStage, { lootTables, items: itemDefs });
+        const name = `${sp.name.th} ★R${c.rebirthStage} · Lv${c.currentLevel}`;
+        if (!cost.ok) {
+          li.append(el("span", {}, `${name} · จุติครบแล้ว`));
+          ul.append(li);
+          continue;
+        }
+        const have = bundle.bag[cost.materialItemId] ?? 0;
+        const missing = [
+          c.xp < cost.companionExp ? `คู่ใจต้อง Lv${cost.companionLevel}` : "",
+          bundle.character.xp < expForLevel(RULES, "player", cost.playerLevel) ? `ตัวละครต้อง Lv${cost.playerLevel}` : "",
+          bundle.coins < cost.coins ? "เหรียญไม่พอ" : "",
+          have < cost.materialQty ? "วัสดุไม่พอ" : "",
+        ].filter((x) => x !== "");
+        const text = `${name} → R${cost.nextStage} · ${cost.coins.toLocaleString()} เหรียญ + ${itemDefs.get(cost.materialItemId)?.name.th ?? cost.materialItemId} ${have}/${cost.materialQty}`;
+        const go = el("button", { type: "button" }, "จุติ");
+        go.disabled = missing.length > 0;
+        go.addEventListener("click", async () => {
+          if (busy) return;
+          busy = true;
+          error.textContent = "";
+          const key = `${c.id}:${c.rebirthStage}`;
+          const op = ops.get(key) ?? `rebirth_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
+          ops.set(key, op);
+          try {
+            await api.rebirth(op, c.id, c.rebirthStage);
+          } catch (e) {
+            error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+          } finally {
+            bundle = (await api.get().catch(() => null)) ?? bundle;
+            busy = false;
+            draw();
+          }
+        });
+        li.append(el("span", {}, `${text}${missing.length > 0 ? ` (${missing.join(", ")})` : ""}`), go);
+        ul.append(li);
+      }
+      if (bundle.companions.length === 0) ul.append(el("li", {}, "ยังไม่มีคู่ใจ"));
+      body.append(ul);
+    };
+    draw();
+  });
 }

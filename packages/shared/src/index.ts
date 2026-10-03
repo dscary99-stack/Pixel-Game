@@ -17,6 +17,7 @@ export * from "./equipment";
 export * from "./sigil";
 export * from "./progression";
 export * from "./companion-growth";
+export * from "./rebirth";
 export * from "./world/map";
 export * from "./world/movement";
 export * from "./world/channel";
