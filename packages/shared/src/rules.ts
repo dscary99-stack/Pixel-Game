@@ -45,7 +45,7 @@ export interface CaptureRateTable {
 export type CooldownTickPolicy = "owner_turn_start";
 
 export const RULES = {
-  rulesVersion: "design-1.0/phase-a",
+  rulesVersion: "design-1.0/phase-b",
   confirmed: {
     playerMaxLevel: confirmed(200, "C12"),
     maxCompanions: confirmed(5, "C04"),
@@ -68,6 +68,7 @@ export const RULES = {
     headgearSharedSigilGroup: confirmed(true, "C24", "one HEADGEAR group for top/mid/low"),
     sigilRemovalPremiumRoute: confirmed(false, "C25"),
     premiumPower: confirmed(false, "C26"),
+    playersVisibleInMap: confirmed(true, "C03", "maps are split into channels"),
   },
   provisional: {
     autoHuntLootRetention: provisional(0.7, "P01", "multiplier, applied once per candidate; not 0.70%"),
@@ -106,6 +107,14 @@ export const RULES = {
       "P15",
       "chapter 03 §2 proposal",
     ),
+    // World / walking slice (Phase B). Prototype numbers; the art proof and playtests may change them.
+    worldTileSizePx: provisional(32, "P10", "walk grid; player frame stays 64px and overlaps tiles"),
+    walkStepMs: provisional(250, "P10", "one orthogonal tile step = 4 tiles/s"),
+    diagonalStepFactor: provisional(1.4142, "P10", "8-direction movement; a diagonal step costs sqrt(2)"),
+    moveBurstMs: provisional(500, "P11", "latency allowance: steps may arrive this much early after a pause, never faster on average"),
+    channelsPerMap: provisional(2, "P11", "prototype channel count per map"),
+    channelCapacity: provisional(50, "P11", "players per channel; not a load-tested number"),
+    positionSaveIntervalMs: provisional(10_000, "P11", "how often a channel writes moved players' positions to D1"),
   },
   unresolved: {
     tradeLevelGap: open<number>("O01", "user range 20–40; proposal +30"),

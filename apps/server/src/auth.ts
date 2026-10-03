@@ -6,7 +6,8 @@ import type { Environment } from "./battle-room";
  */
 export function resolveAccount(request: Request, env: { ENVIRONMENT: Environment; DEV_AUTH?: string }): string | null {
   if (env.ENVIRONMENT === "dev" && env.DEV_AUTH === "true") {
-    const id = request.headers.get("x-dev-account");
+    // Browsers cannot set headers on a WebSocket upgrade, so dev also accepts ?dev_account=.
+    const id = request.headers.get("x-dev-account") ?? new URL(request.url).searchParams.get("dev_account");
     return id !== null && /^acct:[a-z0-9_-]{1,40}$/.test(id) ? id : null;
   }
   return null;

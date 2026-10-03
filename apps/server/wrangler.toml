@@ -11,9 +11,17 @@ DEV_AUTH = "true"
 name = "BATTLE"
 class_name = "BattleDurableObject"
 
+[[durable_objects.bindings]]
+name = "MAP"
+class_name = "MapChannelDurableObject"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["BattleDurableObject"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["MapChannelDurableObject"]
 
 [[d1_databases]]
 binding = "DB"

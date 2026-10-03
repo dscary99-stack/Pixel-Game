@@ -23,10 +23,11 @@ docs/             เอกสารออกแบบและสถานะ
 npm install
 npm run check          # typecheck + tests + build client + wrangler dry-run
 npm test               # vitest
-npm run dev:client     # http://127.0.0.1:5173 (local preview)
+npm run dev:client     # http://127.0.0.1:5173 (local preview; หน้าแรก = เดินในแผนที่, ?battle = ฉากต่อสู้)
 npm run db:migrate:local  # ใส่ D1 migrations ลงฐานข้อมูล local ก่อน dev:server ครั้งแรก/หลังเพิ่ม migration
 npm run dev:server     # wrangler dev :8787; เปิด client ด้วย ?server
-npm run smoke:server   # end-to-end กับ wrangler dev ที่รันอยู่
+npm run smoke:server   # end-to-end ไฟต์ กับ wrangler dev ที่รันอยู่
+npm run smoke:world    # end-to-end การเดิน 2 ผู้เล่น (WebSocket) กับ wrangler dev ที่รันอยู่
 ```
 
 ## กติกาการแก้โค้ด

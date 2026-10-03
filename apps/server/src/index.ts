@@ -9,18 +9,24 @@
  *   POST /battles/:id/auto         Auto Battle step; the open client's heartbeat drives it
  *   GET  /dev/inventory?battle=ID  (dev only) the caller's D1 item balances and that battle's reservation
  *   POST /dev/reconcile            (dev only) run the reconciler now, ignoring reservation age
+ *   GET  /world/where              where the caller's character is saved (map + channel)
+ *   GET  /world/:mapId/:channel    WebSocket into that Map Channel DO (walking, presence)
  *
  * Starting a battle (chapter 11 §3): the economy (D1) reserves the bag and companions first, then
  * the Battle DO is created from that reservation and queues activation in its own outbox. If the
  * create step never lands, the scheduled reconciler asks the DO and releases only a reservation
  * whose battle provably never started.
  */
-import { DEV_FIXTURE_RULES, PRODUCTION_RULES, type BattleSetup } from "@pmrpg/shared";
+import { DEV_FIXTURE_RULES, EXAMPLE_START_MAP, PRODUCTION_RULES, exampleMapRegistry, type BattleSetup } from "@pmrpg/shared";
 import { resolveAccount } from "./auth";
 import type { Env, RoomOp, RoomReply } from "./battle-do";
 import { Economy } from "./economy";
 
+import { mapObjectName } from "./map-do";
+import { WorldStore } from "./world-store";
+
 export { BattleDurableObject } from "./battle-do";
+export { MapChannelDurableObject } from "./map-do";
 
 const MAX_BODY_BYTES = 4096;
 /** PROVISIONAL ops setting: a reservation still not activated after this long is checked. */
@@ -50,6 +56,7 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/dev/")) return devRoute(request, env, url);
+    if (url.pathname.startsWith("/world/")) return worldRoute(request, env, url);
     const m = url.pathname.match(/^\/battles\/([a-z0-9_:-]{1,80})(?:\/([a-z-]+))?$/);
     if (m === null) return json(404, { error: "NOT_FOUND" });
     const battleId = m[1]!;
@@ -83,6 +90,36 @@ export default {
     return reply.ok ? json(200, reply.body) : json(409, { error: reply.code, message: reply.message });
   },
 } satisfies ExportedHandler<Env>;
+
+const MAPS = exampleMapRegistry();
+
+async function worldRoute(request: Request, env: Env, url: URL): Promise<Response> {
+  const accountId = resolveAccount(request, env);
+  if (accountId === null) return json(401, { error: "UNAUTHENTICATED" });
+  const rules = env.ENVIRONMENT === "dev" ? DEV_FIXTURE_RULES : PRODUCTION_RULES;
+  // Dev accounts appear on first use; real account creation waits for the auth provider (O11).
+  if (env.ENVIRONMENT === "dev") await economyFor(env).devGrant(`devaccount:${accountId}`, accountId, {});
+
+  if (request.method === "GET" && url.pathname === "/world/where") {
+    const where = await new WorldStore(env.DB, MAPS, EXAMPLE_START_MAP).where(accountId);
+    return json(200, where ?? { mapId: EXAMPLE_START_MAP, channel: 1 });
+  }
+  const m = url.pathname.match(/^\/world\/(map:[a-z0-9_]{1,60})\/([0-9]{1,2})$/);
+  if (m === null || request.method !== "GET") return json(404, { error: "NOT_FOUND" });
+  const mapId = m[1]!;
+  const channel = Number(m[2]);
+  if (!MAPS.has(mapId)) return json(404, { error: "UNKNOWN_MAP" });
+  if (channel < 1 || channel > rules.provisional.channelsPerMap.value) return json(404, { error: "UNKNOWN_CHANNEL" });
+  if (request.headers.get("Upgrade") !== "websocket") return json(426, { error: "EXPECTED_WEBSOCKET" });
+
+  // Identity goes to the object in headers the Worker sets; anything the client sent is dropped.
+  const headers = new Headers({ Upgrade: "websocket", "x-account": accountId, "x-map": mapId, "x-channel": String(channel), "x-name": displayName(accountId) });
+  const stub = env.MAP.get(env.MAP.idFromName(mapObjectName(mapId, channel)));
+  return stub.fetch(new Request(request.url, { headers }));
+}
+
+/** Placeholder until characters have names (Phase D): the account id without its prefix. */
+const displayName = (accountId: string) => accountId.replace(/^acct:/, "").slice(0, 16);
 
 async function devRoute(request: Request, env: Env, url: URL): Promise<Response> {
   if (env.ENVIRONMENT !== "dev") return json(404, { error: "NOT_FOUND" });

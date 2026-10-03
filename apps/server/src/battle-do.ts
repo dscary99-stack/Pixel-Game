@@ -16,6 +16,7 @@ const OUTBOX_RETRY_MS = 5_000;
 
 export interface Env {
   BATTLE: DurableObjectNamespace<BattleDurableObject>;
+  MAP: DurableObjectNamespace<import("./map-do").MapChannelDurableObject>;
   DB: D1Database;
   ENVIRONMENT: Environment;
   /** "true" only in local dev: lets x-dev-account stand in for auth (O11 auth provider not chosen). */

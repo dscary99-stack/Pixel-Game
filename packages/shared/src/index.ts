@@ -10,3 +10,7 @@ export * from "./battle/kernel";
 export * from "./protocol";
 export * from "./content/examples";
 export * from "./dev-fixtures";
+export * from "./world/map";
+export * from "./world/movement";
+export * from "./world/channel";
+export * from "./content/maps";

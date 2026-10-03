@@ -1,0 +1,313 @@
+/**
+ * Walking scene for the Phase B slice. Placeholder shapes only; tiles, sprites, y-sorting and
+ * occlusion come with the art proof (chapter 10). The client predicts its own step so walking
+ * feels immediate, but the server decides: a `correct` message snaps the player back.
+ */
+import Phaser from "phaser";
+import {
+  DEV_FIXTURE_RULES,
+  TILE_LEGEND,
+  exampleMapRegistry,
+  findPath,
+  portalAt,
+  stepCostMs,
+  tryStep,
+  type Direction,
+  type MapDefinition,
+  type PublicPlayer,
+  type TileChar,
+  type TilePos,
+  type WorldServerMessage,
+} from "@pmrpg/shared";
+import type { WorldTransport } from "./world-transport";
+
+const W = 960;
+const H = 540;
+const rules = DEV_FIXTURE_RULES;
+const TILE = rules.provisional.worldTileSizePx.value;
+
+const TILE_COLOR: Record<(typeof TILE_LEGEND)[TileChar]["kind"], number> = {
+  ground: 0x8a7650,
+  grass: 0x5d9a4a,
+  road: 0xc9b07a,
+  wall: 0x4a4458,
+  tree: 0x2f6a35,
+  water: 0x3a74b8,
+};
+
+interface PlayerView {
+  body: Phaser.GameObjects.Rectangle;
+  nose: Phaser.GameObjects.Rectangle;
+  label: Phaser.GameObjects.Text;
+  pos: TilePos;
+}
+
+const FACE_OFFSET: Record<PublicPlayer["facing"], [number, number]> = { N: [0, -12], S: [0, 12], E: [10, 0], W: [-10, 0] };
+
+export class WorldScene extends Phaser.Scene {
+  private transport!: WorldTransport;
+  private readonly maps = exampleMapRegistry();
+  private map: MapDefinition | null = null;
+  private channelNo = 1;
+  private layer: Phaser.GameObjects.Container | null = null;
+  private players = new Map<string, PlayerView>();
+  private selfSid: string | null = null;
+  private seq = 0;
+  private readyAt = 0;
+  private path: Direction[] = [];
+  private nextConnect: { mapId: string; channel: number } | null = null;
+  private stopped = false;
+  private hud!: Phaser.GameObjects.Text;
+  private notice!: Phaser.GameObjects.Text;
+  private keys!: Record<"up" | "down" | "left" | "right" | "w" | "a" | "s" | "d", Phaser.Input.Keyboard.Key>;
+
+  constructor() {
+    super("world");
+  }
+
+  init(data: { transport: WorldTransport }) {
+    this.transport = data.transport;
+  }
+
+  create() {
+    this.cameras.main.setBackgroundColor("#14121c");
+    const style = { fontFamily: "sans-serif", fontSize: "13px", color: "#ffffff", backgroundColor: "#00000099", padding: { x: 8, y: 6 } };
+    this.add.text(8, 8, this.transport.label, { ...style, color: "#f2c94c" }).setScrollFactor(0).setDepth(100);
+    this.hud = this.add.text(8, 40, "", style).setScrollFactor(0).setDepth(100);
+    this.notice = this.add.text(W / 2, H - 40, "", { ...style, fontSize: "15px" }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
+    this.add
+      .text(W - 8, 8, "ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · 1/2 เปลี่ยน channel", style)
+      .setOrigin(1, 0)
+      .setScrollFactor(0)
+      .setDepth(100);
+
+    const kb = this.input.keyboard!;
+    const K = Phaser.Input.Keyboard.KeyCodes;
+    this.keys = kb.addKeys({ up: K.UP, down: K.DOWN, left: K.LEFT, right: K.RIGHT, w: K.W, a: K.A, s: K.S, d: K.D }) as typeof this.keys;
+    kb.on("keydown-ONE", () => this.switchChannel(1));
+    kb.on("keydown-TWO", () => this.switchChannel(2));
+    this.input.on("pointerdown", (p: Phaser.Input.Pointer) => this.tapMove(p));
+
+    void this.connect(null, null);
+  }
+
+  // ---------------------------------------------------------------- connection
+
+  private async connect(mapId: string | null, channel: number | null) {
+    this.path = [];
+    this.nextConnect = null;
+    await this.transport.connect(
+      mapId,
+      channel,
+      (m) => this.onMessage(m),
+      () => {
+        if (this.nextConnect !== null) void this.connect(this.nextConnect.mapId, this.nextConnect.channel);
+      },
+    );
+  }
+
+  private switchChannel(n: number) {
+    if (this.map === null || n === this.channelNo || this.stopped) return;
+    // connect() closes the current socket first; its close event then finds nothing queued.
+    void this.connect(this.map.id, n);
+  }
+
+  private onMessage(m: WorldServerMessage) {
+    switch (m.t) {
+      case "welcome":
+        this.enterMap(m.mapId, m.channel, m.self, m.others);
+        break;
+      case "joined":
+        this.addPlayer(m.player, false);
+        break;
+      case "left":
+        this.removePlayer(m.sid);
+        break;
+      case "moved":
+        this.movePlayer(m.sid, { x: m.x, y: m.y }, m.facing, true);
+        break;
+      case "ack":
+        break;
+      case "correct": {
+        // Server decided otherwise: snap back and drop the queued path.
+        this.path = [];
+        if (this.selfSid !== null) this.movePlayer(this.selfSid, { x: m.x, y: m.y }, null, false);
+        if (m.reason !== "STALE_SEQ") this.flash(`server ปฏิเสธการเดิน: ${m.reason}`);
+        break;
+      }
+      case "transfer":
+        this.nextConnect = { mapId: m.mapId, channel: m.channel };
+        this.flash(`กำลังไป ${this.maps.get(m.mapId)?.name.th ?? m.mapId}…`);
+        break;
+      case "kicked":
+        this.stopped = true;
+        this.flash(m.reason === "REPLACED" ? "บัญชีนี้เชื่อมต่อจากที่อื่นแล้ว (หน้านี้หยุดควบคุม)" : "ย้ายไป channel อื่นแล้ว");
+        break;
+      case "error":
+        this.flash(`${m.code}: ${m.message}`);
+        break;
+      case "pong":
+        break;
+    }
+    this.refreshHud();
+  }
+
+  // ---------------------------------------------------------------- drawing
+
+  private enterMap(mapId: string, channel: number, self: PublicPlayer, others: PublicPlayer[]) {
+    const map = this.maps.get(mapId);
+    if (map === undefined) return this.flash(`ไม่รู้จักแผนที่ ${mapId}`);
+    this.map = map;
+    this.channelNo = channel;
+    this.layer?.destroy(true);
+    for (const v of this.players.values()) [v.body, v.nose, v.label].forEach((o) => o.destroy());
+    this.players.clear();
+    this.seq = 0;
+    this.readyAt = 0;
+
+    const layer = this.add.container(0, 0).setDepth(0);
+    map.tiles.forEach((row, y) =>
+      [...row].forEach((c, x) => {
+        const kind = TILE_LEGEND[c as TileChar].kind;
+        layer.add(this.add.rectangle(x * TILE + TILE / 2, y * TILE + TILE / 2, TILE - 1, TILE - 1, TILE_COLOR[kind]));
+      }),
+    );
+    for (const p of map.portals) {
+      layer.add(this.add.rectangle(p.at.x * TILE + TILE / 2, p.at.y * TILE + TILE / 2, TILE - 4, TILE - 4, 0xb06bf2, 0.75));
+    }
+    const labelled = new Set<string>();
+    for (const p of map.portals) {
+      if (labelled.has(p.label)) continue;
+      labelled.add(p.label);
+      // Keep edge labels inside the map.
+      const w = map.tiles[0]!.length;
+      const originX = p.at.x <= 1 ? 0 : p.at.x >= w - 2 ? 1 : 0.5;
+      const x = p.at.x * TILE + (originX === 0 ? 0 : originX === 1 ? TILE : TILE / 2);
+      layer.add(this.add.text(x, p.at.y * TILE - 6, `→ ${p.label}`, { fontFamily: "sans-serif", fontSize: "12px", color: "#ffffff" }).setOrigin(originX, 1));
+    }
+    this.layer = layer;
+
+    const w = map.tiles[0]!.length * TILE;
+    const h = map.tiles.length * TILE;
+    this.cameras.main.setBounds(Math.min(0, (w - W) / 2), Math.min(0, (h - H) / 2), Math.max(w, W), Math.max(h, H));
+    this.selfSid = self.sid;
+    this.addPlayer(self, true);
+    for (const o of others) this.addPlayer(o, false);
+    this.cameras.main.startFollow(this.players.get(self.sid)!.body, true, 0.2, 0.2);
+    this.flash(`${map.name.th} · channel ${channel}`);
+  }
+
+  private addPlayer(p: PublicPlayer, self: boolean) {
+    if (this.players.has(p.sid)) return this.movePlayer(p.sid, { x: p.x, y: p.y }, p.facing, false);
+    const [px, py] = center(p);
+    const body = this.add.rectangle(px, py, 22, 28, self ? 0xf2c94c : 0x7ab8f2).setStrokeStyle(2, 0x1b1830).setDepth(10);
+    const [fx, fy] = FACE_OFFSET[p.facing];
+    const nose = this.add.rectangle(px + fx, py + fy, 6, 6, 0x1b1830).setDepth(11);
+    const label = this.add
+      .text(px, py - 22, p.name, { fontFamily: "sans-serif", fontSize: "11px", color: self ? "#f2c94c" : "#ffffff", backgroundColor: "#00000088", padding: { x: 3, y: 1 } })
+      .setOrigin(0.5, 1)
+      .setDepth(12);
+    this.players.set(p.sid, { body, nose, label, pos: { x: p.x, y: p.y } });
+  }
+
+  private removePlayer(sid: string) {
+    const v = this.players.get(sid);
+    if (v === undefined) return;
+    [v.body, v.nose, v.label].forEach((o) => o.destroy());
+    this.players.delete(sid);
+  }
+
+  private movePlayer(sid: string, pos: TilePos, facing: PublicPlayer["facing"] | null, animate: boolean, ms = rules.provisional.walkStepMs.value) {
+    const v = this.players.get(sid);
+    if (v === undefined) return;
+    v.pos = pos;
+    const [px, py] = center(pos);
+    const [fx, fy] = facing === null ? [v.nose.x - v.body.x, v.nose.y - v.body.y] : FACE_OFFSET[facing];
+    const targets: [Phaser.GameObjects.Rectangle | Phaser.GameObjects.Text, number, number][] = [
+      [v.body, px, py],
+      [v.nose, px + fx, py + fy],
+      [v.label, px, py - 22],
+    ];
+    for (const [obj, x, y] of targets) {
+      this.tweens.killTweensOf(obj);
+      if (animate) this.tweens.add({ targets: obj, x, y, duration: ms });
+      else obj.setPosition(x, y);
+    }
+    // y-sorting placeholder: lower on screen draws in front.
+    v.body.setDepth(10 + pos.y / 1000);
+  }
+
+  private refreshHud() {
+    const m = this.map;
+    this.hud.setText(m === null ? "กำลังเชื่อมต่อ…" : `${m.name.th} · channel ${this.channelNo} · ผู้เล่นที่เห็น ${this.players.size} คน`);
+  }
+
+  private flash(text: string) {
+    this.notice.setText(text).setAlpha(1);
+    this.tweens.killTweensOf(this.notice);
+    this.tweens.add({ targets: this.notice, alpha: 0, delay: 2200, duration: 600 });
+  }
+
+  // ---------------------------------------------------------------- input
+
+  private tapMove(p: Pointer) {
+    const self = this.selfView();
+    if (this.map === null || self === null || this.stopped) return;
+    const target = { x: Math.floor(p.worldX / TILE), y: Math.floor(p.worldY / TILE) };
+    const path = findPath(this.map, self.pos, target);
+    if (path === null) return this.flash("ไปตรงนั้นไม่ได้");
+    this.path = path;
+  }
+
+  private heldDirection(): Direction | null {
+    const k = this.keys;
+    const up = k.up.isDown || k.w.isDown;
+    const down = k.down.isDown || k.s.isDown;
+    const left = k.left.isDown || k.a.isDown;
+    const right = k.right.isDown || k.d.isDown;
+    const v = up && !down ? "N" : down && !up ? "S" : "";
+    const h = right && !left ? "E" : left && !right ? "W" : "";
+    const d = `${v}${h}`;
+    return d === "" ? null : (d as Direction);
+  }
+
+  private selfView(): PlayerView | null {
+    return this.selfSid === null ? null : (this.players.get(this.selfSid) ?? null);
+  }
+
+  override update(time: number) {
+    const self = this.selfView();
+    if (this.map === null || self === null || this.stopped || this.nextConnect !== null) return;
+    if (time < this.readyAt) return;
+    const held = this.heldDirection();
+    if (held !== null) this.path = [];
+    let dir = held ?? this.path.shift() ?? null;
+    if (dir === null) return;
+    // Predict with the same rule the server uses; a blocked diagonal slides along one axis.
+    let r = tryStep(rules, this.map, self.pos, dir, this.readyAt, time);
+    if (!r.ok && held !== null && dir.length === 2) {
+      for (const axis of [dir[0], dir[1]] as Direction[]) {
+        const alt = tryStep(rules, this.map, self.pos, axis, this.readyAt, time);
+        if (alt.ok) {
+          dir = axis;
+          r = alt;
+          break;
+        }
+      }
+    }
+    if (!r.ok) {
+      this.path = [];
+      return;
+    }
+    const cost = stepCostMs(rules, dir);
+    this.readyAt = Math.max(this.readyAt, time) + cost;
+    this.transport.step(++this.seq, dir);
+    const facing = dir.length === 2 ? (dir.endsWith("E") ? "E" : "W") : (dir as PublicPlayer["facing"]);
+    this.movePlayer(this.selfSid!, r.pos, facing, true, cost);
+    if (portalAt(this.map, r.pos.x, r.pos.y) !== null) this.path = [];
+  }
+}
+
+type Pointer = Phaser.Input.Pointer;
+
+const center = (p: TilePos): [number, number] => [p.x * TILE + TILE / 2, p.y * TILE + TILE / 2];

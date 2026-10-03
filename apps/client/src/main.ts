@@ -2,18 +2,14 @@ import Phaser from "phaser";
 import type { BattleSetup, MonsterInstance } from "@pmrpg/shared";
 import { BattleScene, GAME_SIZE } from "./battle-scene";
 import { HttpTransport, LocalPreviewTransport, type BattleTransport } from "./transport";
+import { WorldScene } from "./world-scene";
+import { LocalWorldTransport, ServerWorldTransport } from "./world-transport";
 
+// Default page: the walking slice (Phase B). `?battle` opens the battle preview instead.
 // `?server` talks to `wrangler dev` through the Vite proxy (or `?server=https://host`);
 // without it the page runs a local, non-authoritative preview.
-// Each page load is a fresh dev account: an account with an unfinished battle cannot start
-// another one (reservation lock), and abandoning a fight has no policy yet (O11/O15).
 const params = new URLSearchParams(location.search);
 const server = params.get("server");
-const transport: BattleTransport =
-  server !== null
-    ? new HttpTransport(server, `battle:${crypto.randomUUID().slice(0, 8)}`, `acct:dev_${crypto.randomUUID().slice(0, 8)}`)
-    : new LocalPreviewTransport(previewSetup(params.get("seed") ?? "preview"));
-
 const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: "game",
@@ -22,7 +18,34 @@ const game = new Phaser.Game({
   backgroundColor: "#14121c",
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
 });
-game.scene.add("battle", BattleScene, true, { transport });
+
+if (params.has("battle")) {
+  // Each battle page load is a fresh dev account: an account with an unfinished battle cannot start
+  // another one (reservation lock), and abandoning a fight has no policy yet (O11/O15).
+  const transport: BattleTransport =
+    server !== null
+      ? new HttpTransport(server, `battle:${crypto.randomUUID().slice(0, 8)}`, `acct:dev_${crypto.randomUUID().slice(0, 8)}`)
+      : new LocalPreviewTransport(previewSetup(params.get("seed") ?? "preview"));
+  game.scene.add("battle", BattleScene, true, { transport });
+} else {
+  // Dev identity: `?account=name` picks one (open two tabs with different names to see each other);
+  // otherwise one per browser tab, kept across reloads so a reload is a reconnect, not a new player.
+  const account = params.get("account") ?? sessionAccount();
+  game.scene.add("world", WorldScene, true, { transport: server !== null ? new ServerWorldTransport(server, account) : new LocalWorldTransport() });
+}
+
+function sessionAccount(): string {
+  const key = "pmrpg.devAccount";
+  try {
+    const saved = sessionStorage.getItem(key);
+    if (saved !== null) return saved;
+    const made = `acct:dev_${crypto.randomUUID().slice(0, 8)}`;
+    sessionStorage.setItem(key, made);
+    return made;
+  } catch {
+    return `acct:dev_${crypto.randomUUID().slice(0, 8)}`;
+  }
+}
 
 function previewSetup(seed: string): BattleSetup {
   const pet = (id: string, speciesId: string, element: MonsterInstance["element"]): MonsterInstance => ({
