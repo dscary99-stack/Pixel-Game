@@ -274,8 +274,9 @@ export class BattleScene extends Phaser.Scene {
       v.label.setPosition(x, y - 44).setText(`${u.name} Lv${u.level}${u.retired ? " (จับแล้ว)" : ""}`);
     }
     const actor = this.snap.actor ? this.unit(this.snap.actor) : undefined;
+    const party = state.partyBonus ? ` · ปาร์ตี้ ${state.partyBonus.partners} คน: EXP +${state.partyBonus.expPercent}% วัสดุ +${state.partyBonus.materialDropPercent}%` : "";
     this.turnText.setText(
-      state.status === "active" ? `รอบ ${state.round} · ตาของ ${actor?.name ?? "-"} · แตะศัตรูเพื่อเลือกเป้า` : `จบไฟต์: ${state.status}`,
+      (state.status === "active" ? `รอบ ${state.round} · ตาของ ${actor?.name ?? "-"} · แตะศัตรูเพื่อเลือกเป้า` : `จบไฟต์: ${state.status}`) + party,
     );
     if (state.status !== "active" && this.onExit !== null && this.exitButton === null && !this.watching) {
       const exit = this.onExit;

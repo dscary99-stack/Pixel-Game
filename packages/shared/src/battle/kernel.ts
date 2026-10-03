@@ -216,6 +216,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
     units,
     bag: { ...setup.bag },
     consumed: {},
+    ...(setup.partyBonus !== undefined && setup.partyBonus.partners > 0 ? { partyBonus: { ...setup.partyBonus } } : {}),
     rng: seedRng(setup.seed),
     eventSeq: 0,
     status: "active",
@@ -278,7 +279,9 @@ function validateFormation(rules: RulesConfig, units: BattleUnit[]): void {
  * start (unit levels never change mid-fight). Every companion that started the fight counts, KO'd or not.
  */
 function expAwards(ctx: Ctx, wildLevel: number): { exp: number; companionExp: Record<string, number> } {
-  const exp = killExp(ctx.rules, wildLevel);
+  // Party bonus (P02) on the base award, before each companion's level scaling.
+  const bonus = ctx.s.partyBonus?.expPercent ?? 0;
+  const exp = Math.floor((killExp(ctx.rules, wildLevel) * (100 + bonus)) / 100);
   const perCompanion: Record<string, number> = {};
   for (const a of ctx.s.units) {
     if (a.side === "ally" && a.instanceId !== null) perCompanion[a.instanceId] = companionExp(ctx.rules, exp, a.actualLevel ?? a.level, wildLevel);
@@ -510,7 +513,10 @@ function knockOut(ctx: Ctx, u: BattleUnit): void {
     enemyUnitId: u.unitId,
     speciesId: u.speciesId!,
     originMode: ctx.s.originMode,
-    items: rollLoot(ctx.rules, table, ctx.s.originMode, ctx.rng),
+    items: rollLoot(ctx.rules, table, ctx.s.originMode, ctx.rng, {
+      percent: ctx.s.partyBonus?.materialDropPercent ?? 0,
+      isMaterial: (id) => ctx.content.items.get(id)?.kind === "material",
+    }),
     ...expAwards(ctx, u.level),
   };
   ctx.s.entitlements.push(entitlement);

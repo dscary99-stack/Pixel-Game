@@ -4,6 +4,8 @@
  * comes with the art pass (chapter 10 §4).
  */
 import {
+  exampleMapRegistry,
+  type PartyView,
   rebirthCost,
   expForLevel,
   PRIMARY_KEYS,
@@ -37,6 +39,7 @@ import {
 } from "@pmrpg/shared";
 import { ApiError, type CharacterApi, type CharacterBundle } from "./character-api";
 
+const maps = exampleMapRegistry();
 const { species, equipment: equipmentDefs, items: itemDefs, sigils: sigilDefs } = exampleContentMaps();
 /** Display only: the client shows socket counts and prices, the server applies its own rules. */
 const RULES = PRODUCTION_RULES;
@@ -859,5 +862,61 @@ export function rebirthPanel(api: CharacterApi, start: CharacterBundle): Promise
       body.append(ul);
     };
     draw();
+  });
+}
+
+/**
+ * Party (P02): start one and share its code, join by code, or leave. The bonus is counted by the
+ * server when each fight starts: partners on the same map and channel who fought recently.
+ */
+export function partyPanel(api: CharacterApi): Promise<void> {
+  return new Promise((resolve) => {
+    const { panel, close } = overlay();
+    const body = el("div");
+    const error = el("div", { class: "pm-error", role: "alert" });
+    const done = el("button", { type: "button", class: "primary" }, "ปิด");
+    const actions = el("div", { class: "pm-actions" });
+    actions.append(done);
+    panel.append(
+      el("h2", {}, "ปาร์ตี้"),
+      el(
+        "div",
+        { class: "pm-note" },
+        `สูงสุด ${RULES.provisional.partyMaxMembers.value} คน · เพื่อนที่อยู่แผนที่และ channel เดียวกันและเพิ่งสู้ (ภายใน ${RULES.provisional.partyActivityWindowMs.value / 60_000} นาที) ให้ EXP +${RULES.provisional.partyExpPercentPerMember.value}% ต่อคน (สูงสุด ${RULES.provisional.partyExpPercentCap.value}%) และวัสดุทั่วไป +${RULES.provisional.partyMaterialDropPercentPerMember.value}% ต่อคน (สูงสุด ${RULES.provisional.partyMaterialDropPercentCap.value}%) · ไฟต์ยังเป็นของใครของมัน`,
+      ),
+      body,
+      error,
+      actions,
+    );
+    done.addEventListener("click", () => {
+      close();
+      resolve();
+    });
+    const run = async (f: () => Promise<{ party: PartyView | null }>) => {
+      error.textContent = "";
+      try {
+        draw((await f()).party);
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+      }
+    };
+    const draw = (party: PartyView | null) => {
+      body.replaceChildren();
+      if (party === null) {
+        const create = el("button", { type: "button" }, "ตั้งปาร์ตี้");
+        create.addEventListener("click", () => void run(() => api.createParty()));
+        const code = el("input", { id: "pm-party-code", placeholder: "รหัสปาร์ตี้ เช่น pt_ab12cd34ef", maxlength: "13" });
+        const join = el("button", { type: "button" }, "เข้าร่วม");
+        join.addEventListener("click", () => void run(() => api.joinParty(code.value.trim())));
+        body.append(el("p", {}, "ยังไม่มีปาร์ตี้"), create, el("label", { for: "pm-party-code" }, "หรือเข้าร่วมด้วยรหัส"), code, join);
+        return;
+      }
+      const ul = el("ul", { class: "pm-list" });
+      for (const m of party.members) ul.append(el("li", { "data-member": m.accountId }, `${m.name} · ${m.mapId === null ? "-" : `${maps.get(m.mapId)?.name.th ?? m.mapId} ch${m.channel}`}`));
+      const leave = el("button", { type: "button" }, "ออกจากปาร์ตี้");
+      leave.addEventListener("click", () => void run(() => api.leaveParty()));
+      body.append(el("p", {}, "รหัสปาร์ตี้ (ให้เพื่อนใส่): "), el("code", { "data-party-code": party.partyId }, party.partyId), ul, leave);
+    };
+    void run(() => api.party());
   });
 }

@@ -1,4 +1,4 @@
-# สถานะงาน — Phase A + Battle settlement + Phase B (walking slice) + Phase C แรก (encounter) + Phase D แรก (ตัวละคร + อุปกรณ์ + Sigil/เหรียญ + EXP/เลเวล + Auto Hunt)
+# สถานะงาน — Phase A + Battle settlement + Phase B (walking slice) + Phase C แรก (encounter) + Phase D แรก (ตัวละคร + อุปกรณ์ + Sigil/เหรียญ + EXP/เลเวล + Auto Hunt + การเติบโตคู่ใจ/Rebirth/ปาร์ตี้)
 
 อัปเดต: 3 ตุลาคม 2026 · ผู้ทำล่าสุด: Claude · ระยะ: **D แรก — ตัวละคร ทีม อุปกรณ์ 12 ช่อง, Sigil, เหรียญ และ EXP/เลเวล/แต้มสเตตัสที่บันทึกจริง** (บท02, บท03 §3–§4, บท05, บท06, บท13 §1 D) ต่อจาก C แรก
 
@@ -55,11 +55,19 @@ Repo: https://github.com/dscary99-stack/Pixel-Game · Phase A merge แล้ว
 | Auto Hunt (shared) | `packages/shared/src/world/auto-hunt.ts`, `world/{movement,channel}.ts` | ตั้งค่าตามบท08 (ชนิดหัวฝูง, ขนาดฝูงสูงสุด, Elite opt-in, ชนิดที่ให้หยุด, หยุดเมื่อ HP ต่ำกว่า %) เป็น zod strict (ไม่มีช่อง auto capture); `planAutoHunt` เลือกฝูงที่อนุญาตที่ใกล้สุดตามระยะเดินจริง (BFS เดียว ไม่ข้ามประตู); `MapChannel.autoStep` ก้าวแทนผู้เล่นด้วยกฎความเร็ว/กำแพงเดียวกับก้าวปกติ |
 | Auto Hunt (server) | `apps/server/src/map-do.ts`, `battle-room.ts`, `battle-do.ts` | Map DO alarm ทุก `walkStepMs` ขณะมีคนล่า: ตรวจ HP ก่อนฝูงถัดไป → วางเส้นทาง → เดิน → `engage` ด้วย originMode `auto_hunt` (ดรอป ×0.70) → เปิด autopilot ใน Battle DO (1 action ต่อ `autoBattleActionMs`) → จบไฟต์ พักผล `autoHuntResultPauseMs` แล้ว resume ตามกฎเดิม; หยุดเมื่อกดหยุด/เดินเอง/เจอชนิดที่ตั้งไว้/HP ต่ำ/ทีมล้ม/แพ้/ไม่มีเป้า/หลุดการเชื่อมต่อ; หยุดกลางไฟต์ ไฟต์ยังอยู่ให้ผู้เล่นคุมต่อ |
 | Auto Hunt (client) | `apps/client/src/{world-scene,world-transport,battle-scene,transport,character-ui}.ts` | ปุ่ม/คีย์ H เปิดหน้าตั้งค่า (จำค่าไว้ใน localStorage), HUD บอกสถานะ, เดินตาม `autoMoved`, ฉากต่อสู้โหมดดู (poll event จาก server) มีปุ่ม "หยุดล่า (คุมเอง)", จบไฟต์ปิดฉากเองเมื่อ server resume, แจ้งเหตุผลที่หยุดเป็นภาษาไทย |
+| คำตอบ Auto Hunt ของนัท (3 ต.ค.) | `rules.ts` (`autoHuntDisconnectGraceMs`, `autoHuntSameCadence` เป็น CONFIRMED), `battle/auto-policy.ts`, `battle-room.ts`, `world/auto-hunt.ts` | หลุด = หยุดทันที; Auto Battle จากหน้าเกมและ Auto Hunt ใช้จังหวะเดียวกันที่ server คุม (`/auto` เร็วกว่า `autoBattleActionMs` ได้ `TOO_FAST`); ตั้งค่าหยุดเพิ่ม: MP ตัวละคร, HP คู่ใจ, ยาหมด; กฎยา (`itemRules`): ยาที่อนุญาต ใช้กับตัวเอง/เพื่อนที่ HP ต่ำสุด เมื่อ HP ต่ำกว่า % ไม่เกิน N ชิ้นต่อไฟต์ ใช้ทั้ง Auto Hunt และปุ่ม Auto ในไฟต์ |
+| การเติบโตคู่ใจ + effective level | `packages/shared/src/companion-growth.ts`, `battle/kernel.ts`, migration `0008_companion_growth.sql`, `character-store.ts`, `reward-ledger.ts` | นัทให้คิดเอง: +3 แต้ม/เลเวล สุ่มลงตามน้ำหนักสาย จาก `growthSeed` ที่ server สุ่มตอนจับ (stats = ฟังก์ชันของ seed, สาย, เลเวล, ขั้น Rebirth); ในไฟต์ใช้ min(เลเวล, เลเวลตัวละคร+10), EXP คิดจากเลเวลจริง; รายละเอียด `docs/design/COMPANION_GROWTH_PARTY_REBIRTH.md` |
+| Rebirth คู่ใจ | `packages/shared/src/rebirth.ts`, `town-services.ts` (`rebirth`), migration `0009_companion_rebirth.sql`, `POST /town/rebirth`, client `rebirthPanel` (R) | 3 ขั้น +4/+7/+10% รวม; ต้อง Lv200 + ตัวละคร Lv100/150/200 + เหรียญ 50k/150k/400k + วัสดุ species 30/60/100; ในเมือง นอกไฟต์; batch เดียว anchor ที่ `service_operations` + ตรวจขั้นที่ผู้เล่นเห็น (กดซ้ำ/แข่งกันได้ครั้งเดียว) |
+| ปาร์ตี้ | `packages/shared/src/party.ts`, `loot.ts`, migration `0010_parties.sql`, `src/party-store.ts`, `map-do.ts` (`partyBonusFor`), `GET/POST /party`, `/party/join`, `/party/leave`, client `partyPanel` (P) | สูงสุด 4 คน เข้าด้วยรหัส; ตอนเริ่มไฟต์นับเพื่อนในแผนที่+channel เดียวกันที่เพิ่งเริ่มไฟต์ใน 5 นาที แล้วล็อก EXP +5%/คน (≤15%) และวัสดุทั่วไป +2%/คน (≤6%, สัมพัทธ์, คูณ Auto ครั้งเดียว) ไว้ใน state ของไฟต์ |
 | Reconciler | `apps/server/src/index.ts` (`scheduled`, cron ทุกนาที) | reservation ที่ค้าง `reserved` เกิน 2 นาที → ถาม DO ก่อน; DO ไม่มีไฟต์ → เขียน tombstone แล้วจึงคืนของ; ไฟต์ที่เริ่มแล้วไม่ถูกแตะ |
 
 ## ผลตรวจล่าสุด
 
-- `npm run check` ผ่าน: typecheck 3 แพ็กเกจ, **218 tests ผ่าน** (shared 122, server 96), Vite build, `wrangler deploy --dry-run` (D1 + BATTLE + MAP + cron)
+- `npm run check` ผ่าน: typecheck 3 แพ็กเกจ, **239 tests ผ่าน** (shared 132, server 107), Vite build, `wrangler deploy --dry-run` (D1 + BATTLE + MAP + cron)
+- Test ใหม่รอบคำตอบนัท (+21): ตั้งค่า/readiness ของ Auto Hunt (MP, HP คู่ใจ, ยาหมด), autopilot ใช้ยาตามกฎไม่เกินจำนวนและไม่แตะของจับ, `/auto` ถูกคุมจังหวะ (`TOO_FAST`); การเติบโตคู่ใจ (งบเท่ากันทุก seed/สาย, deterministic, ลำดับสายตามบท04 เฉลี่ย 100 seed, โบนัส Rebirth ไม่ทบ), effective level ในไฟต์ (Lv50 กับตัวละคร Lv20 สู้เป็น Lv30, EXP ใช้ 50); capture ได้ seed ครั้งเดียวแม้ grant ซ้ำ/พร้อมกัน, syncLevels เก็บสเตตัสตามเส้นทาง; Rebirth (คิดเงิน+วัสดุครั้งเดียว, replay, สองคำขอแข่งได้ครั้งเดียว, ทุกเงื่อนไขไม่ผ่านไม่เขียนอะไร, เกิน 3 ขั้น); ปาร์ตี้ (ตั้ง/เข้า/ออก/ลบเมื่อว่าง, แข่งกันเข้าที่ว่างสุดท้ายได้คนเดียว, นับเฉพาะคนที่เพิ่งสู้), loot โบนัสวัสดุ (ไม่มีโบนัส = RNG เหมือนเดิม, +6% ทำให้วัสดุเพิ่ม ~6% ของอื่นไม่เปลี่ยน), EXP ไฟต์ปาร์ตี้ ×1.15
+- `npm run smoke:auto` (รันใหม่): ตั้งกฎยาเล็ก 1 ขวด/ไฟต์ → server ใช้ 1 ขวดพอดี; ที่เหลือผ่านเหมือนเดิม; smoke เดิมทุกตัวปรับให้รอจังหวะ Auto แล้วผ่าน (server, encounter, character, equipment, progression, town, world)
+- `npm run smoke:party` (ใหม่): ไม่มีตัวละคร → `NO_CHARACTER`, รหัสผิด → `NO_SUCH_PARTY`; B สู้ก่อนไม่ได้โบนัส, A สู้ต่อในแผนที่เดียวกันได้ `{partners:1, EXP +5%, วัสดุ +2%}`, คนนอกปาร์ตี้ไม่ได้
+- ภาพหน้าจอ: `companion-1-team-growth.png` (สเตตัสตามสาย, "สู้เป็น Lv11"), `companion-2-rebirth.png`, `party-1-created.png`, `auto-6-item-rules.png`
 - Test ใหม่ Auto Hunt (+11): ค่าเริ่มต้น/ปฏิเสธ field แปลก (เช่น autoCapture), กรองฝูงตาม Elite/ขนาด/ชนิด, รู้ว่าแผนที่ไม่มีเป้า, ชนิดที่ให้หยุด, วางเส้นทางไปฝูงใกล้สุดไม่ข้ามประตู, engage เมื่ออยู่ติด, รอเมื่อไม่มีฝูง, unreachable, `autoStep` ใช้ความเร็ว/กำแพง/ห้ามระหว่างไฟต์เหมือนก้าวปกติ, autopilot ใน BattleRoom เล่นจนจบเฉพาะเมื่อเปิดและเจ้าของสั่ง
 - `npm run smoke:auto` (ใหม่) กับ `wrangler dev`: ในเมือง → `NO_HUNT_HERE`, ไม่มีตัวละคร → `NO_CHARACTER`, ตั้งชนิดที่แผนที่ไม่มี → `NO_TARGETS`; เริ่มแล้ว server เดินเอง 4 ก้าว เปิดไฟต์ `auto_hunt` เล่นเองจนชนะ (client ไม่ส่งคำสั่ง), รางวัล originMode `auto_hunt`, resume แล้วเดินไปไฟต์ที่สอง; กดหยุดกลางไฟต์ → ไฟต์ยัง active และ autopilot ปิด; ก้าวเองหยุด Auto; ปิดหน้าขณะล่า → ไม่มีไฟต์ใหม่และตำแหน่งไม่ขยับ
 - ภาพหน้าจอ (`/mnt/project-files/pixel-game-screenshots/auto-*.png`): หน้าตั้งค่า, กำลังเดิน, ฉากต่อสู้โหมดดู, เดินต่อหลังไฟต์ (EXP +40), กดหยุดแล้วคุมเอง
@@ -138,6 +146,12 @@ Repo: https://github.com/dscary99-stack/Pixel-Game · Phase A merge แล้ว
 | A55 | ค่าเริ่มต้น: ทุกชนิด, ฝูงไม่เกิน 10, ไม่สู้ Elite, หยุดเมื่อ HP ตัวละคร < 30%; ตรวจ HP เฉพาะตัวละคร (ไม่รวมคู่ใจ) และตรวจระหว่างฝูงเท่านั้น ไม่ถอนตัวกลางไฟต์ | บท08 |
 | A56 | Auto Hunt ไม่ใช้ของเอง นอกจากที่ Auto Battle เดิมใช้ (ยาเมื่อ HP ต่ำ), ไม่จับ, ไม่ซื้อ/ขาย; ยังไม่มีตั้งค่าจำกัดจำนวนยา/ของที่ใช้ได้ | บท08, C15 |
 | A57 | "หยุดเมื่อเห็นชนิดนี้" ดูเฉพาะหัวฝูงที่มองเห็น และจะหยุดซ้ำกับฝูงเดิมถ้าเริ่มใหม่ขณะฝูงนั้นยังอยู่ | บท08 |
+| A58 | นัทตอบ 3 ต.ค.: หลุด = หยุดทันที (CONFIRMED), ความเร็ว = เท่าไฟต์ Auto ปกติ (CONFIRMED แนวคิด, ตัวเลข 700 ms ยัง P01), ตั้งค่าได้หลายค่า, ตั้งยาให้ใช้ตามเงื่อนไข; A54–A56 ถูกแทนด้วยข้อนี้ | บท08 |
+| A59 | กฎยาใช้ได้เฉพาะยาประเภท heal และตัวละครเป็นผู้ใช้ (คู่ใจใช้ของไม่ได้ตามกฎเดิม); ตรวจ HP เพื่อหยุดยังทำระหว่างฝูง ไม่ถอนตัวกลางไฟต์ | บท08 |
+| A60 | นัทให้คิดเอง: น้ำหนักสาย, 3 แต้ม/เลเวล, effective level +10, Rebirth 3 ขั้นพร้อมราคา, ปาร์ตี้ตาม P02 + หน้าต่าง 5 นาที (ดู `docs/design/COMPANION_GROWTH_PARTY_REBIRTH.md`) ทั้งหมด PROVISIONAL | P05, P02, เดิม O02–O04 |
+| A61 | คู่ใจเดิมก่อน migration 0008 ใช้ id เป็น seed และสเตตัสเปลี่ยนเป็นตามเส้นทางทันที (ต้นแบบยังไม่มีผู้เล่นจริง) | P05 |
+| A62 | Rebirth ยังไม่มีบททดสอบ (O04) และ variant สกิล/innate/cosmetic รอระบบสกิล; ทำได้ที่เมืองไหนก็ได้ที่มี NPC (ตอนนี้ทุกเมือง) | บท04 §7 |
+| A63 | ปาร์ตี้ไม่มีหัวหน้า/เตะ/เชิญจากแผนที่ ใช้รหัสเข้า; "เพิ่งสู้" = เริ่มไฟต์ (มี encounter claim) ภายใน 5 นาที | P02 |
 | A44 | ค่าถอด Sigil ตามเลเวลของอุปกรณ์: Lv1–49 = 300, Lv50 = 10,800, Lv120 = 37,800, Lv200 = 95,000 เหรียญ/ดวง (Lv50/120/200 = 3 ชม. กำไรสุทธิ manual ตามตัวอย่างบท06; Lv1 เดาเพื่อต้นแบบ) | P08, P12 |
 | A45 | ใส่ Sigil ได้ทุกที่นอกไฟต์ (บท05 กำหนดเฉพาะการถอดว่าทำในเมือง); ใส่ได้ทั้งชิ้นที่สวมอยู่และในกระเป๋า | บท05 §4, P15 |
 | A46 | NPC รับซื้อตาม `vendorPrice` ต่อชิ้น ไม่มีภาษี; ไม่รับเครื่องจับและตรา Sigil (`vendorPrice` 0); อุปกรณ์ยังขายไม่ได้ | บท06 |
@@ -158,18 +172,18 @@ Repo: https://github.com/dscary99-stack/Pixel-Game · Phase A merge แล้ว
 - **O11** auth provider → นอก dev ทุก request ได้ 401
 - `BattleRoom` ไม่ยอมรัน rules ที่มี fixture override นอก environment `dev`
 
-O01–O04 (trade gap, effective level, Rebirth) ไม่เกี่ยวกับงานนี้ ยังไม่แตะ
+O02–O04 นัทให้ Claude คิดเอง (3 ต.ค. 2026) ย้ายไป `RULES.provisional` แล้ว; O01 (trade gap) ยังไม่แตะ
 
 ## ยังไม่ทำ / ข้อจำกัด
 
 - ยังไม่มี status effect (stun/sleep/poison), shield, passive/innate trigger, บอสหลาย action, AoE
-- ตาราง EXP ผู้เล่นและคู่ใจยังเป็นข้อเสนอที่ยังไม่ playtest (สมมติ 120 ตัว/ชม.); ยังไม่มี EXP ราย species/Elite/Boss, Daily/Weekly, โบนัส Party, Rebirth; effective level ของคู่ใจที่สูงกว่าเจ้าของ (O02) ยังไม่ตัดสิน ตอนนี้คู่ใจใช้เลเวลจริงในไฟต์
-- ยังไม่มีการเติบโตสเตตัสคู่ใจ (O: น้ำหนักตาม archetype), Bond, Rebirth, อัปสกิล, รีเซ็ตแต้ม, Class2 ที่ Lv50
+- ตาราง EXP ผู้เล่นและคู่ใจยังเป็นข้อเสนอที่ยังไม่ playtest (สมมติ 120 ตัว/ชม.); ยังไม่มี EXP ราย species/Elite/Boss, Daily/Weekly
+- ยังไม่มี Bond, variant สกิลจาก Rebirth, บททดสอบ Rebirth, อัปสกิล, รีเซ็ตแต้ม, Class2 ที่ Lv50
 - นอก dev ยังเข้าเกมไม่ได้เพราะ auth (O11) ยังไม่เลือก ทุก request ได้ 401
 - ยังไม่มีของเริ่มต้นสำหรับตัวละครใหม่นอก dev (ยา/เครื่องจับ): dev แจกให้ทุกบัญชีเพื่อทดสอบ; ชุดเริ่มต้นจริงยังไม่ได้ออกแบบ
 - อาชีพ/เผ่ายังไม่มีสกิลหรือ passive เฉพาะ; ยังไม่มีหน้าจัดตำแหน่งทีม, ปล่อยคู่ใจ, ตั้งชื่อเล่น
 - รีโหลดหน้าเมื่อไฟต์จบแล้วแต่ยังไม่ได้กด "กลับไปเดินต่อ": ถ้าแพ้ จะไม่ถูกส่งกลับเมืองอัตโนมัติ (เดินต่อในทุ่งด้วยทีมที่ล้ม แล้วได้ `NEED_REST` เมื่อจะสู้)
-- Auto Hunt: ไม่มี grace เมื่อหลุด (O11), ไม่มีตั้งค่าจำกัดยา/ของ, ตรวจ HP เฉพาะตัวละคร, ไม่มีหน้าแสดงสรุปผลการล่า (จำนวนไฟต์/ของ/EXP ต่อรอบ); ยังไม่มีฝูง ELITE/บอส, ฝูงเดินไปมา; ฝูงยืนที่จุดเกิดคงที่
+- Auto Hunt: ไม่มีหน้าแสดงสรุปผลการล่า; กฎยารองรับเฉพาะยา heal (ยังไม่มียา MP/revive/buff); ไม่ถอนตัวกลางไฟต์; smoke Rebirth กับ wrangler ยังไม่มี (ต้องมีตัวละคร Lv100+ ทดสอบผ่าน unit test บน D1 stand-in และภาพหน้าจอ) (จำนวนไฟต์/ของ/EXP ต่อรอบ); ยังไม่มีฝูง ELITE/บอส, ฝูงเดินไปมา; ฝูงยืนที่จุดเกิดคงที่
 - คอนเทนต์ฝูงเป็น EXAMPLE (`draft`) ห้าม publish; ผู้ใช้แจ้ง (3 ต.ค. 2026) ว่า asset และมอนสเตอร์จริงจะเพิ่มทีหลัง และแต่ละช่วงเลเวลจะมีหลายชนิดมาก ชนิดตอนนี้เป็นตัวแทนเท่านั้น
 - ยังไม่มี interest area: ทุกคนใน channel ได้ข่าวทุกการขยับ (พอสำหรับ 50 คน/แผนที่เล็ก ไม่ใช่ขนาด MMO)
 - ยังไม่มี rate limit ของข้อความ WebSocket นอกจากกฎความเร็วเดิน; ไม่มี heartbeat timeout ของ server (ใช้ close ของ WebSocket)
@@ -191,7 +205,7 @@ O01–O04 (trade gap, effective level, Rebirth) ไม่เกี่ยวก�
 
 ## งานถัดไปที่แนะนำ
 
-1. น้ำหนักการเติบโตคู่ใจ (บท04 §4) แล้วให้คู่ใจได้สเตตัสตามเลเวล; ตัดสิน O02 (effective level คู่ใจเทียบเจ้าของ) เพราะตาราง EXP คู่ใจเร็วกว่าผู้เล่น
+1. ให้นัทตรวจตัวเลขใน `docs/design/COMPANION_GROWTH_PARTY_REBIRTH.md` (น้ำหนักสาย, +10, ราคา Rebirth, หน้าต่างปาร์ตี้) แล้ว playtest; ระบบสกิล/Bond เพื่อทำ variant ของ Rebirth
 2. ระบบ effect ของ Sigil/passive (stack policy, proc budget, shared cooldown บท05 §5) แล้วให้ตราตัวอย่างมีผลจริง
 3. ร้านขายของ (ราคาซื้อยา/เครื่องจับ) และชุดเริ่มต้นนอก dev; affix/rarity, gear layers บนตัวละคร
 4. ตัดสิน O15 (cooldown tick, revive, หนี, status tick, stalemate) และ O11 (นโยบายหลุดกลางไฟต์) แล้วเพิ่ม status effects และทางปิดไฟต์ที่ถูกทิ้ง

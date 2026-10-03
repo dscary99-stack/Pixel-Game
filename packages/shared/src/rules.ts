@@ -162,6 +162,13 @@ export const RULES = {
       "P05",
       "was O04; Nut delegated 2026-10-03: per stage 1/2/3; the trial (บททดสอบ) is not built yet",
     ),
+    // Party (chapter 08 "Party", P02): bonus while partners hunt on the same map and channel.
+    partyMaxMembers: provisional(4, "P02"),
+    partyExpPercentPerMember: provisional(5, "P02", "per eligible additional member"),
+    partyExpPercentCap: provisional(15, "P02"),
+    partyMaterialDropPercentPerMember: provisional(2, "P02", "relative, ordinary materials only; never Sigils, capture or gear"),
+    partyMaterialDropPercentCap: provisional(6, "P02"),
+    partyActivityWindowMs: provisional(5 * 60_000, "P02", "a partner counts if they started a fight within this window (standing still does not count)"),
     autoBattleActionMs: provisional(700, "P01", "Auto Battle and Auto Hunt: one ally action per this many ms"),
     autoHuntResultPauseMs: provisional(1500, "P01", "after an Auto Hunt fight ends, the result stays on screen this long before walking on"),
     // EXP and levels. The player table is Nut's "exp-proposal-1.0" (docs/design/EXP_DESIGN_LV001_200.md,

@@ -11,6 +11,7 @@
  *   POST /dev/reconcile            (dev only) run the reconciler now, ignoring reservation age
  *   GET  /character                the caller's character, team and owned companions (404 NO_CHARACTER)
  *   POST /character                create the character (idempotent on operationId; one per account)
+ *   GET  /party, POST /party, POST /party/join {partyId}, POST /party/leave   party (P02)
  *   POST /town/rebirth             companion Rebirth at the town NPC (operationId, companionId, expectedStage)
  *   PUT  /character/team           set the team (expectedVersion; ≤5, no duplicate species, outside fights)
  *   GET  /world/where              where the caller's character is saved (map + channel)
@@ -42,6 +43,7 @@ import { Economy } from "./economy";
 import { mapObjectName } from "./map-do";
 import { WorldStore } from "./world-store";
 import { TownServices, type ServiceResult } from "./town-services";
+import { PartyStore, type PartyResult } from "./party-store";
 
 export { BattleDurableObject } from "./battle-do";
 export { MapChannelDurableObject } from "./map-do";
@@ -90,6 +92,7 @@ export default {
     if (url.pathname.startsWith("/dev/")) return devRoute(request, env, url);
     if (url.pathname.startsWith("/world/")) return worldRoute(request, env, url);
     if (url.pathname === "/character" || url.pathname.startsWith("/character/") || url.pathname.startsWith("/town/")) return characterRoute(request, env, url);
+    if (url.pathname === "/party" || url.pathname.startsWith("/party/")) return partyRoute(request, env, url);
     const m = url.pathname.match(/^\/battles\/([a-z0-9_:-]{1,80})(?:\/([a-z-]+))?$/);
     if (m === null) return json(404, { error: "NOT_FOUND" });
     const battleId = m[1]!;
@@ -149,6 +152,21 @@ async function worldRoute(request: Request, env: Env, url: URL): Promise<Respons
   const headers = new Headers({ Upgrade: "websocket", "x-account": accountId, "x-map": mapId, "x-channel": String(channel), "x-name": encodeURIComponent(name) });
   const stub = env.MAP.get(env.MAP.idFromName(mapObjectName(mapId, channel)));
   return stub.fetch(new Request(request.url, { headers }));
+}
+
+/** Party (P02): see your party, start one, join by code, leave. */
+async function partyRoute(request: Request, env: Env, url: URL): Promise<Response> {
+  const accountId = resolveAccount(request, env);
+  if (accountId === null) return json(401, { error: "UNAUTHENTICATED" });
+  const parties = new PartyStore(env.DB, rulesFor(env));
+  let r: PartyResult;
+  if (request.method === "GET" && url.pathname === "/party") r = { status: "ok", party: await parties.view(accountId) };
+  else if (request.method === "POST" && url.pathname === "/party") r = await parties.create(accountId);
+  else if (request.method === "POST" && url.pathname === "/party/join") r = await parties.join(accountId, (await readJson(request)) ?? null);
+  else if (request.method === "POST" && url.pathname === "/party/leave") r = await parties.leave(accountId);
+  else return json(404, { error: "NOT_FOUND" });
+  if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
+  return json(200, { party: r.party });
 }
 
 async function characterRoute(request: Request, env: Env, url: URL): Promise<Response> {

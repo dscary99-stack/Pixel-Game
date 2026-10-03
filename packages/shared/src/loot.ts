@@ -26,7 +26,13 @@ export function lootRetention(rules: RulesConfig, origin: OriginMode): number {
     : rules.provisional.manualStartLootRetention.value;
 }
 
-export function rollLoot(rules: RulesConfig, table: LootTable, origin: OriginMode, rng: Rng): LootLine[] {
+/** Party material bonus (P02): relative percent, and which items count as ordinary materials. */
+export interface MaterialBonus {
+  percent: number;
+  isMaterial: (itemId: string) => boolean;
+}
+
+export function rollLoot(rules: RulesConfig, table: LootTable, origin: OriginMode, rng: Rng, material?: MaterialBonus): LootLine[] {
   const maxSlots = rules.confirmed.maxLootTypesPerEnemy.value;
   const candidates: LootLine[] = [];
 
@@ -47,8 +53,18 @@ export function rollLoot(rules: RulesConfig, table: LootTable, origin: OriginMod
     candidates.push({ itemId: entry.itemId, quantity });
   }
 
+  // Step 4, with the party bonus on ordinary materials folded into the same multiplier once:
+  // r = q × (1 + b). Above 1, the line is kept and doubled with chance r − 1, so the expected
+  // amount is r × quantity (1% becomes 1.06%, not 7%). With no bonus this is the plain q filter.
   const q = lootRetention(rules, origin);
-  const kept = q >= 1 ? candidates : candidates.filter(() => rng.chance(q));
+  const kept: LootLine[] = [];
+  for (const line of candidates) {
+    const b = material !== undefined && material.percent > 0 && material.isMaterial(line.itemId) ? material.percent : 0;
+    const r = (q * (100 + b)) / 100;
+    if (r < 1 && !rng.chance(r)) continue;
+    kept.push(line);
+    if (r > 1 && rng.chance(r - 1)) kept.push({ ...line });
+  }
 
   const merged = new Map<string, number>();
   for (const line of kept) merged.set(line.itemId, (merged.get(line.itemId) ?? 0) + line.quantity);

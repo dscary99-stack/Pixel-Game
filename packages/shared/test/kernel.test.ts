@@ -345,3 +345,23 @@ describe("rewards and Auto Battle", () => {
     expect(applyCommand(rules, c, state, { type: "guard", actorId: "player" }, { source: "player" })).toMatchObject({ ok: false, code: "BATTLE_OVER" });
   });
 });
+
+describe("party bonus in a fight (P02)", () => {
+  it("is counted by the server at start and adds to EXP once; none without partners", async () => {
+    const { partyBonus } = await import("../src/index");
+    expect(partyBonus(rules, 0)).toEqual({ partners: 0, expPercent: 0, materialDropPercent: 0 });
+    expect(partyBonus(rules, 2)).toEqual({ partners: 2, expPercent: 10, materialDropPercent: 4 });
+    expect(partyBonus(rules, 7)).toEqual({ partners: 3, expPercent: 15, materialDropPercent: 6 });
+    const c = content();
+    const run = (bonus?: ReturnType<typeof partyBonus>) => {
+      let s = ok(createBattle(rules, c, baseSetup(bonus === undefined ? {} : { partyBonus: bonus }))).state;
+      for (let i = 0; i < 200 && s.status === "active"; i++) s = ok(applyCommand(rules, c, s, chooseAutoCommand(s)!, { source: "auto" })).state;
+      return s;
+    };
+    const plain = run();
+    const party = run(partyBonus(rules, 3));
+    expect(party.partyBonus?.expPercent).toBe(15);
+    const exp = (s: typeof plain) => s.entitlements.map((e) => e.exp ?? 0);
+    expect(exp(party)).toEqual(exp(plain).map((x) => Math.floor((x * 115) / 100)));
+  });
+});

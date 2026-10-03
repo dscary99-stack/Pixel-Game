@@ -1,3 +1,4 @@
+import type { PartyBonus } from "../party";
 import type { OriginMode, LootLine } from "../loot";
 import type { Rank } from "../rules";
 import type { RngState } from "../rng";
@@ -86,6 +87,8 @@ export interface BattleState {
   /** Reserved combat bag: itemId -> remaining quantity. */
   bag: Record<string, number>;
   consumed: Record<string, number>;
+  /** Party bonus locked at fight start (P02). Absent on older states = none. */
+  partyBonus?: PartyBonus;
   /** Private server RNG state. Never sent to the client. */
   rng: RngState;
   eventSeq: number;
@@ -175,6 +178,8 @@ export interface BattleSetup {
   companions: (Position & { instance: MonsterInstance; hp?: number; mp?: number })[];
   enemies: (Position & { unitId: string; speciesId: string; element: Element; captureWindowOpen?: boolean })[];
   bag: Record<string, number>;
+  /** Counted by the server when the fight starts (P02); never from the client. */
+  partyBonus?: PartyBonus;
 }
 
 export type KernelResult =

@@ -28,6 +28,9 @@ import {
   packInstanceId,
   companionSetups,
   autoHuntReadiness,
+  NO_PARTY_BONUS,
+  partyBonus,
+  type PartyBonus,
   companionCombatProfile,
   deriveStats,
   gearBonuses,
@@ -56,6 +59,7 @@ import type { Env, RoomReply } from "./battle-do";
 import { CharacterStore } from "./character-store";
 import { Economy } from "./economy";
 import { EncounterStore } from "./encounter-store";
+import { PartyStore } from "./party-store";
 import { WorldStore } from "./world-store";
 
 /** What each hibernatable socket remembers. */
@@ -87,6 +91,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
   private readonly content = exampleContentMaps();
   private readonly store: WorldStore;
   private readonly encounters: EncounterStore;
+  private readonly parties: PartyStore;
   private readonly economy: Economy;
   private readonly characters: CharacterStore;
   private channel: MapChannel | null = null;
@@ -103,6 +108,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     // Phase B ships EXAMPLE maps only; a versioned content bundle replaces this later.
     this.store = new WorldStore(env.DB, this.maps, EXAMPLE_START_MAP);
     this.encounters = new EncounterStore(env.DB);
+    this.parties = new PartyStore(env.DB, this.rules);
     this.economy = new Economy(env.DB, this.rules);
     this.characters = new CharacterStore(env.DB, this.rules, this.content);
   }
@@ -346,6 +352,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
       companions: companionSetups(character.team, instances),
       enemies: packEnemies({ ...pack, members: roster }),
       bag,
+      partyBonus: await this.partyBonusFor(account, a.mapId, a.channel),
     };
     const created = (await this.battle(battleId).handle(account, { kind: "create", setup, reservationId })) as RoomReply;
     if (!created.ok) return fail("ENCOUNTER_REFUSED", created.code);
@@ -398,6 +405,18 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     safeSend(ws, { t: "resumed" });
     await this.sendPacks(account, a.mapId, a.channel);
     return "done";
+  }
+
+  /**
+   * Party bonus for a fight starting now (P02): partners on this map and channel (this object)
+   * who started a fight within the activity window. Locked into the fight's setup.
+   */
+  private async partyBonusFor(account: string, mapId: string, channel: number): Promise<PartyBonus> {
+    const here = this.ensureChannel(mapId, channel);
+    const partners = (await this.parties.partners(account)).filter((id) => here.get(id) !== undefined);
+    if (partners.length === 0) return NO_PARTY_BONUS;
+    const since = new Date(Date.now() - this.rules.provisional.partyActivityWindowMs.value).toISOString();
+    return partyBonus(this.rules, (await this.parties.recentlyFought(partners, since)).size);
   }
 
   // ---------------------------------------------------------------- Auto Hunt (C14, chapter 08)

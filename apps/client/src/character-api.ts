@@ -2,7 +2,7 @@
  * Character and team requests (server mode). The server decides everything; the client shows
  * what it gets back. Identity uses the dev header until O11 picks auth.
  */
-import type { CharacterView, CreateCharacterRequest, EquipSlot, EquipmentView, MonsterInstance, PrimaryStats } from "@pmrpg/shared";
+import type { CharacterView, CreateCharacterRequest, EquipSlot, EquipmentView, MonsterInstance, PartyView, PrimaryStats } from "@pmrpg/shared";
 
 export type StoredCompanion = MonsterInstance & { hp: number | null; mp: number | null };
 
@@ -70,6 +70,19 @@ export class CharacterApi {
 
   sell(lines: { itemId: string; quantity: number }[]) {
     return this.call<{ coins: number; result: { total: number } }>("POST", "/town/sell", { operationId: opId("sell"), lines });
+  }
+
+  party() {
+    return this.call<{ party: PartyView | null }>("GET", "/party");
+  }
+  createParty() {
+    return this.call<{ party: PartyView | null }>("POST", "/party", {});
+  }
+  joinParty(partyId: string) {
+    return this.call<{ party: PartyView | null }>("POST", "/party/join", { partyId });
+  }
+  leaveParty() {
+    return this.call<{ party: PartyView | null }>("POST", "/party/leave", {});
   }
 
   /** Companion Rebirth at the town NPC. The panel keeps one operation id per companion and stage. */

@@ -27,7 +27,7 @@ import {
 } from "@pmrpg/shared";
 import { ELEMENT_COLOR, type BattleScene } from "./battle-scene";
 import type { CharacterApi, CharacterBundle } from "./character-api";
-import { autoHuntPanel, equipmentPanel, rebirthPanel, shopPanel, statsPanel, teamPanel, vitals } from "./character-ui";
+import { autoHuntPanel, equipmentPanel, partyPanel, rebirthPanel, shopPanel, statsPanel, teamPanel, vitals } from "./character-ui";
 import type { WorldTransport } from "./world-transport";
 
 const W = 960;
@@ -121,7 +121,7 @@ export class WorldScene extends Phaser.Scene {
     this.hud = this.add.text(8, 40, "", style).setScrollFactor(0).setDepth(100);
     this.notice = this.add.text(W / 2, H - 90, "", { ...style, fontSize: "15px" }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
     this.add
-      .text(W - 8, 8, `ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · C สเตตัส · T ทีม · E อุปกรณ์ · B ร้าน / R จุติคู่ใจ (ในเมือง) · H ล่าอัตโนมัติ" : ""}`, style)
+      .text(W - 8, 8, `ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · C สเตตัส · T ทีม · E อุปกรณ์ · B ร้าน / R จุติคู่ใจ (ในเมือง) · H ล่าอัตโนมัติ · P ปาร์ตี้" : ""}`, style)
       .setOrigin(1, 0)
       .setScrollFactor(0)
       .setDepth(100);
@@ -137,6 +137,7 @@ export class WorldScene extends Phaser.Scene {
     kb.on("keydown-C", () => void this.openStats());
     kb.on("keydown-H", () => void this.toggleAutoHunt());
     kb.on("keydown-R", () => void this.openRebirth());
+    kb.on("keydown-P", () => void this.openParty());
     if (this.api !== null) {
       const button = (x: number, label: string, open: () => Promise<void>) =>
         this.add
@@ -154,7 +155,8 @@ export class WorldScene extends Phaser.Scene {
       const shop = button(gear.x + gear.width + 8, "ร้าน (B)", () => this.openShop());
       const stats = button(shop.x + shop.width + 8, "สเตตัส (C)", () => this.openStats());
       const hunt = button(stats.x + stats.width + 8, "ล่าอัตโนมัติ (H)", () => this.toggleAutoHunt());
-      button(hunt.x + hunt.width + 8, "จุติ (R)", () => this.openRebirth());
+      const reborn = button(hunt.x + hunt.width + 8, "จุติ (R)", () => this.openRebirth());
+      button(reborn.x + reborn.width + 8, "ปาร์ตี้ (P)", () => this.openParty());
     }
     this.input.on("pointerdown", (p: Phaser.Input.Pointer) => this.tapMove(p));
 
@@ -477,6 +479,21 @@ export class WorldScene extends Phaser.Scene {
     return this.withPanel("ขายของได้นอกไฟต์เท่านั้น", async (api, bundle) => {
       await shopPanel(api, bundle);
     });
+  }
+
+  /** Party: allowed anywhere, also during Auto Hunt (it changes no fight in progress). */
+  private async openParty() {
+    if (this.api === null || this.panelOpen) return;
+    const api = this.api;
+    this.panelOpen = true;
+    this.input.keyboard!.enabled = false;
+    try {
+      await partyPanel(api);
+    } finally {
+      this.input.keyboard!.enabled = true;
+      this.input.keyboard!.resetKeys();
+      this.panelOpen = false;
+    }
   }
 
   /** Companion Rebirth NPC; only in town (the server checks the stored position too). */

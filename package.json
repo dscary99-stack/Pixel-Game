@@ -23,6 +23,7 @@
     "smoke:town": "vite-node apps/server/scripts/town-smoke.ts",
     "smoke:progression": "vite-node apps/server/scripts/progression-smoke.ts",
     "smoke:auto": "vite-node apps/server/scripts/auto-hunt-smoke.ts",
+    "smoke:party": "vite-node apps/server/scripts/party-smoke.ts",
     "db:migrate:local": "cd apps/server && wrangler d1 migrations apply pixel-monster-rpg-dev --local",
     "check": "npm run typecheck && npm test && npm run build:client && npm run build:server"
   },
