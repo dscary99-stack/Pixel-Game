@@ -12,6 +12,8 @@ import { z } from "zod";
 import type { RulesConfig } from "./rules";
 import { ElementSchema, type Element, type MonsterInstance, type PrimaryStats, type SpeciesDefinition } from "./schemas";
 import type { BattleSetup, Range } from "./battle/types";
+import { gearBonuses, weaponRange } from "./equipment";
+import type { EquipmentDefinition } from "./schemas";
 
 export interface ClassDefinition {
   id: string;
@@ -146,8 +148,12 @@ export function teamFormation(
   });
 }
 
-/** The battle's player unit, built from a stored character. */
-export function playerSetup(accountId: string, c: CharacterView): BattleSetup["player"] {
+/** The battle's player unit, built from a stored character and what it wears. */
+export function playerSetup(
+  accountId: string,
+  c: CharacterView,
+  worn: { defs: readonly EquipmentDefinition[]; mainHand?: EquipmentDefinition } = { defs: [] },
+): BattleSetup["player"] {
   const cls = CLASS1_DEFINITIONS.find((d) => d.id === c.classId);
   return {
     accountId,
@@ -155,11 +161,11 @@ export function playerSetup(accountId: string, c: CharacterView): BattleSetup["p
     level: c.level,
     element: c.element,
     primaryStats: { ...c.primaryStats },
-    gear: {},
+    gear: gearBonuses(worn.defs),
     ...(c.hp === null ? {} : { hp: c.hp }),
     ...(c.mp === null ? {} : { mp: c.mp }),
     skillIds: [...PLACEHOLDER_PLAYER_SKILLS],
-    basicAttackRange: cls?.basicAttackRange ?? "melee",
+    basicAttackRange: weaponRange(worn.mainHand, cls?.basicAttackRange ?? "melee"),
     row: PLAYER_POSITION.row,
     slot: PLAYER_POSITION.slot,
   };

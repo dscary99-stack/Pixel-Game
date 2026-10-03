@@ -2,13 +2,14 @@
  * Character and team requests (server mode). The server decides everything; the client shows
  * what it gets back. Identity uses the dev header until O11 picks auth.
  */
-import type { CharacterView, CreateCharacterRequest, MonsterInstance } from "@pmrpg/shared";
+import type { CharacterView, CreateCharacterRequest, EquipSlot, EquipmentView, MonsterInstance } from "@pmrpg/shared";
 
 export type StoredCompanion = MonsterInstance & { hp: number | null; mp: number | null };
 
 export interface CharacterBundle {
   character: CharacterView;
   companions: StoredCompanion[];
+  equipment: EquipmentView[];
 }
 
 export class ApiError extends Error {
@@ -42,6 +43,11 @@ export class CharacterApi {
 
   setTeam(expectedVersion: number, companionIds: string[]) {
     return this.call<{ character: CharacterView }>("PUT", "/character/team", { expectedVersion, companionIds });
+  }
+
+  /** Put a piece in a slot, or empty it with null. */
+  equip(expectedVersion: number, slot: EquipSlot, instanceId: string | null) {
+    return this.call<{ character: CharacterView; equipment: EquipmentView[] }>("PUT", "/character/equipment", { expectedVersion, slot, instanceId });
   }
 
   private async call<T>(method: string, path: string, body?: unknown): Promise<T> {

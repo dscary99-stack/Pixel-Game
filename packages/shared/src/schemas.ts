@@ -305,7 +305,8 @@ export type SigilDefinition = z.infer<typeof SigilDefinitionSchema>;
 
 export const LootEntrySchema = z
   .object({
-    itemId: ItemId,
+    /** A stackable item, or an equipment definition (each drop becomes its own instance). */
+    itemId: z.union([ItemId, EquipmentDefinitionId]),
     weight: z.number().int().positive(),
     minQty: z.number().int().min(1),
     maxQty: z.number().int().min(1),

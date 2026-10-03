@@ -6,9 +6,19 @@
  * - setTeam: optimistic version check, ownership and C04 (≤5, no duplicate species) checked inside
  *   the same batch, refused while a fight holds the account's reservation (P15: change outside fights).
  * - rest: town rest restores HP/MP for free (chapter 03 §3), never during a fight.
+ * - equip: one slot change per request, same version check and fight rule as the team; the shared
+ *   `planEquip` decides slots, level and two-hand rules, the batch re-checks ownership and locks.
  */
 import {
   CreateCharacterRequestSchema,
+  EquipRequestSchema,
+  planEquip,
+  wornGear,
+  type EquipSlot,
+  type EquipmentDefinition,
+  type EquipmentView,
+  type Loadout,
+  type SigilDefinition,
   SetTeamRequestSchema,
   teamFormation,
   validateTeam,
@@ -58,6 +68,37 @@ interface InstanceRow {
 
 export type StoredInstance = MonsterInstance & { hp: number | null; mp: number | null };
 
+export interface StoreContent {
+  species: ReadonlyMap<string, SpeciesDefinition>;
+  equipment: ReadonlyMap<string, EquipmentDefinition>;
+  sigils: ReadonlyMap<string, SigilDefinition>;
+}
+
+export type EquipResult =
+  | { status: "saved"; character: CharacterView; equipment: EquipmentView[] }
+  | {
+      status: "rejected";
+      reason:
+        | "INVALID_REQUEST"
+        | "NO_CHARACTER"
+        | "STALE_VERSION"
+        | "IN_BATTLE"
+        | "NOT_OWNER"
+        | "SLOT_MISMATCH"
+        | "LEVEL_TOO_LOW"
+        | "MISSING_REFERENCE"
+        | "TWO_HAND_BLOCKS_OFFHAND";
+      message: string;
+    };
+
+interface EquipmentRow {
+  id: string;
+  definition_id: string;
+  refine_level: number;
+  lock_state: EquipmentView["lockState"];
+  slot: EquipSlot | null;
+}
+
 export type CreateResult =
   | { status: "created"; character: CharacterView }
   | { status: "rejected"; reason: "INVALID_REQUEST" | "CHARACTER_EXISTS"; message: string };
@@ -72,7 +113,7 @@ export class CharacterStore {
   constructor(
     private readonly db: SqlDb,
     private readonly rules: RulesConfig,
-    private readonly species: ReadonlyMap<string, SpeciesDefinition>,
+    private readonly content: StoreContent,
     private readonly now: () => string = () => new Date().toISOString(),
   ) {}
 
@@ -132,7 +173,7 @@ export class CharacterStore {
     const team = members.map((m) => ({ instanceId: m!.id, speciesId: m!.speciesId }));
     const issues = validateTeam(this.rules, team);
     if (issues.length > 0) return { status: "rejected", reason: issues[0]!.code as "TEAM_TOO_LARGE" | "DUPLICATE_SPECIES", message: issues.map((i) => i.message).join("; ") };
-    const slots = teamFormation(this.rules, team, this.species);
+    const slots = teamFormation(this.rules, team, this.content.species);
 
     const teamHash = await hashJson({ expectedVersion, slots });
     const n = slots.length;
@@ -185,17 +226,104 @@ export class CharacterStore {
     return open === null;
   }
 
-  /** Character, team and team instances for building a battle. */
-  async loadout(accountId: string): Promise<{ character: CharacterView; instances: Map<string, StoredInstance> } | null> {
+  /** Character, team instances and worn gear for building a battle. */
+  async loadout(accountId: string): Promise<{
+    character: CharacterView;
+    instances: Map<string, StoredInstance>;
+    worn: ReturnType<typeof wornGear>;
+    equipmentIds: string[];
+  } | null> {
     const character = await this.get(accountId);
     if (character === null) return null;
+    const gear = (await this.equipment(accountId)).filter((e) => e.slot !== null);
+    const worn = wornGear(gear, this.content.equipment);
+    const equipmentIds = gear.map((e) => e.id);
     const ids = character.team.map((t) => t.instanceId);
-    if (ids.length === 0) return { character, instances: new Map() };
+    if (ids.length === 0) return { character, instances: new Map(), worn, equipmentIds };
     const { results } = await this.db
       .prepare(`SELECT * FROM monster_instances WHERE owner_id = ? AND id IN (${marks(ids.length)})`)
       .bind(accountId, ...ids)
       .all<InstanceRow>();
-    return { character, instances: new Map(results.map((r) => [r.id, toInstance(r)])) };
+    return { character, instances: new Map(results.map((r) => [r.id, toInstance(r)])), worn, equipmentIds };
+  }
+
+  /** Every piece the account owns, with the slot its character wears it in. */
+  async equipment(accountId: string): Promise<EquipmentView[]> {
+    const { results } = await this.db
+      .prepare(
+        `SELECT e.id, e.definition_id, e.refine_level, e.lock_state, ce.slot
+         FROM equipment_instances e
+         LEFT JOIN character_equipment ce ON ce.equipment_instance_id = e.id
+         WHERE e.owner_id = ? ORDER BY e.definition_id, e.id`,
+      )
+      .bind(accountId)
+      .all<EquipmentRow>();
+    return results.map((r) => ({ id: r.id, definitionId: r.definition_id, refineLevel: r.refine_level, lockState: r.lock_state, slot: r.slot }));
+  }
+
+  async equip(accountId: string, raw: unknown): Promise<EquipResult> {
+    const parsed = EquipRequestSchema.safeParse(raw);
+    if (!parsed.success) return { status: "rejected", reason: "INVALID_REQUEST", message: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") };
+    const { expectedVersion, slot, instanceId } = parsed.data;
+    const row = await this.row(accountId);
+    if (row === null) return { status: "rejected", reason: "NO_CHARACTER", message: "create a character first" };
+    if (row.version !== expectedVersion) return { status: "rejected", reason: "STALE_VERSION", message: "the character changed; reload and try again" };
+
+    const owned = await this.equipment(accountId);
+    const byId = new Map(owned.map((e) => [e.id, { id: e.id, definitionId: e.definitionId, sigilSockets: [] as string[] }]));
+    if (instanceId !== null && !byId.has(instanceId)) return { status: "rejected", reason: "NOT_OWNER", message: "that equipment is not yours" };
+    const current: Loadout = Object.fromEntries(owned.filter((e) => e.slot !== null).map((e) => [e.slot, e.id]));
+    const plan = planEquip(this.rules, current, slot, instanceId, byId, this.content.equipment, this.content.sigils, row.level);
+    if (!plan.ok) return { status: "rejected", reason: plan.code, message: plan.message };
+
+    const worn = Object.entries(plan.loadout) as [EquipSlot, string][];
+    const gearHash = await hashJson({ expectedVersion, loadout: plan.loadout });
+    const n = worn.length;
+    const ownedGuard = n === 0 ? "1" : `(SELECT COUNT(*) FROM equipment_instances WHERE owner_id = ? AND lock_state = 'free' AND id IN (${marks(n)})) = ?`;
+    const ownedArgs = n === 0 ? [] : [accountId, ...worn.map(([, id]) => id), n];
+    const ours = `EXISTS (SELECT 1 FROM characters WHERE id = ? AND version = ? AND gear_hash = ?)`;
+    const oursArgs = [row.id, expectedVersion + 1, gearHash];
+    await this.db.batch([
+      this.db
+        .prepare(
+          `UPDATE characters SET version = version + 1, gear_hash = ?
+           WHERE id = ? AND version = ? AND NOT ${OPEN_BATTLE} AND ${ownedGuard}`,
+        )
+        .bind(gearHash, row.id, expectedVersion, accountId, ...ownedArgs),
+      this.db.prepare(`DELETE FROM character_equipment WHERE character_id = ? AND ${ours}`).bind(row.id, ...oursArgs),
+      ...worn.map(([s, id]) =>
+        this.db
+          .prepare(`INSERT INTO character_equipment (character_id, slot, equipment_instance_id) SELECT ?, ?, ? WHERE ${ours}`)
+          .bind(row.id, s, id, ...oursArgs),
+      ),
+    ]);
+
+    const after = await this.db.prepare(`SELECT version, gear_hash FROM characters WHERE id = ?`).bind(row.id).first<{ version: number; gear_hash: string | null }>();
+    if (after?.version === expectedVersion + 1 && after.gear_hash === gearHash) {
+      return { status: "saved", character: (await this.get(accountId))!, equipment: await this.equipment(accountId) };
+    }
+    if (after?.version !== expectedVersion) return { status: "rejected", reason: "STALE_VERSION", message: "the character changed; reload and try again" };
+    const fighting = await this.db.prepare(`SELECT 1 AS x FROM battle_reservations WHERE account_id = ? AND status IN ('reserved', 'active')`).bind(accountId).first();
+    if (fighting !== null) return { status: "rejected", reason: "IN_BATTLE", message: "change equipment outside fights" };
+    return { status: "rejected", reason: "NOT_OWNER", message: "a piece changed owner or is locked" };
+  }
+
+  /**
+   * DEV ONLY: give the account these equipment pieces once (keyed by operation id). The account
+   * row must exist. Players never have a grant path; drops come through RewardLedger.
+   */
+  async devGrantEquipment(operationId: string, accountId: string, definitionIds: readonly string[]): Promise<void> {
+    const at = this.now();
+    await this.db.batch(
+      definitionIds.map((d, i) =>
+        this.db
+          .prepare(
+            `INSERT INTO equipment_instances (id, definition_id, owner_id, created_operation_id, created_at)
+             VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`,
+          )
+          .bind(`eq:${operationId}:${i}`, d, accountId, `${operationId}:${i}`, at),
+      ),
+    );
   }
 
   private row(accountId: string): Promise<CharacterRow | null> {

@@ -1,9 +1,9 @@
 /**
  * Reward settlement against D1 (chapter 11 §3 steps 6–7).
  *
- * Receipt + item/companion grant go in one D1 batch (a transaction). Every write is keyed so a
- * retry is a no-op: receipt PK (entitlement, recipient), ledger PK (operation, line), monster
- * created_operation_id UNIQUE. Goal: the business effect happens once. The network may still
+ * Receipt + item/equipment/companion grant go in one D1 batch (a transaction). Every write is keyed so a
+ * retry is a no-op: receipt PK (entitlement, recipient), ledger PK (operation, line), monster and
+ * equipment created_operation_id UNIQUE. Goal: the business effect happens once. The network may still
  * deliver twice; that is fine.
  */
 import type { Entitlement, RulesConfig } from "@pmrpg/shared";
@@ -76,6 +76,22 @@ export class RewardLedger {
     ];
     if (entitlement.kind === "kill") {
       entitlement.items.forEach((line, i) => {
+        // Equipment drops are instances, not stackable items (chapter 05 §1): one row per piece,
+        // keyed by entitlement, line and piece number so a retried grant adds nothing.
+        if (line.itemId.startsWith("equip:")) {
+          for (let n = 0; n < line.quantity; n++) {
+            const op = `${id}:${i}:${n}`;
+            stmts.push(
+              this.db
+                .prepare(
+                  `INSERT INTO equipment_instances (id, definition_id, owner_id, created_operation_id, created_at)
+                   SELECT ?, ?, ?, ?, ? WHERE ${OWN_RECEIPT} ON CONFLICT DO NOTHING`,
+                )
+                .bind(`eq:${op}`, line.itemId, recipientId, op, at, id, recipientId, hash),
+            );
+          }
+          return;
+        }
         stmts.push(
           this.db
             .prepare(

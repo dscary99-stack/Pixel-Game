@@ -1,6 +1,6 @@
-# สถานะงาน — Phase A + Battle settlement + Phase B (walking slice) + Phase C แรก (encounter) + Phase D แรก (ตัวละคร)
+# สถานะงาน — Phase A + Battle settlement + Phase B (walking slice) + Phase C แรก (encounter) + Phase D แรก (ตัวละคร + อุปกรณ์)
 
-อัปเดต: 3 ตุลาคม 2026 · ผู้ทำล่าสุด: Claude · ระยะ: **D แรก — ตัวละครและทีมที่บันทึกจริง** (บท02, บท03 §3–§4, บท13 §1 D) ต่อจาก C แรก
+อัปเดต: 3 ตุลาคม 2026 · ผู้ทำล่าสุด: Claude · ระยะ: **D แรก — ตัวละคร ทีม และอุปกรณ์ 12 ช่องที่บันทึกจริง** (บท02, บท03 §3–§4, บท05, บท13 §1 D) ต่อจาก C แรก
 
 ไฟล์นี้คือสถานะที่ใช้ส่งต่อระหว่าง Claude และ Codex ทุกงานที่จบให้แก้ไฟล์นี้ก่อน commit
 
@@ -42,11 +42,18 @@ Repo: https://github.com/dscary99-stack/Pixel-Game · Phase A merge แล้ว
 | มอนสเตอร์ตัวอย่างข้างประตู | `packages/shared/src/content/{examples,maps}.ts` | ตุ่นเสบียง Lv2 และนกกระดิ่ง Lv3 จากตาราง kit บท04 §2 (EXAMPLE) ฝูงละ 1 ตัวข้างประตูทุ่ง เพราะ simulation พบว่าตัวละคร Lv1 ชนะมอนสเตอร์เดิม (Lv5–8) แทบไม่ได้ |
 | ตัวละครแทน (dev) | `packages/shared/src/dev-fixtures.ts` (`devPlayer`, `DEV_STARTER_ITEMS`) | ใช้แค่ `?battle` (dev-create) และ local preview; ไฟต์ในโลกใช้ตัวละครจริงแล้ว; ของเริ่มต้น dev เพิ่มเครื่องจับตุ่น/นก |
 | Client เดิน ↔ สู้ | `apps/client/src/{world-scene,world-transport,battle-scene,transport}.ts` | วาดฝูง (สีธาตุหัวฝูง, ชื่อ Lv จำนวน), คลิกฝูง → เดินไปข้าง ๆ แล้วขอสู้; ฉากต่อสู้ต่อไฟต์ที่ server สร้าง (attach); จบแล้วปุ่ม "กลับไปเดินต่อ"; โหมด local preview สุ่มฝูง/สู้ในเบราว์เซอร์ได้ (ไม่บันทึก) |
+| อุปกรณ์ (shared) | `packages/shared/src/equipment.ts`, `content/equipment.ts` | `planEquip` (ช่องตามหมวด, เลเวลขั้นต่ำ, อาวุธสองมือถอดมือรองให้/กันใส่มือรอง, ย้ายชิ้นที่ใส่อยู่ไปช่องอื่น, ใช้ `validateLoadout` เดิมตรวจ Sigil); `gearBonuses` รวม stat เข้า `deriveStats`; อาวุธมือหลักกำหนดระยะตีพื้นฐาน; ของ EXAMPLE 9 ชิ้น (เริ่มต้น 4 + ดรอปชนิดละ 1) |
+| อุปกรณ์ใน D1 | `apps/server/migrations/0006_equipment.sql`, `src/character-store.ts` | `equipment_instances` (1 แถวต่อชิ้น, `created_operation_id` UNIQUE, lock_state/lock_ref) + `character_equipment` (PK ตัวละคร+ช่อง, ชิ้นหนึ่งอยู่ได้ช่องเดียว); `equip` ตรวจ version เดียวกับทีม (`gear_hash` เป็นเครื่องหมายผู้ชนะ), ห้ามเปลี่ยนระหว่างไฟต์, ตรวจเจ้าของ+ไม่ถูกล็อกใน batch เดียว |
+| ดรอปอุปกรณ์ + ล็อก | `src/reward-ledger.ts`, `src/economy.ts` | kill line ที่เป็น `equip:` → สร้าง instance ทีละชิ้น id `eq:<entitlement>:<line>:<n>` ไม่ลง item ledger; `reserve` ล็อกชิ้นที่ใส่อยู่กับ reservation (hash รวม gear เฉพาะเมื่อมี), `settle`/`release` ปลดล็อกพร้อมคู่ใจ |
+| API + client อุปกรณ์ | `src/index.ts`, `apps/client/src/character-{api,ui}.ts`, `world-scene.ts` | `PUT /character/equipment`, `GET /character` มี `equipment`; หน้าอุปกรณ์ (ปุ่ม/คีย์ E) 12 ช่อง + กระเป๋า กดใส่/ถอดทีละครั้ง server ตัดสิน; HUD คิด HP/MP สูงสุดรวมอุปกรณ์; log ไฟต์แสดงชื่อของดรอป; dev แจกของเริ่มต้น 4 ชิ้นครั้งเดียวต่อบัญชี |
 | Reconciler | `apps/server/src/index.ts` (`scheduled`, cron ทุกนาที) | reservation ที่ค้าง `reserved` เกิน 2 นาที → ถาม DO ก่อน; DO ไม่มีไฟต์ → เขียน tombstone แล้วจึงคืนของ; ไฟต์ที่เริ่มแล้วไม่ถูกแตะ |
 
 ## ผลตรวจล่าสุด
 
-- `npm run check` ผ่าน: typecheck 3 แพ็กเกจ, **162 tests ผ่าน** (shared 93, server 69), Vite build, `wrangler deploy --dry-run` (D1 + BATTLE + MAP + cron)
+- `npm run check` ผ่าน: typecheck 3 แพ็กเกจ, **178 tests ผ่าน** (shared 101, server 77), Vite build, `wrangler deploy --dry-run` (D1 + BATTLE + MAP + cron)
+- Test ใหม่อุปกรณ์ (+16): ของ EXAMPLE ผ่าน schema/ใช้ stat ที่สูตรรู้จัก, ทุก loot table ชี้ของที่มีจริง, อาวุธใส่ได้ทั้งสองมือแต่ผิดช่องถูกปฏิเสธ, ธนูสองมือถอดดาบ+โล่ในครั้งเดียวและกันใส่มือรอง, เลเวลไม่ถึง, ย้ายเครื่องประดับ 1→2, ถอด, gear เข้า maxHp/patk และระยะตีตามอาวุธ; server: ดรอป 2 ชิ้นได้ 2 แถวครั้งเดียวแม้ส่งซ้ำ/พร้อมกัน และไม่ลง item ledger, dev gear แจกครั้งเดียว, ของคนอื่น/ผิดช่อง/เลเวล/input เสีย/ไม่มีตัวละคร, เขียนพร้อมกันจาก version เดียวกันผ่านอันเดียวและใช้ version ร่วมกับทีม, ระหว่างไฟต์ `IN_BATTLE` + ชิ้นที่ใส่ถูกล็อกกับ reservation แล้วปลดตอน settle/release, จองของคนอื่นได้ `NOT_OWNER`
+- `npm run smoke:equipment` (ใหม่) กับ `wrangler dev`: บัญชีใหม่มีของเริ่มต้น 4 ชิ้นในกระเป๋า, ใส่ดาบแล้วไม้เท้าสองมือแทนที่, ใส่เสื้อ, ผิดช่อง `SLOT_MISMATCH`, version เก่า `STALE_VERSION`; ในไฟต์จริงที่ทุ่ง ผู้เล่นมี maxHp 680 (650+30), maxMp 150 (140+10), MATK 62 (50+12), PDEF 24 (20+4), ระยะ ranged; เปลี่ยนของกลางไฟต์ `IN_BATTLE`; ชนะแล้วของกลับเป็น `free` และถอดได้; `smoke:character` และ `smoke:encounter` ยังผ่าน
+- ภาพหน้าจออุปกรณ์ (`/mnt/project-files/pixel-game-screenshots/gear-*.png`): หน้าอุปกรณ์ว่าง, ใส่ไม้เท้า+เสื้อแล้ว stat เปลี่ยน, ใส่ดาบมือรองขณะถือสองมือถูกปฏิเสธ `TWO_HAND_BLOCKS_OFFHAND`, HUD HP 680/680, ไฟต์ที่ใส่ของ (console มีแค่ 404 ก่อนสร้างตัวละครและ 409 ของการปฏิเสธที่ตั้งใจ)
 - Test ใหม่ Phase D (+20): Class1 9/เผ่า 8, ชื่อไทย/อังกฤษ 2–16 ตัดช่องว่าง ห้ามอักขระพิเศษ, ห้ามธาตุ NEUTRAL, formation 5 ตัวไม่ทับกัน, ตัวละคร+ทีมที่บันทึกสร้างไฟต์ได้และ HP ที่เก็บไว้ถูกใช้; D1: สร้างตัว Lv1 สเตตัส 10, ส่งซ้ำได้ตัวเดิม, ตัวที่ 2 → `CHARACTER_EXISTS`, สร้างพร้อมกัน 3 ครั้งได้ 1 ตัว, input ผิด 9 แบบไม่เขียนอะไร, ชื่อซ้ำข้ามบัญชีได้, ทีม tank ยืนหน้า, ชนิดซ้ำต่างธาตุ → `DUPLICATE_SPECIES`, เกิน 5/ของคนอื่น/id ซ้ำ ถูกปฏิเสธ, เขียนพร้อมกันจาก version เดียวกันสำเร็จ 1, เปลี่ยนทีมระหว่างไฟต์ → `IN_BATTLE`, settle เขียน HP/MP ตัวละครและคู่ใจ (ปัดลง ไม่ติดลบ), ไฟต์ dev ไม่แตะ HP ตัวละคร, พักไม่ได้ระหว่างไฟต์
 - `npm run smoke:character` (ใหม่) กับ `wrangler dev`: ก่อนสร้าง 404, ธาตุ NEUTRAL → 400, สร้างได้ชื่อไทย Lv1 สเตตัส 10, ส่งซ้ำได้ตัวเดิม, ตัวที่ 2 → 409, เข้าเมืองได้ `rested`, คนอื่นเห็นชื่อตัวละคร, สู้ตุ่นแล้วกดจับสำเร็จ → คู่ใจ Lv1 ในคลัง, ตั้งทีมได้ / version เก่า → `STALE_VERSION`, ไฟต์ถัดไปมีคู่ใจลงสู้, เปลี่ยนทีมกลางไฟต์ → `IN_BATTLE`, หลังไฟต์ HP ตัวละคร 470 คู่ใจ 450 ติดตัว, แพ้จิ้งจอก Lv8 → ถูกส่งกลับหมู่บ้าน HP 0 → ถึงเมืองได้ `rested` HP เต็มทั้งทีม; `smoke:encounter` (เพิ่ม: ไม่มีตัวละคร → `NO_CHARACTER`), `smoke:world`, `smoke:server` ยังผ่าน
 - Simulation (200 seed ต่อคู่): ตัวละคร Lv1 คนเดียวชนะหอย Lv5 10%, ปู/จิ้งจอก 0%; ชนะตุ่น Lv2 100% และนก Lv3 83% → จึงเพิ่มสองชนิดนี้ข้างประตู
@@ -103,6 +110,12 @@ Repo: https://github.com/dscary99-stack/Pixel-Game · Phase A merge แล้ว
 | A35 | แพ้ทั้งทีม → ย้ายไปจุดเกิดหมู่บ้านแล้วพัก (ไม่หัก EXP/ของ) | บท03 §3 |
 | A36 | ตัวละครล้มแต่คู่ใจยังยืน → สู้ต่อได้; ทั้งทีมล้ม → ต้องกลับไปพักก่อนเข้าไฟต์ใหม่ | บท03 §3 |
 | A37 | ตุ่นเสบียง Lv2 และนกกระดิ่ง Lv3 (EXAMPLE) ใช้ kit จากบท04 §2 แต่สกิลที่ต้องใช้ระบบที่ยังไม่มี (buff/cleanse/ลดต้นทุน) เป็น passive ว่างไว้ก่อน | EXAMPLE |
+| A38 | อุปกรณ์ให้แค่ stat พื้นฐาน (`baseStats`) เข้าสูตร derived; ยังไม่มี affix/rarity/refine/ผล Sigil | บท05 |
+| A39 | ทุกอาชีพใส่อาวุธได้ทุกแบบและถือสองอาวุธมือเดียวได้ (O09 กติกา dual wield ตามอาชีพยัง OPEN) | O09 |
+| A40 | อาวุธสองมือใส่ได้แค่มือหลักและถอดของมือรองออกให้อัตโนมัติ; ใส่มือรองขณะถือสองมือถูกปฏิเสธ | บท05 §1 |
+| A41 | ระยะตีพื้นฐาน: อาวุธ physical_melee = ใกล้, ranged/magic = ไกล; มือเปล่าใช้ค่าของอาชีพ | บท04/05 |
+| A42 | ทีมกับอุปกรณ์ใช้ `version` ตัวละครเดียวกัน: เปลี่ยนอย่างใดอย่างหนึ่งแล้วอีกหน้าต้องโหลดใหม่ | บท11 §4 |
+| A43 | มอนสเตอร์ตัวอย่างแต่ละชนิดดรอปอุปกรณ์ EXAMPLE 1 ชิ้นด้วย pool น้ำหนัก 4 (เทียบ species 25, region 15) ตัวเลขดรอปจริงบท06 ยังไม่กำหนด; dev แจกดาบไม้/ธนูฝึก/ไม้เท้าฝึกหัด/เสื้อผ้าฝ้าย | EXAMPLE |
 
 ## OPEN ที่โค้ดคืน `UNRESOLVED_RULE` แทนการเลือกเอง
 
@@ -122,14 +135,15 @@ O01–O04 (trade gap, effective level, Rebirth) ไม่เกี่ยวก�
 - อาชีพ/เผ่ายังไม่มีสกิลหรือ passive เฉพาะ; ยังไม่มีหน้าจัดตำแหน่งทีม, ปล่อยคู่ใจ, ตั้งชื่อเล่น
 - รีโหลดหน้าเมื่อไฟต์จบแล้วแต่ยังไม่ได้กด "กลับไปเดินต่อ": ถ้าแพ้ จะไม่ถูกส่งกลับเมืองอัตโนมัติ (เดินต่อในทุ่งด้วยทีมที่ล้ม แล้วได้ `NEED_REST` เมื่อจะสู้)
 - ยังไม่มี Auto Hunt (เดินหาฝูงเอง), EXP, ฝูง ELITE/บอส, ฝูงเดินไปมา; ฝูงยืนที่จุดเกิดคงที่
-- คอนเทนต์ฝูงเป็น EXAMPLE (`draft`) ห้าม publish
+- คอนเทนต์ฝูงเป็น EXAMPLE (`draft`) ห้าม publish; ผู้ใช้แจ้ง (3 ต.ค. 2026) ว่า asset และมอนสเตอร์จริงจะเพิ่มทีหลัง และแต่ละช่วงเลเวลจะมีหลายชนิดมาก ชนิดตอนนี้เป็นตัวแทนเท่านั้น
 - ยังไม่มี interest area: ทุกคนใน channel ได้ข่าวทุกการขยับ (พอสำหรับ 50 คน/แผนที่เล็ก ไม่ใช่ขนาด MMO)
 - ยังไม่มี rate limit ของข้อความ WebSocket นอกจากกฎความเร็วเดิน; ไม่มี heartbeat timeout ของ server (ใช้ close ของ WebSocket)
 - ยังไม่มีตัวละครหลายตัวต่อบัญชี (O10), ไม่มีการเลือก channel อัตโนมัติเมื่อเต็ม
 - ภาพโลกเป็นสี่เหลี่ยมสีตาม tile ยังไม่มี tileset, y-sort จริง, occlusion (บท10 §2)
 - ไฟต์ที่ถูกทิ้งกลางคัน (ปิดเกมไม่กลับมา) ค้าง `active` ตลอด บัญชีนั้นเปิดไฟต์ใหม่ไม่ได้ เพราะนโยบาย pause/disconnect (O11) และ stalemate/หนี (O15) ยังเปิดอยู่; client dev จึงใช้บัญชีใหม่ทุกครั้งที่โหลดหน้า
 - ยังไม่มีเครื่องมือผู้ดูแลสำหรับ outbox `failed` (ดูได้จาก `view.settlement.failed` เท่านั้น)
-- ยังไม่ล็อกอุปกรณ์ (ไม่มีตาราง equipment instance)
+- อุปกรณ์ยังไม่มี affix, rarity, ตีบวก, ติดตั้ง/ถอด Sigil, ขาย/ทิ้ง/แลก, ภาพบนตัวละคร (12 layers); ล็อก `in_escrow` มีในตารางแต่ยังไม่มีตลาด
+- ของเริ่มต้นนอก dev ยังไม่มี (ทั้งยาและอุปกรณ์); ของ EXAMPLE ห้าม publish
 - `grant` ยังไม่ตรวจว่า entitlement มาจากไฟต์ที่มี reservation ของผู้รับ (DO เป็นผู้เรียกคนเดียวผ่าน binding ภายใน)
 - Cron reconciler ทดสอบผ่าน `/dev/reconcile` ไม่ได้รันผ่าน cron จริง
 - SQL ทดสอบบน node:sqlite ไม่ใช่ D1 จริง; DO ทดสอบบน workerd ในเครื่อง ยังไม่ deploy; ไม่มี load test (P11)
@@ -141,7 +155,7 @@ O01–O04 (trade gap, effective level, Rebirth) ไม่เกี่ยวก�
 ## งานถัดไปที่แนะนำ
 
 1. EXP และเลเวลอัป (ตัวละคร + คู่ใจทั้ง 5 ได้ EXP ของตัวเอง บท04 §4) และแต้มสเตตัส +3/เลเวล ตาม P03 — รอผู้ใช้เลือกว่าจะใช้สูตรชั่วคราวหรือรอตาราง
-2. ตาราง equipment instance + ใส่/ถอดนอกไฟต์ + ล็อกตอนจอง (บท05, C21)
+2. อุปกรณ์ขั้นต่อไป: ติดตั้ง Sigil (บท05 §2), affix/rarity, ขาย/ทิ้ง, gear layers บนตัวละคร
 3. ตัดสิน O15 (cooldown tick, revive, หนี, status tick, stalemate) และ O11 (นโยบายหลุดกลางไฟต์) แล้วเพิ่ม status effects และทางปิดไฟต์ที่ถูกทิ้ง
 4. Art proof หนึ่งตัวละคร 4 ทิศ + gear 12 layers + tileset หนึ่งชุด (บท10, ค้างจาก Phase A)
 5. ชุดเริ่มต้นของตัวละครใหม่ (ยา/เครื่องจับ) และ auth (O11) เพื่อเปิดนอก dev

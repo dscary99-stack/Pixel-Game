@@ -4,6 +4,7 @@
  * not an approved monster catalog, and their loot tables intentionally fail the 50–100
  * candidate validator: we do not invent 50 placeholder items to pass it (chapter 13 §2).
  */
+import { EXAMPLE_EQUIPMENT } from "./equipment";
 import type {
   Element,
   ItemDefinition,
@@ -107,6 +108,14 @@ export const EXAMPLE_ITEMS: ItemDefinition[] = [
   { id: "item:river_pebble", ...meta, name: { th: "กรวดริมน้ำ" }, kind: "material", vendorPrice: 1 },
 ];
 
+const SPECIES_GEAR = {
+  "species:armor_crab": "equip:crab_buckler",
+  "species:ember_fox": "equip:ember_fang_dagger",
+  "species:lantern_snail": "equip:glow_charm",
+  "species:supply_mole": "equip:mole_sandals",
+  "species:bell_bird": "equip:bell_feather_cap",
+} as const;
+
 export const EXAMPLE_LOOT_TABLES: LootTable[] = EXAMPLE_SPECIES.map((s) => {
   const sg = EXAMPLE_SIGILS.find((g) => g.sourceSpeciesId === s.id)!;
   const own = {
@@ -127,6 +136,8 @@ export const EXAMPLE_LOOT_TABLES: LootTable[] = EXAMPLE_SPECIES.map((s) => {
     pools: [
       { id: "species", weight: 25, entries: [{ itemId: own, weight: 1, minQty: 1, maxQty: 2 }] },
       { id: "region", weight: 15, entries: [{ itemId: "item:river_pebble", weight: 1, minQty: 1, maxQty: 3 }] },
+      // Each species drops one piece of EXAMPLE equipment, rarely (chapter 06 numbers are not set).
+      { id: "gear", weight: 4, entries: [{ itemId: SPECIES_GEAR[s.id as keyof typeof SPECIES_GEAR], weight: 1, minQty: 1, maxQty: 1 }] },
     ],
     maxTypesPerEnemy: 5,
   };
@@ -235,5 +246,6 @@ export function exampleContentMaps() {
     items: new Map(EXAMPLE_ITEMS.map((s) => [s.id, s])),
     lootTables: new Map(EXAMPLE_LOOT_TABLES.map((s) => [s.id, s])),
     sigils: new Map(EXAMPLE_SIGILS.map((s) => [s.id, s])),
+    equipment: new Map(EXAMPLE_EQUIPMENT.map((s) => [s.id, s])),
   };
 }

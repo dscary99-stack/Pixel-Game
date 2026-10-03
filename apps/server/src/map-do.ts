@@ -78,7 +78,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     this.store = new WorldStore(env.DB, this.maps, EXAMPLE_START_MAP);
     this.encounters = new EncounterStore(env.DB);
     this.economy = new Economy(env.DB, this.rules);
-    this.characters = new CharacterStore(env.DB, this.rules, this.content.species);
+    this.characters = new CharacterStore(env.DB, this.rules, this.content);
   }
 
   /** Rebuild the channel from live sockets (after hibernation) or create it on first join. */
@@ -264,7 +264,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     }
     const loadout = await this.characters.loadout(account);
     if (loadout === null) return fail("NO_CHARACTER", "create a character first");
-    const { character, instances } = loadout;
+    const { character, instances, worn, equipmentIds } = loadout;
     // HP/MP carry over; a team that is all knocked out has to rest before the next fight.
     const alive = (hp: number | null) => hp === null || hp > 0;
     if (!alive(character.hp) && ![...instances.values()].some((i) => alive(i.hp))) return fail("NEED_REST", "everyone is knocked out; rest in town");
@@ -291,6 +291,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
         bag,
         companionIds: character.team.map((t) => t.instanceId),
         characterId: character.id,
+        equipmentIds,
       });
       if (reserved.status === "rejected") {
         if (reserved.reason === "BATTLE_IN_PROGRESS") return fail("IN_BATTLE", "finish your other fight first");
@@ -301,7 +302,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
       battleId,
       originMode: "manual",
       seed: crypto.randomUUID(),
-      player: playerSetup(account, character),
+      player: playerSetup(account, character, worn),
       companions: companionSetups(character.team, instances),
       enemies: packEnemies({ ...pack, members: roster }),
       bag,

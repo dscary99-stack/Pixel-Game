@@ -24,7 +24,7 @@ import {
 } from "@pmrpg/shared";
 import { ELEMENT_COLOR } from "./battle-scene";
 import type { CharacterApi, CharacterBundle } from "./character-api";
-import { teamPanel, vitals } from "./character-ui";
+import { equipmentPanel, teamPanel, vitals } from "./character-ui";
 import type { WorldTransport } from "./world-transport";
 
 const W = 960;
@@ -99,7 +99,7 @@ export class WorldScene extends Phaser.Scene {
     this.hud = this.add.text(8, 40, "", style).setScrollFactor(0).setDepth(100);
     this.notice = this.add.text(W / 2, H - 40, "", { ...style, fontSize: "15px" }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
     this.add
-      .text(W - 8, 8, `ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · T ทีม" : ""}`, style)
+      .text(W - 8, 8, `ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · T ทีม · E อุปกรณ์" : ""}`, style)
       .setOrigin(1, 0)
       .setScrollFactor(0)
       .setDepth(100);
@@ -110,16 +110,20 @@ export class WorldScene extends Phaser.Scene {
     kb.on("keydown-ONE", () => this.switchChannel(1));
     kb.on("keydown-TWO", () => this.switchChannel(2));
     kb.on("keydown-T", () => void this.openTeam());
+    kb.on("keydown-E", () => void this.openEquipment());
     if (this.api !== null) {
-      this.add
-        .text(8, 100, "ทีมคู่ใจ (T)", { ...style, backgroundColor: "#463f6b", padding: { x: 12, y: 10 } })
-        .setScrollFactor(0)
-        .setDepth(100)
-        .setInteractive({ useHandCursor: true })
-        .on("pointerdown", (_p: Pointer, _x: number, _y: number, e: Phaser.Types.Input.EventData) => {
-          e.stopPropagation();
-          void this.openTeam();
-        });
+      const button = (x: number, label: string, open: () => Promise<void>) =>
+        this.add
+          .text(x, 100, label, { ...style, backgroundColor: "#463f6b", padding: { x: 12, y: 10 } })
+          .setScrollFactor(0)
+          .setDepth(100)
+          .setInteractive({ useHandCursor: true })
+          .on("pointerdown", (_p: Pointer, _x: number, _y: number, e: Phaser.Types.Input.EventData) => {
+            e.stopPropagation();
+            void open();
+          });
+      const team = button(8, "ทีมคู่ใจ (T)", () => this.openTeam());
+      button(team.x + team.width + 8, "อุปกรณ์ (E)", () => this.openEquipment());
     }
     this.input.on("pointerdown", (p: Phaser.Input.Pointer) => this.tapMove(p));
 
@@ -351,7 +355,7 @@ export class WorldScene extends Phaser.Scene {
     const where = m === null ? "กำลังเชื่อมต่อ…" : `${m.name.th} · channel ${this.channelNo} · ผู้เล่นที่เห็น ${this.players.size} คน`;
     const c = this.bundle?.character;
     if (c === undefined) return void this.hud.setText(where);
-    const v = vitals(c);
+    const v = vitals(c, this.bundle?.equipment ?? []);
     this.hud.setText(`${where}\n${c.name} Lv${c.level} · HP ${v.hp}/${v.maxHp} · MP ${v.mp}/${v.maxMp} · ทีม ${c.team.length}/5`);
   }
 
@@ -361,21 +365,33 @@ export class WorldScene extends Phaser.Scene {
     this.refreshHud();
   }
 
-  /** Team screen; walking input pauses while it is open. Not during a fight (P15). */
-  private async openTeam() {
+  /** Team screen. Not during a fight (P15). */
+  private openTeam() {
+    return this.withPanel("เปลี่ยนทีมได้นอกไฟต์เท่านั้น", async (api, bundle) => {
+      const saved = await teamPanel(api, bundle);
+      if (saved !== null) this.flash(`บันทึกทีมแล้ว (${saved.team.length} ตัว)`);
+    });
+  }
+
+  /** Equipment screen. Not during a fight (P15). */
+  private openEquipment() {
+    return this.withPanel("เปลี่ยนอุปกรณ์ได้นอกไฟต์เท่านั้น", async (api, bundle) => {
+      await equipmentPanel(api, bundle);
+    });
+  }
+
+  /** Opens a DOM panel with fresh character data; walking input pauses while it is open. */
+  private async withPanel(inFight: string, show: (api: CharacterApi, bundle: CharacterBundle) => Promise<void>) {
     if (this.api === null || this.panelOpen) return;
-    if (this.inBattle) return this.flash("เปลี่ยนทีมได้นอกไฟต์เท่านั้น");
+    if (this.inBattle) return this.flash(inFight);
     this.panelOpen = true;
     this.path = [];
     this.input.keyboard!.enabled = false;
     try {
       await this.reloadCharacter();
       if (this.bundle === null) return;
-      const saved = await teamPanel(this.api, this.bundle);
-      if (saved !== null) {
-        this.flash(`บันทึกทีมแล้ว (${saved.team.length} ตัว)`);
-        await this.reloadCharacter();
-      }
+      await show(this.api, this.bundle);
+      await this.reloadCharacter();
     } finally {
       this.input.keyboard!.enabled = true;
       this.input.keyboard!.resetKeys();

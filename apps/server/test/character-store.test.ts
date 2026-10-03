@@ -9,7 +9,8 @@ import { SqliteD1, freshDb, type Db } from "./sqlite-d1";
 
 const A = "acct:a";
 const B = "acct:b";
-const species = exampleContentMaps().species;
+const content = exampleContentMaps();
+const species = content.species;
 let db: Db;
 let store: CharacterStore;
 let eco: Economy;
@@ -33,7 +34,7 @@ function pet(id: string, owner: string, speciesId: string, element = "WATER") {
 beforeEach(async () => {
   db = freshDb();
   const d1 = new SqliteD1(db);
-  store = new CharacterStore(d1, PRODUCTION_RULES, species, () => "2026-10-03T00:00:00Z");
+  store = new CharacterStore(d1, PRODUCTION_RULES, content, () => "2026-10-03T00:00:00Z");
   eco = new Economy(d1, PRODUCTION_RULES, () => "2026-10-03T00:00:00Z");
   await eco.devGrant("seed:a", A, { "item:small_potion": 5 });
   await eco.devGrant("seed:b", B, {});

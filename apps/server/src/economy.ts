@@ -2,7 +2,7 @@
  * Economy service on D1 for the battle lifecycle (chapter 11 §2–§3).
  *
  * D1 is the canonical owner of items and companions. A battle only holds a reservation:
- *   reserve  (step 2)  bag items leave the inventory, companions are locked, one open battle per account
+ *   reserve  (step 2)  bag items leave the inventory, companions and worn gear are locked, one open battle per account
  *   activate (step 3)  the Battle DO confirms it started the fight from this reservation
  *   grant    (step 6)  RewardLedger: receipt + items/companion in one batch
  *   settle   (step 8)  unused items come back, locks open, final HP/MP recorded; only after every
@@ -26,6 +26,8 @@ export interface ReserveRequest {
   companionIds: string[];
   /** The stored character that fights (Phase D); settlement writes its HP/MP back. */
   characterId?: string;
+  /** Equipment instances the character wears; locked for the fight like companions. */
+  equipmentIds?: string[];
 }
 
 export type ReservationStatus = "reserved" | "active" | "settled" | "released";
@@ -102,9 +104,20 @@ export class Economy {
     const rid = req.reservationId;
     const bag = normalizeBag(req.bag);
     const companions = [...new Set(req.companionIds)].sort();
-    if (bag === null || companions.length !== req.companionIds.length) return { status: "rejected", reservationId: rid, reason: "INVALID_REQUEST" };
+    const gear = [...new Set(req.equipmentIds ?? [])].sort();
+    if (bag === null || companions.length !== req.companionIds.length || gear.length !== (req.equipmentIds ?? []).length) {
+      return { status: "rejected", reservationId: rid, reason: "INVALID_REQUEST" };
+    }
     const characterId = req.characterId ?? null;
-    const hash = await hashJson({ accountId: req.accountId, battleId: req.battleId, bag, companions, ...(characterId === null ? {} : { characterId }) });
+    // Optional parts join the hash only when present, so older reservations keep their hash.
+    const hash = await hashJson({
+      accountId: req.accountId,
+      battleId: req.battleId,
+      bag,
+      companions,
+      ...(characterId === null ? {} : { characterId }),
+      ...(gear.length === 0 ? {} : { gear }),
+    });
 
     const existing = await this.row(rid);
     if (existing !== null) {
@@ -126,6 +139,10 @@ export class Economy {
       guards.push(`(SELECT COUNT(*) FROM monster_instances WHERE owner_id = ? AND lock_state = 'free' AND id IN (${marks(companions.length)})) = ?`);
       guardArgs.push(req.accountId, ...companions, companions.length);
     }
+    if (gear.length > 0) {
+      guards.push(`(SELECT COUNT(*) FROM equipment_instances WHERE owner_id = ? AND lock_state = 'free' AND id IN (${marks(gear.length)})) = ?`);
+      guardArgs.push(req.accountId, ...gear, gear.length);
+    }
     const ours = `EXISTS (SELECT 1 FROM battle_reservations WHERE reservation_id = ? AND request_hash = ?)`;
 
     const stmts: SqlBound[] = [
@@ -136,7 +153,7 @@ export class Economy {
            SELECT ?, ?, ?, 'reserved', ?, ?, ?, ?, ? WHERE ${guards.length > 0 ? guards.join(" AND ") : "1"}
            ON CONFLICT DO NOTHING`,
         )
-        .bind(rid, req.accountId, req.battleId, JSON.stringify(characterId === null ? { companionIds: companions } : { companionIds: companions, characterId }), JSON.stringify(Object.fromEntries(bag)), hash, at, at, ...guardArgs),
+        .bind(rid, req.accountId, req.battleId, JSON.stringify({ companionIds: companions, ...(characterId === null ? {} : { characterId }), ...(gear.length === 0 ? {} : { equipmentIds: gear }) }), JSON.stringify(Object.fromEntries(bag)), hash, at, at, ...guardArgs),
     ];
     bag.forEach(([itemId, qty], i) => {
       stmts.push(
@@ -158,6 +175,16 @@ export class Economy {
           .bind(rid, req.accountId, ...companions, rid, hash),
       );
     }
+    if (gear.length > 0) {
+      stmts.push(
+        this.db
+          .prepare(
+            `UPDATE equipment_instances SET lock_state = 'in_battle', lock_ref = ?
+             WHERE owner_id = ? AND lock_state = 'free' AND id IN (${marks(gear.length)}) AND ${ours}`,
+          )
+          .bind(rid, req.accountId, ...gear, rid, hash),
+      );
+    }
     await this.db.batch(stmts);
 
     const after = await this.row(rid);
@@ -165,11 +192,11 @@ export class Economy {
       if (after.request_hash !== hash) return { status: "rejected", reservationId: rid, reason: "PAYLOAD_MISMATCH" };
       return { status: "reserved", reservationId: rid, current: after.status, replayed: false };
     }
-    return { status: "rejected", reservationId: rid, reason: await this.whyNotReserved(req.accountId, companions) };
+    return { status: "rejected", reservationId: rid, reason: await this.whyNotReserved(req.accountId, companions, gear) };
   }
 
   /** Read-only diagnosis after the guarded insert matched nothing. */
-  private async whyNotReserved(accountId: string, companions: string[]): Promise<Extract<ReserveResult, { status: "rejected" }>["reason"]> {
+  private async whyNotReserved(accountId: string, companions: string[], gear: string[]): Promise<Extract<ReserveResult, { status: "rejected" }>["reason"]> {
     const open = await this.db
       .prepare(`SELECT 1 AS x FROM battle_reservations WHERE account_id = ? AND status IN ('reserved', 'active')`)
       .bind(accountId)
@@ -186,6 +213,16 @@ export class Economy {
         .bind(accountId, ...companions)
         .first<{ n: number }>();
       if ((free?.n ?? 0) !== companions.length) return "ASSET_LOCKED";
+    }
+    if (gear.length > 0) {
+      const g = await this.db
+        .prepare(
+          `SELECT COUNT(*) AS owned, SUM(lock_state = 'free') AS free FROM equipment_instances WHERE owner_id = ? AND id IN (${marks(gear.length)})`,
+        )
+        .bind(accountId, ...gear)
+        .first<{ owned: number; free: number | null }>();
+      if ((g?.owned ?? 0) !== gear.length) return "NOT_OWNER";
+      if ((g?.free ?? 0) !== gear.length) return "ASSET_LOCKED";
     }
     return "INSUFFICIENT_RESOURCE";
   }
@@ -275,7 +312,7 @@ export class Economy {
           .bind(resource(a.hp), resource(a.mp), a.instanceId, s.accountId, rid, rid, hash),
       );
     }
-    stmts.push(this.unlockCompanions(rid, ours, [rid, hash]));
+    stmts.push(...this.unlockAssets(rid, ours, [rid, hash]));
     await this.db.batch(stmts);
 
     const after = await this.row(rid);
@@ -315,7 +352,7 @@ export class Economy {
           .bind(`release:${reservationId}`, i, row.account_id, itemId, qty, at, reservationId),
       );
     });
-    stmts.push(this.unlockCompanions(reservationId, ours, [reservationId]));
+    stmts.push(...this.unlockAssets(reservationId, ours, [reservationId]));
     await this.db.batch(stmts);
 
     const after = await this.row(reservationId);
@@ -387,10 +424,13 @@ export class Economy {
     ]);
   }
 
-  private unlockCompanions(reservationId: string, guard: string, guardArgs: unknown[]): SqlBound {
-    return this.db
-      .prepare(`UPDATE monster_instances SET lock_state = 'free', lock_ref = NULL WHERE lock_ref = ? AND lock_state = 'in_battle' AND ${guard}`)
-      .bind(reservationId, ...guardArgs);
+  /** Frees the companions and gear this reservation locked. */
+  private unlockAssets(reservationId: string, guard: string, guardArgs: unknown[]): SqlBound[] {
+    return ["monster_instances", "equipment_instances"].map((table) =>
+      this.db
+        .prepare(`UPDATE ${table} SET lock_state = 'free', lock_ref = NULL WHERE lock_ref = ? AND lock_state = 'in_battle' AND ${guard}`)
+        .bind(reservationId, ...guardArgs),
+    );
   }
 
   private row(reservationId: string): Promise<ReservationRow | null> {

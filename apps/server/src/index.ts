@@ -22,6 +22,7 @@
  */
 import {
   DEV_FIXTURE_RULES,
+  DEV_STARTER_EQUIPMENT,
   DEV_STARTER_ITEMS,
   EXAMPLE_START_MAP,
   PRODUCTION_RULES,
@@ -47,8 +48,15 @@ const RESERVATION_STALE_MS = 2 * 60_000;
 
 const rulesFor = (env: Env) => (env.ENVIRONMENT === "dev" ? DEV_FIXTURE_RULES : PRODUCTION_RULES);
 const economyFor = (env: Env) => new Economy(env.DB, rulesFor(env));
-const SPECIES = exampleContentMaps().species;
-const charactersFor = (env: Env) => new CharacterStore(env.DB, rulesFor(env), SPECIES);
+const CONTENT = exampleContentMaps();
+const charactersFor = (env: Env) => new CharacterStore(env.DB, rulesFor(env), CONTENT);
+
+/** DEV ONLY: dev accounts appear on first use with a starter bag and starter gear; real account creation waits for O11. */
+async function devStarter(env: Env, accountId: string): Promise<void> {
+  if (env.ENVIRONMENT !== "dev") return;
+  await economyFor(env).devGrant(`devstarter:${accountId}`, accountId, DEV_STARTER_ITEMS);
+  await charactersFor(env).devGrantEquipment(`devgear:${accountId}`, accountId, DEV_STARTER_EQUIPMENT);
+}
 
 /** Release reservations whose battle never started (the DO confirms and tombstones first). */
 async function reconcile(env: Env, staleMs: number): Promise<{ checked: number; released: string[] }> {
@@ -114,8 +122,7 @@ async function worldRoute(request: Request, env: Env, url: URL): Promise<Respons
   const accountId = resolveAccount(request, env);
   if (accountId === null) return json(401, { error: "UNAUTHENTICATED" });
   const rules = env.ENVIRONMENT === "dev" ? DEV_FIXTURE_RULES : PRODUCTION_RULES;
-  // Dev accounts appear on first use with a starter bag; real account creation waits for O11.
-  if (env.ENVIRONMENT === "dev") await economyFor(env).devGrant(`devstarter:${accountId}`, accountId, DEV_STARTER_ITEMS);
+  await devStarter(env, accountId);
 
   if (request.method === "GET" && url.pathname === "/world/where") {
     const where = await new WorldStore(env.DB, MAPS, EXAMPLE_START_MAP).where(accountId);
@@ -139,11 +146,12 @@ async function worldRoute(request: Request, env: Env, url: URL): Promise<Respons
 async function characterRoute(request: Request, env: Env, url: URL): Promise<Response> {
   const accountId = resolveAccount(request, env);
   if (accountId === null) return json(401, { error: "UNAUTHENTICATED" });
+  await devStarter(env, accountId);
   const store = charactersFor(env);
   if (request.method === "GET" && url.pathname === "/character") {
     const character = await store.get(accountId);
     if (character === null) return json(404, { error: "NO_CHARACTER" });
-    return json(200, { character, companions: await store.companions(accountId) });
+    return json(200, { character, companions: await store.companions(accountId), equipment: await store.equipment(accountId) });
   }
   const body = await readJson(request);
   if (body === undefined) return json(400, { error: "INVALID_REQUEST" });
@@ -154,6 +162,11 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
   }
   if (request.method === "PUT" && url.pathname === "/character/team") {
     const r = await store.setTeam(accountId, body);
+    if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
+    return json(200, r);
+  }
+  if (request.method === "PUT" && url.pathname === "/character/equipment") {
+    const r = await store.equip(accountId, body);
     if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
     return json(200, r);
   }

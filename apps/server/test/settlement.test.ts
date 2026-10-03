@@ -82,6 +82,12 @@ const lootTotals = (ents: Entitlement[]) => {
   return t;
 };
 
+/** Stored amount of a loot line: item balance, or the number of equipment pieces (one row each). */
+const owned = async (item: string) =>
+  item.startsWith("equip:")
+    ? (db.prepare("SELECT COUNT(*) AS n FROM equipment_instances WHERE owner_id = ? AND definition_id = ?").get(OWNER, item) as { n: number }).n
+    : await eco.balance(OWNER, item);
+
 /** Wraps the economy with failure injection. */
 class FlakyEconomy implements EconomyPort {
   /** Throw before the call reaches D1. */
@@ -123,7 +129,7 @@ describe("battle settlement outbox", () => {
     // Inventory = what was left outside the battle + what the battle did not use.
     expect(await eco.balance(OWNER, "item:small_potion")).toBe(2 + (state.bag["item:small_potion"] ?? 0));
     expect(await eco.balance(OWNER, "item:armor_crab_capture")).toBe(state.bag["item:armor_crab_capture"] ?? 0);
-    for (const [item, qty] of Object.entries(lootTotals(ents))) expect(await eco.balance(OWNER, item)).toBe(qty);
+    for (const [item, qty] of Object.entries(lootTotals(ents))) expect(await owned(item)).toBe(qty);
     expect((db.prepare("SELECT COUNT(*) AS n FROM reward_receipts").get() as { n: number }).n).toBe(ents.length);
 
     // Draining again does nothing.
@@ -171,7 +177,7 @@ describe("battle settlement outbox", () => {
     // The retry finds the receipts (already_granted) and settles.
     flaky.grant = grant;
     expect(await room.drainOutbox(flaky)).toMatchObject({ pending: 0, failed: 0, settled: true });
-    for (const [item, qty] of Object.entries(lootTotals(ents))) expect(await eco.balance(OWNER, item)).toBe(qty);
+    for (const [item, qty] of Object.entries(lootTotals(ents))) expect(await owned(item)).toBe(qty);
     const lines = db.prepare("SELECT operation_id, COUNT(*) AS n FROM item_ledger GROUP BY operation_id, line_no HAVING n > 1").all();
     expect(lines).toEqual([]);
   });

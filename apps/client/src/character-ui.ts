@@ -7,14 +7,20 @@ import {
   CLASS1_DEFINITIONS,
   PLAYER_ELEMENTS,
   RACE_DEFINITIONS,
+  EQUIP_SLOTS,
+  SLOT_FOR_CATEGORY,
   deriveStats,
   exampleContentMaps,
+  gearBonuses,
+  wornGear,
   type CharacterView,
   type Element,
+  type EquipSlot,
+  type EquipmentView,
 } from "@pmrpg/shared";
 import { ApiError, type CharacterApi, type CharacterBundle } from "./character-api";
 
-const species = exampleContentMaps().species;
+const { species, equipment: equipmentDefs } = exampleContentMaps();
 
 export const ELEMENT_TH: Record<Element, string> = {
   FIRE: "ไฟ",
@@ -48,6 +54,14 @@ const CSS = `
 .pm-list li.ko { opacity: 0.6; }
 .pm-list input { width: 20px; height: 20px; }
 .pm-dot { width: 14px; height: 14px; border-radius: 3px; flex: none; }
+.pm-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
+.pm-slot { border: 1px solid #463f6b; border-radius: 6px; padding: 6px 8px; min-height: 44px; font-size: 13px; background: #1b1830; }
+.pm-slot b { display: block; font-size: 11px; color: #a9a3c4; font-weight: normal; }
+.pm-slot button { margin-top: 4px; min-height: 30px; padding: 2px 8px; font-size: 12px; border-radius: 4px; border: 1px solid #463f6b; background: #322b4d; color: #fff; cursor: pointer; }
+.pm-stats { font-size: 13px; color: #d8d4ea; margin: 10px 0; line-height: 1.6; }
+.pm-list li .pm-grow { flex: 1; }
+.pm-list li button { min-height: 34px; padding: 4px 10px; font-size: 13px; border-radius: 6px; border: 1px solid #463f6b; background: #2f7a4a; color: #fff; cursor: pointer; }
+.pm-list li button:disabled { background: #322b4d; opacity: 0.6; cursor: default; }
 `;
 
 const ELEMENT_CSS: Record<Element, string> = {
@@ -148,10 +162,144 @@ export function createCharacterForm(api: CharacterApi): Promise<CharacterBundle>
   });
 }
 
-/** Max HP/MP for the HUD, from the shared stat formula (no gear yet). */
-export function vitals(c: CharacterView) {
-  const d = deriveStats(c.level, c.primaryStats);
+/** Max HP/MP for the HUD, from the shared stat formula with worn gear. */
+export function vitals(c: CharacterView, equipment: readonly EquipmentView[] = []) {
+  const d = deriveStats(c.level, c.primaryStats, gearBonuses(wornGear(equipment, equipmentDefs).defs));
   return { hp: c.hp ?? d.maxHp, maxHp: d.maxHp, mp: c.mp ?? d.maxMp, maxMp: d.maxMp };
+}
+
+export const SLOT_TH: Record<EquipSlot, string> = {
+  HEAD_TOP: "หมวก",
+  HEAD_MID: "หน้า/ตา",
+  HEAD_LOW: "ปาก",
+  ARMS: "แขน",
+  ARMOR: "เสื้อเกราะ",
+  FEET: "รองเท้า",
+  MAIN_HAND: "มือหลัก",
+  OFF_HAND: "มือรอง",
+  ACCESSORY_1: "เครื่องประดับ 1",
+  ACCESSORY_2: "เครื่องประดับ 2",
+  BACK: "หลัง",
+  AURA: "ออร่า",
+};
+
+const STAT_TH: Record<string, string> = {
+  HP: "HP",
+  MP: "MP",
+  PATK: "โจมตีกาย",
+  MATK: "โจมตีเวท",
+  SUPPORT: "พลังเสริม",
+  PDEF: "ป้องกันกาย",
+  MDEF: "ป้องกันเวท",
+  SPD: "ความเร็ว",
+  ACCURACY_PCT: "แม่นยำ%",
+  EVASION_PCT: "หลบ%",
+  CRIT_PCT: "คริ%",
+  CRIT_DAMAGE: "แรงคริ",
+};
+
+const statLine = (stats: Record<string, number | undefined>) =>
+  Object.entries(stats)
+    .filter(([, v]) => v !== undefined && v !== 0)
+    .map(([k, v]) => `${STAT_TH[k] ?? k} +${v}`)
+    .join(" · ");
+
+/**
+ * Equipment screen: 12 slots and the bag. Every change is one server request (the server checks
+ * slot, level, two-hand and ownership); the screen redraws from the reply. Resolves with the last
+ * bundle when closed.
+ */
+export function equipmentPanel(api: CharacterApi, start: CharacterBundle): Promise<CharacterBundle> {
+  return new Promise((resolve) => {
+    const { panel, close } = overlay();
+    let bundle = start;
+    let busy = false;
+
+    const send = async (slot: EquipSlot, instanceId: string | null) => {
+      if (busy) return;
+      busy = true;
+      error.textContent = "";
+      try {
+        const r = await api.equip(bundle.character.version, slot, instanceId);
+        bundle = { ...bundle, character: r.character, equipment: r.equipment };
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+        // A stale version means something else changed the character; load the fresh copy.
+        if (e instanceof ApiError && e.code === "STALE_VERSION") bundle = (await api.get()) ?? bundle;
+      } finally {
+        busy = false;
+        draw();
+      }
+    };
+
+    const body = el("div");
+    const error = el("div", { class: "pm-error", role: "alert" });
+    const actions = el("div", { class: "pm-actions" });
+    const done = el("button", { type: "button", class: "primary" }, "ปิด");
+    actions.append(done);
+    panel.append(el("h2", {}, "อุปกรณ์"), body, error, actions);
+    done.addEventListener("click", () => {
+      close();
+      resolve(bundle);
+    });
+
+    const draw = () => {
+      body.replaceChildren();
+      const c = bundle.character;
+      const worn = new Map(bundle.equipment.filter((e) => e.slot !== null).map((e) => [e.slot!, e]));
+      const gear = gearBonuses(wornGear(bundle.equipment, equipmentDefs).defs);
+      const d = deriveStats(c.level, c.primaryStats, gear);
+      body.append(
+        el(
+          "div",
+          { class: "pm-stats" },
+          `${c.name} Lv${c.level} · HP ${d.maxHp} · MP ${d.maxMp} · โจมตีกาย ${d.patk} · โจมตีเวท ${d.matk} · ป้องกันกาย ${d.pdef} · ป้องกันเวท ${d.mdef} · ความเร็ว ${d.spd}`,
+        ),
+      );
+      const slots = el("div", { class: "pm-slots" });
+      for (const slot of EQUIP_SLOTS) {
+        const box = el("div", { class: "pm-slot", "data-slot": slot });
+        box.append(el("b", {}, SLOT_TH[slot]));
+        const piece = worn.get(slot);
+        const def = piece === undefined ? undefined : equipmentDefs.get(piece.definitionId);
+        box.append(document.createTextNode(def?.name.th ?? (piece === undefined ? "ว่าง" : piece.definitionId)));
+        if (piece !== undefined) {
+          const off = el("button", { type: "button" }, "ถอด");
+          off.addEventListener("click", () => void send(slot, null));
+          box.append(el("br"), off);
+        }
+        slots.append(box);
+      }
+      body.append(slots);
+
+      body.append(el("label", {}, "กระเป๋าอุปกรณ์"));
+      const list = el("ul", { class: "pm-list" });
+      const bag = bundle.equipment.filter((e) => e.slot === null);
+      if (bag.length === 0) list.append(el("li", {}, "ไม่มีอุปกรณ์ที่ยังไม่ได้ใส่ ล่ามอนสเตอร์เพื่อหาของดรอป"));
+      for (const piece of bag) {
+        const def = equipmentDefs.get(piece.definitionId);
+        const li = el("li", { "data-piece": piece.definitionId });
+        const text = el("span", { class: "pm-grow" });
+        text.textContent = def === undefined ? piece.definitionId : `${def.name.th} · Lv${def.requiredLevel}${def.handedness === "two_hand" ? " · สองมือ" : ""} · ${statLine(def.baseStats)}`;
+        li.append(text);
+        const targets = def === undefined ? [] : def.handedness === "two_hand" ? (["MAIN_HAND"] as const) : SLOT_FOR_CATEGORY[def.category];
+        for (const slot of targets) {
+          const b = el("button", { type: "button" }, targets.length > 1 ? `ใส่${SLOT_TH[slot]}` : "ใส่");
+          // Hints only; the server decides.
+          if (def !== undefined && c.level < def.requiredLevel) {
+            b.disabled = true;
+            b.title = `ต้อง Lv${def.requiredLevel}`;
+          }
+          b.addEventListener("click", () => void send(slot, piece.id));
+          li.append(b);
+        }
+        list.append(li);
+      }
+      body.append(list);
+      body.append(el("div", { class: "pm-note" }, "อุปกรณ์เป็นของตัวอย่าง (EXAMPLE) · อาวุธสองมือจะถอดของมือรองให้ · เปลี่ยนได้นอกไฟต์เท่านั้น"));
+    };
+    draw();
+  });
 }
 
 /**

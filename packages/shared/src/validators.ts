@@ -149,7 +149,7 @@ export function validateSigilSockets(
   return out;
 }
 
-const SLOT_FOR_CATEGORY: Record<EquipmentDefinition["category"], readonly EquipSlot[]> = {
+export const SLOT_FOR_CATEGORY: Record<EquipmentDefinition["category"], readonly EquipSlot[]> = {
   HEAD_TOP: ["HEAD_TOP"],
   HEAD_MID: ["HEAD_MID"],
   HEAD_LOW: ["HEAD_LOW"],

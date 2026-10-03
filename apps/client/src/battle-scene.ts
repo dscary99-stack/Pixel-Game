@@ -4,8 +4,12 @@
  * it never computes damage, loot, capture or ownership itself (chapter 11 §1).
  */
 import Phaser from "phaser";
-import type { BattleCommand, BattleEvent, BattleUnit, Element, PublicBattleState } from "@pmrpg/shared";
+import { exampleContentMaps, type BattleCommand, type BattleEvent, type BattleUnit, type Element, type PublicBattleState } from "@pmrpg/shared";
 import type { BattleTransport, Snapshot } from "./transport";
+
+const CONTENT = exampleContentMaps();
+/** Display name for a loot line: item or equipment, falling back to the id. */
+const lootName = (id: string) => (CONTENT.items.get(id) ?? CONTENT.equipment.get(id))?.name.th ?? id;
 
 const W = 960;
 const H = 540;
@@ -177,7 +181,7 @@ export class BattleScene extends Phaser.Scene {
         return this.pushLog(`${this.name(e.unitId)} ถูกกำจัด`);
       case "RewardEntitled":
         return e.entitlement.kind === "kill"
-          ? this.pushLog(`สิทธิ์รางวัล: ${e.entitlement.items.map((i) => `${i.itemId}×${i.quantity}`).join(", ") || "ไม่มีของ"}`)
+          ? this.pushLog(`สิทธิ์รางวัล: ${e.entitlement.items.map((i) => `${lootName(i.itemId)}×${i.quantity}`).join(", ") || "ไม่มีของ"}`)
           : this.pushLog(`สิทธิ์คู่ใจใหม่: ${e.entitlement.speciesId} Lv${e.entitlement.level}`);
       case "BattleEnded":
         return this.pushLog(`จบไฟต์: ${e.outcome}`);
