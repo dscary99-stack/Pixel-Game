@@ -1,0 +1,1355 @@
+# Pixel Monster RPG — Game Design Master
+
+**ฉบับ 1.0 · 2 ตุลาคม 2026 · เอกสารภาษาไทยสำหรับ Claude และ Codex**
+
+ชื่อโครงการเป็นชื่อชั่วคราว เอกสารนี้รวบรวมแนวคิดและกติกาที่ผู้ใช้ระบุ พร้อมรายละเอียดออกแบบเพื่อเริ่มสร้างต้นแบบ ไม่ใช่รายงานว่าเกมสร้างเสร็จหรือผ่านการทดสอบบาลานซ์แล้ว
+
+## เริ่มอ่าน
+
+อ่านบท00ก่อนเสมอ: **CONFIRMED** คือข้อกำหนดที่รักษาไว้, **PROVISIONAL** คือข้อเสนอทดลอง, **OPEN** คือสิ่งที่ยังต้องตัดสินใจ และ **EXAMPLE** คือคอนเทนต์ตัวอย่าง
+
+รายละเอียดที่ไม่มีหลักฐานคำยืนยันเฉพาะ เช่น รายชื่ออาชีพ/เผ่า จุดเปลี่ยนอาชีพ50/120 และเพดานRebirth ถูกกำกับเป็นแบบร่าง ไม่อ้างว่าเป็นรายละเอียดเดิมที่อนุมัติแล้ว คำสั่งผู้ใช้ล่าสุดมีอำนาจเหนือเอกสารนี้
+
+ใช้ไฟล์นี้เป็นแหล่งข้อมูลรวมสำหรับแชทหรือโครงการใหม่ เมื่อเริ่มเขียนโค้ดให้อ่านเฉพาะบทที่เกี่ยวข้องตามสารบัญ และเก็บคำตัดสินใหม่ในทะเบียนเดียวกัน
+
+## ภาพรวมที่ต้องรักษา
+
+- Online Pixel Art RPG เห็นผู้เล่นในแผนที่แบ่ง Channel; สำรวจโลกมุมเฉียงบนแล้วตัดเข้าสู้ Turn-based
+- ผู้เล่นหนึ่งตัวกับคู่ใจสูงสุด5ชนิดไม่ซ้ำ; ศัตรูสูงสุด10; ใช้ไอเทมระหว่างสู้และจับมอนสเตอร์เองได้
+- Class1/2/3 เผ่า ธาตุ และจุติเทพ; ผู้เล่นสูงสุดLv200; ทุกช่วง5เลเวลมีหลายพื้นที่และมอนสเตอร์เฉพาะชนิด
+- คู่ใจจับมาLv1, เติบโตสุ่มตามสาย, อัปสกิล, Bond และ Rebirth; ซื้อขายไอเทม/คู่ใจได้ตามเงื่อนไขเลเวล
+- ไอเทมลึก, อุปกรณ์แสดงผล12ช่อง, แฟชั่นแยก, Sigilตรงชนิดมอนสเตอร์และกลุ่มอุปกรณ์; อาวุธสองข้างได้รวมสูงสุด8Sigils
+- Auto HuntเฉพาะNormal/Eliteตอนเปิดเกม; ไม่มีAuto Capture/Offline Farming/Energy/โควตาฟาร์มรวม; Drop×0.70เป็นค่าทดลอง
+- บอสทุกMap เริ่มด้วยมือแล้วAuto Battleได้; PvEก่อน, PvPแยกกติกาภายหลัง; Premiumไม่เพิ่มพลัง
+
+## สารบัญหลัก
+
+- [00 — Decision Register / ทะเบียนข้อกำหนด](#chapter-00)
+- [01 — Game Vision และวงจรการเล่น](#chapter-01)
+- [02 — อาชีพ เผ่า ธาตุ และจุติเทพ](#chapter-02)
+- [03 — Combat / Status / สูตรต้นแบบ](#chapter-03)
+- [04 — มอนสเตอร์ การจับ การเลี้ยง สกิล Bond และ Rebirth](#chapter-04)
+- [05 — อุปกรณ์ Sigil ออปชัน และการพัฒนา](#chapter-05)
+- [06 — Loot และเศรษฐกิจต้นแบบ](#chapter-06)
+- [07 — โลก Map Encounter Dungeon และ Boss](#chapter-07)
+- [08 — Auto / Party / Premium](#chapter-08)
+- [09 — ภารกิจ งานฝีมือ และคอลเลกชัน](#chapter-09)
+- [10 — Pixel Art / Animation / Mobile & Desktop UI](#chapter-10)
+- [11 — สถาปัตยกรรมและการป้องกันข้อมูลผิดพลาด](#chapter-11)
+- [12 — Data Contracts และกฎตรวจคอนเทนต์](#chapter-12)
+- [13 — แผนพัฒนาและเกณฑ์ผ่าน](#chapter-13)
+- [14 — วิธีทำงานร่วมกันของ Claude และ Codex](#chapter-14)
+- [15 — แม่แบบเพิ่มคอนเทนต์](#chapter-15)
+
+---
+
+<a id="chapter-00"></a>
+
+# 00 — Decision Register / ทะเบียนข้อกำหนด
+
+ฉบับ 1.0 — 2 ตุลาคม 2026 
+เจ้าของแนวคิด: ผู้ใช้ / ชื่อเกมจริงยังไม่กำหนด
+สถานะเอกสาร: Design baseline สำหรับพัฒนาและทดสอบ ไม่ใช่เกมที่สร้างเสร็จหรือผ่านบาลานซ์แล้ว
+
+## สารบัญ
+- วิธีอ่านสถานะ
+- CONFIRMED — กฎแกนหลัก
+- PROVISIONAL — ค่าตั้งต้นสำคัญ
+- OPEN — ข้อที่ต้องตัดสินใจ
+- กติกาที่ไม่ใช้
+
+## วิธีอ่านสถานะ
+
+- **CONFIRMED**: ผู้ใช้ระบุหรือยืนยันโครงสร้างนี้แล้ว ต้องรักษาไว้
+- **PROVISIONAL**: ข้อเสนอ/ตัวเลขเริ่มต้นสำหรับเอกสารฉบับนี้ ใช้ทดลองโดยประกาศว่าเป็นสมมติฐาน ไม่อ้างว่าผ่านการทดสอบ
+- **OPEN**: ต้องตัดสินใจก่อนส่งระบบที่พึ่งพาข้อนี้ขึ้นใช้งานจริง ทำส่วนอื่นต่อได้
+- **SUPERSEDED**: กติกาเก่าที่ห้ามนำกลับมาใช้โดยไม่รับคำสั่งใหม่
+- **EXAMPLE**: ชื่อ ค่าสถานะ ตารางไอเทม หรือคอนเทนต์เพื่ออธิบาย ยังไม่ใช่ฐานข้อมูลเนื้อหาที่สมบูรณ์
+
+ข้อความเชิงบังคับในหัวข้อ PROVISIONAL บังคับเฉพาะเมื่อนำแบบทดลองนั้นมาใช้ ไม่เปลี่ยนสถานะเป็น CONFIRMED เอง
+ลำดับอำนาจ: คำสั่งผู้ใช้ใหม่ > CONFIRMED ในทะเบียนนี้ > ข้อกำหนดรายระบบที่สอดคล้องกัน > PROVISIONAL > EXAMPLE
+หากขัดกันให้ระบุ decision ID และแก้เอกสารที่เกี่ยวข้องร่วมกัน ไม่เลือกสูตรเองแบบเงียบ ๆ
+
+## CONFIRMED — กฎแกนหลัก
+
+| ID | กฎ |
+| --- | --- |
+| C01 | Pixel Art online RPG: เดินสำรวจโลกแล้วตัดเข้า Turn-based; แรงบันดาลใจ RO/TS/Pokémon/FF แต่ใช้โลก ภาพ ชื่อ และเสียงต้นฉบับ |
+| C02 | Stack ที่เลือก: Claude + Codex + ImageGen + PixelLab + Phaser.js + Cloudflare; Android, Web, แอปติดตั้งคอม |
+| C03 | เห็นผู้เล่นอื่นใน Map มี Channels; ซื้อขายไอเทมและคู่ใจได้; PvE ก่อน PvP แยกกติกาภายหลัง |
+| C04 | ตัวละครต่อสู้พร้อมคู่ใจสูงสุด 5 ตัว รวม 6; ห้ามคู่ใจชนิดซ้ำแม้ต่างธาตุ; คลังคู่ใจไม่มีเพดานเชิงการเล่น |
+| C05 | ศัตรูสูงสุด 10 ยูนิตต่อฉาก; ใช้ไอเทมระหว่างสู้ได้ |
+| C06 | คู่ใจทุกชนิดมี 3 สกิล (Active/Passive ตามชนิด) + 1 innate Passive; ความเป็นเอกลักษณ์สำคัญ; ไม่ล็อกเป็น 2 Active + 1 Passive ทุกชนิดโดยอาศัยความจำสรุป |
+| C07 | ชนิดเดียวกันสุ่มเกิดได้หลายธาตุ; กฎมอนสเตอร์เฉพาะชนิดภายหลังไม่ได้ยกเลิกระบบหลายธาตุ |
+| C08 | มอนสเตอร์ทุกชนิดรวมบอสมีเส้นทางจับ; โอกาสแตกต่างตามชนิด ระดับ Rank และเงื่อนไข |
+| C09 | จับได้เมื่อ wildLevel <= playerLevel + 5; จับสำเร็จทุกตัวเริ่ม Lv1; Stat เติบโตสุ่มตามสายของชนิด |
+| C10 | คู่ใจอัปเลเวลสกิลได้; ทุกชนิด Rebirth เมื่อถึงเลเวลสูงสุด กลับ Lv1 เก่งขึ้นและปลดล็อกสิ่งใหม่ |
+| C11 | Bond เพิ่มประโยชน์จากความสัมพันธ์; เมื่อขายเปลี่ยนเจ้าของ Bond กลับ 0 |
+| C12 | ผู้เล่นเพดาน Lv200; มี Class1/2/3 และจุติเทพประจำเผ่า; จุดเปลี่ยน50/120/200เป็นข้อเสนอ P16 |
+| C13 | ต้องมีอาชีพและเผ่าหลากหลาย ต่อถึง Class2/3 และจุติเทพ; รายชื่อ จำนวนสาย และการจับคู่ในบท02เป็นแบบร่าง P16 |
+| C14 | Auto Battle และ Auto Hunt (เดิน+สู้) มีให้เล่น; ต้องเปิดเกมและเชื่อมต่อ ไม่มี offline farming; Auto Hunt เฉพาะ Normal/Elite; เริ่มบอสเองแล้ว Auto Battle ได้ |
+| C15 | ไม่มี Auto Capture; จับต้องเป็นคำสั่งผู้เล่น |
+| C16 | ไม่มี Energy/Stamina จำกัดเวลาเล่น ไม่มีโควตารางวัลฟาร์มรวมต่อบัญชี ไม่มีอัตราลดเพิ่มตามชั่วโมง |
+| C17 | Auto Hunt ลด Drop แต่ยังออกของหายาก; อัตรา ×0.70 เป็นค่าทดลอง P01 ไม่ใช่ผลบาลานซ์ที่ยืนยัน |
+| C18 | Party ไม่จำเป็นต้องอยู่ฉากสู้เดียวกัน อยู่ Map เดียวกันเพื่อรับโบนัส EXP/Drop; จำนวนคน เงื่อนไข Channel/กิจกรรม และขนาดโบนัสเป็น P02 |
+| C19 | มอนสเตอร์มีรายการดรอปเป็นไปได้ 50–100 ชนิด; ดรอปพร้อมกันสูงสุด 5 ชนิดต่อมอนสเตอร์ตาม baseline; ของทั่วไปขาย NPC ได้ และมีระบบวัตถุดิบ คราฟต์ ตีบวก |
+| C20 | ของจับและของตกแต่ง/อุปกรณ์เฉพาะคู่ใจมาจากมอนสเตอร์ชนิดนั้น; อุปกรณ์คู่ใจเพิ่ม Stat หรือปรับสกิลได้ |
+| C21 | ตัวละครมี 12 ช่อง: หัวบน/กลาง/ล่าง แขน เกราะ เท้า อาวุธหลัก อาวุธรอง เครื่องประดับ2 หลัง Aura; แสดงผลครบ; Appearance แยก |
+| C22 | Sigil ชื่อตามมอนสเตอร์ ดรอปจากชนิดนั้น พื้นฐาน 0.005–0.05%; ใส่เฉพาะกลุ่มอุปกรณ์ที่ออกแบบให้เข้ากับต้นกำเนิด |
+| C23 | อาวุธมีสูงสุดชิ้นละ4ช่องตามรูปแบบ; อาวุธหลัก+รองที่เป็นอาวุธสูงสุด8; โล่/ของรองไม่ใช่อาวุธและอุปกรณ์อื่นสูงสุดชิ้นละ1 |
+| C24 | Sigil ชื่อซ้ำใส่ได้; Sigil หมวกเป็นกลุ่มเดียว เลือกหัวบน/กลาง/ล่างได้ ไม่ล็อกตำแหน่งย่อย |
+| C25 | ถอด Sigil ใช้เงินในเกมจำนวนมากเท่านั้น ไม่มี Premium |
+| C26 | Premium ไม่มีความแข็งแกร่ง/ความได้เปรียบในการฟาร์ม; แฟชั่นหาในเกมได้ รวมของหายาก |
+| C27 | เน้น Daily/Weekly และการล่า ไม่บังคับเนื้อเรื่องยาว; มี money sinks และขยายคอนเทนต์โดยรักษาบาลานซ์ |
+| C28 | ทุกช่วง5เลเวลมีหลาย Map และมอนสเตอร์หลากหลาย; Normal/Dungeon/Event Dungeon/พื้นที่รูปแบบอื่น |
+| C29 | มอนสเตอร์ชนิดเดียวกันพบหลายแห่งได้ แต่ข้อมูลเลเวลป่าและตัวตนคงเดิม ไม่เพิ่มเลเวลหรือ recolor เพื่อเติมแผนที่ระดับสูง |
+| C30 | ทุก Map มีบอสและใช้ระบบ Turn-based; ผู้เล่นกดเริ่มเองแล้ว Auto Battle ได้; รายละเอียดบอสส่วนตัว/จุดเกิด/เมืองเป็นข้อเสนอ P17 |
+| C31 | แนวภาพตามแมว Pixel Art ที่แนบ: หัวโต ขอบเข้ม รูปทรงชัด สีสด; โลกมุมเฉียงบนและตัดเข้าสนามเต็มทีม; ต้องมี animation Pixel Art |
+
+## PROVISIONAL — ค่าตั้งต้นสำคัญ
+
+| ID | ค่า/รายละเอียด | อ้างอิง |
+| --- | --- | --- |
+| P01 | Auto Hunt Drop ×0.70; EXPไม่ลด; manual-start + Auto Battle Drop ×1 | 06,08 |
+| P02 | Party4คน Map+Channelเดียวกัน กิจกรรมล่าสุด EXP+5%ต่อสมาชิกเพิ่ม สูงสุด15%; Dropเสนอใช้เฉพาะวัสดุทั่วไป +2%สัมพัทธ์ต่อสมาชิกเพิ่ม สูงสุด6% | 08 |
+| P03 | 6 primary stats เริ่ม10; +3แต้ม/เลเวล; Lv200รวม597แต้ม; capลงเอง150; ราคา11–60=1,61–100=2,101–150=3 | 03 |
+| P04 | สูตร ATK/HP/เกราะ/ธาตุ/Accuracy/Crit ทั้งหมด รวม K=200 ยังไม่ผ่านสมดุล200เลเวล | 03 |
+| P05 | คู่ใจสูงสุด200; งบสุ่มเติบโตเท่ากันต่อชนิด+ขั้น แปรเฉพาะการกระจาย ไม่ใช้ IVสุ่มทุกมิติซ้อน | 04 |
+| P06 | Skill1–10; Bond0–1000; ราคา/อัตราเพิ่ม/เพดานโบนัสยังไม่สรุป | 04 |
+| P07 | ตีบวก+10 เพิ่มเฉพาะค่าพื้นฐานที่กำหนด3%ต่อขั้น ไม่คูณทบ; ไม่มีแตก/ลดขั้นในต้นแบบ | 05 |
+| P08 | ถอด Sigil100% ไม่ทำลายของ; ค่าเงินในเกมตามระดับ ไม่อิงราคาตลาด | 05 |
+| P09 | คราฟต์สำเร็จแน่นอน; ออปชันสุ่มได้ตามตาราง; จำนวนslotแสดงในสูตร | 05,09 |
+| P10 | มือถือแนวนอน; 2D3/4กล้องคงที่; เดิน8ทิศภาพ4ทิศ; กรอบผู้เล่น64px; ต้อง visual proof | 10 |
+| P11 | Workers/DO/D1/R2 เป็น candidate architecture ต้องทำ load/failure tests; ไม่รับประกัน MMO scale | 11 |
+| P12 | เงินจำลอง/ภาษี/ค่าถอด/ความเร็วล่า/จำนวนแผนที่ทั้งหมดในตัวอย่างเป็นสมมติฐาน | 06,07 |
+| P13 | Daily8เลือก4; Weeklyหลายทาง; ไม่ผูก Class/Rebirthกับเหรียญรายสัปดาห์เฉพาะ | 09 |
+| P14 | เครื่องเล่นควบคุมได้ครั้งละหนึ่งต่อบัญชี, ความปลอดภัยและข้อมูลกลางเป็น implementation baseline | 11 |
+| P16 | เสนอ9 Class1/18 Class2/18 Class3, 8เผ่า2วิถีเทพ; เปลี่ยน50/120/200; ทุกเผ่าเลือกทุกอาชีพ รายชื่อยังปรับได้ | 02 |
+| P17 | บอสส่วนตัวท้าซ้ำไม่มีโควตา ใช้ telegraph/phases; Mapเมืองมีลานทดสอบแทนบอสเดินโจมตีคน | 07 |
+| P15 | คำสั่งป้องกันลด40%; หน้า3หลัง3; 1 action/round; อุปกรณ์และคู่ใจเปลี่ยนนอกไฟต์; HP/MPคงเหลือ | 03 |
+
+## OPEN — ต้องตัดสินใจก่อนใช้งานจริงในส่วนที่เกี่ยวข้อง
+
+| ID | คำถาม | ข้อเสนอปัจจุบัน / สิ่งที่ต้องตรวจ |
+| --- | --- | --- |
+| O01 | Trade gapที่แน่นอน | ผู้ใช้ให้ช่วง20–40; เสนอ+30 ตรวจทั้ง wild species level และ companion current level ทุกช่องทางโอน |
+| O02 | คู่ใจที่รับมาสูงกว่าจะใช้พลังอย่างไร | เสนอ effectiveLevel <= player+5; ยังไม่อนุมัติ ห้ามทำให้เป็นกฎยืนยัน; อีกทางใช้พลังเต็มตาม trade gap |
+| O03 | เพดานและรางวัล Rebirth | เสนอ3ขั้น โบนัสรวมเหนือฐาน +4/+7/+10%ตามขั้น ไม่ใช่บวกสามขั้นเข้าด้วยกัน; ผู้ใช้ยังไม่ยืนยันจำนวนครั้ง; ไม่มี infinite stat assumption |
+| O04 | ใบอนุญาต Rebirth | เสนอplayer200+บททดสอบ; ขั้นต่อไปและการรับโอนต้องตัดสินใจ |
+| O05 | Encounter normal/Elite มีสิทธิ์แบบใด | เสนอเห็นฝูงร่วม แต่ไฟต์ส่วนตัวไม่แย่งตัว; คำว่าmonsterร่วมmapของผู้ใช้หมายถึงชนิดพบหลายพื้นที่ ไม่ใช่การยืนยัน encounter entitlement |
+| O06 | สกิลไม่ซ้ำเข้มแค่ไหน | ยืนยันเอกลักษณ์; เสนอใช้ primitives ร่วม แต่ชุด/เงื่อนไขเฉพาะชนิด; ไม่สร้างระบบใหม่ทุกสกิลโดยอัตโนมัติ |
+| O07 | Capture rates/ranks/โบนัส | สูตรและเพดานแต่ละRank ยังต้องทำตาราง; ฉบับนี้เสนอไม่มี pity; ยังไม่ถือเป็นคำยืนยันก่อน live |
+| O08 | Class/เผ่าเปลี่ยนข้ามต้นสายได้หรือไม่ | เสนอทุกเผ่าเลือกทุกอาชีพ; ระบบเปลี่ยนสายที่ปลดล็อกเป็นข้อเสนอ; เปลี่ยนอาชีพต้น/เผ่ายังไม่มีรายละเอียด |
+| O09 | Sigil/เอฟเฟกต์และช่องอาวุธสองมือ | slot capยืนยันแล้ว แต่ค่าน้ำหนัก two-hand vs dual8, scopeการโจมตีมือรอง และอัตรา proc ต้องทดสอบ |
+| O10 | ตลาด/บัญชี/การโอน | จำนวนตัวละคร คลังข้ามตัว เงื่อนไขให้กัน direct trade และนโยบายหลายบัญชียังไม่ล็อก; ห้ามใช้ช่องทางใดข้าม level/bond |
+| O11 | Online operations | auth provider, logout grace, battle expiry, CCU target, budget, backup RPO/RTO, chat moderation, region ยังไม่ล็อก |
+| O12 | Client packaging | desktop OSขั้นต่ำ, Android wrapper, payment provider และ distribution ยังไม่เลือก |
+| O13 | เกมเงินจริง/Slot | ผู้ใช้ยกslotเป็นmoney sink; ยังไม่มีแบบที่ยืนยัน ห้ามเพิ่ม paid lootbox/convertible premium; เสนอเกมเงินในเกมแฟชั่นภายหลัง |
+| O14 | ขอบเขตเปิดจริง | prototypeไม่ใช่commercial launch; ชื่อเกม ภาษาเปิดตัว จำนวนเนื้อหาและตารางเปิดทดสอบยังไม่ล็อก |
+| O15 | Combat edge cases | สูตรหนี, silenceขอบเขต, debuff tick/expiry, reviveตามเทิร์น, stalemate resolution และ multi-hit ต้องระบุก่อน engine v1 |
+
+## กติกาที่ไม่ใช้ — SUPERSEDED และทางเลือกที่ตัดออก
+
+รายการนี้รวมสิ่งที่ผู้ใช้แก้ไขชัดเจนและสิ่งที่ขัดกฎปัจจุบัน ไม่ได้หมายความว่าทุกข้อเคยได้รับการอนุมัติมาก่อน
+
+- เลเวลตัน60 -> เปลี่ยนเป็น200; ราคาลงStat1ตลอด/cap60 -> P03
+- คลังคู่ใจเก็บจำกัดจำนวน/ฟาร์มจำกัดชั่วโมง/energy/global quota/offline rewards -> ไม่ใช้
+- Auto Capture -> ไม่มี
+- การ์ดมอนสเตอร์ -> ใช้ Sigil เท่านั้น
+- จำกัดSigilรวม6ช่อง หรือห้ามชื่อซ้ำ -> ยกเลิก
+- อาวุธสองข้างรวม4 -> ยกเลิก ใช้สูงสุด4ต่ออาวุธ รวม8
+- รวมหมวกเป็นช่องเดียว -> ยกเลิก; มี3ชิ้น แต่Sigilใช้กลุ่มheadgearร่วม
+- PremiumถอดSigilและผูกบัญชีเพราะPremium -> ยกเลิก
+- มอนสเตอร์ชนิดเดียวกันเพิ่มเลเวลในmapสูง -> ยกเลิก
+- จับแล้วคงเลเวลป่า -> ยกเลิก เริ่ม1
+- คู่ใจมีตารางStatเหมือนกันทั้งหมด -> เปลี่ยนเป็นสุ่มตามสาย
+- ไม่กำหนดglobal-spawn reward quotaเอง; เสนอเจ้าถิ่นไฟต์ส่วนตัวท้าซ้ำ (P17); World Bossยังfuture
+- ค่าเงิน/ราคา/เพดานRebirth/Tradeที่ผู้ช่วยเสนอ -> ไม่ถือเป็นคำยืนยันเพราะผู้ใช้เพียงบอกให้คุยหัวข้อต่อไป
+
+---
+
+<a id="chapter-01"></a>
+
+# 01 — Game Vision และวงจรการเล่น
+
+> อำนาจข้อกำหนด: ยึดสถานะ C/P/O ในบท00; รายละเอียดที่ไม่ได้ยืนยันไว้ที่นั่นถือเป็น PROVISIONAL หรือ EXAMPLE ไม่ใช่คำยืนยันใหม่ของผู้ใช้
+
+## สถานะ
+CONFIRMED: แกนเกมตาม C01–C31; รายชื่อคอนเทนต์และจำนวนเปิดทดสอบเป็น EXAMPLE/PROVISIONAL
+
+## เอกลักษณ์
+สร้าง Online Pixel Art Monster-Taming RPG ที่มีโลกหลายพื้นที่น่าสำรวจ มอนสเตอร์แต่ละชนิดมีตัวตนชัด บิลด์ผสมอาชีพ+เผ่า+ธาตุ+อุปกรณ์+ทีมคู่ใจ และล่าของแบบ Classic ได้ต่อเนื่อง
+แรงบันดาลใจ: RO ด้านโลก/อาชีพ/ไอเทม, TS ด้านตัวละครกับคู่ใจ, Pokémonด้านจับ/สะสม, FFด้านจังหวะTurn-based ไม่คัดลอกทรัพย์สิน ชื่อ แผนที่ เสียง หรือ UIเฉพาะของเกมต้นแบบ
+
+## วงจรหลัก
+เตรียมทีมและอุปกรณ์ -> สำรวจ/เลือกเป้าหมาย -> เจอฝูงและตัดฉาก -> ใช้สกิล/ของ/จับเอง -> รับEXPและของตามผล -> จัดการคลัง/ตลาด/คราฟต์ -> ปรับบิลด์ -> ท้าบอสหรือพื้นที่ใหม่
+ล่าของกับจับเป็นทางเลือก: baselineเสนอว่าจับสำเร็จได้EXPแต่ไม่สุ่มkill lootของตัวนั้น ไม่รับรางวัลสองทางซ้ำ
+
+## ผู้เล่นและทีม
+ตัวละคร1 + คู่ใจไม่เกิน5 ลงพร้อมกัน; คู่ใจspecies IDห้ามซ้ำแม้ธาตุ/ชื่อเล่น/สี/Rebirthต่างกัน
+คลังเก็บไม่จำกัดเชิงการเล่น ใช้paginationและsearch ไม่สร้างรายได้passiveตามจำนวนตัวในคลังไม่จำกัด
+ผู้เล่นเห็นกันในMap+Channel; Partyรับโบนัสแยกไฟต์ได้ ไม่แชร์ของอัตโนมัติ
+บอสเจ้าถิ่นเริ่มเองเข้าสู้ส่วนตัว ล่าซ้ำโดยไม่มีdaily quota; แผนที่ล่าทุกแห่งมีบอส ส่วนเมืองเป็นพื้นที่พัก
+
+## บทบาทของกิจกรรม
+- ล่าทั่วไป: EXP เงินพื้นฐาน วัสดุ และSigil
+- จับ: สะสมชนิด/ธาตุ ขายคู่ใจ สร้างทีมและBond
+- บอส: กลไกเฉพาะ อุปกรณ์ วัสดุจับและคู่ใจบอส
+- คราฟต์/ตีบวก/ออปชัน/Sigil: ใช้ทรัพยากรและปรับบิลด์
+- Daily/Weekly: เป้าหมายเสริมไม่จำกัดสิทธิ์ฟาร์ม
+- คอลเลกชัน/แฟชั่น: เป้าหมายระยะยาวไม่เพิ่มStatทั่วบัญชีไม่สิ้นสุด
+- PvP, Guild, Co-opหลายผู้เล่นในไฟต์, World Boss: future ไม่ถือว่ารวมรุ่นแรกแล้ว
+
+## หลักบาลานซ์
+ทุกของมีทางใช้ ไม่รับประกันราคาตลาดสูงทุกชิ้น ทุกคู่ใจมีบทบาท ไม่ต้องให้CommonกับBossมีรูปแบบเหมือนกัน
+ทุกบิลด์มีtradeoff; คนเล่นนานได้สะสมมากกว่าตามClassic แต่Premiumไม่เร่งผลตอบแทน
+เพิ่มคอนเทนต์เน้นทางเลือก/กลไก/ทีม/แฟชั่นก่อนเพิ่มพลังดิบ ไม่ขยับlevel cap200ทุกexpansionโดยอัตโนมัติ
+ไม่มีเควสเนื้อเรื่องยาวบังคับปลดระบบทุกขั้น ใช้บททดสอบสั้นและความชำนาญตามความจำเป็น
+
+## ตัวชี้วัดทดสอบ
+เวลาไฟต์ ความหลากหลายทีม อัตราใช้สกิล/Stat ต้นทุนยา กำไรฟาร์ม แผนที่ที่คนไป ความสำเร็จจับ จำนวนSigil ราคาวัสดุ เงินเข้าออก และปัญหาเน็ตหลุด
+ไม่อ้างตัวเลขเหล่านี้ว่าเป็นข้อมูลจริงก่อนมีsimulation/playtest
+
+---
+
+<a id="chapter-02"></a>
+
+# 02 — อาชีพ เผ่า ธาตุ และจุติเทพ
+
+> อำนาจข้อกำหนด: ยึดสถานะ C/P/O ในบท00; รายละเอียดที่ไม่ได้ยืนยันไว้ที่นั่นถือเป็น PROVISIONAL หรือ EXAMPLE ไม่ใช่คำยืนยันใหม่ของผู้ใช้
+
+## สถานะและเส้นทาง
+ข้อยืนยันคือความหลากหลายของอาชีพ/เผ่า และเส้นทางClass1/2/3/จุติเทพ
+รายละเอียด9อาชีพ/18สาย/8เผ่า ชื่อ เอฟเฟกต์ และเลเวลเปลี่ยนในบทนี้เป็นแบบร่าง PROVISIONAL/EXAMPLE (P16) ไม่อ้างว่าเป็นรายชื่อเดิมที่ผู้ใช้ยืนยันแล้ว
+Class1 Lv1–49; Class2มีสิทธิ์สอบที่50; Class3ที่120; Divine Awakeningประจำเผ่าที่200
+ถึงเลเวลเปิดสิทธิ์บททดสอบ ไม่เปลี่ยนอาชีพเอง; เปลี่ยนช้าไม่เสียแต้ม/หยุดEXP; ไม่รีเซ็ตlevelหรือแจกstatซ้ำ
+จุติเทพของผู้เล่นกับRebirthคู่ใจเป็นคนละระบบ
+
+## หน้าที่แกนบิลด์
+อาชีพ=วิธีเล่นและอาวุธ; เผ่า=ลูกเล่นขนาดเล็ก; ธาตุ=ความสัมพันธ์และสกิลที่ปรับได้; ความถนัด=เลือกสาย; อุปกรณ์/Sigil=ปรับบิลด์; คู่ใจ=เติมบทบาท
+ทุกเผ่าเล่นทุกอาชีพและทุกธาตุ; ชื่อCelestial/Shadowไม่ล็อกธาตุ
+Activeผู้เล่น6ช่อง; Passiveพื้นฐานอาชีพ1 + เลือกความถนัด2เป็นข้อเสนอ; ท่าไม้ตายClass3กินActiveหนึ่งช่องและใช้actionปกติ
+เลือกClass2หนึ่งจากสองสาย Class3ต่อจากสายนั้น ไม่เปิดทุกสกิลสองสายพร้อมกัน
+การสลับสายที่ปลดล็อกในเมือง/ค่าบริการยังเป็นPROVISIONAL; cross-base-class/race change=O08
+
+## สายอาชีพครบ
+| Class1 | Class2 | Class3 | กลไกและข้อแลกเปลี่ยน |
+| --- | --- | --- | --- |
+| Guardian ผู้พิทักษ์ | Bastion ปราการ | Aegis Sovereign จ้าวโล่พิทักษ์ | โล่หลายเป้าหมายและรับแทน มีจำนวนครั้ง ไม่รับแทนทุกhitตลอด |
+| Guardian | Sentinel ผู้เฝ้ารบ | Dread Bulwark ปราการโต้กลับ | ตั้งรับแล้วสวน ใช้จังหวะก่อนเร่งดาเมจ |
+| Striker นักรบ | Breaker ผู้ทะลวง | Ruin Champion จอมยุทธ์ทลายเกราะ | เปิดช่วงเกราะอ่อนให้ทีม ขาดการสนับสนุนด้านอื่น |
+| Striker | Berserker นักรบคลั่ง | Bloodstorm พายุโลหิต | ใช้HPเป็นต้นทุน ไม่ลดต้นทุนด้วยDEFและไม่กระตุ้นon-enemy-hit |
+| Ranger นักล่า | Sharpshooter มือยิงแม่น | Starpiercer ศรทะลวงดาว | เล็งเป้าหมายเดี่ยว แลกactionเตรียมตัว |
+| Ranger | Trapper นักวางกับดัก | Wild Architect จ้าวสนามล่า | trapตามแนว/เหตุการณ์ ไม่ต้องเดินในฉากสู้ |
+| Arcanist จอมเวท | Elementalist ผู้ชำนาญธาตุ | Prismatic Archmage มหาจอมเวทปริซึม | สลับธาตุ/ปฏิกิริยา แลกMP |
+| Arcanist | Spellweaver ผู้ถักเวท | Astral Weaver ผู้ถักดารา | วางผลรอบถัดไป มีสัญญาณและวิธีแก้ |
+| Warden ผู้เยียวยา | Lifekeeper ผู้รักษาชีวิต | Verdant Hierophant มหาผู้พิทักษ์ชีวิต | ฮีลต่อเนื่องและกระจาย ดาเมจต่ำ |
+| Warden | Spiritkeeper ผู้พิทักษ์วิญญาณ | Soulwarden ผู้คุ้มครองวิญญาณ | ป้องกันล้ม/ชุบ มีต้นทุนและข้อจำกัดไม่ชุบวน |
+| Binder ผู้ประสานคู่ใจ | Beast Marshal ผู้บัญชาการคู่ใจ | Grand Beast Marshal จอมบัญชาการคู่ใจ | แลกactionตนเลื่อนคู่ใจที่ยังไม่ลงมือให้ลงทันที ถือว่าใช้สิทธิ์รอบนั้นแล้ว |
+| Binder | Soul Linker ผู้เชื่อมสายสัมพันธ์ | Concord Sovereign จ้าวสายสัมพันธ์ | เลือกเชื่อมสมาชิกแบ่งการคุ้มกัน ไม่เพิ่มช่องคู่ใจ |
+| Rogue นักลอบเร้น | Assassin นักสังหาร | Night Reaper ผู้เก็บเกี่ยวรัตติกาล | เปิดจุดอ่อน/แนวหลัง ไม่ล่องหนจนบอสทำอะไรไม่ได้ |
+| Rogue | Saboteur ผู้ก่อกวน | Phantom Strategist นักกลยุทธ์มายา | ทำลายbuffและวางตราตามactionศัตรู ไม่เพิ่มloot |
+| Alchemist นักปรุงแปรธาตุ | Apothecary นักปรุงโอสถ | Panacea Sage ปราชญ์โอสถ | ผสมรักษา/ต้านสถานะ มีทรัพยากรสกิล ไม่ผูกขาดcraft |
+| Alchemist | Transmuter ผู้แปรสสาร | Magnum Artificer มหาช่างแปรธาตุ | สารตั้งต้น/ปฏิกิริยาสนาม ไม่เลี่ยงข้อจำกัดชุบด้วยเปลี่ยนชื่อเป็นสาร |
+| Bard นักขับขาน | Minstrel นักบรรเลง | Celestial Maestro วาทยกรดารา | เปิดเพลงหลักหนึ่งบท เปลี่ยนตามสถานการณ์ ไม่เพิ่มEXP/drop |
+| Bard | Dirgesinger ผู้ขับบทโศก | Eclipse Cantor ผู้ขับขานอุปราคา | สะสมท่อนเพลงกดดันศัตรู มีโอกาสถูกรบกวน |
+
+ทุกอาชีพใช้การจับด้วยระบบเดียวกัน Binderไม่เพิ่มCapture/Dropเป็นพิเศษ; Rangerอาจมีnonlethal attackแต่ไม่เพิ่มcapture rateโดยตรง
+งานฝีมือแยกจากอาชีพต่อสู้
+
+## เผ่าทั้ง8และจุติเทพ
+เอฟเฟกต์ทั้งหมดต้องมีงบต่ำกว่าแกนอาชีพและไม่เพิ่มEXP/Drop/Capture
+| เผ่า | Passiveเริ่มต้นที่เสนอ | จุติเทพ | วิถีA | วิถีB |
+| --- | --- | --- | --- | --- |
+| Human มนุษย์ | ใช้itemสำเร็จได้โล่เล็ก จำกัดต่อรอบ | Firstlight Ascendant เทพผู้บุกเบิก | ความกล้า: เตรียมโจมตีหลังใช้item | ความหวัง: เพิ่มคุ้มกันเป้าหมายitem |
+| Sylvan ชาวพฤกษ์ | overhealเปลี่ยนโล่บางส่วน มีcapไม่ทับ | Worldbloom Ascendant เทพพฤกษาชีวิต | ผลิบาน: overheal-to-shield | หนามพิทักษ์: แทนบางส่วนเป็นหนาม |
+| Stonekin ชาวศิลา | guardแล้วเสริมการโจมตีแรกเทิร์นถัดไป | Eternalstone Ascendant เทพศิลานิรันดร์ | ขุนเขา: guardช่วยเพื่อน | แผ่นดินสะท้าน: เตรียมเจาะเกราะ |
+| Wildkin เผ่าสัตว์ | การโจมตีแรกของไฟต์แม่นขึ้น ไม่ทะลุimmune | Primal Ascendant เทพสัตว์ปฐมกาล | นักล่า: เสริมปิดเป้าหมาย | จ่าฝูง: ช่วยความแม่นของเพื่อน ไม่เพิ่มaction |
+| Runeborn ชาวอาคม | ใช้MPครบเงื่อนไขลดต้นทุนครั้งถัดไป ไม่ฟรี | Originrune Ascendant เทพอักขระต้นกำเนิด | ถักเวท: ประหยัดMP | แตกอักขระ: เสริมผลแทนประหยัด |
+| Tideborn ชาวสมุทร | เมื่อล้างDebuffสำเร็จได้ต้านสถานะชั่วคราว | Abyssal Tide Ascendant เทพสมุทรไร้ก้น | น้ำขึ้น: ช่วยผู้ถูกล้าง | น้ำลง: เตรียมลดประสิทธิภาพศัตรู |
+| Skyborn ชาวเวหา | ใช้actionสลับตำแหน่งแล้วคุ้มกันhitถัดไป | Boundless Sky Ascendant เทพเวหานิรันดร์ | กระแสลม: SPDรอบหน้า | ปีกพิทักษ์: คุ้มกันผู้สลับ |
+| Veilborn ชาวสนธยา | ถูกศัตรูใส่Debuffแล้วเพิ่มแม่นครั้งถัดไป | Twilight Veil Ascendant เทพม่านสนธยา | ม่านหมอก: ลดดาเมจครั้งถัดไป | จันทร์ย้อนเงา: เสริมตอบโต้ |
+
+ภาพจุติ: Humanวงแหวนเจตจำนง; Sylvanกิ่งมงกุฎ/กลีบ; Stonekinศิลาลอย; Wildkinเงาสัตว์บรรพกาล; Runebornวงอักขระ; Tidebornปะการัง/ม่านน้ำ; Skybornปีก/ขน; Veilbornจันทร์/หมอก
+ภาพไม่ทับแฟชั่น/HP bars; ซ่อนหรือลดeffectได้ เผ่าSkybornไม่มีสิทธิ์บินข้ามcollisionฟรี
+
+## จุติเทพผู้เล่น — แบบทดลอง
+ปลดหลังClass3และLv200 ผ่านบททดสอบเผ่า + วัสดุ + เงิน ไม่บังคับเหรียญWeekly/รอวัน
+Passiveที่พัฒนาขึ้นแทนของเดิม ไม่ได้ซ้อนฟรี; เลือกวิถีครั้งละหนึ่ง
+เกจเริ่มใหม่ทุกไฟต์ สะสมจากactionที่มีผลจริงมีcapต่อรอบ; ใช้actionเปิด; เสนอ3เทิร์นเจ้าของ/ครั้งเดียวต่อไฟต์
+Auto Battleตั้งเงื่อนไขใช้ได้ ทุกคนเท่าเทียม; ไม่มีPremiumข้ามขั้น
+บททดสอบต้องสำเร็จด้วยหลายอาชีพได้ เช่นSylvanนับฮีลจากทีม ไม่บังคับตัวละครต้องเป็นhealer
+
+## ธาตุ
+เสนอ6ธาตุ: ไฟ น้ำ ดิน ลม แสง เงา
+FireชนะWindแพ้Water; WindชนะEarthแพ้Fire; EarthชนะWaterแพ้Wind; WaterชนะFireแพ้Earth; LightกับShadowชนะกันสองทาง
+strong×1.25 weak×0.80 otherwise×1.00 รวมsame-element; neutral×1.00ทั้งหมด
+ธาตุตัวกำหนดการรับดาเมจ; ธาตุสกิลกำหนดการโจมตี; กายภาพมีธาตุได้ เวทไร้ธาตุได้
+ไม่มีstatusฟรีจากธาตุทุกhit; ต้องเป็นผลของสกิล
+เสนอสกิลอาชีพหนึ่งช่อง/สกิลคู่ใจหนึ่งช่องปรับตามธาตุโดยแลกงบเดิม ไม่เพิ่มพลังทุกผลพร้อมกัน
+ตัวอย่างGuardianคุ้มกัน: Fireโล่บาง+ตอบโต้, Waterหมดเวลาแล้วฮีล, Earthโล่หนา+MPสูง, Windโล่เบา+SPDรอบหน้า, Lightโล่ลด+cleanse, Shadowเก็บบางส่วนเป็นโจมตี มีเพดาน
+ธาตุผู้เล่นเลือกเริ่มต้น มีเส้นทางเปลี่ยนด้วยทรัพยากรในเกมเป็นข้อเสนอ; ธาตุคู่ใจคงเมื่อจับ/ขาย/Rebirth ไม่เปลี่ยนง่าย
+
+---
+
+<a id="chapter-03"></a>
+
+# 03 — Combat / Status / สูตรต้นแบบ
+
+> อำนาจข้อกำหนด: ยึดสถานะ C/P/O ในบท00; รายละเอียดที่ไม่ได้ยืนยันไว้ที่นั่นถือเป็น PROVISIONAL หรือ EXAMPLE ไม่ใช่คำยืนยันใหม่ของผู้ใช้
+
+## สารบัญ
+1. สถานะและสนาม
+2. คำสั่งและไอเทม
+3. ทรัพยากร/ล้ม/หนี/หลุด
+4. แต้มและderived stats
+5. hit/crit/armor/damage
+6. ฮีล/โล่/สถานะ/ทรัพยากร
+7. ตัวอย่างและเกณฑ์ทดสอบ
+
+## 1. สถานะและสนาม
+สูตรทั้งหมด PROVISIONAL ต้องทดสอบทั้งLv1/25/50/90/120/160/200ก่อนและหลังจุติ
+ผู้เล่น1+คู่ใจ5 (ห้ามspeciesซ้ำ); ศัตรู<=10รวมชิ้นส่วนที่แยกเป็นยูนิต
+ฝ่ายเราfront3/back3; เลือกตำแหน่งตัวละครได้; meleeต้องโจมตีfrontมีชีวิตก่อน เว้นสกิลระบุ; ranged/magicตามสกิลเข้าหลังได้; ไม่มีDRฟรีเพราะอยู่หลัง
+หนึ่งround=ทุกยูนิตที่มีสิทธิ์ลงมือครบ; ปกติหนึ่งmain action/round; เรียงSPDต้นรอบเท่ากันสุ่มserver; เปลี่ยนSPDมีผลรอบหน้า; โชว์timeline
+บอสมี2–3scheduled actions/roundได้เป็นข้อยกเว้นเปิดเผย ไม่ติดมากับคู่ใจ; defeat/controlต้องนิยามต่อactionบอสแยก
+ไฟต์ส่วนตัวไม่มีcountdownบังคับเลือกคำสั่งในต้นแบบ แต่lifecycle/abandonmentต้องกำหนด O11 ไม่เก็บห้องค้างไม่จำกัดโดยไร้นโยบาย
+
+## 2. คำสั่ง
+| คำสั่ง | ผู้ใช้/ต้นทุน |
+| --- | --- |
+| โจมตีพื้นฐาน | ทุกยูนิต 1action ไม่ใช้MP |
+| Active skill | 1action + MP/cooldownตามข้อมูล |
+| ป้องกัน | 1action ลดดาเมจ40%จนเริ่มเทิร์นถัดไป |
+| เปลี่ยนตำแหน่ง | 1action ย้ายช่องว่าง/สลับเพื่อน; ยูนิตถูกย้ายด้วยคำสั่งนี้<=1ครั้ง/round |
+| ใช้item | ตัวละครมีชีวิต 1action + itemจริง |
+| จับ | ผู้เล่นกดเองถึงเทิร์นตัวละคร 1action + ของจับ; ตรวจlevelก่อนใช้ |
+| หนี | ตัวละคร 1action โอกาสยังO15; บางบอสห้ามหนีแจ้งก่อนเข้า |
+
+Passiveไม่กินactionแต่อยู่ใต้trigger cap; cooldownแสดงจำนวนowner turnsก่อนใช้ใหม่ ไม่ใช้เวลาจริง; นิยามจุดลดcounterในengineก่อนimplement
+ตัวละครActive6ช่อง; คู่ใจ3skills(อย่างน้อย1Activeเป็นข้อเสนอ)+innate1; basic/guardไม่กินslot
+เปลี่ยนloadout/คู่ใจจากคลังนอกไฟต์ ไม่ถอดSigilเพื่อสลับbonusก่อนloot
+กระเป๋าต่อสู้เสนอ8ชนิดไม่ซ้ำ: HP/MP/cleanseซ้อนได้10, support/attack5, revive2, capture10ต่อช่อง
+ใช้revive itemรวม<=2ครั้ง/ไฟต์ไม่เลี่ยงด้วยหลายชื่อ; ยังมีskill reviveแต่ต้องมีแหล่งจำกัดของตัวเอง
+Autoเติมbattle bagจากสัมภาระที่พกไว้ระหว่างไฟต์ได้ตามตั้งค่า ไม่ซื้อร้าน/ใช้คลังระหว่างไฟต์
+
+## 3. HP/MP และผลลัพธ์
+- HP/MPคงข้ามไฟต์; buff/debuff/temporary shieldหายหลังจบในต้นแบบ; cooldownเริ่มใหม่ไฟต์ใหม่
+- เมือง/จุดพักฟื้นฟรี; ค่าปัจจุบันไม่เพิ่มฟรีจากฝากถอนคลัง สลับMaxHP gear หรือlevel-up
+- ปกติไม่มีเดินแล้วregenฟรี; regenจากabilityเฉพาะมีเงื่อนไข; ทีมที่อยู่พื้นที่ง่ายโดยไม่กินยายอมรับได้
+- คู่ใจล้มคงสถานะจนชุบ/พัก; ตัวละครล้มคู่ใจสู้ต่อแต่ใช้item/capture/หนีปกติไม่ได้
+- ทีมล้มทั้งหมดกลับจุดพัก Autoหยุด; ต้นแบบเสียเวลาและconsumables ไม่หักEXP/ของหายถาวร
+- killรางวัลต่อเป้าหมายบันทึกครั้งเดียว; หนี/แพ้ไม่ย้อนคืนของที่ใช้; ฝ่ายที่ยังไม่กำจัดไม่ให้รางวัล
+- จับสำเร็จเก็บคู่ใจได้แม้ไฟต์ภายหลังแพ้/หนี เป็นข้อเสนอ; ไม่ได้kill lootเป้าหมายที่จับ
+- หลุดไม่สุ่มใหม่ ไม่คืนของ; persistที่action boundary; กลับมาไฟต์เดิมหรือยอมแพ้ ไม่เริ่มไฟต์ซ้อน
+
+## 4. Statผู้เล่น
+STR=PATK; VIT=HP/PDEF; INT=MATK+MP; DEX=accuracy+critเล็ก; AGI=SPD/evasion; SPI=support/MP/MDEF
+ไม่มีLUKรวมDrop/Capture/Crit; ธนูไม่ใช้DEXเป็นbaseATKโดยอัตโนมัติเพราะจะได้ประโยชน์ซ้อนเกิน
+เริ่ม10ทุกค่า Lv1->200ได้3×199=597แต้ม
+ราคาต่อ1หน่วย: ค่าใหม่11–60=1,61–100=2,101–150=3; capลงเอง150; gearแยก
+10->60ใช้50; ->100ใช้130; ->150ใช้280; resetคืนต้นทุนจริง
+ตัวอย่างใช้597ครบ: STR150 VIT150 DEX47 INT10 AGI10 SPI10
+สูตรderived (L=level, gear=ค่าที่เกี่ยวข้อง):
+```
+MaxHP = 400 + 30*(L-1) + 25*VIT + gearHP
+MaxMP = 60 + 4*(L-1) + 3*INT + 5*SPI + gearMP
+PATK = 20 + 3*STR + gearPATK
+MATK = 20 + 3*INT + gearMATK
+Support = 20 + 3*SPI + gearSupport
+PDEF = 2*VIT + gearPDEF
+MDEF = 2*SPI + gearMDEF
+SPD = 100 + AGI + bonusSPD
+```
+SPIไม่regenMPฟรี; support/healใช้SPI, magic attackใช้INT; skillHP-scalingต้องระบุเฉพาะไม่แจกทุกdamage skill
+Lv200 VIT150ไม่มีgear: HP10120 เป็นผลสูตรไม่ใช่balance targetที่ตรวจแล้ว
+
+## 5. Hit / Crit / Armor / Damage
+```
+Accuracy = 90 + .20*DEX + accuracyBonus
+Evasion = .15*AGI + evasionBonus
+HitChancePercent = clamp(Accuracy-Evasion+skillModifier,20,98)
+CritChancePercent = clamp(5+.10*DEX+critBonus,0,60)
+CritMultiplier = min(1.50+critDamageBonus,2.50)
+```
+heal/friendly buffไม่miss; guaranteed-hitข้ามevasionไม่ข้ามimmune; DoTติดแล้วไม่ตรวจhitทุกtick; multi-hitต้องระบุroll mode
+armor: ใช้PDEF/MDEFตามdamage type; ลดเกราะdebuffก่อน แล้วpercent penetration แล้วflat penetration แล้วmax(0,...)
+```
+ArmorMultiplier = 200 / (200 + effectiveDefense)
+```
+K200=ทดลองไม่ใช่ค่าสำหรับทุกช่วงที่ผ่านแล้ว; percent armor reduction cap50%, percent pen cap40%เสนอ; ตรวจflat penร่วม
+เกราะ50/100/200/400/800 ลด20/33.33/50/66.67/80%ตามลำดับ
+```
+BaseDamage = AttackPower * SkillCoefficient + SkillFlat
+FinalDamage = BaseDamage * ArmorMultiplier * ElementMultiplier
+              * CritMultiplierIfTriggered * OutgoingMultiplier
+              * IncomingMultiplier * GuardMultiplier
+```
+โบนัสประเภทเดียวกันบวกก่อน คนละกลุ่มคูณ; UIระบุgroup; capsของoutgoing/incomingยังต้องทำตาราง ไม่ใช้คำว่าcapโดยไม่มีค่าในruntime
+ไม่สุ่มdamage varianceเพิ่มในต้นแบบ; ปัดครั้งเดียวที่eventผลลัพธ์ (half-upเป็นข้อเสนอเพื่อให้ผลข้ามภาษาตรงกัน); zero/immuneอาจ0 ไม่บังคับmin1
+ตัวอย่างLv20: STR35,VIT25,INT10,DEX17,AGI20,SPI10 รวม117=60+57; weapon70 ->PATK195; skill1.6 ->312; defense160 ->173.33; strong1.25 ->216.67 ->217; crit1.5 ->325; guard.6 ->195
+
+## 6. Heal / Shield / Effects
+```
+Heal = (Support*SkillCoefficient+Flat) * HealingPowerMultiplier * HealingReceivedMultiplier
+EffectChance = clamp(BaseEffectChance*(1+EffectHit-EffectResistance),0,1)
+```
+EffectHit/Resistanceใช้decimalและมาจากgear/skillsเป็นหลัก ไม่ใส่Statเดียวให้ครบทุกอย่าง
+base60%, hit20%, resist30% ->54%; ต้องhitก่อนถ้าskillระบุ; immunityตรวจแยกและชนะสูตร
+healไม่ชุบ ไม่มีcritในต้นแบบ; overhealทิ้งเว้นspecific conversion; grouphealใช้งบรวมต่างจากsingle
+shieldรับdamageหลังmitigation; same-sourceไม่stackไม่สิ้นสุดต้องระบุrefresh/replace; total shield cap50%maxHPเสนอ ยกเว้นต้องประกาศ
+hard CC(Stun/Freeze/Sleep)ปกติเสียaction<=1ต่อครั้ง; หลังเสียactionให้immuneกลุ่มจนทำactionถัดไปเสร็จ ป้องกันpermalock; bossใช้responseเฉพาะแสดงต่อผู้เล่น
+Poison/Burnไม่crit ต้องกำหนดstack/tick/expiryต่อdefinition; ไม่สรุปเป็น%bossHPมหาศาลโดยไม่มีcap
+counterไม่กระตุ้นcounterต่อไม่จบ; effect-chainมีmax depthและper-action/per-round counters
+MPcost reductionเสนอcap40%, skillที่มีต้นทุน>=1MP; ไม่เพิ่มgeneric cooldown reduction statในต้นแบบ
+resource loops, revive loops, shield loops, excessive proc chainsต้องมีsimulationก่อนrelease
+
+## 7. เกณฑ์และช่องเปิด
+fightทั่วไปเป้า30–90วินาที, Elite2–4นาที, bossmap3–5นาที, dungeonboss5–8นาที เป็นเป้าทดสอบไม่ใช่delayบังคับ
+action budgetของ10ศัตรูต้องคำนวณ ไม่ใส่10ตัวระดับเต็มไร้เงื่อนไข; จำกัดฝูงCC/healerตามencounter templates
+O15ต้องปิดเรื่องcooldown tick, round duration, silence, evade vs AoE, shield consumption ordering, revive timeline, stalemateก่อนengine v1
+ทดสอบทีมถึก/เร็ว/heal/burst/status/captureและcaseSIGILซ้ำ8ดวงตามscopeอาวุธจริง; ห้ามแก้slot capเพื่อหนีบาลานซ์
+
+---
+
+<a id="chapter-04"></a>
+
+# 04 — มอนสเตอร์ การจับ การเลี้ยง สกิล Bond และ Rebirth
+
+> อำนาจข้อกำหนด: ยึดสถานะ C/P/O ในบท00; รายละเอียดที่ไม่ได้ยืนยันไว้ที่นั่นถือเป็น PROVISIONAL หรือ EXAMPLE ไม่ใช่คำยืนยันใหม่ของผู้ใช้
+
+## สารบัญ
+1. ตัวตนและข้อมูลสองระดับ
+2. สกิลและตัวอย่างชนิด
+3. จับและผลหลังจับ
+4. EXPและStatสุ่ม
+5. อัปสกิล
+6. Bond
+7. Rebirth
+8. Tradeและตัวอย่างทีม
+
+## 1. ตัวตน
+CONFIRMED speciesเฉพาะตัว: levelป่าคงเดิมทุกmap ไม่scaleตามplayer/region; speciesเดียวกันแชร์definition ไม่cloneเปลี่ยนสีเพื่อเพิ่มcount
+ธาตุสุ่มตอนspawnได้หลายธาตุและคงเมื่อเข้าfight/capture/trade; mapเปลี่ยนfrequency/element distribution/packmatesได้ ไม่เปลี่ยนwildLevel
+เลเวลป่า!=เลเวลคู่ใจ; จับทุกตัวรวมbossเริ่มLv1; คู่ใจเสนอcap200; every speciesมีเส้นทางจับ/เลี้ยง/Rebirth
+ข้อมูลspecies: ID,name,wildLevel,rank,archetype,base/growth budget,3skills+innate,element modifiers,capture item,loot,Sigil,art,habitats
+ข้อมูลinstance: ID,owner,species,element,level,EXP,growth results/seed version,skill levels,Rebirth,Bond owner/value,equipment,captured location/time,wild origin,audit state
+สีหายากเป็นcosmeticแยกจากธาตุไม่เพิ่มStat
+rank/level/capture difficultyแยกความหมาย; elite/bosswild abilitiesไม่ถ่ายมาแบบเต็ม
+
+## 2. สกิล
+3skillsเป็นActive/Passiveผสมตามspecies +innate1; basic/guardเพิ่มเป็นคำสั่งมาตรฐานไม่กินslot; อย่างน้อย1Activeเป็นข้อเสนอ
+เฉพาะหนึ่งskillมีelement variationเสนอ ไม่เปลี่ยนทั้งkitจนจำไม่ได้; primitiveร่วมได้แต่เงื่อนไข/บทบาทต้องต่าง
+ตัวอย่างครบkit (EXAMPLE):
+| species | skill1 | skill2 | skill3 | innate |
+| --- | --- | --- | --- | --- |
+| ปูเกราะ | รับแทน1ครั้ง | โล่ตน | ใช้โล่บางส่วนโจมตี | รับแทนสำเร็จลดMPครั้งหน้าตามcap |
+| หอยตะเกียง | ฮีลเดี่ยว | ส่องลดหลบ | โล่เพื่อน | โล่ของตนหมดอายุตามเวลาคืนMPบางส่วนไม่เกินต้นทุน |
+| เห็ดนักฝัน | สปอร์หลับ | ลดต้านสถานะ | ระเบิดสปอร์ | ตื่นจากsleepของตนแล้วอ่อนแรง |
+| จิ้งจอกสะเก็ด | กัดติดmark | หมู่เบา | กินmarkโจมตีหนัก | กำจัดเป้าหมายmarkตนแล้วฮีลเล็ก |
+| ด้วงเจาะเกราะ | ลดเกราะ | เดี่ยวหนัก | ตั้งรับชาร์จ | เพิ่มดาเมจต่อshield |
+| นกกระดิ่ง | SPDรอบหน้า | cleanse1ชนิด | โจมตีหลัง | cleanseสำเร็จครั้งแรก/roundให้resistชั่วคราว |
+| ตุ่นเสบียง | ฮีลเบา | ลดต้นทุนสกิลถัดไปเพื่อน | โจมตีลดATK | basicสำเร็จคืนMPเล็กcapต่อround |
+
+ชื่อและlevelของตัวอย่างยังไม่เป็นproduction registry ต้องกำหนดwildLevelครั้งเดียวเมื่อสร้างจริง
+
+## 3. Capture
+CONFIRMED target.wildLevel <= player.level+5; ตรวจserverก่อนหักitem; bossผ่านphase/เงื่อนไขเพิ่มเติม
+ผู้เล่นmanual actionเท่านั้น; Autoหยุดรอได้ไม่สั่งจับ; ใช้species-specific capture itemจากspeciesนั้น (ชิ้นสำเร็จ/เศษคราฟต์)
+starterมีของสอนจับได้เป็นข้อเสนอ ไม่บังคับฆ่าก่อนเริ่มทุกกรณี; bossอาจต้องชนะรอบแรกเพื่อวัสดุจับ
+สูตรทดลอง:
+```
+p = clamp(baseSpeciesRate * hpFactor * bestEligibleStatusFactor
+          * captureMasteryFactor * itemQualityFactor, rankMin, rankMax)
+```
+สถานะใช้ตัวดีที่สุดไม่คูณทุกอัน; masteryแยกcombat stats; UIแสดงโอกาสและเงื่อนไข; rankMin/Max/table O07
+ตัวอย่าง.20*2*1.25*1*1=.50; ไม่ใช่อัตราของทุกspecies
+ไม่อนุญาตpremium capture boost; ธาตุหายากไม่ต้องมีpenaltyจับซ้อนโดยอัตโนมัติ
+เมื่อสำเร็จ: retire targetจากfight, สร้างunique companion Lv1ไม่ลงfightทันที; proposedได้EXPแต่ไม่kill loot/Sigil; failureเสียitem/action; reconnectไม่reroll
+capture guaranteed pityยังOPEN; ฉบับนี้เสนอไม่มีkill/capture-count guarantee; อย่าเพิ่มpityเป็นกฎยืนยันเอง
+
+## 4. EXP / Stat growth — PROVISIONAL
+คู่ใจเริ่มfightทั้ง5มีสิทธิ์EXPของตัว ไม่หารกองเดียว; KOยังได้; ช่องว่าง/cap200ไม่เพิ่มEXPให้ที่เหลือ; storageไม่gainเอง
+ปริมาณEXP speciesและcompanion multiplierยังต้องtune; ไม่มีdaily cap; AutoEXPปกติ
+growthมีงบเท่ากันเมื่อspecies,level,Rebirthเท่ากัน สุ่มallocationตามน้ำหนัก/ขอบเขต archetype ไม่random totalทุกค่าให้ตัวหนึ่งเหนือกว่าอีกตัวทั้งหมด
+Tank VIT>SPI/STR; physicalSTR>DEX/AGI; magicINT>SPI/DEX; supportSPI>VIT/AGI; controlAGI>SPI/DEX (weightsยังOPEN)
+serverสุ่ม/persist authoritative results; clientไม่เลือกseed; ตรวจreconnect/tradeไม่เปลี่ยนoutcome
+ฝึกปรับบางส่วนด้วยingame resourcesเป็นproposal; nature tradeoffและการปรับยังต้องspec ไม่เพิ่มIVทุกมิติซ้อน
+แสดงbase/growth/gear/Bond/Rebirthแยก; ไม่gradeS–Fทั้งตัวโดยไม่มีเหตุผล
+
+## 5. Skill leveling — PROVISIONAL
+| SkillLv | CompanionLvขั้นต่ำ |
+| --- | --- |
+| 1 | 1 |
+| 2 | 10 |
+| 3 | 20 |
+| 4 | 35 |
+| 5 | 50 |
+| 6 | 75 |
+| 7 | 100 |
+| 8 | 130 |
+| 9 | 160 |
+| 10 | 190 |
+
+masteryจากcombat success ไม่จากheal/buffวน; เลือกลงทุน +เงิน+species mats; autoได้; ไม่มีdaily cap
+อัปสำเร็จแน่นอนเมื่อครบ; ไม่เพิ่มdamage/cost efficiency/cooldownทุกด้านพร้อมกัน
+3skillsและinnateมีprogressionเฉพาะ; Rebirth/tradeคงtrained level แต่effective skill levelตรวจcurrent/effective companion levelตามpolicyที่เลือก
+ไม่ให้Lv1หลังRebirthใช้skill10เพียงเพราะคงtrained progress
+
+## 6. Bond
+CONFIRMED bonusสัมพันธ์เจ้าของ; ขายเริ่ม0. เสนอทุกownership transferรีเซ็ต(รวมgift/retransfer)เพื่อไม่เลี่ยง; โอนในคลังเจ้าของเดิมไม่reset
+proposal0–1000:0–199รู้จัก,200–399คุ้นเคย,400–599ไว้ใจ,600–799คู่หู,800–1000ลึกซึ้ง
+โบนัสเล็กตามสายพร้อมcap ไม่ซ่อนคำนวณ: tankHP/resist,damageATK/accuracy,magicMATK/MP,supportSupport/survival,controlEffectHit/resist
+gainจากfightสำเร็จ สำรวจครั้งแรก bossครั้งแรก และของโปรด; one-timeกิจกรรมไม่triggerซ้ำจากเข้าออก; ratesยังไม่ล็อก
+ไม่ลดเพราะoffline/แพ้; ของโปรดเสนอเพิ่มได้บางส่วนต้องผจญภัยด้วย ไม่มีรอวัน; collectionhistoryคงแต่โบนัสเจ้าของเดิมหาย
+ตลาดแสดงpost-transfer values without old Bond ไม่เอาgearที่ไม่ได้ขายมาปน
+
+## 7. Rebirth
+CONFIRMED ทุกspeciesได้เมื่อmax level reset1 stronger+unlock; จำนวนครั้งสูงสุด O03
+PROVISIONAL maxLv200; resetEXP/level/basegrowthตามLv1; เก็บspecies/element/appearance/history/trainedskills/ownerBond/equipmentownership
+gearที่levelไม่ถึงพักผล; growth trajectoryเดิมคงใช้และเพิ่มRebirth budgetแยก ไม่rerollตัวดีให้เสียรูปแบบโดยไม่บอก
+proposal โบนัสรวมเหนือฐาน R1 +4%,R2 +7%,R3 +10%ของส่วนพื้นฐานที่ระบุ ไม่ใช่4+7+10% และไม่คูณทบ ไม่เพิ่มcrit/status/gear/Bondทุกอย่าง
+R1 skill variant, R2 innate variant, R3 additional variant+cosmetic; ยังคง3+1 เลือกbranchไม่รับทั้งสอง
+ทุกขั้นต้องกลับไป200ใหม่ +เงิน+materials; ไม่premium skip; effective unlock levelของvariantsยังต้องกำหนด
+ตัวอย่างปู: R1โล่หนาMPสูง/โล่บางแชร์; R2คืนMP/ฮีลเล็กแทน; R3shieldstrikeเจาะ/ใช้โล่น้อย
+playerDivine Awakeningไม่ใช่companionRebirth
+
+## 8. Trade gates / ทีมตัวอย่าง
+O01เสนอgap30อยู่ในช่วง20–40ที่ผู้ใช้ขอ ตรวจspeciesWildLevelและcurrentLevel<=recipientLevel+30 ทุกtransferรวมgift
+ตัวอย่างplayer50: origin70,current40ได้; origin20,current100ไม่ได้; bossorigin180,current1ไม่ได้
+O02เสนอeffective level<=player+5 ไม่ลดactual level ต้องrestrictskill/gearด้วย ยังไม่approved
+O04เสนอplayer200+licenseรับRebirth; currentLv1ไม่เลี่ยงprestige gate; ห้ามclientกำหนดeligibility
+ตัวอย่างทีม(ไม่ล็อกnames/elements):
+- ฟาร์ม: Guardian Stonekin Earth +ด้วงEarth/จิ้งจอกFire/หอยWater/ตุ่นWater/นกWind; ประหยัดยาแลกเร็ว
+- burst: Arcanist Runeborn Fire +ปูEarth/ด้วงWind/จิ้งจอกFire/เห็ดWater/นกWind; ไม่มีmain healer ต้องระวังAoEปลุกsleep
+- จับ: Ranger Human Water +ปูEarth/ตุ่นWater/เห็ดWind/หอยWater/นกLight; คุมHP/nonlethal/หลีกDoTcounter; manual capture
+
+---
+
+<a id="chapter-05"></a>
+
+# 05 — อุปกรณ์ Sigil ออปชัน และการพัฒนา
+
+> อำนาจข้อกำหนด: ยึดสถานะ C/P/O ในบท00; รายละเอียดที่ไม่ได้ยืนยันไว้ที่นั่นถือเป็น PROVISIONAL หรือ EXAMPLE ไม่ใช่คำยืนยันใหม่ของผู้ใช้
+
+## สารบัญ
+1. ช่องและการแสดงผล
+2. งบพลัง/rarity/level
+3. ออปชัน/Set/ตีบวก
+4. Sigilกฎล่าสุด
+5. ความสามารถและการซ้อน
+6. ของคู่ใจ/คราฟต์/ตลาด
+
+## 1. อุปกรณ์12ช่อง — CONFIRMED
+| ช่อง | เพดานSigil | ภาพ |
+| --- | --- | --- |
+| หัวบน | 1 | หมวก/มงกุฎ/ฮู้ด |
+| หัวกลาง | 1 | แว่น/หน้ากาก |
+| หัวล่าง | 1 | ผ้าพันคอ/เครื่องประดับปาก |
+| แขน | 1 | ถุงมือ/ปลอกแขน |
+| เกราะ | 1 | ลำตัว |
+| เท้า | 1 | รองเท้า |
+| อาวุธหลัก | ตามitemสูงสุด4 | อาวุธ |
+| อาวุธรองที่เป็นอาวุธ | ตามitemสูงสุด4 | อาวุธรอง |
+| ของรองไม่ใช่อาวุธ/โล่ (ใช้ช่องเดียวกับข้างบน) | 1 | โล่/หนังสือ/เครื่องราง |
+| เครื่องประดับ1 | 1 | ข้อมือ/เอว/วัตถุลอยที่กำหนด |
+| เครื่องประดับ2 | 1 | ตำแหน่งแสดงผลแยก |
+| หลัง | 1 | ผ้าคลุม/กระเป๋า/ปีก |
+| Aura | 1 | เอฟเฟกต์รอบตัว |
+
+ตารางมีทางเลือกoffhandสองแถวแต่slotจริงรวม12; dual weaponsสูงสุด8Sigils +10nonweapon slots=18ดวงทั้งชุดเมื่อทุกช่องรองรับ
+main4+shield1+nonweaponอื่น10=15; twohandใช้main+offhandสูงสุด4+10=14 เป็นผลของbaselineสองมือ ไม่อนุมานtwohand8เอง (O09)
+Sigilหมวกเป็นequipment group HEADGEAR ร่วมทั้ง3ตำแหน่ง ไม่แยกcompatibilityบนกลางล่าง
+Appearance/Fashionแยกทุกช่อง ไม่มีStat/slotพิเศษ; hideได้; อุปกรณ์ทุกชิ้นมีrepresentationจริง pixel readable
+สองมือปิดoffhand stats; dualตามclass eligibility ไม่ได้PATKเต็มสองชิ้นอัตโนมัติ ต้องระบุweapon attack scope/coefficients O09
+
+## 2. โครงไอเทมและงบพลัง — PROVISIONAL
+แยกEquipmentLevel, Rarity, Family, UpgradeLevel, Affixes, Sockets, UniqueEffect, binding/ownership
+Rarity: Commonพื้นฐาน, Uncommonเล็กน้อย, Rareจัดบิลด์, Epicเฉพาะบทบาท, Legendaryกลไกพิเศษ
+Legendaryไม่จำเป็น4slots; unique effectต้องกินงบ ไม่ได้base+affix+uniqueสูงสุดพร้อมกัน
+weapon1slotเน้นbase,2สมดุล,3build,4customลดงบอื่นเป็นแนวทางทดลอง ไม่บังคับทุกitemมีpatternเดียว
+ช่วงitemตัวอย่าง1/20/40/50/70/90/110/120/140/160/180/200 ไม่ต้องทำทุกslotทุกช่วงตอนprototype
+ของเก่ามีเส้นทางขาย/ย่อย/คราฟต์/พัฒนาตระกูล ไม่ต้องใส่ต่อได้เท่าของ200ทุกชิ้น
+
+## 3. Affix / Sets / Upgrade
+baseคงที่ + random affix<=3ตามrarity +uniqueถ้ามี
+affix poolsจำกัดตามtype: STR/VIT/INT/DEX/AGI/SPI,HP,accuracy,crit,resist,heal/shield,MP/ลดต้นทุนและconditionaldamage
+ไม่เสนอทั่วไปที่เพิ่มDrop/EXP/Capture; ไม่ใส่statไร้ประโยชน์ส่วนใหญ่บนsupportweapon
+rerollเลือก1ช่อง จ่ายเงินในเกม+mat แสดงใหม่เลือกold/new ทรัพยากรเสียเมื่อroll; ช่องอื่นไม่เปลี่ยน
+setเสนอ2/3ชิ้นให้ผสมได้; uniqueชื่อ/กลุ่มเดียวไม่procซ้อนทุกแหล่งโดยไร้กฎ; **ข้อนี้ไม่ห้ามSigilชื่อซ้ำ** ต้องใช้stack policyรายeffect
+Upgradeเสนอ+10; baseที่กำหนด+3%ของค่าเดิมต่อขั้น รวม+30%ไม่คูณทบและไม่เพิ่มtotalcharacterstats/affixes/unique
+ช่วงต้น100%,สูงเสี่ยงแต่ไม่แตก/ไม่ลดขั้น; pity progressผูกitemและแสดงขาย; probabilities/costs/guarantee thresholdsยังOPEN จึงห้ามcodingตารางสมมติเป็นlive
+ไม่ให้Premiumเพิ่มsuccess/ป้องกันแตก/ซื้อpower materials
+
+## 4. Monster Sigils — CONFIRMED
+- ใช้ชื่อSigil/ตราประทับ ไม่ใช่card; ผูกmonster speciesและดรอปเฉพาะต้นกำเนิด
+- base0.005–0.05%ต่อkill eligible; p decimal=.00005–.0005
+- compatible equipment group(s)เฉพาะตามmonster+equipment ไม่universal
+- ใส่ชื่อซ้ำได้ในชิ้นเดียว/ต่างชิ้นที่compatible; weaponสูงสุด4ต่อชิ้น8dual; others1; headgroupไม่fixตำแหน่งย่อย
+- ถอดเงินในเกมจำนวนมากเท่านั้น; ไม่มีpremium route/ไม่มีbindingเนื่องจากpremium
+PROVISIONAL: same species all elementsใช้Sigilเดียว/rateเดียว; ไม่มีpity; ถอดรายดวง100%คืนของไม่แตก; ขายต่อได้; ถอดในเมืองนอกfight; ค่าใช้จ่ายแสดงก่อนconfirm
+rateต่อspawnความถี่ต้องtest Bossไม่ต้องต่ำสุดเพียงเพราะboss
+
+## 5. Compatibility และ duplicate stacking — PROVISIONAL examples
+| Sigil | compatible | effect idea |
+| --- | --- | --- |
+| ปูเกราะ | shield | guardแล้วลดnext-hitเล็ก |
+| ด้วงเจาะเกราะ | physical melee weapon | penเพิ่มเมื่อtargetมีshield |
+| จิ้งจอกสะเก็ด | physical weapon | damageต่อburned ไม่สร้างburnเอง |
+| หอยตะเกียง | support weapon | healดีขึ้นเมื่อtargetHPต่ำ |
+| เห็ดนักฝัน | HEADGEARทั้งหมด | sleepchanceของskillที่มีsleepอยู่แล้ว |
+| นกฮูกผลึก | HEADGEARทั้งหมด | accuracyต่อbackline |
+| ค้างคาวเสียงสะท้อน | HEADGEARทั้งหมด | ลดผลSilenceตามกติกาที่ต้องกำหนด |
+| แมงมุมช่างทอ | arms | shieldpowerจากskill |
+| ตัวนิ่มศิลา | armor | ลดmeleehitแรกต่อround |
+| กระต่ายสายลม | feet | actionสลับตำแหน่งแล้วSPDรอบหน้า |
+| นกกระดิ่ง | back | cleanseเพื่อนแล้วresistชั่วคราว |
+| ตุ่นเสบียง | accessoryทั้งสอง | basicสำเร็จคืนMPจำกัด |
+| หิ่งห้อยวิญญาณ | aura | shieldreceivedเล็ก |
+
+ชื่อใหม่EXAMPLEไม่ใช่approved monster catalog
+stat flatบวก; percentgroupเดียวบวก; duplicate procเสนอaggregatechance/strengthตามdefinitionแล้วrollเดียว ไม่rollทุกดวงอัตโนมัติ
+effect cooldownใช้shared cooldownตามกลุ่ม แต่ต้องระบุว่าดวงเพิ่มให้ประโยชน์อะไร ห้ามใส่ซ้ำได้แต่เงียบว่าไม่มีผล
+capแสดงUIก่อนใส่ เช่นcritเต็มแล้วไม่เพิ่มeffectivecrit; การใช้capตามstatไม่ใช่ห้ามชื่อซ้ำ
+weapon-local effectมีผลเฉพาะattackที่ใช้weaponนั้น; globalstatsรวมตามdefinition; multi-hitและdual-handมีproc budgetชัด ไม่ให้proc16ครั้งจาก8sigilsโดยไม่กำหนด
+headsigil3ซ้ำต้องทดสอบ CC/evasion/resource loops โดยไม่ลบสิทธิ์3headslots
+
+## 6. อุปกรณ์คู่ใจและcraft
+เสนอ3functional slots: body stats, charmบทบาท, skillmarkปรับหนึ่งใน3skills; fashionแยกไม่มีstats
+เฉพาะspecies equipment/skillmarkdropจากspecies; common matsร่วมได้; ไม่มีActiveช่อง4ผ่านgear
+ทุกclassเรียนcraftได้ แยกprofessions; สูตรสำเร็จแน่นอน+affixสุ่มตามpool; socketcountประกาศสูตร
+familyupgrade: ใช้ต้นทาง+เงิน+common+newtier mats; แสดงผลต่อenhancement/affix/installedSigilก่อนconfirm ไม่ทำหายเงียบ
+equipmentทั่วไปเสนอequipแล้วขายต่อได้; ขายต้องunequip/escrow; ขายพร้อมSigilเป็นbundleตามdisplayหรือถอดก่อน ไม่มีแก้หลังbuyerconfirm
+no NPCbuy->craft->NPCsell infinite profit loops; salvageSigilเป็นOPEN proposal ไม่สร้างSigilใหม่ด้วยcommonmats
+
+---
+
+<a id="chapter-06"></a>
+
+# 06 — Loot และเศรษฐกิจต้นแบบ
+
+> อำนาจข้อกำหนด: ยึดสถานะ C/P/O ในบท00; รายละเอียดที่ไม่ได้ยืนยันไว้ที่นั่นถือเป็น PROVISIONAL หรือ EXAMPLE ไม่ใช่คำยืนยันใหม่ของผู้ใช้
+
+## สถานะ
+Drop range/Sigil/ไม่มีglobal farm capsยืนยัน; prices,taxes,kill rates,Auto .70เป็นPROVISIONAL ไม่มีข้อมูลeconomy liveหรือsimulationที่ผ่านแล้ว
+หน่วยเงินเรียกเหรียญเป็นชื่อชั่วคราว ไม่ใช่มูลค่าเงินจริง
+
+## ตารางดรอปและเพดาน
+หนึ่งspeciesมี50–100candidate item IDs โดยรวมshared poolsแล้วdeduplicate; cap5distinct item typesต่อศัตรูหนึ่งตัว (ตีความbaselineในบทสนทนา)
+ไฟต์10ศัตรูอาจได้50รายการก่อนmerge; quantitiesของstackอาจ>1
+ตัวอย่าง60items: vendor/common20, region/family15, species/capture10, equipment8, petgear/fashion6, Sigil1
+conditionallootระบุweather/locationที่จำเป็น; levelป่า/ฐานspeciesไม่เปลี่ยนตามmap; อย่าแอบใส่rescaled loot tierโดยไม่บันทึก
+ไม่มีcash dropเพิ่มอีกก้อนสำหรับnormalในproposal ใช้NPCsaleเป็นcurrency source
+
+## อัลกอริทึมที่รักษาSigil rateและAuto multiplier
+ใช้versioned authoritative table และserver RNG:
+1. rollSigilที่species base pก่อน; หากออกจอง1ใน5slots
+2. roll ordinary slotsได้อีก4หรือ5 แต่ละslotอาจempty เลือกpoolและitemตามweight; ไม่roll100itemsแล้วtruncate
+3. ได้base candidates<=5รายการ
+4. Auto Hunt: retainแต่ละcandidateด้วยq=.70เพียงครั้งเดียว; manualq=1; ไม่refillช่องที่ถูกdiscard
+5. mergeitemชนิดเดียว; persistfinalreward+eventIDก่อนส่งผล
+วิธีนี้ทำให้Sigilactual=p*q; ordinary expectationsลดqเมื่อเทียบbase generatorเดียวกัน ไม่ต้องลดทั้งpoolและitemซ้ำ
+slotที่จองSigilแล้วถูกAutoกรองทิ้งไม่กลับไปสุ่มordinary ไม่ทำให้ordinaryauto biasเพิ่ม
+probabilityของordinary itemที่อาจปรากฏหลายslotต้องคำนวณอย่างน้อยหนึ่งครั้งแยกจากexpectedquantity; UIห้ามอ้างweightภายในpoolว่าเป็นdropchanceสุดท้าย
+questrewardsแยกledger ไม่กินslot; summonedadds/respawningpartsในbossต้องมีloot eligibilityชัด ไม่farmวน
+
+## อัตราSigil
+| base | mean kills | auto .70 | mean auto kills |
+| --- | --- | --- | --- |
+| .05% | 2000 | .035% | 2857.14 |
+| .02% | 5000 | .014% | 7142.86 |
+| .01% | 10000 | .007% | 14285.71 |
+| .005% | 20000 | .0035% | 28571.43 |
+meanไม่ใช่guarantee; P(at least1 in n)=1-(1-p)^n; median ceil(log(.5)/log(1-p)); .05%=1386kills; .005%=13863; Auto1981/19804
+อัตราหายากต้องดูspawn/time-to-killด้วย; rareSigilไม่เป็นสิ่งจำเป็นให้classเริ่มเล่นได้
+PartyDropเสนอไม่เพิ่มSigil ใช้เฉพาะordinary pool; ถ้าปรับต้องแสดงactual capและไม่normalizeรายการอื่นเพื่อแอบเพิ่มผล
+
+## Sources / Sinks
+sources: NPCsale,questmoney,eventmoney,NPCorders; playertradeย้ายเงินไม่สร้างเงิน
+sinks: crafting,enhance,reroll,Sigilremoval,marketfees,travel,buildchange,cosmeticservices
+item sinks: consumables,craft,salvage,orders; monster sinksเสนอresearch/release/adoptionโดยสมัครใจ
+no energy/offline gain/hour penalties/globalcap; nolevel-baseddropnerfเสนอ ผู้เล่นกลับล่าlowlevelspeciesได้
+cashslotminigame O13 ยังไม่design ไม่เพิ่มpaidrandomization/withdrawal/เงินจริงโดยอัตโนมัติ
+
+## ตัวอย่างกำไร (สมมติเท่านั้น)
+ไม่รวมขายplayermarket/rareitems/Sigil/pets; killsต่อชม.ไม่ใช่fights; รวมเวลาพักเดินในสมมติฐาน
+| Lv | manual kills/h | auto kills/h | NPCvalue/kill base | manualgross | manualcost | manualnet | autogross | autocost | autonet |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 50 | 60 | 50 | 80 | 4800 | 1200 | 3600 | 2800 | 1100 | 1700 |
+| 120 | 90 | 75 | 180 | 16200 | 3600 | 12600 | 9450 | 3300 | 6150 |
+| 200 | 110 | 90 | 360 | 39600 | 8000 | 31600 | 22680 | 7200 | 15480 |
+
+autogross=autoKills*value*.70; costsusedactualไม่ใช่auto service fee; ไม่บังคับanimationช้าลงเพื่อให้Autoช้า
+ค่าSigilremovalendgameเสนอ3–6ชม.manualnetมาตรฐาน≈95000–190000ต่อดวง; ราคาตามfixed tierไม่อิงรายได้ผู้เล่นเฉพาะคน/ตลาด ไม่เพิ่มทุกครั้งที่ถอด
+tradefeesตัวอย่างlisting.5%ไม่คืนเมื่อcancel/expire +sale3%; listingminimum/limitsยังOPEN; premiumไม่เพิ่มslots/ลดภาษี
+กรณีsale100000: listing500,sale3000,seller96500หลังรวมต้นทุนlisting; ห้ามUIสับสนnetจากธุรกรรมกับnetหลังค่าลง
+
+## Monitoring / risk
+ติดตามmint/burnต่อแหล่งและLv, net farming, moneyvelocity, medianprice commonmats, failedsales, monsterpopulation, Sigil minted, dual8buildpower
+ไม่อ้างsinksรับประกันไม่มีinflation โดยเฉพาะfarmunlimited; ปรับhotspots/sellvalues/recipesจากข้อมูลก่อนnerfAutoทั้งเกม
+NPCordersfiniteตามorderไม่ใช่globalfarmcap; vendorซื้อทั่วไปได้ตามปกติ; ordersไม่ผูกรางวัลกับplayer manipulatedprice
+stockmonstercountไม่เพิ่มincomeแบบไร้เพดาน; worker missions/breedingเสนอเลื่อนจนมีeconomicproof
+
+---
+
+<a id="chapter-07"></a>
+
+# 07 — โลก Map Encounter Dungeon และ Boss
+
+> อำนาจข้อกำหนด: ยึดสถานะ C/P/O ในบท00; รายละเอียดที่ไม่ได้ยืนยันไว้ที่นั่นถือเป็น PROVISIONAL หรือ EXAMPLE ไม่ใช่คำยืนยันใหม่ของผู้ใช้
+
+## สารบัญ
+1. ความหลากหลายและระดับ
+2. ตัวอย่างพื้นที่
+3. มอนสเตอร์/Encounter
+4. ประเภทพื้นที่และAuto
+5. บอส
+6. Expansion
+
+## 1. หลักที่ยืนยันและขนาดคอนเทนต์ที่เสนอ
+ทุกช่วง5เลเวล 1–5,6–10,...196–200มีหลายmap; diverse monstersคือจุดขาย; ช่วงเป็นrecommendationไม่hard entry lockทั่วไป
+speciesมีwildLevelคงที่ร่วมทุกhabitat; ตัวเดิมไปmapสูงยังlevelเดิม ไม่rescale ไม่recolorนับชนิดใหม่
+newhighlevelareaต้องnewdedicatedspeciesหรือบทบาทใหม่ที่ออกแบบจริง; same speciesdifferent elementยังใช้ได้
+ทุกadventuremapมีbossเจ้าถิ่น; townพักเสนอใช้NPCchallengeแทน ไม่spawnโจมตีในพื้นที่บริการ
+จำนวนproposalต่อ5levels: normal3–4,dungeon1–2,secret1 ->5–7permanentพื้นที่ รวม200–280ทั่วโลก +eventrotating ไม่ใช่launchcommitment
+normalmapเสนอ6–10species poolมีsharedบางตัว; ไม่ต้องทุกตัวuniqueแต่ละmap
+
+## 2. Macro regions / examples
+| ภูมิภาคชั่วคราว | Lvแนะนำ | ธีม |
+| --- | --- | --- |
+| ทุ่งรุ่งอรุณ | 1–30 | ทุ่ง ป่า เหมือง |
+| ป่ารากพันปี | 25–55 | ป่า หนอง วิหาร |
+| ชายฝั่งกระจก | 50–80 | หาด ถ้ำปะการัง เรือ |
+| ทะเลทรายอำพัน | 75–105 | ซากนคร โอเอซิส |
+| นครกลไกร้าง | 100–130 | โรงงาน หอพลัง อุโมงค์ |
+| เทือกเขาเมฆา | 125–155 | หน้าผา วิหาร |
+| แดนสนธยา | 150–180 | เงา สุสาน เมือง |
+| รอยแยกปฐมกาล | 175–200 | ธาตุแปรปรวน อารยธรรม |
+
+themeคล้ายกันมีหลายภูมิภาคได้; ตัวอย่างLv26–30ชายฝั่งไม่ถูกห้ามเพราะmacroชื่อชายฝั่งมีช่วง50–80
+ช่วง26–30: ทุ่งเห็ดเรืองแสง/ชายฝั่งเปลือกแก้ว/สวนเครื่องจักรร้าง/รังใต้รากไม้(dungeon)/หอระฆังจมน้ำ(dungeon)/อุโมงค์หิ่งห้อย(secret)/ตลาดกลางคืนภูต(event)
+map identityต้องมีbiome,route,monster composition,combat problem,targetloot ไม่แค่palette
+ตัวอย่างปูเกราะwild28ทุกที่; ปูปราการเหล็กLv80ต้องspeciesใหม่รูปลักษณ์และkitใหม่ ไม่cloneHP
+
+## 3. Encounter / ecology
+overworldspriteแทนฝูง; leaderที่เห็นต้องอยู่ในbattleจริง species/elementเดิม; rosterpersistตอนเริ่ม ไม่rerollreload
+แสดงleaderlevel/element,normal-elite-boss,packsize range,riskก่อนเข้า; autoใช้maxrangeเพื่อเลือกขนาดที่อนุญาต
+packsize1–3,3–5,6–8,9–10พิเศษ; ใช้encounter budget,roles,healer/CCcapsไม่แค่รวมlevel
+O05ยังOPEN: เสนอเห็นฝูงร่วมแต่per-playerencounterไม่แย่ง; ถ้าใช้ต้องมีinstance/entitlement IDs,respawnstateต่อผู้เล่นและlease ไม่กดซ้ำแล้วreset
+ไม่อนุมานคำว่าmonsterร่วมmapเป็นsharedkillstealing ผู้ใช้หมายถึงspeciesพบหลายที่
+Eliteproposal1modifierช่วงต้น2ช่วงสูงจากallowedpairs: crystalshield,backlinehunter,morale,telegraphedmagiccounter,lowHPenrage
+จับEliteได้speciesเดิม/elementเดิม Lv1 ไม่transferwildmultipliers; historybadgeได้; normalcaptureไม่กลายเป็นของด้อยถาวร
+weather/daynightserverclockเปลี่ยนspeciesavailability/elementratiosไม่wildlevel; forecast; gamecycleไม่บังคับเวลาจริงสั้นวันละครั้ง; essentialclassmatsไม่timegateเฉพาะวัน
+same-regionchannelsเสนอweather/timeร่วมกัน; partyMap+Channel; transferchannelไม่resetbattle/HP/entitlement; Autoหยุดก่อนย้าย
+
+## 4. ประเภทและการเดินทาง
+normal/packdense/elitefieldsใช้Auto; dungeonเสนอAutoเฉพาะhuntsectionsไม่กดpuzzle/doors/boss; secretค้นพบเอง; elementalrift; branchingexpedition; tower; localevent; trainingroomไม่ให้farmrewards
+unlockwaypointจากfirstvisit +ingame travel fee; Autoไม่ข้ามmapเอง ไม่ซื้อของ/teleport/sellimplicit
+environmenthazardsต้องwarn ไม่ฆ่าAutoแบบซ่อน; townnohunt
+Eventdungeonเปิดตามschedule/เหตุการณ์ไม่มีenergy/dailyentryquotaโดยปริยาย; eventmonstersต้องมีreturnpath/catchupเพื่อสะสมภายหลัง ไม่exclusivepowerFOMO
+
+## 5. Boss — รูปแบบที่เสนอ P17
+mapเจ้าถิ่น manualchallenge -> privatebattle player1+5 ->killหรือmanualcapture ->return; retryrepeatไม่มีdailycap/energy; ไม่auto-repeatboss
+ผู้เล่นอื่นไม่แย่งlast-hit/ไม่ถูกลบบอสเพราะอีกคนจับ; ไฟต์privateมีledgerของตน
+normalmapfindlair; dungeonreachchamber; nestlocalmechanism; secretshortpuzzle; riftสนาม; eventobjective; towerguardian
+telegraphก่อนหนักต้องมีresponsewindowตามtimeline เช่นต้นround->ท้ายroundหรือรอบถัดไป ไม่warnแล้วยิงก่อนทุกคนตอบสนอง
+boss2–3actionsได้แต่showtimeline; adds/partsนับ<=10; no unboundedreward fromresummons/regrowingparts; initialaddslooteligibleระบุ
+phaseต้นสอนpattern->กลางเปลี่ยนโจทย์->ท้ายตัดสิน/จับ; lowboss2phases/1mechanicพอ; oldbossให้ทีมเก่งฆ่าเร็ว ไม่forcedimmunityเพื่อยืดเวลา
+capture: wildlevel<=player+5 และconditionphase; owncaptureitem; firstkillอาจเป็นแหล่งmats; succeednoownkillloot; failสู้ต่อได้; bosscompanion3+1 ไม่มีwildHP/multiactions
+ตัวอย่างเจ้ากระดองผลึก: boss+2หอยrepairshield; เลือกkillhealersหรือbreak; telegraphคลื่นกระแทกรอบหน้า; guard/shield/weakpointตอบ; shellbrokenเพิ่มincoming+offense; captureเมื่อshellbroken+HPlow
+dropboss<=5typesต่อtargetเช่นทั่วไป; Sigilrangeเดิม อุปกรณ์ตระกูล capturemats petgear fashion; ไม่จำเป็นcashbest
+WorldBossfutureต่างจากmapboss อาจaggregateหลายfightแต่score/loot/captureยังไม่design ห้ามเพิ่มdailyspawnrestrictionลงmapbossแทน
+
+## 6. Expansion gate
+newmapต้องตอบ: species/packต่างอะไร,ทีมต้องเปลี่ยนอย่างไร,lootเป้าหมายอะไร,เหตุผลกลับมาหลังlevelสูง
+registryvalidate specieslevelconstant, alladventuremapsboss, allspeciescatchpath, spawn+assets+skills+lootครบ
+globalcatalogต้องpaginate/searchbyLv,element,role,habitat,mat,Sigil
+
+---
+
+<a id="chapter-08"></a>
+
+# 08 — Auto / Party / Premium
+
+> อำนาจข้อกำหนด: ยึดสถานะ C/P/O ในบท00; รายละเอียดที่ไม่ได้ยืนยันไว้ที่นั่นถือเป็น PROVISIONAL หรือ EXAMPLE ไม่ใช่คำยืนยันใหม่ของผู้ใช้
+
+## Auto rules
+| โหมด | สิ่งที่ทำ | Dropทดลอง | EXP |
+| --- | --- | --- | --- |
+| Manual | เดินและกดเอง | 1.00 | ปกติ |
+| Auto Battle | ผู้เล่นเริ่มไฟต์ AIเลือกคำสั่ง | 1.00 | ปกติ |
+| Auto Hunt | เดินเลือกnormal/eliteและสู้ต่อเนื่อง | .70 | ปกติ |
+| Boss manual start + Auto Battle | ผู้เล่นกดเริ่มทุกไฟต์ | 1.00 | ปกติ |
+
+CONFIRMED ไม่มีAutoCapture/Offline/energy/globalrewardcap/ลดเพิ่มตามชั่วโมง; opengame+connection required
+originmodeล็อกต้นไฟต์ AutoHunt->manualไม่คืนdrop; AutoBattleอย่างเดียวไม่ถือAutoHunt
+rendererFPS/animationfastforwardไม่เปลี่ยนactioncadenceที่serverอนุญาต; ไม่ให้แก้clientเพื่อเร็วฟาร์ม
+
+## Auto settings — PROVISIONAL
+เลือกmapboundedarea, targetspecies, maxpacksize, allowElite, priorityskills, HP/MPthresholds, alloweditems/maxspend, stopconditions
+เมื่อพบspecies/element/rareappearanceที่เลือก หยุดและแจ้ง; usermanualcaptureเท่านั้น ไม่มีlowerHP+throwitem loopอัตโนมัติ
+ปุ่มstopalwaysvisible: หยุดก่อนactionถัดไปไม่rollbackปัจจุบัน; ปิดgameหยุดnewcommandsหลังgrace ไม่เล่นย้อนหลัง
+stopเมื่อteamไม่พร้อม/itemหมด/storagecapacity issue/ไม่มีreachabletargets; companionstorageไม่จำกัดแต่inventorytransportต้องกำหนดไม่discardrarelootเงียบ
+no autoenterboss/portal/event/puzzle; no implicit buying/selling/salvage/release; optionalfiltersต้องopt-inและlockprotecteditems
+เติมbattlebagจากcarriedinventorybetweenfightsได้ถ้าอนุญาต; no accessingtownstorageinfight
+
+## Rule engine example
+ประเมินตามลำดับ ข้ามruleที่illegal ไม่ค้าง:
+1. เพื่อนHP<30% ใช้ยาถ้าallowed+budget
+2. cleanseสถานะสำคัญถ้าทำได้
+3. tankไม่มีshieldให้shield
+4. targetติดสถานะคอมโบ ใช้skillที่เกี่ยวข้อง (เช่นเปียก+electricเป็นskilltag ไม่สร้างธาตุที่7เอง)
+5. MPต่ำกว่าreserve basic
+6. เลือกโจมตีตามpriority
+AIเห็นpublicbattleinfoเท่าผู้เล่น ไม่อ่านfutureRNG/hiddenbossmoves; commandsผ่านvalidatorเดียวกับmanual
+warningAoEbreaksleep/counterkillcapturetargetต้องมีrule/stopsupport
+
+## Party — confirmedconcept / provisionalnumbers
+bonusแม้แยกfightเมื่ออยู่mapเดียว; เสนอmax4, samechannelด้วย, activequalifiedrecentwindow (durationต้องกำหนด)
+AutoHuntที่ต่อสู้จริงเข้าเกณฑ์; ยืน/ขยับอย่างเดียวไม่พอ; bonusล็อกstartfightไม่partyhopก่อนloot
+EXP+5%ต่อeligibleadditionalmember max15%; ordinarymaterialDrop+2%relativeต่อคน max6%เป็นตัวอย่าง ไม่เพิ่มSigil/capture/bossuniqueโดยปริยาย
+base1%*1.06=1.06%ไม่7%; combineAuto once; capsและfixedslot handlingตาม06
+ไม่รับEXP/dropจากคนอื่นโดยยืนเฉย ไม่ต้องsharedbattle; actualco-opdesignfutureเพราะ4คน×6=24ยูนิตผิดขนาดสนามเดิม
+นโยบายmultiboxOPEN ไม่ลงโทษsameIPอัตโนมัติ; 1controllingsession/accountไม่ใช่ข้อสรุปห้ามหลายบัญชีต่อคน
+
+## Premium — boundaries
+cosmetic/showidentity only; ไม่เพิ่มATK/EXP/Drop/Capture/Autohours/pathspeed/marketadvantages/storageการเล่น/skillpresetsที่มีผลต่อการเล่น
+เสนอmonthlymembershipให้เลือกfashion,monsterlooks,profileframes,titles,emotes,enter/win/captureVFX,fashionpresets,collectiondisplay/photooptions
+premiumcurrency/itemsผูกaccount ไม่ขายNPC/market/giftให้แปลงเป็นingamepower และไม่salvageเป็นpowermats
+fashionearned ingameแยกorigin/transferabilityแม้ดูคล้ายกัน; paidcosmeticไม่กลายเป็นtradableเมื่อexpires
+membershipexpiresเก็บfashionที่รับแล้ว; extra displayserviceหยุดไม่deleteข้อมูล
+**ไม่มีpremiumSigilremoval** และไม่มีpremiumprotection/refineboost/capture/EXPtrainingmaterials
+ราคา/paymentplatform/สิทธิ์ข้ามplatformยังOPEN ไม่อ้างรองรับbillingทุกstoreก่อนตรวจข้อกำหนดจริง
+
+---
+
+<a id="chapter-09"></a>
+
+# 09 — ภารกิจ งานฝีมือ และคอลเลกชัน
+
+> อำนาจข้อกำหนด: ยึดสถานะ C/P/O ในบท00; รายละเอียดที่ไม่ได้ยืนยันไว้ที่นั่นถือเป็น PROVISIONAL หรือ EXAMPLE ไม่ใช่คำยืนยันใหม่ของผู้ใช้
+
+## สถานะและหลัก
+ผู้ใช้เน้นDaily/Weeklyแทนstoryquest; ตัวเลข/หมวดข้างล่างPROVISIONAL
+เควสเป็นrewardbonus ไม่เป็นใบอนุญาตfarm; ทำครบแล้วยังEXP/drop/captureไม่จำกัด ไม่มีlogin-streakpowerหรือtimegateclass/rebirth
+
+## Daily
+เสนอ8choicesรับreward4/day; จำนวนนี้จำกัดquestbonusไม่ใช่globalfarmquota
+หมวด: specieshunt,familyhunt,captureเลือกหลายชนิดไม่rare-elementบังคับ,explore,teamcondition,craftcategory,materialdelivery,partyqualifiedfight
+เลือกจากmap/levelที่เข้าถึงจริง; free rerollจำนวนหนึ่งยังต้องกำหนด; AutoHuntนับkill, capturemanual, interactpointsmanual
+rewardEXP/เงินพอเหมาะ/consumables/cosmetictokens; ไม่แจกrareSigilทั่วไปจนdropไร้ค่า
+schedule/timezone/resettimeต้องserver-definedและแจ้งUI ไม่ใช้clockเครื่องผู้เล่น; rewardclaimIDรวมquestperiodกันซ้ำ
+
+## Weekly
+ตัวอย่างdistinctboss3,พื้นที่หลายtype,captureหลายspecies,craftหลายหมวด,deliver2regions,winwithdifferentteams
+มีหลายchoiceไม่ต้องครบทุกอย่างรับmainreward; auto-trackeligibleactionsตั้งแต่เปิดรอบไม่ต้องรับก่อนทุกครั้ง
+deliveryต้องconfirmconsumeitems; class/divine/rebirthไม่ใช้tokenที่หาได้เฉพาะweekly
+expiredunclaimedrewardpolicyยังOPEN ต้องกำหนดไม่ทำให้claimสองperiodซ้ำ
+
+## NPC Orders
+orderfiniteตามรายการ+rewardannounced; removedmaterialsจริง; specialorderหมดไม่ได้ห้ามsellNPCbase/trade/craft
+townflavor: ชายฝั่งshell/fiber/oil, เหมืองherb/cloth/leather, นักเวทcrystal/spore, สำรวจfood/rope/metal
+ไม่automaticpegNPCrewardsตามราคาตลาดที่ปั่นได้; ไม่รับทุกอย่างunlimitedpremiumprice
+
+## Crafting professions — ทุกอาชีพเรียนได้
+| สาย | ผลิต |
+| --- | --- |
+| ช่างอาวุธ | อาวุธ/ชิ้นส่วน |
+| ช่างเกราะ | เกราะ/โล่ |
+| ช่างเครื่องประดับ | เครื่องประดับ/เครื่องราง/อาคม |
+| นักปรุงยา | ฟื้นพลัง/แก้สถานะ/ของต่อสู้ |
+| ผู้ดูแลคู่ใจ | speciescapturegear/ของโปรด/คู่ใจgear |
+| ช่างแฟชั่น | ชุด/คู่ใจcosmetics/display |
+
+เสนอเรียนทุกสายได้แยกmasteryไม่บังคับalt; success100%มีmat/skillครบ; quality/affixpoolแสดง; ไม่มีhiddenstatตามcraftername
+lowrecipeเมื่อmasteryสูงหยุดgainmasteryได้แต่ผลิตขายได้unlimited; noenergy
+สูตรcommon+region/species+rareifhigh+currency; speciescaptureitemต้องspeciesingredient; Sigilnoordinarycraft
+ตัวอย่างโล่กระดอง=shell+ore+fiber; หอยเครื่องประดับ=specificpart+crystal+metal; ปีกนกfashion=feather+cloth+decor
+cost/raritybinding/socketsแสดงก่อนconfirm; productioninputsoutputsต้องatomicและnoNPCarbitrage
+
+## Collection / Journal
+แยกdiscovered,killed,captured-personally,owned,elementrecord,raised,rebirthed,bondmilestone,bossachievement,Sigilreceived/equipped,mapdiscoveries
+ขายแล้วachievementhistoryคงแต่currentownershipupdate; boughtนับownedไม่personalcatch; Lv200boughtไม่นับraised-by-ownerโดยอัตโนมัติ
+rewardเสนอtitles/frames/fashion/emotes/display/recipe ไม่unboundedaccountATKตามnumbercollected
+functionaliteminfo/captureeligibility/Sigilcompatibilityต้องอ่านได้ก่อนซื้อ ไม่ล็อกข้อมูลสำคัญไว้หลังcollection
+searchby5levelband/species/element/role/region/drop/Sigil/equipmentgroup
+ไม่มีต้องทำcollectionครบเพื่อให้classพื้นฐานใช้งานได้
+
+---
+
+<a id="chapter-10"></a>
+
+# 10 — Pixel Art / Animation / Mobile & Desktop UI
+
+> อำนาจข้อกำหนด: ยึดสถานะ C/P/O ในบท00; รายละเอียดที่ไม่ได้ยืนยันไว้ที่นั่นถือเป็น PROVISIONAL หรือ EXAMPLE ไม่ใช่คำยืนยันใหม่ของผู้ใช้
+
+## สารบัญ
+1. ภาพอ้างอิงและทิศทาง
+2. World cameraและspriteมาตรฐาน
+3. อุปกรณ์ซ้อนภาพและanimation
+4. Battle/mobileUI
+5. Production pipelineและquality gate
+
+## 1. Reference
+CONFIRMED userreference: แมวสามสีตาเหลือง หัวโต ตัวเล็ก ขอบน้ำเงินม่วงเข้ม หางเด่น พื้นเหลือง เป็นภาพนิ่งไม่ใช่animationproof
+ต้นทางผู้ใช้: ChatGPT Image 3 มิ.ย. 2569 13_17_33 (6).png; bundledในskillถ้ามีเป็นassets/pixel-cat-reference.png
+หากแนบเอกสารไปแชทใหม่ ให้แนบreferenceนี้ด้วย ไม่แสร้งว่าเห็นภาพจากfilenameเท่านั้น
+referenceให้styleไม่ใช่คำสั่งใช้แมวเป็นstarter/mascotทุกตัว; ไม่ใช้solidyellowเป็นbackgroundของspritesจริง
+style: readable silhouettes,chunky clean pixels,dark outline,bright clear palette,limited shade clusters,cute proportion; worldมีdetailแต่ไม่แย่งinteractiveactors
+clean softtexturesจากreferenceเมื่อทำproduction pixelgrid; transparentPNGแยกshadow; ไม่blur upscale
+ใช้spritesheets/atlasesสำหรับanimationเกมได้ตามpipeline
+
+## 2. World / Scale — PROVISIONAL
+2D3/4top-oblique fixedcameraให้บรรยากาศสำรวจตามROreference ไม่สัญญา3Drotate
+occlusionfadeสำหรับผนัง/ต้นไม้, y-depth sorting, bridge/floorlayerที่logicตรงภาพ; mapoverviewtravelแยกจากwalkmap
+8directionmovement+4directionartทดลอง; อาจเพิ่ม8artหลังproof; ไม่flipหน้าซ้ายขวาที่ทำให้อาวุธ/เครื่องประดับผิดตำแหน่งโดยไม่ตรวจ
+| Asset | กรอบตั้งต้น |
+| --- | --- |
+| Player | 64×64px |
+| Small monster | 32×32 /48×48 |
+| Standard monster | 64×64 |
+| Large monster | 96×96 |
+| Boss | 128×128+ตามจำเป็น |
+| Item/Sigil icon | 32×32 |
+| Skill icon | 48×48 |
+กรอบไม่เท่าความสูงจริง; wings/weapon/auraแยกcanvasใหญ่ยึดanchor; pixel densityเท่ากันไม่ใช้bosspaintละเอียดคนละstyle
+rendernearest-neighbor, pixelsnappingและintegerzoomเมื่อเหมาะสม; UIแยกscaleได้ พื้น/tilesต้องกำหนดprojection/gridก่อนผลิตmasscontent
+
+## 3. Layered equipment / animation
+12slotsมีภาพจริงและAppearance; body/race/hair/head3/armor/arms/feet/main/off/accessories2/back/aura; draworderเปลี่ยนตามdirection
+มีanchor metadataทุกframeหรือกฎanchorที่ทดสอบแล้ว; equipmentไม่ลอย/หลุดระหว่างท่า; ใช้sharedrig/proportionบางเผ่าแรก
+animationframesทดลอง: idle4–6,walk6–8,basic6–8,skill6–10,guard3–4,hurt2–4,KO4–6,victory4–8,captureเฉพาะ
+ตัวsprite8–12fpsเป็นจังหวะภาพ ไม่ใช่simulation tick; UIcameraลื่นกว่าได้
+reuseposeตามweaponfamily+uniqueVFX ไม่generatewholeoutfitทุกcombination; ทุกstateรักษาหน้า/ลาย/สัดส่วน; pixelVFXด้วย
+exportmetadata: assetID/version,frameW/H,anchor,animations/frameindices/durations,directions,layers,hitframe,footshadow,palettevariantbounds
+ImageGenconcept/reference -> PixelLab sprite/animation -> cleanup/QA -> atlas+metadata -> import -> mobilevisualproof
+ไม่รันAIgenerationทุกturnขณะเล่น ไม่รับรองgeneratedframesถูกต้องโดยไม่ตรวจ
+
+## 4. Battle and mobile UX
+worldencounter -> shorttransition -> biome-matchingarena -> teams/timeline -> commands; leaderidentity/elementคง; bosscinematicเคยดูแล้วskip
+arenaobliqueฝ่ายผู้เล่นซ้ายfront3/back3 ศัตรูขวา<=10; frontหมายถึงใกล้คู่ต่อสู้ ไม่ใช่แถวบน
+top=timeline; nearboss=telegraph; bottom=contextcommands; inspecttargetpanel; battlelogเปิดได้
+16unitsยังselectable ไม่ย่อจนแตะไม่ได้ ใช้targetlistช่วย; bossไม่บังadds/HP; telegraphอ่านได้โดยไม่พึ่งสี
+mobilelandscapeเสนอ; portraitรองรับlanding/rotatepromptก่อน ไม่สัญญาfullportraitmarket; safeareas/fontscaling
+PCclickmove/keyboard; mobiletapmove/optionalstick; tooltipmouseกับtapinspectเทียบเท่า
+Thaiอ่านง่ายไม่บังคับpixel fontเล็กทุกtext; clearcontrast,icon+textสำหรับธาตุ/rarity,reduceeffects/shake options
+UI essential:
+- World: minimap,party,Auto,companionfollowเสนอ1ตัวเพื่อลดclutter
+- Battle: commands,items,captureeligibility,stopAutoalwaysvisible,warningboss
+- Companion: growth/gear/Bond/Rebirthแยก trained/effective skill levels
+- Team: no duplicate species validation front/back
+- Equipment:12slots,Appearance,Sigilsทั้งcompatible/duplicates/effectivecaps
+- Market:post-transferstats/Bond0/equipmentexcluded/eligibilityก่อนซื้อ
+- Journal:speciesfixedwildlevel,habitats,loot,5-levelbands
+- Hunt summary:time,EXP,actualgold,NPCvalueestimate,consumption,rareloot; marketestimateแยก
+ซื้อขาย/ถอด/ย่อย/ปล่อยให้reviewก่อนconfirm; lockedrareitemsไม่autosell
+
+## 5. Production QA
+ก่อนขยายcontentสร้างproof: 1playerใส่12slots+dual8Sigils+head3, racevariations, small/largepet, boss+adds, scene6vs10 บนmobile/PC
+ตรวจpixelgrid,transparentedges,anchors,outline/lightdirection,palette,occlusion,UItext,selectionareas,frameconsistency,performance
+pixelsizes/framecounts/viewportยังPROVISIONAL ต้องvisualproofก่อนล็อก อย่าสร้างhundredsassetsก่อนผ่าน
+asset registryเก็บsource/provenance/license/approval/version; ไม่ใช้externalgameartโดยอ้างinspiration
+
+---
+
+<a id="chapter-11"></a>
+
+# 11 — สถาปัตยกรรมและการป้องกันข้อมูลผิดพลาด
+
+> อำนาจข้อกำหนด: ยึดสถานะ C/P/O ในบท00; รายละเอียดที่ไม่ได้ยืนยันไว้ที่นั่นถือเป็น PROVISIONAL หรือ EXAMPLE ไม่ใช่คำยืนยันใหม่ของผู้ใช้
+
+สถานะ: PROVISIONAL — แบบสำหรับพิสูจน์ด้วยต้นแบบ ยังไม่ใช่ระบบที่ deploy แล้ว ไม่รับประกันจำนวนผู้เล่นพร้อมกันหรือต้นทุน
+
+## สารบัญ
+1. ขอบเขตแต่ละส่วน
+2. ผู้มีสิทธิ์ตัดสินสถานะ
+3. การเข้าไฟต์และรางวัล
+4. การซื้อขายและการกู้คืน
+5. การเชื่อมต่อและ Auto
+6. ความปลอดภัยและการปฏิบัติการ
+7. เอกสารเทคนิค
+
+## 1. ขอบเขตแต่ละส่วน
+| ส่วน | หน้าที่ที่เสนอ | ข้อห้ามสำคัญ |
+| --- | --- | --- |
+| Phaser client | วาดโลก/ฉากต่อสู้ รับinput แสดงeventจากserver | ไม่ตัดสินเงิน loot damage capture หรือเจ้าของของ |
+| Workers API | auth validation routing content manifests | ไม่เก็บสถานะถาวรไว้ในตัวแปรprocess |
+| Map Channel Durable Object | presence ตำแหน่งที่ตรวจแล้ว encounter reservation | ไม่ใช้หนึ่งobjectดูแลทุกmapของโลก |
+| Battle Durable Object | state machine คำสั่งลำดับเทิร์น server RNG combat event log | ไม่อาศัยFPS/นาฬิกาclientตัดสินcombat |
+| D1 economy/progression store | inventory wallet ownership escrow reward receipts quest claims | ไม่อ้างว่าtransactionนี้ครอบคลุมDOด้วย |
+| R2 / asset delivery | spritesheets audio manifests versioned assets | ไม่ใส่secretsในไฟล์public |
+| Shared rules package | pure functions schema typed IDs deterministic calculations | codeที่แชร์ได้ไม่แปลว่าผลclientเชื่อถือได้ |
+| Claude / Codex / ImageGen / PixelLab | ออกแบบ พัฒนา สร้างภาพ และตรวจงานระหว่างผลิต | ไม่มีLLM/ImageGenเรียกตอนผู้เล่นโจมตีแต่ละครั้ง |
+
+เริ่มserver authoritativeตั้งแต่vertical slice ระบบเดินส่งintent/ทิศและตรวจระยะตามเวลาserver
+ใช้interest areaและเป้าจำนวนentityต่อหน้าจอ; renderใกล้ก่อน ไม่ส่งinventoryทุกคนในmap
+คอนเทนต์โหลดเป็นversion bundle; ฉากต่อสู้ตรึงrulesVersionตั้งแต่เริ่มจนจบ
+Webเป็นclientหลักร่วม; Android/Desktopแพ็กภายหลังเลือกwrapper O12 ไม่ให้แต่ละแพลตฟอร์มมีสูตรดาเมจคนละชุด
+
+## 2. ผู้มีสิทธิ์ตัดสินสถานะ
+บัญชีมีcontrol session leaseเดียวตามP14; เชื่อมใหม่ต้องเปลี่ยนgenerationและตัดสิทธิ์คำสั่งจากsessionเก่า
+commandทุกคำสั่งมีcommandId, sessionGeneration, expectedStateVersion; owner/battleตรวจจากauthไม่รับaccountIdที่clientอ้างเอง
+Durable Objectเก็บstateถาวรก่อนackคำสั่งสำคัญและใช้sequence/event IDs
+ใช้RNGจากserver; snapshotผลสุ่มและversionไว้เพื่อretryผลเดิม ไม่สุ่มซ้ำเมื่อเน็ตหลุด
+ไม่ส่งseedสำหรับรางวัลหรือผลอนาคตให้client
+
+เงิน/ของ/คู่ใจมีcanonical ownerในD1ที่เลือกไว้; Battle DOถือsnapshotและreservation token ไม่ใช่บัญชีทรัพย์สินชุดที่สอง
+ระหว่างอยู่ไฟต์ ทีม อุปกรณ์ และcombat bagที่จองไว้แก้จากmarket/tradeไม่ได้
+ทุกmutationต้องผ่านserviceเดียวตามชนิดข้อมูล; ห้ามclientเขียนตารางตรง
+
+## 3. การเข้าไฟต์และรางวัล
+1. Clientขอencounter; serverตรวจMap/Channel/ตำแหน่ง/สิทธิ์เริ่ม/ทีม/สถานะไม่มีไฟต์อื่น
+2. Economy serviceจองloadoutและจำนวนไอเทมด้วยreservationIdที่unique; บันทึกsnapshotversion
+3. Battleสร้างแบบidempotentจากreservationที่ตรวจได้ หากstepล้มให้reconcilerปล่อยreservationที่ไม่เคยเริ่มตามstateจริง
+4. ทุกactionตรวจสถานะและเขียนevent; การใช้ไอเทมลดจำนวนที่จองไว้ ไม่หักinventoryฟรี ๆ หลายครั้งเมื่อretry
+5. การตายของenemy/captureสร้างentitlement IDเฉพาะ เช่น battleId:enemyId:resolution; ยืนยันว่าenemyถูกkillหรือcapturedได้อย่างเดียว
+6. Reward jobส่งentitlementที่serverลงทะเบียนไว้ไปeconomy service: insert receipt(unique) + item/EXP/currency grant ในtransactionเดียวกัน
+7. Retryส่งผลเดิม หากreceiptมีแล้วไม่แจกซ้ำ; เมื่อgrantสำเร็จจึงmarkdeliveredในbattle journal
+8. จบไฟต์คืนส่วนของที่ยังไม่ใช้ ปล่อยlock และบันทึกHP/MP; ระหว่างpending resolution ห้ามเริ่มไฟต์ใหม่ที่ใช้loadoutเดิม
+
+**เป้าหมายคือผลทางธุรกิจเกิดครั้งเดียวผ่านidempotency; ไม่อ้างว่าเครือข่ายส่งข้อความexactly-once**
+หากD1commitแล้วDOยังไม่ack ให้queryreceiptและปิดงานเดิม ไม่rollbackด้วยการลบของจากผู้เล่นโดยเดา
+หากDOบันทึกkillแล้วgrantยังไม่สำเร็จ ต้องretryจนได้receipt; ไม่มีการrolllootใหม่
+เก็บsettlement stateและreservationจริง ไม่แค่คิวในmemory
+ต้นแบบต้องเลือกการsettleรายenemyหรือfinalbatchให้ตรงกับกฎเก็บรางวัลที่ฆ่าแล้วในบท03; ห้ามloseแล้วลืมentitlementที่commitไว้
+
+## 4. การซื้อขายและการกู้คืน
+เริ่มmarketแบบescrowก่อนdirect tradeเพื่อลดพื้นที่ผิดพลาด
+- Listing: ตรวจowner/lock/level rulesที่เกี่ยวข้อง ย้ายassetเข้าescrow เก็บimmutable listing snapshot และเก็บค่าลงประกาศตามกฎ
+- Purchase: ตรวจผู้ซื้อและO01/O02/O04ที่ตัดสินแล้ว ณเวลาซื้ออีกครั้ง ตรวจbalanceและlistingversion
+- ทำsettlementเงินภาษีowner/bondreset/listingในtransactionเศรษฐกิจเดียวที่รองรับ; constraint/conditional writeต้องทำให้เงื่อนไขธุรกิจล้มทั้งรายการจริง
+- คำสั่งSQLที่อัปเดต0แถวไม่ได้แปลว่าtransactionล้มเอง ห้ามถือว่าbatchrollbackป้องกันbusiness raceครบแล้ว
+- ยกเลิก/หมดอายุรายการคืนเจ้าของเดิมแบบidempotent; ห้ามซื้อกับcancelสำเร็จพร้อมกัน
+- ไม่มีส่งassetก่อนแล้วค่อยหักเงินเป็นคนละrequestที่ไม่มีrecovery
+
+ถ้าแยกเศรษฐกิจหลายdatabase/objectในอนาคต ต้องออกแบบescrow saga/recoveryใหม่ ไม่ขยายatomicityข้ามshardโดยสมมติ
+ใช้ledgerเชื่อมmutationทั้งหมดด้วยoperationId; rollbackผู้ดูแลเป็นcompensating recordตรวจสอบย้อนหลังได้
+การรับมอนสเตอร์ผ่านgift/mail/tradeต้องใช้serviceตรวจเดียวกัน ไม่มีทางลัดเลเวลและBond
+
+## 5. การเชื่อมต่อและ Auto
+Autoทำงานเมื่อclientเปิดและheartbeatยังvalidเท่านั้น; ไม่ขายofflineprogress
+client background/disconnect: หยุดเริ่มencounterใหม่ทันทีเมื่อserverรับรู้; graceที่ตรวจการขาดการเชื่อมต่อเป็นO11 ไม่ใช่โควตาเล่น
+ภายในไฟต์ให้pause/guard/reconnectตามpolicyที่จะตัดสิน โดยห้ามอ้างว่าเวลาพักให้ฟาร์มต่อoffline
+ใช้lease/reconnecttokenและeventcursor; reloadไม่สร้างไฟต์หรือlootซ้ำ
+clientanimationเร็วขึ้นเป็นความสวยงาม ไม่เร่งserveraction rateเพื่อเพิ่มรายได้
+การpause/dropตั้งแต่encounterstartตรึงoriginModeแล้ว; ปิดAutoกลางไฟต์ไม่เปลี่ยนเป็นmanual reward
+
+## 6. ความปลอดภัยและการปฏิบัติการ
+ก่อนpublic testต้องมีauthและบัญชีทดสอบจริง, secret management, inputlimits, replay protection, authorization, economy auditและbackup restore drill
+Rate limitป้องกันspamต่อคำสั่ง ไม่ใช่จำกัดจำนวนรางวัลที่ผู้เล่นล่าอย่างถูกกฎ
+บันทึกเหตุกับเงิน/ทรัพย์สินทั้งสำเร็จและปฏิเสธ ลดข้อมูลส่วนบุคคล ไม่logpassword/token
+เป้าCCU, latency, deviceขั้นต่ำ, region, RPO/RTO และงบhostingเป็นO11; ทำloadtestตามเป้าก่อนกล่าวว่ารองรับMMO
+มีfeatureflagsหยุดtrade/claimหรือcontentที่ผิด โดยไม่ต้องปิดทุกระบบ; แจ้งผู้เล่นตรงไปตรงมา
+staging/prodแยกข้อมูล secret และeconomy; debug spawn/grantไม่มีในสิทธิ์ผู้เล่น
+
+## 7. เอกสารเทคนิค
+ตรวจแหล่งทางการวันที่2ตุลาคม2026; อ่านรุ่นปัจจุบันอีกครั้งตอนเขียนintegration ไม่คัดลอกAPIเก่าจากความจำ
+- [Durable Object SQLite storage](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/): storageมีtransactionและstrong consistencyในขอบเขตobjectของตน ไม่ใช่transactionรวมทุกบริการ
+- [D1 Database API](https://developers.cloudflare.com/d1/worker-api/d1-database/): ตรวจbatch semanticsและข้อจำกัดของAPIก่อนออกแบบsettlement
+- [Phaser documentation](https://docs.phaser.io/): จุดเริ่มต้นตรวจscene/input/renderer; ในการตรวจครั้งนี้หน้าเปิดไม่ได้ จึงไม่ได้อ้างเวอร์ชันหรือAPIเฉพาะ
+
+การจัดMap/Battleเป็นDOและledgerในD1เป็นข้อเสนอออกแบบของเอกสารนี้ ไม่ใช่คำรับรองจากCloudflareว่าเหมาะกับโหลดเกมนี้แล้ว
+
+---
+
+<a id="chapter-12"></a>
+
+# 12 — Data Contracts และกฎตรวจคอนเทนต์
+
+> อำนาจข้อกำหนด: ยึดสถานะ C/P/O ในบท00; รายละเอียดที่ไม่ได้ยืนยันไว้ที่นั่นถือเป็น PROVISIONAL หรือ EXAMPLE ไม่ใช่คำยืนยันใหม่ของผู้ใช้
+
+สถานะ: PROVISIONAL technical contracts; ใช้เป็นฐานschema/migrationsก่อนลงฐานข้อมูลจริง ตัวอย่างไม่ใช่production records
+
+## สารบัญ
+1. แยกdefinitionกับinstance
+2. สัญญาข้อมูลหลัก
+3. หน่วยและสถานะ
+4. Commands และevents
+5. Validators ที่ต้องมี
+
+## 1. แยกdefinitionกับinstance
+Definitionคอนเทนต์versionedและreviewได้; instanceเป็นทรัพย์สินและความก้าวหน้าของผู้เล่นที่serverดูแล
+`speciesId`กำหนดชนิด; `monsterInstanceId`กำหนดคู่ใจเฉพาะตัว; `spawnId`กำหนดตัวป่าในencounter อย่าใช้IDเดียวแทนสามสิ่ง
+`equipmentDefinitionId`ต่างจาก`equipmentInstanceId`; Sigilที่ติดแล้วอ้างiteminstance/slotจริง
+ชื่อภาษาไทย/อังกฤษไม่ใช้เป็นprimary key เปลี่ยนชื่อแล้วเจ้าของของต้องไม่เปลี่ยน
+
+## 2. สัญญาข้อมูลหลัก
+| Entity | Fieldsสำคัญ | Invariants |
+| --- | --- | --- |
+| SpeciesDefinition | id, version, fixedWildLevel, rank, archetype, allowedElements, skillIds[3], innatePassiveId, captureItemId, petEquipmentPoolId, lootTableId, sigilId, artId | fixedWildLevelเหมือนทุกmap; มี3skillแยกจากinnate |
+| MonsterInstance | id, speciesId, ownerId, currentLevel, xp, rebirthStage, element, growthProfile, growthHistoryVersion, trainedSkillLevels, bond, originRecord, ownershipVersion, lockState | captureเริ่ม1; elementอยู่ในallowed; bondresetเมื่อขาย |
+| MapDefinition | id, bandMin, bandMax, type, spawnEntries, bossEncounterId, travelLinks, tilesetId | bandเป็นคำแนะนำ ไม่ใช่ปรับlevelทุกspeciesอัตโนมัติ |
+| SpawnEntry | speciesId, weight, elementWeights, groupRules | ไม่มีwildLeveloverride; weightsมีหน่วยชัด |
+| EquipmentDefinition | id, slotType, weaponKind, handedness, requiredLevel, baseStats, maxSigilSlots, affixPoolId, visualSetId | weapon<=4; nonweapon<=1; offhandตรวจkindจริง |
+| EquipmentInstance | id, definitionId, ownerId, refineLevel, rolledAffixes, sigilSockets, lockState | duplicatesigilอนุญาต แต่ต้องผ่านcompatibilityทุกช่อง |
+| SigilDefinition | id, sourceSpeciesId, equipGroups, effectIds, stackingGroup, scope, baseDropProbability | probability0.00005–0.0005 ไม่สับสนเปอร์เซ็นต์ |
+| LootTable | id, version, sigilRoll, ordinaryEntries, maxTypesPerEnemy | 50–100uniqueitemรวมSigil; max5; ไม่มีrollศัตรูที่จับสำเร็จ |
+| SkillDefinition | id, kind, ownerKind, resourceCost, targetRule, effectSequence, cooldown, ranks, tags | no recursiveprocไม่มีเพดาน; active/passiveตรวจชนิดถูก |
+| BossDefinition | id, speciesId, phases, telegraphs, actionsPerRound, adds, captureWindow | enemyรวมparts/adds<=10; spawnedaddsไม่มีฟาร์มไม่จบ |
+| BattleState | id, rulesVersion, originMode, rosterSnapshot, turnOrder, currentTurn, rngStatePrivate, events, settlement | authoritative; originModeimmutable |
+| RewardReceipt | id, entitlementId, recipientId, payloadHash, status, committedAt | unique entitlement+recipient; sameIDdifferentpayloadปฏิเสธ |
+| MarketListing | id, sellerId, escrowAsset, price, feeSnapshot, status, version | assetขายอยู่ใช้ในbattle/ขายซ้ำไม่ได้ |
+| QuestDefinition | id, cadence, eligibility, objectives, rewards, version | dailyclaimcapไม่กลายเป็นglobalrewardcap |
+| AssetManifest | id, version, files, dimensions, directions, frameTags, anchors, paletteId, checksum, license | ห้ามmanifestอ้างไฟล์ขาดหรือframeอยู่นอกatlas |
+
+## 3. หน่วยและสถานะ
+- เงินเป็นจำนวนเต็มหน่วยเล็กสุด ใช้ชนิดข้อมูลที่ตรวจoverflowได้ ไม่ใช้floating money
+- probabilityในconfigเป็น0–1; UIใช้percent. 0.005%=0.00005, 0.05%=0.0005; Auto0.70เป็นmultiplier ไม่ใช่0.70%
+- statpercentใช้หน่วยbasis pointsหรือfixedprecisionที่เลือกทั้งระบบ; สูตรบท03เป็นnotationมนุษย์ต้องแปลงอย่างชัด
+- timeเป็นserverUTC; displaylocal; level/xp/refine/bondเป็นจำนวนเต็มและvalidatebounds
+- growth seed/rollไม่มาจากclient; Rebirthใช้growthhistoryที่กำหนด ไม่สุ่มจนได้ของดีที่สุดฟรี
+- contentstatus `draft|validated|published|retired`; retiredห้ามทำinstanceผู้เล่นหาย มีmigrationเฉพาะ
+- ทุกconfigมีdecisionIdและstatus; OPENไม่มีproductiondefaultที่เลือกแทนผู้ใช้
+
+ตัวอย่างconfigบางส่วน (JSONเพื่ออธิบาย ไม่ใช่ไฟล์ตั้งค่าพร้อมrun):
+```json
+{
+  "rulesVersion": "design-1.0",
+  "confirmed": {
+    "playerMaxLevel": 200,
+    "maxCompanions": 5,
+    "maxEnemyUnits": 10,
+    "captureWildLevelGap": 5,
+    "capturedInitialLevel": 1,
+    "maxSigilsPerWeapon": 4,
+    "maxSigilsPerNonWeapon": 1,
+    "allowDuplicateSigils": true,
+    "allowDuplicateSpeciesInTeam": false,
+    "autoCapture": false
+  },
+  "prototype": {
+    "autoHuntLootRetention": 0.70,
+    "class2Level": 50,
+    "class3Level": 120,
+    "raceAwakeningLevel": 200
+  },
+  "unresolved": {
+    "tradeLevelGap": null,
+    "companionEffectiveLevelGap": null,
+    "maxRebirths": null
+  }
+}
+```
+
+## 4. Commands และevents
+Command: `commandId`, `sessionGeneration`, `expectedStateVersion`, `type`, `payload`; ตรวจpermission/turn/resourcesก่อนmutation
+Response: accepted/rejected, reasonCode, stateVersion, eventCursor; errorไม่เปิดเผยseedหรือข้อมูลเจ้าของคนอื่น
+Eventsตัวอย่าง: `ActionResolved`, `ItemConsumed`, `EnemyDefeated`, `CaptureResolved`, `RewardEntitled`, `RewardGranted`, `OwnershipTransferred`, `BondReset`
+เก็บcauseId/operationIdเพื่อหาเหตุ; transportอาจส่งซ้ำได้ clientdedupeeventId
+เงินและของแสดงpendingได้แต่ห้ามนำไปใช้ก่อนservercommit
+Errorsสำคัญ: `STALE_STATE`, `NOT_OWNER`, `ASSET_LOCKED`, `LEVEL_INELIGIBLE`, `DUPLICATE_SPECIES`, `SIGIL_INCOMPATIBLE`, `NO_VALID_CAPTURE_WINDOW`, `UNRESOLVED_RULE`
+
+## 5. Validators ที่ต้องมี
+1. ReferencedIDsมีจริง/versionตรง; ทุกpublishedmapมีbossและrouteเข้าออกที่เดินได้
+2. ทุกspeciesมี3skills+1innate, ครบelement/loot/capture/petgear/art; ความซ้ำmechanicรายงานให้คนออกแบบตรวจ ไม่เดาว่าIDต่าง=สกิลไม่ซ้ำ
+3. ทุกlootpool50–100uniqueitems, Sigilsourceถูก, max5typesและretentionไม่rollใหม่แทนของหาย
+4. ทีม5speciesไม่ซ้ำแม้ธาตุต่าง; inventoryไม่ใช้paginationlimitเป็นเพดานจำนวนคู่ใจ
+5. HEADGEARsigilใช้ได้ทั้ง3slot; main/offweaponแต่ละ4; shield1; duplicateeffectstackingตามdefinition
+6. Monsterหลายmapไม่มีleveloverride; capture/tradeเริ่ม/คงlevelตามคนละกฎ; Rebirthไม่eraseowner/bondโดยไม่มีข้อกำหนด
+7. ราคา/NPCbuy/sell/craftไม่มีวงจรซื้อNPCแล้วขายคืนกำไรแน่นอนโดยไร้inputจำกัด
+8. Featureที่อาศัยOPENไม่มีการเปิดproductionเงียบ ๆ; testfixturesใช้explicitoverridesที่ระบุว่าไม่ใช่คำตัดสิน
+
+---
+
+<a id="chapter-13"></a>
+
+# 13 — แผนพัฒนาและเกณฑ์ผ่าน
+
+> อำนาจข้อกำหนด: ยึดสถานะ C/P/O ในบท00; รายละเอียดที่ไม่ได้ยืนยันไว้ที่นั่นถือเป็น PROVISIONAL หรือ EXAMPLE ไม่ใช่คำยืนยันใหม่ของผู้ใช้
+
+สถานะ: PROVISIONAL scope; เป็นลำดับลดความเสี่ยง ไม่ใช่กำหนดส่งหรือประมาณชั่วโมงงาน
+
+## สารบัญ
+1. ลำดับพัฒนา
+2. Vertical slice
+3. เกณฑ์ตรวจระบบ
+4. การทดลองบาลานซ์และขยายคอนเทนต์
+
+## 1. ลำดับพัฒนา
+| ระยะ | ผลงานที่ต้องได้ | เกณฑ์ก่อนเดินต่อ |
+| --- | --- | --- |
+| A — Design contracts | decisionregister, schemas, deterministic combat kernel, artproof | ไม่มีความขัดแย้งหลัก; pendingrulesไม่ถูกhardcodeเป็นconfirmed |
+| B — Walking slice | ผู้เล่น2คนเห็นกันในMap/Channel เดิน/collision/เปลี่ยนฉาก | serverตรวจmovement; reconnectไม่duplicateplayer |
+| C — Combat slice | 1+5vsสูงสุด10, items, guard, buffs, capture, battlelog | serverเป็นเจ้าของผล, retryไม่ใช้ของซ้ำ |
+| D — Persistent loop | inventory equipment Sigil growth skill/bond/Rebirth prototype | restartแล้วไม่หาย; ownership locksและrewardreceiptผ่าน |
+| E — Classic hunting | AutoHunt/Battle Party loot50–100 boss dailyweekly | Autoเฉพาะเปิดเกม; ไม่มีenergy/quotaแฝง; drop.70ครั้งเดียว |
+| F — Economy | marketescrow taxes sinks pettrade | raceconditionซื้อซ้อน/ขายระหว่างรบไม่dupe; resolveO01/O02/O04 |
+| G — Art/clients | animation layeredgear responsiveUI web+Android+desktoppackage | มือถือกดเป้าหมายครบ6vs10; งบperformanceผ่านอุปกรณ์ที่เลือก |
+| H — Closed test | monitoring support recovery contentmanifest deployment | load/failure/restore tests; livebudgetและเงื่อนไขOPENที่เกี่ยวข้องสรุป |
+
+ไม่ทำPvP/worldboss/guildwarก่อนcoreloopผ่าน; ไม่สร้าง200แผนที่ก่อนหนึ่งแผนที่เดิน/สู้/เซฟ/ซื้อขายทำงานจริง
+
+## 2. Vertical slice ที่เสนอ
+- เมือง1 + พื้นที่ผจญภัย6 ครอบคลุม2ช่วง5เลเวล เพื่อพิสูจน์หลายทางเลือก
+- มอนสเตอร์ทั่วไป18ชนิด + บอส6ชนิด; ทุกspeciesมีcaptureและ3+1kit, fixedwildlevel และหลายธาตุตามตาราง
+- อาชีพทดสอบ3สาย, เผ่าทดสอบ3เผ่า ก่อนนำ9/8แบบร่างลงครบ
+- equipmentครบ12slot, ชุดlayerภาพอย่างน้อย1ชุดทุกslot; dualweapon8Sigilและหมวก3ชิ้นพิสูจน์จริง
+- คอนเทนต์เล่นปกติLv1–10/15; ทดสอบLv50/120/200ด้วยfixturesในstagingเพื่อเช็กสูตรและtransition ไม่แจกdebuglevelบนlive
+- speciesในsliceยังต้องมีloot50–100รายการที่ตรวจแล้ว: ใช้sharedmaterialsตามecologyได้ ไม่สร้างplaceholder50ชื่อเพื่อหลอกvalidator
+- UIรวมtargetlist, bag, team, journal, map/channel, autoeditor, equipment/fashion, capture, boss, marketprototype
+
+จำนวนนี้ยังเป็นงานมาก ให้แยกmilestoneย่อยหนึ่งencounterก่อน ไม่อ้างว่าAIสร้างทั้งหมดเสร็จในpromptเดียว
+
+## 3. เกณฑ์ตรวจระบบ
+| กลุ่ม | กรณีที่ต้องพิสูจน์ |
+| --- | --- |
+| Combat | turnorder/tie deterministic; speedbuffไม่แทรกactionฟรี; KO/revive/statusdurationชัด; damageexampleบท03ตรง |
+| Team | 5ผ่าน6ไม่ผ่าน; speciesเดียวธาตุต่างยังซ้ำ; enemy+parts/addไม่เกิน10 |
+| Capture | player20จับwild25ได้26ไม่ได้; successfulLv1; ไม่มีautocapture; failedcaptureกินitemครั้งเดียว; bossมีหน้าต่างจับ |
+| Ownership | ขายแล้วbond0; relogไม่คืนbond; buyerlevelตรวจตอนcommit; Rebirthpetไม่มีช่องข้ามoriginlicense |
+| Loot | 50–100candidateแต่<=5types/kill; captureไม่ให้killloot; .005%conversionถูก; manualstartautobattle1x; Hunt.7ไม่คูณซ้ำ |
+| Sigil | dual4+4ผ่าน; shield2ไม่ผ่าน; duplicatecompatibleผ่าน; HEADGEARทั้ง3ผ่าน; wronggroupไม่ผ่าน; removalไม่แตะpremium |
+| Premium | ไม่มีpurchaseเพิ่มdrop/EXP/action/bagpower; paidcosmeticไม่มีtrade/salvageเป็นเงินหรือmaterialตามแบบP |
+| Network | disconnect/reconnectระหว่างใช้item/capture/claim/trade; duplicatecommands; processrestart; replayoldsession |
+| Concurrency | buyer2คนซื้อlistingเดียว; sell+equip; battle+trade; claim2ครั้ง; retryaftercommit; outboxdeliveryซ้ำ |
+| Persistence | rewardcommitแล้วackหาย; reservationค้าง; contentversionเปลี่ยนกลางไฟต์; restoreledgerไม่dupe |
+| Mobile art | 12layersทุกdirection; ไม่มีสลับมือเมื่อmirror; UIเป้าหมาย16ตัวไม่ทับ; Thaiไม่ตัด; safearea/touchtargets |
+
+ใช้unit/property testsสำหรับrulesและinvariants; integrationtestsสำหรับtransaction/authority; failureinjectionสำหรับrecovery; visualQAสำหรับpixel/UI
+ไม่ถือว่าดูหน้าจอแล้วผ่านtransaction หรือผ่านunitแล้วพร้อมรองรับผู้เล่นจริง
+
+## 4. การทดลองบาลานซ์และขยายคอนเทนต์
+สูตรและ.70เป็นstartingpoints ต้องรันsimulationและplaytestก่อนlive
+ทดสอบระดับ1/25/50/75/120/160/200หลายbuild: burst/sustain/control/status/heal/tank/item/bond/Rebirth และdualSigil8
+วัดwinrate/turns/consumables/netgoldต่อชั่วโมง/rarecreationต่อชั่วโมง/monsterpickrate/maptraffic และความต่างmanualกับAuto
+ใช้seededtrialsสำหรับreproducibility แต่แยกseedserverproduction; rare0.005%ต้องใช้sampleใหญ่และconfidenceinterval ไม่ตัดสินจาก100kills
+เทียบ.60/.70/.80โดยsamecontentและplayerpower; เลือกจากnetcurrencyและความรู้สึกว่าAutoยังมีความหวังได้ของ ไม่ต้องพึ่งquota
+EXPcurveLv1–200ต้องออกแบบตารางเวลาต่อช่วงและแหล่งEXPก่อนปล่อยจริง เอกสารนี้ยังไม่มีตารางEXPที่ผ่านการทดสอบ
+
+Expansionเพิ่มbiome/species/mechanics/sidegrade/recipesก่อนเพิ่มเพดานstat; ไม่ทำมอนเดิมLvสูงแปะชื่อใหม่
+ทุกpatchระบุpowerbudget, counterplay, sinks/sources, existingitemrelevance, migration และrollbackcontentversion
+ตามผู้ใช้ทุกของมีประโยชน์ต้องมีuse/vendorfloor ไม่รับประกันว่าผู้เล่นจะตั้งราคาขายตลาดสูงได้ทุกชิ้นตลอดไป
+
+---
+
+<a id="chapter-14"></a>
+
+# 14 — วิธีทำงานร่วมกันของ Claude และ Codex
+
+> อำนาจข้อกำหนด: ยึดสถานะ C/P/O ในบท00; รายละเอียดที่ไม่ได้ยืนยันไว้ที่นั่นถือเป็น PROVISIONAL หรือ EXAMPLE ไม่ใช่คำยืนยันใหม่ของผู้ใช้
+
+## แหล่งอ้างอิงและลำดับคำสั่ง
+อ่าน00_DECISIONSก่อนเริ่มfeature; เปิดเฉพาะบทเกี่ยวข้องตามงาน อย่ายัดทั้งspecลงpromptทุกครั้ง
+คำสั่งผู้ใช้ล่าสุดมีอำนาจเหนือเอกสาร; อัปเดตdecisionและเอกสารที่พึ่งพากันเมื่อมีการเปลี่ยนจริง
+CONFIRMEDต้องรักษา; PROVISIONALใช้ในต้นแบบพร้อมบอกสมมติฐาน; OPENทำinterface/testfixtureได้แต่ไม่เลือกแทนเพื่อเปิดlive
+ตัวเลขในEXAMPLEไม่ใช่dataที่พร้อมpublish ชื่อdraftในอาชีพ/เผ่าไม่ใช่การอ้างว่าเป็นชื่อเดิมที่ผู้ใช้อนุมัติ
+
+## วิธีแบ่งงาน
+ClaudeและCodexใช้repoและcontractsชุดเดียวกัน แบ่งตามfeatureหรือไฟล์ ไม่แบ่งสูตรเดียวออกเป็นสองแหล่งความจริง
+บทบาทสลับกันได้ เช่นคนหนึ่งออกแบบcontract/acceptance อีกคนimplement/review; ไม่ต้องให้คนหนึ่งเป็นผู้สั่งตายตัว
+ทำissueเล็กมีgoal, decisionIDs, inputs, outputs, acceptance, dependencies, unresolvedrules, affectedfiles
+ไม่เขียนทับงานที่อีกคนกำลังแก้; ถ้าทำพร้อมกันให้ใช้branch/worktreeและintegrationownerที่ระบุ ไม่สั่งagentส่งข้อความหาคนอื่นเอง
+อ้างdiff/testlogs/artpreviewจริง ไม่ตอบว่า"เสร็จ"จากเพียงสร้างไฟล์เปล่า
+
+## วงจรต่อหนึ่งงาน
+1. ตรวจrepoและAGENTS.md/คำสั่งโครงการที่มีจริง ไม่เดาว่ามีframework/configแล้ว
+2. สรุปกติกาที่เกี่ยวข้องและสถานะของมัน เลือกขอบเขตที่จบตรวจได้
+3. แก้schema/dataก่อนหรือพร้อมlogic; clientserverใช้contractsเดียวกัน
+4. เขียนโค้ดและตรวจเฉพาะความเสี่ยงที่เปลี่ยน; สำหรับเงิน/ownershipต้องมีconcurrency/recoverytests
+5. ตรวจvisualเมื่อเปลี่ยนart/UI; ภาพconceptไม่ใช่spritesheetที่animationพร้อมใช้
+6. รายงานสิ่งที่ทำ สิ่งที่ตรวจ และข้อจำกัดที่เหลือ; updateDecisionเมื่อได้รับการตัดสิน ไม่ยกระดับPเป็นCเอง
+
+## Prompt เริ่มงานที่ใช้ซ้ำ
+```text
+อ่านทะเบียนข้อกำหนดและบทที่เกี่ยวข้องจาก Game Design Master
+ทำ vertical slice ของ [feature] ใน repo ปัจจุบัน
+รักษา CONFIRMED ใช้ PROVISIONAL เป็น config ที่ระบุชัด
+ห้ามเลือก OPEN เป็นกฎ production เอง ให้ทำส่วนที่ไม่ติดคำตัดสินต่อ
+ก่อนแก้ตรวจโครงสร้างจริงและไฟล์คำสั่งของ repo
+ส่ง implementation, meaningful validation และรายการข้อจำกัดที่ยังเหลือ
+```
+
+## สิ่งที่ห้ามเติมเอง
+- Energy, offlineincome, globaldailyfarmcap, autocapture, payforpower
+- Monsterleveloverrideตามmap; capturedmonsterคงwildlevel; duplicateSpeciesในทีม
+- Sigilnameuniqueconstraint, headgearแยกsigilบนกลางล่าง, weaponรวมไม่เกิน4, premiumremoval
+- สูตรdamage/clientRNGเป็นauthority; marketplaceที่สองฝั่งcommitแยกโดยไม่มีrecovery
+- สัญญาว่าgamebalanceสมบูรณ์หรือไม่มีช่องโหว่ก่อนsimulationและtest
+
+## งานแรกที่แนะนำ
+เริ่มPhaseAด้วยschema + stat/combat kernelและตัวอย่างไฟต์1+1vs2ก่อน เพิ่ม1+5vs10เมื่อcoreผ่าน
+พร้อมกันในแผนงานทำartproofหนึ่งตัวครบ4ทิศและgear12layers แต่ไม่ถือเป็นคำสั่งให้spawnหลายagentอัตโนมัติ
+ก่อนfeaturetrade/rebirthlive ให้แก้O01–O04; ก่อนcombatenginefinalให้แก้O15
+การแนบMarkdownให้Claudeอ่านคือการให้บริบท ไม่ได้หมายความว่าติดตั้งskillลงทุกผลิตภัณฑ์โดยอัตโนมัติ
+
+---
+
+<a id="chapter-15"></a>
+
+# 15 — แม่แบบเพิ่มคอนเทนต์
+
+> อำนาจข้อกำหนด: ยึดสถานะ C/P/O ในบท00; รายละเอียดที่ไม่ได้ยืนยันไว้ที่นั่นถือเป็น PROVISIONAL หรือ EXAMPLE ไม่ใช่คำยืนยันใหม่ของผู้ใช้
+
+สถานะ: Templates; ทุกrecordเริ่มDRAFT ห้ามpublishจนค่าบังคับครบและผ่านvalidator
+
+## Monster brief
+| Field | ต้องระบุ |
+| --- | --- |
+| Identity | speciesId, ชื่อ, silhouette, ecology, fixedWildLevel, rank, archetype |
+| Habitat | mapIdsและเหตุผลที่พบร่วม; ไม่แก้levelตามmap |
+| Elements | allowedElements, น้ำหนักต่อพื้นที่, visualhintที่ไม่อ่านด้วยสีอย่างเดียว |
+| Battle identity | บทบาท, จุดแข็ง, จุดอ่อน, counterplay, ความแตกต่างจากspeciesอื่น |
+| Skills | 3skillพร้อมkind/target/cost/cooldown/effects/rankgrowth + innatePassive1 |
+| Growth | equalbudget/weights/variationboundsและhistoryversion |
+| Capture | itemจากชนิดนี้, basechance, targetconditions, bosswindowถ้ามี |
+| Loot | 50–100itemIDsรวมSigilพร้อมweight/probabilityunitsและmax5type |
+| Sigil | ชื่อชนิด, equipgroups, effectscope, duplicatesbehavior, drop.005–.05% |
+| Pet gear | ชิ้นเฉพาะ, modifyabilityไหน, ไม่เพิ่มactiveใหม่โดยไม่มีข้อกำหนด |
+| Rebirth | unlockแต่ละขั้นตามpolicyที่ตัดสิน, levelgates, visualvariant |
+| Art | sizes, directions, tags, anchors, palette, hit/cast/KOframes |
+| Tests | nonduplicatekitreview, originlevel, probability, status/proc, economybudget |
+
+## Map brief
+- id/name/5levelband/type/biome/lighting/weather/collision/camera/entryexit
+- จุดเด่นที่ต่างจากmapช่วงเดียวกัน เช่นแผนที่เปิดเน้นกลุ่มเล็กกับถ้ำเน้นสถานะ ไม่ใช่เปลี่ยนสีพื้นอย่างเดียว
+- rosterอ้างspeciesIdเดิมและสัดส่วนต่าง; dedicatedใหม่ต้องมีkitและecologyเฉพาะ
+- paths/packsize/respawnpolicy/manual-autoeligibility
+- bossEncounterId/trigger/arena/phase/capture/rewards; เมืองใช้trialarenaตามP17
+- resources/crafts/quests/collectionreasonsให้กลับมา; noforcedweeklyexclusiveprogression
+- mobilevisibility/occlusion/accessibility/performancebudget
+
+## Sigil brief
+```text
+id:
+sourceSpeciesId:
+displayName: ชื่อมอนสเตอร์ + Sigil
+baseDropProbability: decimal 0–1
+compatibleEquipmentGroups: [ ... ]
+effect:
+  scope: weapon_local | wearer_global | skill_specific
+  trigger:
+  valueByStack:
+  cap:
+  cooldown:
+  duplicateStackRule:
+  procChainRule:
+  excludedTargetsOrEvents:
+uiDescription:
+balanceCost:
+status: draft
+```
+หมวกใช้HEADGEARร่วมไม่เพิ่มHEAD_UPPER_ONLY; sigilอาวุธตรวจweaponkindตามเจตนา; instanceซ้ำallowedไม่ได้แปลว่าทุกeffectต้องคูณทบ
+
+## Boss brief
+- identity/fixedwildlevel/map/entry/captureitemและcapturewindow
+- แต่ละphase: trigger, visibletelegraph, actionorder, playerresponsewindow, mechanic, failureeffect, recovery
+- adds/partsมีunitbudgetรวม<=10; ไม่มีaddรีสปอว์นให้loot/EXPไม่จำกัดในไฟต์เดียว
+- difficultyไม่อาศัยHPสูงอย่างเดียว; มีทางรับมืออย่างน้อย2แนวทีม เช่นguardกับcleanse/interruptตามชนิด
+- Auto Battleทำได้แต่ไม่รับประกันทุกbuildชนะ; AutoHuntไม่เริ่มเอง
+- reward/retreat/defeat/captureownershipและeventreceiptชัด
+
+## Item/craft brief
+id/name/category/tier/source/vendorprice/uses/tradability/stacksize/icon
+recipeinputs/goldfee/outputcertainty/affixpool/socketcount/requiredprofession/refundrules
+ตรวจbuy-craft-sellcycles; มีประโยชน์แต่ไม่ทุกitemต้องใช้ในสูตรendgame
+
+## Content release gate
+ต้นฉบับภาพ/เสียงมีสิทธิ์ใช้, ภาษา/tooltipตรงformula, manifestครบ, migratedinstancesไม่หาย, simulationผ่านงบที่ตกลง และไม่มีrecordDRAFTหลุดไปproduction
+
+---
+
+## สถานะเมื่อส่งมอบ
+
+เอกสารครบ16บท มีทะเบียนคำตัดสิน แบบระบบ สูตรเริ่มต้น สัญญาข้อมูล แผนพัฒนา เกณฑ์ตรวจ และแม่แบบเพิ่มคอนเทนต์
+ยังไม่ได้สร้างเกมหรือทำbalance/loadtestsจากเอกสารนี้ ตัวอย่างเงิน จำนวนแผนที่ สูตร และอัตราAutoต้องตรวจด้วยต้นแบบ
+งานถัดไปที่เหมาะสม: PhaseA — schema + combat kernel + art proof แล้วต่อvertical sliceทีละระบบตามบท13

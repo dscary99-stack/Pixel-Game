@@ -1,0 +1,27 @@
+# PROVISIONAL (P11): candidate Cloudflare layout. Not deployed. Load/failure tests still required.
+name = "pixel-monster-rpg-api"
+main = "src/index.ts"
+compatibility_date = "2026-10-01"
+
+[vars]
+ENVIRONMENT = "dev"
+DEV_AUTH = "true"
+
+[[durable_objects.bindings]]
+name = "BATTLE"
+class_name = "BattleDurableObject"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["BattleDurableObject"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "pixel-monster-rpg-dev"
+# Placeholder: create with `wrangler d1 create pixel-monster-rpg-dev` and paste the id here.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+# Staging/production must override ENVIRONMENT and remove DEV_AUTH.
+[env.staging.vars]
+ENVIRONMENT = "staging"
