@@ -8,6 +8,8 @@ import {
   DEV_FIXTURE_RULES,
   TILE_LEGEND,
   exampleContentMaps,
+  expProgress,
+  unspentPoints,
   exampleMapRegistry,
   findPath,
   inEngageRange,
@@ -24,7 +26,7 @@ import {
 } from "@pmrpg/shared";
 import { ELEMENT_COLOR } from "./battle-scene";
 import type { CharacterApi, CharacterBundle } from "./character-api";
-import { equipmentPanel, shopPanel, teamPanel, vitals } from "./character-ui";
+import { equipmentPanel, shopPanel, statsPanel, teamPanel, vitals } from "./character-ui";
 import type { WorldTransport } from "./world-transport";
 
 const W = 960;
@@ -97,9 +99,9 @@ export class WorldScene extends Phaser.Scene {
     const style = { fontFamily: "sans-serif", fontSize: "13px", color: "#ffffff", backgroundColor: "#00000099", padding: { x: 8, y: 6 } };
     this.add.text(8, 8, this.transport.label, { ...style, color: "#f2c94c" }).setScrollFactor(0).setDepth(100);
     this.hud = this.add.text(8, 40, "", style).setScrollFactor(0).setDepth(100);
-    this.notice = this.add.text(W / 2, H - 40, "", { ...style, fontSize: "15px" }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
+    this.notice = this.add.text(W / 2, H - 90, "", { ...style, fontSize: "15px" }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
     this.add
-      .text(W - 8, 8, `ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · T ทีม · E อุปกรณ์ · B ร้าน (ในเมือง)" : ""}`, style)
+      .text(W - 8, 8, `ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · C สเตตัส · T ทีม · E อุปกรณ์ · B ร้าน (ในเมือง)" : ""}`, style)
       .setOrigin(1, 0)
       .setScrollFactor(0)
       .setDepth(100);
@@ -112,10 +114,12 @@ export class WorldScene extends Phaser.Scene {
     kb.on("keydown-T", () => void this.openTeam());
     kb.on("keydown-E", () => void this.openEquipment());
     kb.on("keydown-B", () => void this.openShop());
+    kb.on("keydown-C", () => void this.openStats());
     if (this.api !== null) {
       const button = (x: number, label: string, open: () => Promise<void>) =>
         this.add
-          .text(x, 100, label, { ...style, backgroundColor: "#463f6b", padding: { x: 12, y: 10 } })
+          .text(x, H - 8, label, { ...style, backgroundColor: "#463f6b", padding: { x: 12, y: 10 } })
+          .setOrigin(0, 1)
           .setScrollFactor(0)
           .setDepth(100)
           .setInteractive({ useHandCursor: true })
@@ -125,7 +129,8 @@ export class WorldScene extends Phaser.Scene {
           });
       const team = button(8, "ทีมคู่ใจ (T)", () => this.openTeam());
       const gear = button(team.x + team.width + 8, "อุปกรณ์ (E)", () => this.openEquipment());
-      button(gear.x + gear.width + 8, "ร้าน (B)", () => this.openShop());
+      const shop = button(gear.x + gear.width + 8, "ร้าน (B)", () => this.openShop());
+      button(shop.x + shop.width + 8, "สเตตัส (C)", () => this.openStats());
     }
     this.input.on("pointerdown", (p: Phaser.Input.Pointer) => this.tapMove(p));
 
@@ -358,12 +363,19 @@ export class WorldScene extends Phaser.Scene {
     const c = this.bundle?.character;
     if (c === undefined) return void this.hud.setText(where);
     const v = vitals(c, this.bundle?.equipment ?? []);
-    this.hud.setText(`${where}\n${c.name} Lv${c.level} · HP ${v.hp}/${v.maxHp} · MP ${v.mp}/${v.maxMp} · ทีม ${c.team.length}/5 · เหรียญ ${this.bundle?.coins ?? 0}`);
+    const xp = expProgress(rules, c.xp, rules.confirmed.playerMaxLevel.value);
+    const points = unspentPoints(rules, c.level, c.primaryStats);
+    this.hud.setText(`${where}\n${c.name} Lv${c.level} (EXP ${xp.need === null ? "MAX" : `${xp.into}/${xp.need}`})${points > 0 ? ` · แต้มว่าง ${points}` : ""} · HP ${v.hp}/${v.maxHp} · MP ${v.mp}/${v.maxMp} · ทีม ${c.team.length}/5 · เหรียญ ${this.bundle?.coins ?? 0}`);
   }
 
   private async reloadCharacter() {
     if (this.api === null) return;
+    const before = this.bundle?.character.level;
     this.bundle = (await this.api.get()) ?? this.bundle;
+    const after = this.bundle?.character.level;
+    if (before !== undefined && after !== undefined && after > before) {
+      this.flash(`เลเวลอัป! Lv${after} · ได้แต้มสเตตัส +${(after - before) * rules.provisional.statPointsPerLevel.value} (กด C)`);
+    }
     this.refreshHud();
   }
 
@@ -379,6 +391,13 @@ export class WorldScene extends Phaser.Scene {
   private openEquipment() {
     return this.withPanel("เปลี่ยนอุปกรณ์ได้นอกไฟต์เท่านั้น", async (api, bundle) => {
       await equipmentPanel(api, bundle);
+    });
+  }
+
+  /** Stat points (P03). Not during a fight. */
+  private openStats() {
+    return this.withPanel("ลงแต้มได้นอกไฟต์เท่านั้น", async (api, bundle) => {
+      await statsPanel(api, bundle);
     });
   }
 

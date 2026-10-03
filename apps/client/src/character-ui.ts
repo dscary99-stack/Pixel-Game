@@ -22,7 +22,12 @@ import {
   type Element,
   type EquipSlot,
   type EquipmentView,
+  type PrimaryStats,
   type SigilGroup,
+  PRIMARY_STATS,
+  expProgress,
+  statRaiseCost,
+  unspentPoints,
 } from "@pmrpg/shared";
 import { ApiError, type CharacterApi, type CharacterBundle } from "./character-api";
 
@@ -547,6 +552,107 @@ export function shopPanel(api: CharacterApi, start: CharacterBundle): Promise<Ch
       body.append(list);
       body.append(el("div", { class: "pm-note" }, "\"เหรียญ\" เป็นชื่อชั่วคราว · ราคาเป็นค่าทดลอง (P12) · ขายได้ในเมืองเท่านั้น"));
       sellAll.disabled = !rows.some((r) => r.def.kind === "material");
+    };
+    draw();
+  });
+}
+
+const STAT_NAMES: Record<keyof PrimaryStats, string> = {
+  STR: "STR พลังกาย",
+  VIT: "VIT ความทนทาน",
+  INT: "INT ปัญญา",
+  DEX: "DEX ความแม่น",
+  AGI: "AGI ความว่องไว",
+  SPI: "SPI จิตวิญญาณ",
+};
+
+/**
+ * Stat points (P03): +3 per level, cost 1/2/3 per point by band, cap 150, never down. The preview
+ * uses the shared formulas; the server checks the same rules and the version.
+ */
+export function statsPanel(api: CharacterApi, start: CharacterBundle): Promise<CharacterBundle> {
+  return new Promise((resolve) => {
+    const { panel, close } = overlay();
+    let bundle = start;
+    let draft: PrimaryStats = { ...start.character.primaryStats };
+    const body = el("div");
+    const error = el("div", { class: "pm-error", role: "alert" });
+    const actions = el("div", { class: "pm-actions" });
+    const reset = el("button", { type: "button" }, "ล้างที่เลือก");
+    const cancel = el("button", { type: "button" }, "ปิด");
+    const save = el("button", { type: "button", class: "primary" }, "ยืนยันลงแต้ม");
+    actions.append(reset, cancel, save);
+    panel.append(el("h2", {}, "สเตตัส"), body, error, actions);
+    cancel.addEventListener("click", () => {
+      close();
+      resolve(bundle);
+    });
+    reset.addEventListener("click", () => {
+      draft = { ...bundle.character.primaryStats };
+      draw();
+    });
+    save.addEventListener("click", async () => {
+      save.disabled = true;
+      error.textContent = "";
+      try {
+        const r = await api.allocate(bundle.character.version, draft);
+        bundle = { ...bundle, character: r.character };
+        draft = { ...r.character.primaryStats };
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+        if (e instanceof ApiError && e.code === "STALE_VERSION") {
+          bundle = (await api.get()) ?? bundle;
+          draft = { ...bundle.character.primaryStats };
+        }
+      }
+      draw();
+    });
+
+    const draw = () => {
+      body.replaceChildren();
+      const c = bundle.character;
+      const cap = RULES.confirmed.playerMaxLevel.value;
+      const xp = expProgress(RULES, c.xp, cap);
+      const left = unspentPoints(RULES, c.level, draft);
+      const d = deriveStats(c.level, draft, gearBonuses(wornGear(bundle.equipment, equipmentDefs).defs));
+      body.append(
+        el("div", { class: "pm-stats" }, `${c.name} Lv${c.level} · EXP ${xp.need === null ? "สูงสุด" : `${xp.into.toLocaleString()}/${xp.need.toLocaleString()}`} · EXP สะสม ${c.xp.toLocaleString()}`),
+        el("div", { class: "pm-stats", "data-points": String(left) }, `แต้มว่าง ${left}`),
+      );
+      const list = el("ul", { class: "pm-list" });
+      for (const k of PRIMARY_STATS) {
+        const li = el("li", { "data-stat": k });
+        const next = draft[k] + 1;
+        const cost = next > RULES.provisional.manualStatCap.value ? null : statRaiseCost(RULES, draft[k], next);
+        const changed = draft[k] !== c.primaryStats[k] ? ` (+${draft[k] - c.primaryStats[k]})` : "";
+        li.append(el("span", { class: "pm-grow" }, `${STAT_NAMES[k]} ${draft[k]}${changed}${cost === null ? " · เต็ม" : ` · แต้มถัดไปใช้ ${cost}`}`));
+        const minus = el("button", { type: "button" }, "−");
+        minus.disabled = draft[k] <= c.primaryStats[k];
+        minus.addEventListener("click", () => {
+          draft = { ...draft, [k]: draft[k] - 1 };
+          draw();
+        });
+        const plus = el("button", { type: "button" }, "+");
+        plus.disabled = cost === null || cost > left;
+        plus.addEventListener("click", () => {
+          draft = { ...draft, [k]: next };
+          draw();
+        });
+        li.append(minus, plus);
+        list.append(li);
+      }
+      body.append(list);
+      body.append(
+        el(
+          "div",
+          { class: "pm-stats" },
+          `ผลหลังลงแต้ม: HP ${d.maxHp} · MP ${d.maxMp} · โจมตีกาย ${d.patk} · โจมตีเวท ${d.matk} · พลังเสริม ${d.support} · ป้องกันกาย ${d.pdef} · ป้องกันเวท ${d.mdef} · ความเร็ว ${d.spd} · แม่นยำ ${d.accuracyPct.toFixed(1)}% · หลบ ${d.evasionPct.toFixed(1)}% · คริ ${d.critPct.toFixed(1)}%`,
+        ),
+        el("div", { class: "pm-note" }, "ได้ 3 แต้มต่อเลเวล · ค่า 11–60 ใช้ 1 แต้ม, 61–100 ใช้ 2, 101–150 ใช้ 3 · ลดค่าที่ลงแล้วไม่ได้ · สูตร EXP เป็นค่าชั่วคราว"),
+      );
+      const dirty = PRIMARY_STATS.some((k) => draft[k] !== c.primaryStats[k]);
+      save.disabled = !dirty;
+      reset.disabled = !dirty;
     };
     draw();
   });

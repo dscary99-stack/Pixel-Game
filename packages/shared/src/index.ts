@@ -14,6 +14,7 @@ export * from "./dev-fixtures";
 export * from "./character";
 export * from "./equipment";
 export * from "./sigil";
+export * from "./progression";
 export * from "./world/map";
 export * from "./world/movement";
 export * from "./world/channel";

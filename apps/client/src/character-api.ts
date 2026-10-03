@@ -2,7 +2,7 @@
  * Character and team requests (server mode). The server decides everything; the client shows
  * what it gets back. Identity uses the dev header until O11 picks auth.
  */
-import type { CharacterView, CreateCharacterRequest, EquipSlot, EquipmentView, MonsterInstance } from "@pmrpg/shared";
+import type { CharacterView, CreateCharacterRequest, EquipSlot, EquipmentView, MonsterInstance, PrimaryStats } from "@pmrpg/shared";
 
 export type StoredCompanion = MonsterInstance & { hp: number | null; mp: number | null };
 
@@ -54,6 +54,10 @@ export class CharacterApi {
   /** Put a piece in a slot, or empty it with null. */
   equip(expectedVersion: number, slot: EquipSlot, instanceId: string | null) {
     return this.call<{ character: CharacterView; equipment: EquipmentView[] }>("PUT", "/character/equipment", { expectedVersion, slot, instanceId });
+  }
+
+  allocate(expectedVersion: number, stats: PrimaryStats) {
+    return this.call<{ character: CharacterView }>("PUT", "/character/stats", { expectedVersion, stats });
   }
 
   installSigil(equipmentId: string, sigilItemId: string) {

@@ -6,7 +6,7 @@
  * equipment created_operation_id UNIQUE. Goal: the business effect happens once. The network may still
  * deliver twice; that is fine.
  */
-import type { Entitlement, RulesConfig } from "@pmrpg/shared";
+import { companionExp, type Entitlement, type RulesConfig } from "@pmrpg/shared";
 
 /** The subset of the D1 API we use, so tests can run it on node:sqlite. */
 export interface SqlBound {
@@ -126,6 +126,24 @@ export class RewardLedger {
             recipientId,
             hash,
           ),
+      );
+    }
+    // EXP for everyone who started the fight (chapter 04 §4): the character named in the battle's
+    // reservation and each companion listed there, KO'd or not. Captured companions are not in it.
+    const exp = entitlement.exp ?? 0;
+    if (exp > 0) {
+      const battleId = id.split(":").slice(0, -2).join(":");
+      const loadout = `(SELECT loadout_json FROM battle_reservations WHERE battle_id = ? AND account_id = ?)`;
+      stmts.push(
+        this.db
+          .prepare(`UPDATE characters SET xp = xp + ? WHERE account_id = ? AND id = json_extract(${loadout}, '$.characterId') AND ${OWN_RECEIPT}`)
+          .bind(exp, recipientId, battleId, recipientId, id, recipientId, hash),
+        this.db
+          .prepare(
+            `UPDATE monster_instances SET xp = xp + ?
+             WHERE owner_id = ? AND id IN (SELECT value FROM json_each(json_extract(${loadout}, '$.companionIds'))) AND ${OWN_RECEIPT}`,
+          )
+          .bind(companionExp(this.rules, exp), recipientId, battleId, recipientId, id, recipientId, hash),
       );
     }
     await this.db.batch(stmts);

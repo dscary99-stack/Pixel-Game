@@ -11,6 +11,8 @@ const CONTENT = exampleContentMaps();
 /** Display name for a loot line: item or equipment, falling back to the id. */
 const lootName = (id: string) => (CONTENT.items.get(id) ?? CONTENT.equipment.get(id))?.name.th ?? id;
 
+const expText = (exp: number | undefined) => (exp ? ` · EXP +${exp}` : "");
+
 const W = 960;
 const H = 540;
 
@@ -181,8 +183,8 @@ export class BattleScene extends Phaser.Scene {
         return this.pushLog(`${this.name(e.unitId)} ถูกกำจัด`);
       case "RewardEntitled":
         return e.entitlement.kind === "kill"
-          ? this.pushLog(`สิทธิ์รางวัล: ${e.entitlement.items.map((i) => `${lootName(i.itemId)}×${i.quantity}`).join(", ") || "ไม่มีของ"}`)
-          : this.pushLog(`สิทธิ์คู่ใจใหม่: ${e.entitlement.speciesId} Lv${e.entitlement.level}`);
+          ? this.pushLog(`สิทธิ์รางวัล: ${e.entitlement.items.map((i) => `${lootName(i.itemId)}×${i.quantity}`).join(", ") || "ไม่มีของ"}${expText(e.entitlement.exp)}`)
+          : this.pushLog(`สิทธิ์คู่ใจใหม่: ${CONTENT.species.get(e.entitlement.speciesId)?.name.th ?? e.entitlement.speciesId} Lv${e.entitlement.level}${expText(e.entitlement.exp)}`);
       case "BattleEnded":
         return this.pushLog(`จบไฟต์: ${e.outcome}`);
       default:

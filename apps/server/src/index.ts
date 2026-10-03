@@ -181,6 +181,11 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
   if (request.method === "POST" && url.pathname === "/character/equipment/sigil") return serviceReply(env, accountId, await townFor(env).installSigil(accountId, body));
   if (request.method === "POST" && url.pathname === "/character/equipment/sigil/remove") return serviceReply(env, accountId, await townFor(env).removeSigil(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/sell") return serviceReply(env, accountId, await townFor(env).sell(accountId, body));
+  if (request.method === "PUT" && url.pathname === "/character/stats") {
+    const r = await store.allocate(accountId, body);
+    if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
+    return json(200, r);
+  }
   if (request.method === "PUT" && url.pathname === "/character/equipment") {
     const r = await store.equip(accountId, body);
     if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });

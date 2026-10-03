@@ -278,8 +278,9 @@ describe("capture (C08, C09, C15)", () => {
     const sOk = untilPlayerTurn(always, c, ok(createBattle(always, c, setupWith(lv25.id))).state);
     const win = ok(capture(always, sOk, lv25.id));
     expect(win.state.status).toBe("victory");
+    // A capture gives the kill EXP of the target (10 per wild level, NORMAL rank).
     expect(win.state.entitlements).toEqual([
-      { entitlementId: "battle:test:w:captured", kind: "capture", enemyUnitId: "w", speciesId: lv25.id, element: "EARTH", level: 1 },
+      { entitlementId: "battle:test:w:captured", kind: "capture", enemyUnitId: "w", speciesId: lv25.id, element: "EARTH", level: 1, exp: 250 },
     ]);
     expect(win.events.some((e) => e.type === "EnemyDefeated")).toBe(false);
 

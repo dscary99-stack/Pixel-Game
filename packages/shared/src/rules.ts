@@ -123,6 +123,13 @@ export const RULES = {
     // Encounters (Phase C). Hunting speed numbers are P12 assumptions.
     packRespawnMs: provisional(60_000, "P12", "a visible pack is re-rolled this often; a player who fought it waits for the next one"),
     engageRangeTiles: provisional(1, "P10", "must stand next to (or on) the pack to start a fight"),
+    // EXP and levels (chapter 04 §4, chapter 13 §4). The design has no tested EXP table yet; this is
+    // a prototype curve (tagged P03, the levelling entry) chosen while the user's decision card is open.
+    // expToNext(L) = round(base * L^exponent); a kill gives perWildLevel * wildLevel * rank multiplier.
+    expCurve: provisional({ base: 30, exponent: 1.8 } as const, "P03", "EXP curve has no register entry: prototype, no tested table exists (chapter 13 §4)"),
+    killExpPerWildLevel: provisional(10, "P03", "a successful capture gives the same EXP as a kill (chapter 04 §3 proposal)"),
+    rankExpMultiplier: provisional({ NORMAL: 1, ELITE: 3, BOSS: 10 } as const, "P03", "prototype"),
+    companionExpMultiplier: provisional(1, "P05", "chapter 04 §4: each companion that started the fight gets its own EXP; tuning OPEN"),
     // Sigil removal (chapter 05 §4, chapter 06). Coins per Sigil by the equipment's required level:
     // [fromLevelInclusive, coins]. Lv50/120/200 = 3 hours of the chapter 06 manual net example;
     // the Lv1 tier has no source number and is a pure prototype guess.

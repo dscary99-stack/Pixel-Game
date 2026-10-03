@@ -10,7 +10,10 @@
  *   `planEquip` decides slots, level and two-hand rules, the batch re-checks ownership and locks.
  */
 import {
+  AllocateStatsRequestSchema,
   CreateCharacterRequestSchema,
+  levelForExp,
+  planAllocation,
   EquipRequestSchema,
   planEquip,
   wornGear,
@@ -67,6 +70,10 @@ interface InstanceRow {
 }
 
 export type StoredInstance = MonsterInstance & { hp: number | null; mp: number | null };
+
+export type AllocateResult =
+  | { status: "saved"; character: CharacterView }
+  | { status: "rejected"; reason: "INVALID_REQUEST" | "NO_CHARACTER" | "STALE_VERSION" | "IN_BATTLE" | "STAT_DECREASE" | "OVER_BUDGET"; message: string };
 
 export interface StoreContent {
   species: ReadonlyMap<string, SpeciesDefinition>;
@@ -146,13 +153,71 @@ export class CharacterStore {
     return { status: "created", character: await this.view(row) };
   }
 
+  /**
+   * Levels follow cumulative EXP (granted with each reward receipt). The stored level is a cache:
+   * raise it to what the EXP reaches, never lower it here. Idempotent; a lost update is redone on
+   * the next read.
+   */
+  async syncLevels(accountId: string): Promise<void> {
+    const cap = this.rules.confirmed.playerMaxLevel.value;
+    const petCap = this.rules.provisional.companionMaxLevel.value;
+    const ch = await this.db.prepare(`SELECT id, xp, level FROM characters WHERE account_id = ?`).bind(accountId).first<{ id: string; xp: number; level: number }>();
+    const { results: pets } = await this.db
+      .prepare(`SELECT id, xp, current_level AS level FROM monster_instances WHERE owner_id = ?`)
+      .bind(accountId)
+      .all<{ id: string; xp: number; level: number }>();
+    const stmts: SqlBound[] = [];
+    if (ch !== null) {
+      const level = levelForExp(this.rules, ch.xp, cap);
+      if (level > ch.level) stmts.push(this.db.prepare(`UPDATE characters SET level = ? WHERE id = ? AND level < ?`).bind(level, ch.id, level));
+    }
+    for (const p of pets) {
+      const level = levelForExp(this.rules, p.xp, petCap);
+      if (level > p.level) stmts.push(this.db.prepare(`UPDATE monster_instances SET current_level = ? WHERE id = ? AND current_level < ?`).bind(level, p.id, level));
+    }
+    if (stmts.length > 0) await this.db.batch(stmts);
+  }
+
+  /** Spend stat points (P03): no stat goes down, the total fits the level budget, outside fights. */
+  async allocate(accountId: string, raw: unknown): Promise<AllocateResult> {
+    const parsed = AllocateStatsRequestSchema.safeParse(raw);
+    if (!parsed.success) return { status: "rejected", reason: "INVALID_REQUEST", message: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") };
+    const { expectedVersion, stats } = parsed.data;
+    await this.syncLevels(accountId);
+    const row = await this.row(accountId);
+    if (row === null) return { status: "rejected", reason: "NO_CHARACTER", message: "create a character first" };
+    if (row.version !== expectedVersion) return { status: "rejected", reason: "STALE_VERSION", message: "the character changed; reload and try again" };
+    if (await this.inBattle(accountId)) return { status: "rejected", reason: "IN_BATTLE", message: "spend points outside fights" };
+    const plan = planAllocation(this.rules, row.level, JSON.parse(row.primary_stats_json) as PrimaryStats, stats);
+    if (!plan.ok) return { status: "rejected", reason: plan.code, message: plan.message };
+    // One statement: the version and level guards make it all-or-nothing.
+    await this.db
+      .prepare(
+        `UPDATE characters SET primary_stats_json = ?, version = version + 1
+         WHERE id = ? AND version = ? AND level >= ? AND primary_stats_json = ? AND NOT ${OPEN_BATTLE}`,
+      )
+      .bind(JSON.stringify(stats), row.id, expectedVersion, row.level, row.primary_stats_json, accountId)
+      .run();
+    const after = await this.row(accountId);
+    if (after?.version === expectedVersion + 1 && after.primary_stats_json === JSON.stringify(stats)) return { status: "saved", character: await this.view(after) };
+    if (await this.inBattle(accountId)) return { status: "rejected", reason: "IN_BATTLE", message: "spend points outside fights" };
+    return { status: "rejected", reason: "STALE_VERSION", message: "the character changed; reload and try again" };
+  }
+
+  private async inBattle(accountId: string): Promise<boolean> {
+    const open = await this.db.prepare(`SELECT 1 AS x FROM battle_reservations WHERE account_id = ? AND status IN ('reserved', 'active')`).bind(accountId).first();
+    return open !== null;
+  }
+
   async get(accountId: string): Promise<CharacterView | null> {
+    await this.syncLevels(accountId);
     const row = await this.row(accountId);
     return row === null ? null : this.view(row);
   }
 
   /** Every companion the account owns, for the team screen. No gameplay cap (C04). */
   async companions(accountId: string): Promise<StoredInstance[]> {
+    await this.syncLevels(accountId);
     const { results } = await this.db
       .prepare(`SELECT * FROM monster_instances WHERE owner_id = ? ORDER BY species_id, id`)
       .bind(accountId)
@@ -266,6 +331,7 @@ export class CharacterStore {
     const parsed = EquipRequestSchema.safeParse(raw);
     if (!parsed.success) return { status: "rejected", reason: "INVALID_REQUEST", message: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") };
     const { expectedVersion, slot, instanceId } = parsed.data;
+    await this.syncLevels(accountId);
     const row = await this.row(accountId);
     if (row === null) return { status: "rejected", reason: "NO_CHARACTER", message: "create a character first" };
     if (row.version !== expectedVersion) return { status: "rejected", reason: "STALE_VERSION", message: "the character changed; reload and try again" };
