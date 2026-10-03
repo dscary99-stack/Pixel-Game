@@ -51,8 +51,10 @@ export type Entitlement =
       originMode: OriginMode;
       /** Rolled once by the server and persisted before delivery; retries never re-roll. */
       items: LootLine[];
-      /** EXP for the character (companions get `companionExp` of it). Absent on older entitlements = 0. */
+      /** EXP for the character. Absent on older entitlements = 0. */
       exp?: number;
+      /** EXP per companion instance that started the fight, scaled by its level then (companionExp). */
+      companionExp?: Record<string, number>;
     }
   | {
       entitlementId: string;
@@ -64,6 +66,7 @@ export type Entitlement =
       level: number;
       /** A capture gives the same EXP as a kill, without kill loot (chapter 04 §3 proposal). */
       exp?: number;
+      companionExp?: Record<string, number>;
     };
 
 export interface BattleState {

@@ -140,10 +140,14 @@ export const RULES = {
     // (the proposal rejects a flat x10 for bosses; their EXP comes with content). A capture gives the same EXP
     // as a kill (chapter 04 §3 proposal).
     referenceNormalExp: provisional({ base: 20, linear: 6, quadratic: 2 } as const, "P03", "Nut's exp-proposal-1.0 normal_xp_formula"),
-    // Companions must not reuse the player table (proposal §6); their own table is undecided. Until then
-    // companions keep the earlier prototype curve: expToNext(L) = round(base * L^exponent).
-    companionExpCurve: provisional({ base: 30, exponent: 1.8 } as const, "P05", "companion-only prototype until a companion EXP table is decided (proposal §6)"),
-    companionExpMultiplier: provisional(1, "P05", "chapter 04 §4: each companion that started the fight gets its own EXP; tuning OPEN"),
+    // Companions (Nut's companion-exp-proposal-1.0, docs/design/COMPANION_EXP_DESIGN_LV001_200.md, PROVISIONAL):
+    // the first cycle needs 25% of the player's EXP per level, rounded half-up to 10, the same for every
+    // species, rank and element. The Rebirth 1–3 columns (30/35/40%) are scenarios only; Rebirth stays O03/O04.
+    companionExpTable: provisional({ percentOfPlayer: 25 } as const, "P05", "Nut's companion-exp-proposal-1.0 first cycle; checked row by row against the JSON"),
+    // A companion fighting enemies far above it gets less (proposal §5): per target, the award is scaled by
+    // min(1, E(min(cap, C + gap)) / E(M)), C = the companion's level at fight start, M = the enemy's wild
+    // level, E = referenceNormalExp. The player's EXP is never scaled by this.
+    companionTrainingLevelGap: provisional(10, "P05", "Nut's companion-exp-proposal-1.0 §5 (new provisional value, needs feel testing)"),
     // Sigil removal (chapter 05 §4, chapter 06). Coins per Sigil by the equipment's required level:
     // [fromLevelInclusive, coins]. Lv50/120/200 = 3 hours of the chapter 06 manual net example;
     // the Lv1 tier has no source number and is a pure prototype guess.

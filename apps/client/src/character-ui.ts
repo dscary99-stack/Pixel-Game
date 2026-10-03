@@ -451,7 +451,9 @@ export function teamPanel(api: CharacterApi, bundle: CharacterBundle): Promise<C
       });
       const dot = el("span", { class: "pm-dot" });
       dot.style.background = ELEMENT_CSS[c.element];
-      const label = el("label", { for: `pm-${c.id}` }, `${sp?.name.th ?? c.speciesId} · ${ELEMENT_TH[c.element]} · Lv${c.currentLevel} · HP ${hp}/${maxHp}${hp <= 0 ? " (ล้ม พักในเมือง)" : ""}`);
+      const bar = expProgress(RULES, "companion", c.xp);
+      const exp = bar.need === null ? "EXP สูงสุด" : `EXP ${bar.into.toLocaleString()}/${bar.need.toLocaleString()}`;
+      const label = el("label", { for: `pm-${c.id}` }, `${sp?.name.th ?? c.speciesId} · ${ELEMENT_TH[c.element]} · Lv${c.currentLevel} (${exp}) · HP ${hp}/${maxHp}${hp <= 0 ? " (ล้ม พักในเมือง)" : ""}`);
       label.style.margin = "0";
       li.append(box, dot, label);
       list.append(li);

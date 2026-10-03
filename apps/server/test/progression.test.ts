@@ -15,7 +15,9 @@ let eco: Economy;
 let charId: string;
 
 const BATTLE = "battle:x";
-const kill = (enemy: string, exp: number): Entitlement => ({
+// The kernel puts a per-companion award on each entitlement; "mon:home" is listed too, to show the
+// ledger only pays companions that are in the battle's reservation.
+const kill = (enemy: string, exp: number, pets: number = exp): Entitlement => ({
   entitlementId: `${BATTLE}:${enemy}:defeated`,
   kind: "kill",
   enemyUnitId: enemy,
@@ -23,6 +25,7 @@ const kill = (enemy: string, exp: number): Entitlement => ({
   originMode: "manual",
   items: [],
   exp,
+  companionExp: { "mon:mole": pets, "mon:bird": pets, "mon:home": pets },
 });
 const xp = (table: string, id: string) => (db.prepare(`SELECT xp FROM ${table} WHERE id = ?`).get(id) as { xp: number }).xp;
 
@@ -62,6 +65,13 @@ describe("EXP from rewards (chapter 04 §4)", () => {
     expect(xp("monster_instances", "mon:home")).toBe(0);
   });
 
+  it("each companion gets its own award from the entitlement", async () => {
+    await eco.grant({ ...kill("e1", 100), companionExp: { "mon:mole": 7, "mon:bird": 100 } }, A);
+    expect(xp("characters", charId)).toBe(100);
+    expect(xp("monster_instances", "mon:mole")).toBe(7);
+    expect(xp("monster_instances", "mon:bird")).toBe(100);
+  });
+
   it("a captured companion is not in the fight's team and gets no EXP from it", async () => {
     const cap: Entitlement = { entitlementId: `${BATTLE}:e2:captured`, kind: "capture", enemyUnitId: "e2", speciesId: "species:bell_bird", element: "WIND", level: 1, exp: 30 };
     await eco.grant(cap, A);
@@ -70,7 +80,7 @@ describe("EXP from rewards (chapter 04 §4)", () => {
   });
 
   it("levels follow cumulative EXP on the next read; points become spendable", async () => {
-    await eco.grant(kill("e1", expForLevel(PRODUCTION_RULES, "player", 3)), A);
+    await eco.grant(kill("e1", expForLevel(PRODUCTION_RULES, "player", 3), expForLevel(PRODUCTION_RULES, "companion", 3)), A);
     const c = (await store.get(A))!;
     expect(c.level).toBe(3);
     expect((await store.companions(A)).find((p) => p.id === "mon:mole")?.currentLevel).toBe(3);

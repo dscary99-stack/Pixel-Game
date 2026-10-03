@@ -6,7 +6,7 @@
  * equipment created_operation_id UNIQUE. Goal: the business effect happens once. The network may still
  * deliver twice; that is fine.
  */
-import { companionExp, expCap, type Entitlement, type RulesConfig } from "@pmrpg/shared";
+import { expCap, type Entitlement, type RulesConfig } from "@pmrpg/shared";
 
 /** The subset of the D1 API we use, so tests can run it on node:sqlite. */
 export interface SqlBound {
@@ -129,22 +129,28 @@ export class RewardLedger {
       );
     }
     // EXP for everyone who started the fight (chapter 04 §4): the character named in the battle's
-    // reservation and each companion listed there, KO'd or not. Captured companions are not in it.
-    // EXP stops at the curve's cap total: nothing is banked toward a level past the cap.
+    // reservation and each companion listed there, KO'd or not, each with its own award (the kernel
+    // scaled companions by their level at fight start). Captured companions are not in it.
+    // EXP stops at each curve's cap total: nothing is banked toward a level past the cap.
     const exp = entitlement.exp ?? 0;
+    const battleId = id.split(":").slice(0, -2).join(":");
+    const loadout = `(SELECT loadout_json FROM battle_reservations WHERE battle_id = ? AND account_id = ?)`;
     if (exp > 0) {
-      const battleId = id.split(":").slice(0, -2).join(":");
-      const loadout = `(SELECT loadout_json FROM battle_reservations WHERE battle_id = ? AND account_id = ?)`;
       stmts.push(
         this.db
           .prepare(`UPDATE characters SET xp = MIN(xp + ?, ?) WHERE account_id = ? AND id = json_extract(${loadout}, '$.characterId') AND ${OWN_RECEIPT}`)
           .bind(exp, expCap(this.rules, "player"), recipientId, battleId, recipientId, id, recipientId, hash),
+      );
+    }
+    for (const [companionId, amount] of Object.entries(entitlement.companionExp ?? {})) {
+      if (amount <= 0) continue;
+      stmts.push(
         this.db
           .prepare(
             `UPDATE monster_instances SET xp = MIN(xp + ?, ?)
-             WHERE owner_id = ? AND id IN (SELECT value FROM json_each(json_extract(${loadout}, '$.companionIds'))) AND ${OWN_RECEIPT}`,
+             WHERE owner_id = ? AND id = ? AND id IN (SELECT value FROM json_each(json_extract(${loadout}, '$.companionIds'))) AND ${OWN_RECEIPT}`,
           )
-          .bind(companionExp(this.rules, exp), expCap(this.rules, "companion"), recipientId, battleId, recipientId, id, recipientId, hash),
+          .bind(amount, expCap(this.rules, "companion"), recipientId, companionId, battleId, recipientId, id, recipientId, hash),
       );
     }
     await this.db.batch(stmts);

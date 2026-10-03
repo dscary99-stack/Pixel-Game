@@ -2,13 +2,14 @@
  * EXP, levels and stat points (chapter 03 §4, chapter 04 §3–§4, P03).
  *
  * - Players follow Nut's EXP table (exp-proposal-1.0, PROVISIONAL; see rules.ts playerExpTable).
- *   Companions use their own prototype curve: the proposal forbids reusing the player table for them.
+ *   Companions follow Nut's companion table (companion-exp-proposal-1.0): 25% of the player's
+ *   per-level EXP in the first cycle, and less EXP from enemies far above the companion (§5).
  * - Level is derived from cumulative EXP; the stored level is only a cache the server re-syncs.
  *   EXP stops at the cap's cumulative total (no banking toward Lv201) and `need` is null at the cap.
  * - A kill or capture gives the reference EXP of the enemy's fixed species level; never scaled by map
  *   or by the player's level (C01).
- * - The player character and every companion that started the fight each get the full EXP of a kill
- *   or capture, KO'd included; nothing is split (chapter 04 §4). Auto battles give the same EXP (P01).
+ * - The player character and every companion that started the fight each get their own award for a
+ *   kill or capture, KO'd included; nothing is split (chapter 04 §4). Auto battles give the same EXP (P01).
  * - Players spend +3 points per level with the P03 cost bands; stats only go up (no free respec).
  * - Companion primary-stat growth weights are OPEN (chapter 04 §4), so a companion's level raises
  *   only its level-based HP/MP for now.
@@ -62,11 +63,11 @@ function table(rules: RulesConfig, curve: ExpCurve): Table {
   let t = tables.get(rules);
   if (t === undefined) {
     const { anchors, killsPerMinute } = rules.provisional.playerExpTable.value;
-    const { base, exponent } = rules.provisional.companionExpCurve.value;
-    t = {
-      player: build(rules.confirmed.playerMaxLevel.value, (l) => roundHalfUpTo10(targetMinutes(anchors, l) * killsPerMinute * referenceNormalExp(rules, l))),
-      companion: build(rules.provisional.companionMaxLevel.value, (l) => Math.round(base * Math.pow(l, exponent))),
-    };
+    const percent = rules.provisional.companionExpTable.value.percentOfPlayer;
+    const player = build(rules.confirmed.playerMaxLevel.value, (l) => roundHalfUpTo10(targetMinutes(anchors, l) * killsPerMinute * referenceNormalExp(rules, l)));
+    // Companion rows are rounded from the delivered player rows, not from the time targets (§8).
+    const playerNeed = (l: number) => player.toNext[Math.min(l, player.cap - 1)]!;
+    t = { player, companion: build(rules.provisional.companionMaxLevel.value, (l) => roundHalfUpTo10((playerNeed(l) * percent) / 100)) };
     tables.set(rules, t);
   }
   return t[curve];
@@ -119,9 +120,17 @@ export function killExp(rules: RulesConfig, wildLevel: number): number {
   return referenceNormalExp(rules, wildLevel);
 }
 
-/** EXP a companion gets from the same reward. */
-export function companionExp(rules: RulesConfig, exp: number): number {
-  return Math.floor(exp * rules.provisional.companionExpMultiplier.value);
+/**
+ * EXP one companion gets from one defeated or captured enemy (proposal §5): the enemy's award scaled by
+ * min(1, E(min(cap, C + gap)) / E(M)), with C the companion's level at fight start and M the enemy's
+ * wild level. Enemies up to C + gap give the full award; lower ones are never cut further.
+ */
+export function companionExp(rules: RulesConfig, award: number, companionLevel: number, wildLevel: number): number {
+  const training = Math.min(maxLevel(rules, "companion"), companionLevel + rules.provisional.companionTrainingLevelGap.value);
+  const num = referenceNormalExp(rules, training);
+  const den = referenceNormalExp(rules, wildLevel);
+  // Multiply before dividing so whole results stay exact (81,220 × 328 / 81,220 = 328, not 327.999…).
+  return num >= den ? award : Math.floor((award * num) / den);
 }
 
 export const AllocateStatsRequestSchema = z

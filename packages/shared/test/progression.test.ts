@@ -16,9 +16,14 @@ import {
 } from "../src";
 
 const base = { STR: 10, VIT: 10, INT: 10, DEX: 10, AGI: 10, SPI: 10 };
-const nut = JSON.parse(readFileSync(new URL("../../../docs/design/PLAYER_EXP_001_200.json", import.meta.url), "utf8")) as {
+const design = (file: string) => JSON.parse(readFileSync(new URL(`../../../docs/design/${file}`, import.meta.url), "utf8"));
+const nut = design("PLAYER_EXP_001_200.json") as {
   max_level: number;
   levels: { level: number; xp_to_next: number | null; cumulative_xp_to_reach_level: number; reference_normal_xp_per_kill: number }[];
+};
+const pets = design("COMPANION_EXP_001_200.json") as {
+  max_companion_level_proposed: number;
+  cycles: { rebirth_stage: number; total_cycle_xp: number; levels: { level: number; xp_to_next: number | null; cumulative_xp_to_reach_level: number }[] }[];
 };
 
 describe("player EXP table (Nut's exp-proposal-1.0)", () => {
@@ -51,21 +56,35 @@ describe("player EXP table (Nut's exp-proposal-1.0)", () => {
   });
 });
 
-describe("companion EXP (separate prototype curve)", () => {
-  it("does not reuse the player table", () => {
-    expect(expToNext(R, "companion", 1)).toBe(30);
-    expect(expToNext(R, "companion", 2)).toBe(Math.round(30 * 2 ** 1.8));
-    expect(levelForExp(R, "companion", expForLevel(R, "companion", 37))).toBe(37);
-    expect(expToNext(R, "companion", maxLevel(R, "companion"))).toBeNull();
+describe("companion EXP table (Nut's companion-exp-proposal-1.0, first cycle)", () => {
+  it("matches every row of the supplied first-cycle table", () => {
+    const first = pets.cycles.find((c) => c.rebirth_stage === 0)!;
+    expect(maxLevel(R, "companion")).toBe(pets.max_companion_level_proposed);
+    expect(first.levels).toHaveLength(200);
+    for (const row of first.levels) {
+      expect(expToNext(R, "companion", row.level), `Lv${row.level} to next`).toBe(row.xp_to_next);
+      expect(expForLevel(R, "companion", row.level), `Lv${row.level} cumulative`).toBe(row.cumulative_xp_to_reach_level);
+    }
+    expect(expCap(R, "companion")).toBe(first.total_cycle_xp);
+    expect(levelForExp(R, "companion", 10 ** 12)).toBe(200);
   });
 });
 
 describe("kill EXP", () => {
-  it("is the reference EXP of the wild level, the same for every rank; companions get the same", () => {
+  it("is the reference EXP of the wild level, the same for every rank", () => {
     expect(killExp(R, 1)).toBe(28);
     expect(killExp(R, 2)).toBe(40);
     expect(killExp(R, 6)).toBe(128);
-    expect(companionExp(R, 128)).toBe(128);
+  });
+
+  it("companions get less only from enemies more than 10 levels above them (proposal §5 examples)", () => {
+    expect(companionExp(R, 81_220, 1, 200)).toBe(328);
+    expect(companionExp(R, 81_220, 100, 200)).toBe(24_880);
+    expect(companionExp(R, 81_220, 190, 200)).toBe(81_220);
+    expect(companionExp(R, 128, 1, 6)).toBe(128);
+    expect(companionExp(R, 28, 50, 1)).toBe(28);
+    // An Elite/Boss award is scaled by the same ratio.
+    expect(companionExp(R, 3 * 81_220, 1, 200)).toBe(3 * 328);
   });
 });
 

@@ -280,7 +280,7 @@ describe("capture (C08, C09, C15)", () => {
     expect(win.state.status).toBe("victory");
     // A capture gives the kill EXP of the target: the reference EXP at wild Lv25 (20 + 6·25 + 2·25²).
     expect(win.state.entitlements).toEqual([
-      { entitlementId: "battle:test:w:captured", kind: "capture", enemyUnitId: "w", speciesId: lv25.id, element: "EARTH", level: 1, exp: 1420 },
+      { entitlementId: "battle:test:w:captured", kind: "capture", enemyUnitId: "w", speciesId: lv25.id, element: "EARTH", level: 1, exp: 1420, companionExp: {} },
     ]);
     expect(win.events.some((e) => e.type === "EnemyDefeated")).toBe(false);
 
@@ -306,6 +306,12 @@ describe("rewards and Auto Battle", () => {
     const ids = state.entitlements.map((e) => e.entitlementId);
     expect(ids.sort()).toEqual(["battle:test:e1:defeated", "battle:test:e2:defeated"]);
     expect(events.filter((e) => e.type === "RewardEntitled")).toHaveLength(2);
+    // Every companion that started the fight has its own award; Lv30 companions get the full award
+    // from these low-level enemies (proposal §5).
+    for (const e of state.entitlements) {
+      expect(e.exp).toBeGreaterThan(0);
+      expect(e.companionExp).toEqual({ m1: e.exp, m2: e.exp, m3: e.exp });
+    }
     const ended = events.at(-1)!;
     expect(ended.type).toBe("BattleEnded");
   });

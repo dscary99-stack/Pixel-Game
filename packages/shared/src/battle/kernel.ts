@@ -7,7 +7,7 @@
  */
 import { computeDamage, computeHeal, critChanceBp, hitChanceBp } from "../damage";
 import { rollLoot } from "../loot";
-import { killExp } from "../progression";
+import { companionExp, killExp } from "../progression";
 import { Rng, seedRng } from "../rng";
 import type { RulesConfig } from "../rules";
 import type { ItemDefinition, LootTable, SkillDefinition, SpeciesDefinition } from "../schemas";
@@ -269,6 +269,19 @@ function validateFormation(rules: RulesConfig, units: BattleUnit[]): void {
 // ================================================================ rounds and turns
 
 /** Order by SPD at round start; ties broken by server RNG (chapter 03 §1). */
+/**
+ * EXP from one enemy: the character's award, and each companion's award scaled by its level at fight
+ * start (unit levels never change mid-fight). Every companion that started the fight counts, KO'd or not.
+ */
+function expAwards(ctx: Ctx, wildLevel: number): { exp: number; companionExp: Record<string, number> } {
+  const exp = killExp(ctx.rules, wildLevel);
+  const perCompanion: Record<string, number> = {};
+  for (const a of ctx.s.units) {
+    if (a.side === "ally" && a.instanceId !== null) perCompanion[a.instanceId] = companionExp(ctx.rules, exp, a.level, wildLevel);
+  }
+  return { exp, companionExp: perCompanion };
+}
+
 function startRound(ctx: Ctx): void {
   const s = ctx.s;
   s.round += 1;
@@ -494,7 +507,7 @@ function knockOut(ctx: Ctx, u: BattleUnit): void {
     speciesId: u.speciesId!,
     originMode: ctx.s.originMode,
     items: rollLoot(ctx.rules, table, ctx.s.originMode, ctx.rng),
-    exp: killExp(ctx.rules, u.level),
+    ...expAwards(ctx, u.level),
   };
   ctx.s.entitlements.push(entitlement);
   ctx.emit({ type: "RewardEntitled", entitlement });
@@ -574,7 +587,7 @@ function doCapture(ctx: Ctx, actor: BattleUnit, target: BattleUnit, itemId: stri
     speciesId: species.id,
     element: target.element,
     level: ctx.rules.confirmed.capturedInitialLevel.value,
-    exp: killExp(ctx.rules, target.level),
+    ...expAwards(ctx, target.level),
   };
   ctx.s.entitlements.push(entitlement);
   ctx.emit({ type: "RewardEntitled", entitlement });
