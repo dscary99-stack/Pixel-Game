@@ -31,6 +31,8 @@ export interface BattleTransport {
   start(): Promise<{ snapshot: Snapshot; events: BattleEvent[] }>;
   send(command: BattleCommand): Promise<{ response: CommandResponse; snapshot: Snapshot }>;
   autoStep(): Promise<{ response: CommandResponse; snapshot: Snapshot }>;
+  /** Events after `since` and a fresh view: used while the server plays the fight (Auto Hunt). */
+  poll(since: number): Promise<{ snapshot: Snapshot; events: BattleEvent[] }>;
 }
 
 export class LocalPreviewTransport implements BattleTransport {
@@ -55,6 +57,10 @@ export class LocalPreviewTransport implements BattleTransport {
     const cmd = chooseAutoCommand(this.state);
     if (cmd === null) return { response: this.reject("BATTLE_OVER", "nothing to do"), snapshot: this.snapshot() };
     return this.apply(cmd, "auto");
+  }
+
+  async poll() {
+    return { snapshot: this.snapshot(), events: [] };
   }
 
   private async apply(command: BattleCommand, source: "player" | "auto") {
@@ -120,6 +126,12 @@ export class HttpTransport implements BattleTransport {
     const response = await this.call<CommandResponse>("POST", "auto", this.envelope({}));
     await this.refresh();
     return { response, snapshot: this.snap };
+  }
+
+  async poll(since: number) {
+    const { events } = await this.call<{ events: BattleEvent[] }>("GET", `events?since=${since}`);
+    await this.refresh();
+    return { snapshot: this.snap, events };
   }
 
   private envelope(extra: object) {

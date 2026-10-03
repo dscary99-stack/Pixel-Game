@@ -27,11 +27,20 @@ import {
   packEnemies,
   packInstanceId,
   companionSetups,
+  deriveStats,
+  gearBonuses,
+  mapHasTargets,
+  planAutoHunt,
   playerSetup,
+  stopSpeciesPack,
   rollPack,
   seedRng,
   visiblePack,
+  type AutoHuntSettings,
+  type AutoStopReason,
   type BattleSetup,
+  type Direction,
+  type OriginMode,
   type MapDefinition,
   type Outgoing,
   type PackInstance,
@@ -53,6 +62,18 @@ interface Attachment {
   channel: number;
   generation: number;
   presence: Presence;
+  /** Auto Hunt on for this connection (C14: only while connected). */
+  auto?: AutoState | null;
+}
+
+interface AutoState {
+  settings: AutoHuntSettings;
+  /** HP checked since the last fight ended. */
+  checked: boolean;
+  /** When the current fight was first seen over; the result shows for autoHuntResultPauseMs. */
+  endedAt: number | null;
+  /** The fight autopilot was switched on for (set again after a restart). */
+  piloting: string | null;
 }
 
 const MAX_MESSAGE_BYTES = 256;
@@ -70,6 +91,9 @@ export class MapChannelDurableObject extends DurableObject<Env> {
   private packs: { cycle: number; list: PackInstance[] } | null = null;
   /** Accounts with an engage or resume in flight; a second tap waits for the first answer. */
   private readonly busy = new Set<string>();
+  /** Auto Hunt routes (memory only; re-planned if the object restarts). */
+  private readonly routes = new Map<string, { packId: string; path: Direction[] }>();
+  private lastSaveAt = 0;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -137,6 +161,8 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     }
     // Same channel reconnect: the old socket is replaced, not duplicated.
     for (const old of this.ctx.getWebSockets(accountId)) {
+      // A new connection starts without Auto Hunt; the old one's autopilot stops with it.
+      if ((old.deserializeAttachment() as Attachment | null)?.auto) await this.stopAuto(old, "DISCONNECTED");
       old.serializeAttachment(null);
       safeSend(old, { t: "kicked", reason: "REPLACED" });
       old.close(4001, "replaced");
@@ -171,20 +197,25 @@ export class MapChannelDurableObject extends DurableObject<Env> {
         raw = undefined;
       }
     }
+    // Walking by hand takes over from Auto Hunt.
+    if (a.auto && (raw as { t?: unknown } | undefined)?.t === "step") await this.stopAuto(ws, "PLAYER_STOPPED");
     const r = channel.handle(a.presence.accountId, raw, Date.now());
     if (r.kind === "intent") {
       const account = a.presence.accountId;
+      // Stop always goes through, even while a fight is being started for this player.
+      if (r.msg.t === "autoStop") return void (await this.stopAuto(ws, "PLAYER_STOPPED"));
       if (this.busy.has(account)) return;
       this.busy.add(account);
       try {
-        if (r.msg.t === "engage") await this.engage(ws, a, r.msg.packId);
-        else await this.resume(ws, a);
+        if (r.msg.t === "engage") await this.engage(ws, this.att(ws) ?? a, r.msg.packId);
+        else if (r.msg.t === "resume") await this.resume(ws, this.att(ws) ?? a);
+        else await this.startAuto(ws, r.msg.settings);
       } finally {
         this.busy.delete(account);
       }
       return;
     }
-    if (r.kind === "moved") ws.serializeAttachment({ ...a, presence: r.presence } satisfies Attachment);
+    if (r.kind === "moved") ws.serializeAttachment({ ...(this.att(ws) ?? a), presence: r.presence } satisfies Attachment);
     this.deliver(a.presence.accountId, r.out);
     if (r.kind === "moved" && r.portal !== null) {
       const to = r.portal.to;
@@ -251,16 +282,23 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     this.deliver(accountId, [{ to: "self", msg: { t: "packs", packs } }]);
   }
 
-  private async engage(ws: WebSocket, a: Attachment, packId: string): Promise<void> {
+  /**
+   * Start a private fight against a pack. `origin` is fixed here for the whole fight (chapter 08).
+   * Returns null when the fight exists, else the refusal (sent to the player unless `quiet`).
+   */
+  private async engage(ws: WebSocket, a: Attachment, packId: string, origin: OriginMode = "manual", quiet = false): Promise<WorldErrorCode | null> {
     const account = a.presence.accountId;
     const presence = this.ensureChannel(a.mapId, a.channel).get(account);
     const map = this.maps.get(a.mapId)!;
-    const fail = (code: WorldErrorCode, message: string) => safeSend(ws, { t: "error", code, message });
+    const fail = (code: WorldErrorCode, message: string): WorldErrorCode => {
+      if (!quiet) safeSend(ws, { t: "error", code, message });
+      return code;
+    };
     if (presence === undefined) return fail("NOT_JOINED", "join first");
     if (!huntingAllowed(map)) return fail("NO_HUNT_HERE", "no hunting in towns");
     if (presence.battleId !== null) {
       safeSend(ws, { t: "encounter", battleId: presence.battleId, resumed: true });
-      return;
+      return null;
     }
     const loadout = await this.characters.loadout(account);
     if (loadout === null) return fail("NO_CHARACTER", "create a character first");
@@ -300,7 +338,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     }
     const setup: BattleSetup = {
       battleId,
-      originMode: "manual",
+      originMode: origin,
       seed: crypto.randomUUID(),
       player: playerSetup(account, character, worn),
       companions: companionSetups(character.team, instances),
@@ -310,21 +348,23 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     const created = (await this.battle(battleId).handle(account, { kind: "create", setup, reservationId })) as RoomReply;
     if (!created.ok) return fail("ENCOUNTER_REFUSED", created.code);
 
-    this.setBattle(ws, a, battleId);
+    this.setBattle(ws, this.att(ws) ?? a, battleId);
     await this.store.save(account, a.generation, a.mapId, presence.pos);
     safeSend(ws, { t: "encounter", battleId, resumed: false });
     await this.sendPacks(account, a.mapId, a.channel);
+    return null;
   }
 
-  private async resume(ws: WebSocket, a: Attachment): Promise<void> {
+  /** Back from a fight: only once the Battle DO says it is over and D1 has the settlement. */
+  private async resume(ws: WebSocket, a: Attachment): Promise<"active" | "settling" | "defeated" | "done"> {
     const account = a.presence.accountId;
     const presence = this.ensureChannel(a.mapId, a.channel).get(account);
-    if (presence === undefined) return;
+    if (presence === undefined) return "done";
     if (presence.battleId !== null) {
       if ((await this.battleStatus(account, presence.battleId)) === "active") {
         safeSend(ws, { t: "error", code: "IN_BATTLE", message: "the fight is still going" });
         safeSend(ws, { t: "encounter", battleId: presence.battleId, resumed: true });
-        return;
+        return "active";
       }
       // Rewards and HP land in D1 before the player walks on: wait briefly for the settlement
       // (each view nudges the Battle DO's outbox), else ask the client to try again.
@@ -335,9 +375,13 @@ export class MapChannelDurableObject extends DurableObject<Env> {
         await this.battleStatus(account, presence.battleId);
         r = await this.economy.reservation(rid);
       }
-      if (r?.status === "active") return safeSend(ws, { t: "error", code: "SETTLING", message: "recording the fight; try again" });
-      this.setBattle(ws, a, null);
+      if (r?.status === "active") {
+        safeSend(ws, { t: "error", code: "SETTLING", message: "recording the fight; try again" });
+        return "settling";
+      }
+      this.setBattle(ws, this.att(ws) ?? a, null);
       if (r?.outcome === "defeat") {
+        if (this.att(ws)?.auto) await this.stopAuto(ws, "DEFEATED");
         // A wiped team goes back to the rest point (chapter 03 §3); arriving in town restores it.
         const town = this.maps.get(EXAMPLE_START_MAP)!;
         const ok = await this.store.moveTo(account, a.generation, a.mapId, { mapId: town.id, x: town.spawn.x, y: town.spawn.y }, a.channel);
@@ -346,11 +390,123 @@ export class MapChannelDurableObject extends DurableObject<Env> {
         safeSend(ws, { t: "resumed" });
         safeSend(ws, ok ? { t: "transfer", mapId: town.id, channel: a.channel } : { t: "kicked", reason: "REPLACED" });
         ws.close(1000, ok ? "transfer" : "replaced");
-        return;
+        return "defeated";
       }
     }
     safeSend(ws, { t: "resumed" });
     await this.sendPacks(account, a.mapId, a.channel);
+    return "done";
+  }
+
+  // ---------------------------------------------------------------- Auto Hunt (C14, chapter 08)
+
+  private att(ws: WebSocket): Attachment | null {
+    return ws.deserializeAttachment() as Attachment | null;
+  }
+
+  private setAuto(ws: WebSocket, auto: AutoState | null): void {
+    const a = this.att(ws);
+    if (a !== null) ws.serializeAttachment({ ...a, auto } satisfies Attachment);
+  }
+
+  private async startAuto(ws: WebSocket, settings: AutoHuntSettings): Promise<void> {
+    const a = this.att(ws);
+    if (a === null) return;
+    const map = this.maps.get(a.mapId)!;
+    const refuse = (reason: AutoStopReason) => safeSend(ws, { t: "auto", on: false, reason });
+    if (!huntingAllowed(map)) return refuse("NO_HUNT_HERE");
+    if (!mapHasTargets(settings, map)) return refuse("NO_TARGETS");
+    if ((await this.characters.loadout(a.presence.accountId)) === null) return refuse("NO_CHARACTER");
+    this.routes.delete(a.presence.accountId);
+    this.setAuto(ws, { settings, checked: false, endedAt: null, piloting: null });
+    safeSend(ws, { t: "auto", on: true });
+    await this.ctx.storage.setAlarm(Date.now());
+  }
+
+  /** Auto Hunt off; a fight in progress stays as it is and goes back to the player's hands. */
+  private async stopAuto(ws: WebSocket, reason: AutoStopReason, extra: { detail?: string; packId?: string } = {}): Promise<void> {
+    const a = this.att(ws);
+    if (a === null || !a.auto) return;
+    this.setAuto(ws, null);
+    this.routes.delete(a.presence.accountId);
+    safeSend(ws, { t: "auto", on: false, reason, ...extra });
+    const battleId = this.ensureChannel(a.mapId, a.channel).get(a.presence.accountId)?.battleId ?? null;
+    if (battleId !== null) await this.battle(battleId).handle(a.presence.accountId, { kind: "autopilot", on: false }).catch(() => undefined);
+  }
+
+  /** One Auto Hunt step for one connected player: watch the fight, check the team, walk, engage. */
+  private async autoTick(ws: WebSocket): Promise<void> {
+    const a = this.att(ws);
+    if (a === null || !a.auto) return;
+    const auto = a.auto;
+    const account = a.presence.accountId;
+    const channel = this.ensureChannel(a.mapId, a.channel);
+    const presence = channel.get(account);
+    if (presence === undefined) return;
+    const map = this.maps.get(a.mapId)!;
+    const now = Date.now();
+
+    if (presence.battleId !== null) {
+      const status = await this.battleStatus(account, presence.battleId);
+      if (status === "active") {
+        if (auto.piloting !== presence.battleId) {
+          await this.battle(presence.battleId).handle(account, { kind: "autopilot", on: true });
+          this.setAuto(ws, { ...auto, piloting: presence.battleId });
+        }
+        return;
+      }
+      // Over: leave the result on screen briefly, then walk on (the same checks as a manual resume).
+      if (auto.endedAt === null) return this.setAuto(ws, { ...auto, endedAt: now });
+      if (now - auto.endedAt < this.rules.provisional.autoHuntResultPauseMs.value) return;
+      const r = await this.resume(ws, a);
+      if (r === "done") this.setAuto(ws, { ...auto, endedAt: null, checked: false, piloting: null });
+      return;
+    }
+
+    if (!auto.checked) {
+      const loadout = await this.characters.loadout(account);
+      if (loadout === null) return this.stopAuto(ws, "NO_CHARACTER");
+      const { character, instances, worn } = loadout;
+      const alive = (hp: number | null) => hp === null || hp > 0;
+      if (!alive(character.hp) && ![...instances.values()].some((i) => alive(i.hp))) return this.stopAuto(ws, "NEED_REST");
+      const maxHp = deriveStats(character.level, character.primaryStats, gearBonuses(worn.defs)).maxHp;
+      const hp = character.hp ?? maxHp;
+      if (hp * 100 < auto.settings.stopBelowHpPercent * maxHp) return this.stopAuto(ws, "LOW_HP", { detail: `${hp}/${maxHp}` });
+      this.setAuto(ws, { ...auto, checked: true });
+    }
+
+    const live = await this.currentPacks(map, a.channel);
+    let route = this.routes.get(account);
+    if (route !== undefined && !live.some((p) => p.packId === route!.packId)) route = undefined;
+    if (route === undefined) {
+      const fought = await this.encounters.fought(account, live.map((p) => p.packId));
+      const visible = live.filter((p) => !fought.has(p.packId)).map((p) => visiblePack(p, this.content.species));
+      const found = stopSpeciesPack(auto.settings, visible);
+      if (found !== null) return this.stopAuto(ws, "FOUND_SPECIES", { detail: found.leader.speciesId, packId: found.packId });
+      const plan = planAutoHunt(this.rules, map, presence.pos, visible, auto.settings);
+      if (plan.kind === "wait") return;
+      if (plan.kind === "unreachable") return this.stopAuto(ws, "NO_TARGETS");
+      route = { packId: plan.packId, path: plan.kind === "walk" ? plan.path : [] };
+      this.routes.set(account, route);
+    }
+
+    if (route.path.length === 0) {
+      this.routes.delete(account);
+      const code = await this.engage(ws, a, route.packId, "auto_hunt", true);
+      if (code === null || code === "NO_SUCH_PACK" || code === "TOO_FAR") return; // fight on, or re-plan next tick
+      if (code === "NEED_REST") return this.stopAuto(ws, "NEED_REST");
+      if (code === "NO_CHARACTER") return this.stopAuto(ws, "NO_CHARACTER");
+      return this.stopAuto(ws, "REFUSED", { detail: code });
+    }
+    const step = channel.autoStep(account, route.path[0]!, now);
+    if (step.kind !== "moved") {
+      // Too early is a wait; anything else means the route is stale.
+      if (presence.readyAt - this.rules.provisional.moveBurstMs.value <= now) this.routes.delete(account);
+      return;
+    }
+    route.path.shift();
+    ws.serializeAttachment({ ...(this.att(ws) ?? a), presence: step.presence } satisfies Attachment);
+    this.deliver(account, step.out);
   }
 
   private setBattle(ws: WebSocket, a: Attachment, battleId: string | null): void {
@@ -368,16 +524,40 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     return r.ok ? (r.body as { state: PublicBattleState }).state.status : "missing";
   }
 
-  /** Periodic position save for players who moved (P11 positionSaveIntervalMs); new packs each cycle. */
+  /**
+   * Periodic position save for players who moved (P11 positionSaveIntervalMs); new packs each cycle;
+   * and the Auto Hunt loop, one step per walk-step interval while anyone here is auto hunting.
+   */
   override async alarm(): Promise<void> {
     const cycleBefore = this.packs?.cycle ?? null;
+    const now = Date.now();
+    if (now - this.lastSaveAt >= this.rules.provisional.positionSaveIntervalMs.value) {
+      this.lastSaveAt = now;
+      for (const ws of this.ctx.getWebSockets()) {
+        const a = ws.deserializeAttachment() as Attachment | null;
+        if (a === null || !a.presence.dirty) continue;
+        const live = this.channel?.get(a.presence.accountId) ?? a.presence;
+        await this.store.save(live.accountId, a.generation, a.mapId, live.pos);
+        live.dirty = false;
+        ws.serializeAttachment({ ...a, presence: live } satisfies Attachment);
+      }
+    }
+    let hunting = false;
     for (const ws of this.ctx.getWebSockets()) {
-      const a = ws.deserializeAttachment() as Attachment | null;
-      if (a === null || !a.presence.dirty) continue;
-      const live = this.channel?.get(a.presence.accountId) ?? a.presence;
-      await this.store.save(live.accountId, a.generation, a.mapId, live.pos);
-      live.dirty = false;
-      ws.serializeAttachment({ ...a, presence: live } satisfies Attachment);
+      const a = this.att(ws);
+      if (!a?.auto) continue;
+      hunting = true;
+      const account = a.presence.accountId;
+      if (this.busy.has(account)) continue;
+      this.busy.add(account);
+      try {
+        this.ensureChannel(a.mapId, a.channel);
+        await this.autoTick(ws);
+      } catch {
+        // A failed tick (D1 or Battle DO busy) just tries again next tick.
+      } finally {
+        this.busy.delete(account);
+      }
     }
     // A new respawn cycle: everyone gets the new packs (including ones they fought last cycle).
     const sockets = this.ctx.getWebSockets().map((ws) => ws.deserializeAttachment() as Attachment | null).filter((x): x is Attachment => x !== null);
@@ -385,12 +565,16 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     if (first !== undefined && cycleBefore !== packCycle(this.rules, Date.now())) {
       for (const s of sockets) await this.sendPacks(s.presence.accountId, s.mapId, s.channel);
     }
-    await this.ensureSaveAlarm();
+    if (hunting) await this.ctx.storage.setAlarm(Date.now() + this.rules.provisional.walkStepMs.value);
+    else await this.ensureSaveAlarm();
   }
 
   private async drop(ws: WebSocket): Promise<void> {
     const a = ws.deserializeAttachment() as Attachment | null;
     if (a === null) return; // replaced, evicted or transferred: already handled
+    // No offline farming (C14): a closed connection stops Auto Hunt and its fight's autopilot at
+    // once (the grace period is O11, not decided); the fight waits for the player to come back.
+    if (a.auto) await this.stopAuto(ws, "DISCONNECTED");
     ws.serializeAttachment(null);
     const channel = this.ensureChannel(a.mapId, a.channel);
     const left = channel.leave(a.presence.accountId);

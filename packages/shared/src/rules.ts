@@ -123,6 +123,10 @@ export const RULES = {
     // Encounters (Phase C). Hunting speed numbers are P12 assumptions.
     packRespawnMs: provisional(60_000, "P12", "a visible pack is re-rolled this often; a player who fought it waits for the next one"),
     engageRangeTiles: provisional(1, "P10", "must stand next to (or on) the pack to start a fight"),
+    // Auto Hunt pacing (chapter 08: the server, not the client's frame rate, sets the action cadence).
+    // Prototype values so a watching client can show each action; not a farming limit or quota.
+    autoBattleActionMs: provisional(700, "P01", "server-paced Auto Hunt battle: one ally action per this many ms"),
+    autoHuntResultPauseMs: provisional(1500, "P01", "after an Auto Hunt fight ends, the result stays on screen this long before walking on"),
     // EXP and levels. The player table is Nut's "exp-proposal-1.0" (docs/design/EXP_DESIGN_LV001_200.md,
     // 2026-10-03, PROVISIONAL): minutes per level from linear anchors, times 2 reference kills a minute,
     // times the reference EXP of a normal kill at that level, rounded half-up to 10. The JSON beside it is

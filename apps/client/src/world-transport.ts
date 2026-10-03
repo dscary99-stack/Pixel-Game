@@ -20,6 +20,7 @@ import {
   rollPack,
   seedRng,
   visiblePack,
+  type AutoHuntSettings,
   type Direction,
   type PackInstance,
   type WorldClientMessage,
@@ -36,6 +37,9 @@ export interface WorldTransport {
   engage(packId: string): void;
   /** Back from a fight: the server checks the fight really ended before letting the player walk. */
   resume(): void;
+  /** Start Auto Hunt (C14): the server walks and fights until it says `auto` off. */
+  autoHunt(settings: AutoHuntSettings): void;
+  autoStop(): void;
   /** How the battle scene talks to the fight the server just started. */
   battle(battleId: string): BattleTransport;
   close(): void;
@@ -84,6 +88,14 @@ export class ServerWorldTransport implements WorldTransport {
 
   resume() {
     this.send({ t: "resume" });
+  }
+
+  autoHunt(settings: AutoHuntSettings) {
+    this.send({ t: "autoHunt", settings });
+  }
+
+  autoStop() {
+    this.send({ t: "autoStop" });
   }
 
   battle(battleId: string): BattleTransport {
@@ -178,6 +190,15 @@ export class LocalWorldTransport implements WorldTransport {
     this.channel?.setBattle("me", null);
     this.emit({ t: "resumed" });
     this.sendPacks();
+  }
+
+  autoHunt() {
+    // Auto Hunt is server-driven; the preview has no server.
+    this.emit({ t: "auto", on: false, reason: "REFUSED", detail: "local preview" });
+  }
+
+  autoStop() {
+    this.emit({ t: "auto", on: false, reason: "PLAYER_STOPPED" });
   }
 
   battle(battleId: string): BattleTransport {

@@ -77,6 +77,8 @@ export interface OutboxSummary {
 const K = {
   state: "state",
   reservation: "reservation",
+  /** Auto Hunt: the server plays the ally turns itself, one per alarm tick. */
+  autopilot: "autopilot",
   /** Written by the reconciler's probe when no battle exists; the battle can never start after it. */
   voided: "voided",
   session: (account: string) => `session:${account}`,
@@ -229,6 +231,37 @@ export class BattleRoom {
       ...(await this.outboxFor(r.state, r.events)),
     });
     return response;
+  }
+
+  /**
+   * Auto Hunt switch, set by the Map Channel for the owner. Off hands the fight back to the player;
+   * the reward mode fixed at the start never changes (chapter 08).
+   */
+  async setAutopilot(accountId: string, on: boolean): Promise<void> {
+    const state = await this.requireState();
+    if (state.ownerAccountId !== accountId) throw new RoomError("NOT_OWNER", "not your battle");
+    await this.storage.putMany({ [K.autopilot]: on });
+  }
+
+  async autopilot(): Promise<boolean> {
+    return (await this.storage.get<boolean>(K.autopilot)) === true;
+  }
+
+  /**
+   * One Auto Hunt action: the same Auto Battle choice and validation as a player's Auto, written
+   * the same way (state, events and what the economy is owed in one write). The Battle DO alarm
+   * paces these; nothing runs once the Map Channel turns autopilot off (disconnect, stop).
+   */
+  async autopilotStep(): Promise<"acted" | "idle" | "over"> {
+    if (!(await this.autopilot())) return "idle";
+    const state = await this.requireState();
+    if (state.status !== "active") return "over";
+    const command = chooseAutoCommand(state);
+    if (command === null) return "idle";
+    const r = applyCommand(this.rules, this.content, state, command, { source: "auto", causeId: `autopilot:${state.stateVersion}` });
+    if (!r.ok) return "idle";
+    await this.storage.putMany({ [K.state]: r.state, ...eventEntries(r.events), ...(await this.outboxFor(r.state, r.events)) });
+    return r.state.status === "active" ? "acted" : "over";
   }
 
   /** Outbox entries for the entitlements and the battle end a command produced. */

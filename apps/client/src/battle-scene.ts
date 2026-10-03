@@ -50,15 +50,24 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private onExit: (() => void) | null = null;
+  /** Auto Hunt: the server plays this fight; the scene only shows it until the player takes over. */
+  private watching = false;
+  private onStopAuto: (() => void) | null = null;
+  private cursor = 0;
+  private watchUi: Phaser.GameObjects.GameObject[] = [];
   private exitButton: Phaser.GameObjects.Text | null = null;
 
   /**
    * `onExit` is set when the fight came from the world: once the fight is over a button takes the
    * player back to where they stood. Phaser reuses this scene object, so every field resets here.
    */
-  init(data: { transport: BattleTransport; onExit?: () => void }) {
+  init(data: { transport: BattleTransport; onExit?: () => void; watch?: boolean; onStopAuto?: () => void }) {
     this.transport = data.transport;
     this.onExit = data.onExit ?? null;
+    this.watching = data.watch ?? false;
+    this.onStopAuto = data.onStopAuto ?? null;
+    this.cursor = 0;
+    this.watchUi = [];
     this.exitButton = null;
     this.views = new Map();
     this.selectedTarget = null;
@@ -92,8 +101,46 @@ export class BattleScene extends Phaser.Scene {
     document.addEventListener("visibilitychange", onHide);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => document.removeEventListener("visibilitychange", onHide));
 
+    // While watching, read what the server did; the server paces the actions (Auto Hunt).
+    this.time.addEvent({ delay: 400, loop: true, callback: () => void this.watchTick() });
+    if (this.watching) this.showWatchUi();
+
     const { snapshot, events } = await this.transport.start();
     this.apply(snapshot, events);
+  }
+
+  /** Auto Hunt turned off (by the player or a stop reason): the player now controls this fight. */
+  setWatch(on: boolean) {
+    if (this.watching === on) return;
+    this.watching = on;
+    if (on) this.showWatchUi();
+    else {
+      this.watchUi.forEach((o) => o.destroy());
+      this.watchUi = [];
+      if (this.snap?.state.status === "active") this.pushLog("หยุดล่าอัตโนมัติแล้ว คุมเองต่อได้");
+      if (this.snap !== undefined) this.render(this.snap.state);
+    }
+  }
+
+  private showWatchUi() {
+    const banner = this.add
+      .text(W / 2, 430, "ล่าอัตโนมัติ: server กำลังสู้ให้", { fontFamily: "sans-serif", fontSize: "15px", color: "#0b0a12", backgroundColor: "#f2c94c", padding: { x: 10, y: 4 } })
+      .setOrigin(0.5);
+    const stop = this.button(W - 200, 20, "หยุดล่า (คุมเอง)", () => this.onStopAuto?.()).setFixedSize(184, 48).setBackgroundColor("#a33b3b");
+    this.watchUi = [banner, stop];
+  }
+
+  private async watchTick() {
+    if (!this.watching || this.busy || this.snap === undefined) return;
+    this.busy = true;
+    try {
+      const { snapshot, events } = await this.transport.poll(this.cursor);
+      this.apply(snapshot, events);
+    } catch {
+      // The next tick tries again.
+    } finally {
+      this.busy = false;
+    }
   }
 
   private button(x: number, y: number, label: string, fn: () => void) {
@@ -106,6 +153,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private toggleAuto() {
+    if (this.watching) return;
     this.autoOn = !this.autoOn;
     this.autoButton.setText(this.autoOn ? "Auto: เปิด" : "Auto: ปิด");
   }
@@ -122,6 +170,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private async act(kind: "attack" | "skill" | "guard" | "item" | "capture") {
+    if (this.watching) return this.pushLog("กำลังล่าอัตโนมัติ: กด หยุดล่า ก่อนสั่งเอง");
     if (this.busy || this.snap.state.status !== "active" || this.snap.actor === null) return;
     const actor = this.unit(this.snap.actor)!;
     const target = this.selectedTarget ?? this.firstEnemy();
@@ -158,7 +207,12 @@ export class BattleScene extends Phaser.Scene {
   private apply(snapshot: Snapshot, events: BattleEvent[], response?: { status: string; reasonCode?: string; message?: string }) {
     this.snap = snapshot;
     if (response?.status === "rejected") this.pushLog(`ปฏิเสธ: ${response.reasonCode} ${response.message ?? ""}`);
-    for (const e of events) this.describe(e);
+    for (const e of events) {
+      // Polls can overlap with command responses: show each event once.
+      if (e.seq <= this.cursor) continue;
+      this.cursor = e.seq;
+      this.describe(e);
+    }
     this.render(snapshot.state);
   }
 
@@ -219,7 +273,7 @@ export class BattleScene extends Phaser.Scene {
     this.turnText.setText(
       state.status === "active" ? `รอบ ${state.round} · ตาของ ${actor?.name ?? "-"} · แตะศัตรูเพื่อเลือกเป้า` : `จบไฟต์: ${state.status}`,
     );
-    if (state.status !== "active" && this.onExit !== null && this.exitButton === null) {
+    if (state.status !== "active" && this.onExit !== null && this.exitButton === null && !this.watching) {
       const exit = this.onExit;
       this.exitButton = this.button(W - 200, 20, "กลับไปเดินต่อ", () => exit()).setFixedSize(184, 48).setBackgroundColor("#2f7a4a");
     }

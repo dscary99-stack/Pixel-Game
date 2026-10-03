@@ -7,7 +7,7 @@
  * slow or failing D1 never delays combat acks and only one drain runs at a time per battle.
  */
 import { DurableObject } from "cloudflare:workers";
-import { DEV_FIXTURE_RULES, PRODUCTION_RULES, exampleContentMaps, type BattleSetup } from "@pmrpg/shared";
+import { DEV_FIXTURE_RULES, PRODUCTION_RULES, exampleContentMaps, type BattleSetup, type RulesConfig } from "@pmrpg/shared";
 import { BattleRoom, RoomError, type Environment, type OutboxSummary, type RoomStorage } from "./battle-room";
 import { Economy } from "./economy";
 
@@ -39,11 +39,13 @@ class DoStorage implements RoomStorage {
 export class BattleDurableObject extends DurableObject<Env> {
   private readonly room: BattleRoom;
   private readonly economy: Economy;
+  private readonly rules: RulesConfig;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     // Fixture rules (OPEN values filled) exist only in dev; BattleRoom refuses them elsewhere.
     const rules = env.ENVIRONMENT === "dev" ? DEV_FIXTURE_RULES : PRODUCTION_RULES;
+    this.rules = rules;
     // Phase A ships EXAMPLE content only; a versioned content bundle replaces this later.
     this.room = new BattleRoom(new DoStorage(ctx.storage), rules, exampleContentMaps(), env.ENVIRONMENT);
     this.economy = new Economy(env.DB, rules);
@@ -55,11 +57,24 @@ export class BattleDurableObject extends DurableObject<Env> {
   }
 
   override async alarm(): Promise<void> {
+    // Auto Hunt: one ally action per tick (P01 autoBattleActionMs), never faster.
+    const step = await this.room.autopilotStep().catch(() => "idle" as const);
     await this.room.drainOutbox(this.economy);
     // Re-read rather than trust the drain's snapshot: a command may have queued more meanwhile.
     // A refused entry (failed) blocks settlement until an operator acts, so retrying is pointless.
     const r = await this.room.outbox();
-    if (r.pending > 0 && r.failed === 0) await this.ctx.storage.setAlarm(Date.now() + OUTBOX_RETRY_MS);
+    const next: number[] = [];
+    if (step === "acted" || (step === "idle" && (await this.room.autopilot()) && (await this.active()))) next.push(Date.now() + this.actionMs);
+    if (r.pending > 0 && r.failed === 0) next.push(Date.now() + (step === "over" ? 0 : OUTBOX_RETRY_MS));
+    if (next.length > 0) await this.ctx.storage.setAlarm(Math.min(...next));
+  }
+
+  private get actionMs(): number {
+    return this.rules.provisional.autoBattleActionMs.value;
+  }
+
+  private async active(): Promise<boolean> {
+    return (await this.ctx.storage.get<{ status: string }>("state"))?.status === "active";
   }
 
   private async kickOutbox(): Promise<OutboxSummary> {
@@ -81,7 +96,16 @@ export class BattleDurableObject extends DurableObject<Env> {
         case "claim":
           return { ok: true, body: { sessionGeneration: await this.room.claimSession(accountId) } };
         case "view":
-          return { ok: true, body: { state: await this.room.view(accountId), actor: await this.room.actor(), settlement: await this.kickOutbox() } };
+          return {
+            ok: true,
+            body: { state: await this.room.view(accountId), actor: await this.room.actor(), settlement: await this.kickOutbox(), autopilot: await this.room.autopilot() },
+          };
+        case "autopilot": {
+          await this.room.setAutopilot(accountId, op.on);
+          // Start pacing now; the alarm keeps itself going while autopilot is on and the fight is live.
+          if (op.on) await this.ctx.storage.setAlarm(Date.now() + this.actionMs);
+          return { ok: true, body: { autopilot: op.on } };
+        }
         case "events":
           await this.room.view(accountId);
           return { ok: true, body: { events: await this.room.eventsSince(op.cursor) } };
@@ -105,6 +129,7 @@ export type RoomOp =
   | { kind: "view" }
   | { kind: "events"; cursor: number }
   | { kind: "command"; body: unknown }
-  | { kind: "auto"; body: unknown };
+  | { kind: "auto"; body: unknown }
+  | { kind: "autopilot"; on: boolean };
 
 export type RoomReply = { ok: true; body: unknown } | { ok: false; code: string; message: string };

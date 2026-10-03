@@ -164,3 +164,41 @@ describe("Worker auth stub (O11 open)", () => {
     expect(resolveAccount(req, { ENVIRONMENT: "production", DEV_AUTH: "true" })).toBeNull();
   });
 });
+
+describe("Auto Hunt autopilot (chapter 08)", () => {
+  it("does nothing until switched on, then plays one ally action per step to the end, with the same outbox", async () => {
+    const { room, storage } = await newRoom();
+    expect(await room.autopilotStep()).toBe("idle");
+    expect((await room.view(OWNER)).stateVersion).toBe(1);
+    await expect(room.setAutopilot("acct:other", true)).rejects.toBeInstanceOf(RoomError);
+    await room.setAutopilot(OWNER, true);
+    let steps = 0;
+    let r: string;
+    do {
+      const before = (await room.view(OWNER)).stateVersion;
+      r = await room.autopilotStep();
+      steps++;
+      // Exactly one command per step (enemy turns follow inside it, as for any command).
+      expect((await room.view(OWNER)).stateVersion).toBe(before + 1);
+    } while (r === "acted" && steps < 200);
+    expect(r).toBe("over");
+    expect(await room.autopilotStep()).toBe("over");
+    const state = await room.view(OWNER);
+    expect(state.status).not.toBe("active");
+    // Rewards and the settlement are queued exactly as for player commands.
+    expect(storage.data.has("out:2:settle")).toBe(true);
+    expect([...storage.data.keys()].filter((k) => k.startsWith("out:1:grant:")).length).toBe(state.entitlements.length);
+  });
+
+  it("switched off mid-fight stops at once and the player can take over", async () => {
+    const { room } = await newRoom();
+    await room.setAutopilot(OWNER, true);
+    expect(await room.autopilotStep()).toBe("acted");
+    await room.setAutopilot(OWNER, false);
+    const v = (await room.view(OWNER)).stateVersion;
+    expect(await room.autopilotStep()).toBe("idle");
+    expect((await room.view(OWNER)).stateVersion).toBe(v);
+    const gen = await room.claimSession(OWNER);
+    expect(accepted(await room.command(OWNER, potion(v, gen))).stateVersion).toBe(v + 1);
+  });
+});

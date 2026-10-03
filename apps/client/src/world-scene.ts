@@ -16,6 +16,7 @@ import {
   portalAt,
   stepCostMs,
   tryStep,
+  type AutoStopReason,
   type Direction,
   type MapDefinition,
   type PublicPlayer,
@@ -24,9 +25,9 @@ import {
   type VisiblePack,
   type WorldServerMessage,
 } from "@pmrpg/shared";
-import { ELEMENT_COLOR } from "./battle-scene";
+import { ELEMENT_COLOR, type BattleScene } from "./battle-scene";
 import type { CharacterApi, CharacterBundle } from "./character-api";
-import { equipmentPanel, shopPanel, statsPanel, teamPanel, vitals } from "./character-ui";
+import { autoHuntPanel, equipmentPanel, shopPanel, statsPanel, teamPanel, vitals } from "./character-ui";
 import type { WorldTransport } from "./world-transport";
 
 const W = 960;
@@ -55,6 +56,20 @@ interface PackView {
   objects: Phaser.GameObjects.GameObject[];
 }
 
+/** Why Auto Hunt stopped, in the player's words. */
+const AUTO_STOP_TEXT: Record<AutoStopReason, string> = {
+  PLAYER_STOPPED: "หยุดล่าอัตโนมัติแล้ว",
+  FOUND_SPECIES: "เจอมอนสเตอร์ที่ตั้งไว้ให้หยุด",
+  LOW_HP: "HP ต่ำกว่าที่ตั้งไว้ หยุดล่าอัตโนมัติ",
+  NEED_REST: "ทุกคนในทีมล้มอยู่ กลับไปพักในหมู่บ้านก่อน",
+  DEFEATED: "แพ้ไฟต์ กลับไปพักที่หมู่บ้าน",
+  NO_TARGETS: "ไม่มีฝูงที่ตรงกับที่ตั้งไว้ในแผนที่นี้",
+  DISCONNECTED: "หลุดการเชื่อมต่อ หยุดล่าอัตโนมัติ",
+  NO_HUNT_HERE: "ล่าอัตโนมัติได้เฉพาะในทุ่ง",
+  NO_CHARACTER: "ต้องสร้างตัวละครก่อน",
+  REFUSED: "server ไม่ให้เริ่มไฟต์",
+};
+
 const FACE_OFFSET: Record<PublicPlayer["facing"], [number, number]> = { N: [0, -12], S: [0, 12], E: [10, 0], W: [-10, 0] };
 
 export class WorldScene extends Phaser.Scene {
@@ -70,6 +85,8 @@ export class WorldScene extends Phaser.Scene {
   private pendingEngage: string | null = null;
   /** A private fight is open; walking waits until the server says it is over. */
   private inBattle = false;
+  /** Auto Hunt is on: the server walks and fights; the player's own steps stop it. */
+  private autoOn = false;
   private map: MapDefinition | null = null;
   private channelNo = 1;
   private layer: Phaser.GameObjects.Container | null = null;
@@ -101,7 +118,7 @@ export class WorldScene extends Phaser.Scene {
     this.hud = this.add.text(8, 40, "", style).setScrollFactor(0).setDepth(100);
     this.notice = this.add.text(W / 2, H - 90, "", { ...style, fontSize: "15px" }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
     this.add
-      .text(W - 8, 8, `ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · C สเตตัส · T ทีม · E อุปกรณ์ · B ร้าน (ในเมือง)" : ""}`, style)
+      .text(W - 8, 8, `ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · C สเตตัส · T ทีม · E อุปกรณ์ · B ร้าน (ในเมือง) · H ล่าอัตโนมัติ" : ""}`, style)
       .setOrigin(1, 0)
       .setScrollFactor(0)
       .setDepth(100);
@@ -115,6 +132,7 @@ export class WorldScene extends Phaser.Scene {
     kb.on("keydown-E", () => void this.openEquipment());
     kb.on("keydown-B", () => void this.openShop());
     kb.on("keydown-C", () => void this.openStats());
+    kb.on("keydown-H", () => void this.toggleAutoHunt());
     if (this.api !== null) {
       const button = (x: number, label: string, open: () => Promise<void>) =>
         this.add
@@ -130,7 +148,8 @@ export class WorldScene extends Phaser.Scene {
       const team = button(8, "ทีมคู่ใจ (T)", () => this.openTeam());
       const gear = button(team.x + team.width + 8, "อุปกรณ์ (E)", () => this.openEquipment());
       const shop = button(gear.x + gear.width + 8, "ร้าน (B)", () => this.openShop());
-      button(shop.x + shop.width + 8, "สเตตัส (C)", () => this.openStats());
+      const stats = button(shop.x + shop.width + 8, "สเตตัส (C)", () => this.openStats());
+      button(stats.x + stats.width + 8, "ล่าอัตโนมัติ (H)", () => this.toggleAutoHunt());
     }
     this.input.on("pointerdown", (p: Phaser.Input.Pointer) => this.tapMove(p));
 
@@ -172,6 +191,23 @@ export class WorldScene extends Phaser.Scene {
       case "moved":
         this.movePlayer(m.sid, { x: m.x, y: m.y }, m.facing, true);
         break;
+      case "autoMoved":
+        // A step the server took for us (Auto Hunt).
+        if (this.selfSid !== null) this.movePlayer(this.selfSid, { x: m.x, y: m.y }, m.facing, true);
+        break;
+      case "auto":
+        this.autoOn = m.on;
+        this.path = [];
+        this.pendingEngage = null;
+        if (m.on) this.flash("เริ่มล่าอัตโนมัติ (กด H หรือเดินเองเพื่อหยุด)");
+        else {
+          const found = m.reason === "FOUND_SPECIES" && m.detail ? ` (${this.species.get(m.detail)?.name.th ?? m.detail})` : "";
+          const extra = m.reason === "REFUSED" && m.detail ? ` (${m.detail})` : m.reason === "LOW_HP" && m.detail ? ` (HP ${m.detail})` : "";
+          this.flash(`${AUTO_STOP_TEXT[m.reason ?? "PLAYER_STOPPED"]}${found}${extra}`);
+          // A fight in progress goes back to the player's hands.
+          if (this.scene.isActive("battle")) (this.scene.get("battle") as BattleScene).setWatch(false);
+        }
+        break;
       case "ack":
         break;
       case "correct": {
@@ -193,6 +229,11 @@ export class WorldScene extends Phaser.Scene {
         break;
       case "resumed":
         this.inBattle = false;
+        // Auto Hunt walks on by itself: close the finished fight it was showing.
+        if (this.scene.isActive("battle")) {
+          this.scene.stop("battle");
+          this.scene.wake();
+        }
         this.flash("กลับมาที่เดิมแล้ว");
         void this.reloadCharacter();
         break;
@@ -347,6 +388,8 @@ export class WorldScene extends Phaser.Scene {
     this.flash(resumed ? "กลับเข้าไฟต์ที่ค้างอยู่" : "เข้าไฟต์!");
     this.scene.launch("battle", {
       transport: this.transport.battle(battleId),
+      watch: this.autoOn,
+      onStopAuto: () => this.transport.autoStop(),
       onExit: () => {
         this.scene.stop("battle");
         this.scene.wake();
@@ -359,7 +402,8 @@ export class WorldScene extends Phaser.Scene {
 
   private refreshHud() {
     const m = this.map;
-    const where = m === null ? "กำลังเชื่อมต่อ…" : `${m.name.th} · channel ${this.channelNo} · ผู้เล่นที่เห็น ${this.players.size} คน`;
+    const where =
+      m === null ? "กำลังเชื่อมต่อ…" : `${m.name.th} · channel ${this.channelNo} · ผู้เล่นที่เห็น ${this.players.size} คน${this.autoOn ? " · ล่าอัตโนมัติ: เปิด" : ""}`;
     const c = this.bundle?.character;
     if (c === undefined) return void this.hud.setText(where);
     const v = vitals(c, this.bundle?.equipment ?? []);
@@ -377,6 +421,27 @@ export class WorldScene extends Phaser.Scene {
       this.flash(`เลเวลอัป! Lv${after} · ได้แต้มสเตตัส +${(after - before) * rules.provisional.statPointsPerLevel.value} (กด C)`);
     }
     this.refreshHud();
+  }
+
+  /** Auto Hunt (C14): settings, then the server walks and fights until something stops it. */
+  private async toggleAutoHunt() {
+    if (this.api === null) return this.flash("ล่าอัตโนมัติต้องต่อ server (?server)");
+    if (this.autoOn) return this.transport.autoStop();
+    if (this.panelOpen) return;
+    if (this.inBattle) return this.flash("เริ่มล่าอัตโนมัติได้นอกไฟต์");
+    if (this.map === null || this.map.kind === "town") return this.flash(AUTO_STOP_TEXT.NO_HUNT_HERE);
+    const speciesIds = [...new Set(this.map.spawns.flatMap((s) => s.entries.map((e) => e.speciesId)))];
+    this.panelOpen = true;
+    this.path = [];
+    this.input.keyboard!.enabled = false;
+    try {
+      const settings = await autoHuntPanel(speciesIds);
+      if (settings !== null) this.transport.autoHunt(settings);
+    } finally {
+      this.input.keyboard!.enabled = true;
+      this.input.keyboard!.resetKeys();
+      this.panelOpen = false;
+    }
   }
 
   /** Team screen. Not during a fight (P15). */
@@ -413,6 +478,7 @@ export class WorldScene extends Phaser.Scene {
   private async withPanel(inFight: string, show: (api: CharacterApi, bundle: CharacterBundle) => Promise<void>) {
     if (this.api === null || this.panelOpen) return;
     if (this.inBattle) return this.flash(inFight);
+    if (this.autoOn) return this.flash("หยุดล่าอัตโนมัติก่อน (H)");
     this.panelOpen = true;
     this.path = [];
     this.input.keyboard!.enabled = false;
@@ -438,7 +504,8 @@ export class WorldScene extends Phaser.Scene {
 
   private tapMove(p: Pointer) {
     const self = this.selfView();
-    if (this.map === null || self === null || this.stopped) return;
+    if (this.map === null || self === null || this.stopped || this.panelOpen) return;
+    if (this.autoOn) return this.flash("กำลังล่าอัตโนมัติ: กด H หรือปุ่มลูกศรเพื่อหยุด");
     const target = { x: Math.floor(p.worldX / TILE), y: Math.floor(p.worldY / TILE) };
     const pack = [...this.packs.values()].find((v) => v.pack.x === target.x && v.pack.y === target.y)?.pack;
     this.pendingEngage = pack?.packId ?? null;
@@ -470,6 +537,14 @@ export class WorldScene extends Phaser.Scene {
   override update(time: number) {
     const self = this.selfView();
     if (this.map === null || self === null || this.stopped || this.nextConnect !== null || this.inBattle || this.panelOpen) return;
+    if (this.autoOn) {
+      // Walking by hand takes over: ask the server to stop (it also stops on a manual step).
+      if (this.heldDirection() !== null && time >= this.readyAt) {
+        this.readyAt = time + 500;
+        this.transport.autoStop();
+      }
+      return;
+    }
     const engaging = this.pendingEngage === null ? undefined : this.packs.get(this.pendingEngage)?.pack;
     if (engaging !== undefined && inEngageRange(rules, self.pos, engaging)) {
       // Next to the pack: ask the server for the fight. It checks range and the pack itself.

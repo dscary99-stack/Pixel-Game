@@ -68,7 +68,21 @@ export function tryStep(rules: RulesConfig, map: MapDefinition, from: TilePos, d
  */
 export function findPath(map: MapDefinition, from: TilePos, to: TilePos, maxNodes = 4096): Direction[] | null {
   if (!isWalkable(map, to.x, to.y)) return null;
-  if (from.x === to.x && from.y === to.y) return [];
+  return findPathWhere(map, from, (p) => p.x === to.x && p.y === to.y, maxNodes);
+}
+
+/**
+ * Shortest path to the nearest walkable tile where `goal` holds (BFS, same rules as findPath).
+ * Tiles where `avoid` holds are never stepped on (Auto Hunt keeps off portals).
+ */
+export function findPathWhere(
+  map: MapDefinition,
+  from: TilePos,
+  goal: (p: TilePos) => boolean,
+  maxNodes = 4096,
+  avoid: (p: TilePos) => boolean = () => false,
+): Direction[] | null {
+  if (goal(from)) return [];
   const key = (p: TilePos) => `${p.x},${p.y}`;
   const prev = new Map<string, { from: string; dir: Direction }>();
   const seen = new Set([key(from)]);
@@ -81,11 +95,11 @@ export function findPath(map: MapDefinition, from: TilePos, to: TilePos, maxNode
       const [dx, dy] = DIR_DELTA[dir];
       const next = { x: cur.x + dx, y: cur.y + dy };
       const k = key(next);
-      if (seen.has(k) || !isWalkable(map, next.x, next.y)) continue;
+      if (seen.has(k) || !isWalkable(map, next.x, next.y) || avoid(next)) continue;
       if (isDiagonal(dir) && (!isWalkable(map, cur.x + dx, cur.y) || !isWalkable(map, cur.x, cur.y + dy))) continue;
       seen.add(k);
       prev.set(k, { from: key(cur), dir });
-      if (next.x === to.x && next.y === to.y) {
+      if (goal(next)) {
         const dirs: Direction[] = [];
         for (let at = k; at !== key(from); ) {
           const p = prev.get(at)!;

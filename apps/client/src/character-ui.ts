@@ -4,6 +4,8 @@
  * comes with the art pass (chapter 10 §4).
  */
 import {
+  AutoHuntSettingsSchema,
+  type AutoHuntSettings,
   CLASS1_DEFINITIONS,
   PLAYER_ELEMENTS,
   RACE_DEFINITIONS,
@@ -656,5 +658,77 @@ export function statsPanel(api: CharacterApi, start: CharacterBundle): Promise<C
       reset.disabled = !dirty;
     };
     draw();
+  });
+}
+
+/**
+ * Auto Hunt settings (chapter 08, PROVISIONAL). `speciesIds` are the species this map's packs can
+ * be led by. Resolves with the settings to send, or null when closed. The last settings are kept
+ * in this browser only (a convenience; the server validates every field).
+ */
+export function autoHuntPanel(speciesIds: readonly string[]): Promise<AutoHuntSettings | null> {
+  return new Promise((resolve) => {
+    const { panel, close } = overlay();
+    let saved: AutoHuntSettings;
+    try {
+      saved = AutoHuntSettingsSchema.parse(JSON.parse(localStorage.getItem("pm-auto-hunt") ?? "{}"));
+    } catch {
+      saved = AutoHuntSettingsSchema.parse({});
+    }
+    panel.append(el("h2", {}, "ล่าอัตโนมัติ"));
+    panel.append(
+      el("div", { class: "pm-note" }, "เดินหาฝูงในแผนที่นี้แล้วสู้แบบ Auto ต่อเนื่อง ขณะเปิดเกมและเชื่อมต่ออยู่เท่านั้น · ของดรอป ×0.70 (EXP เท่าเดิม) · ไม่จับมอนให้อัตโนมัติ"),
+    );
+    const list = (title: string, picked: readonly string[], section: string) => {
+      panel.append(el("label", {}, title));
+      const ul = el("ul", { class: "pm-list", "data-section": section });
+      for (const id of speciesIds) {
+        const li = el("li");
+        const box = el("input", { type: "checkbox", value: id, id: `pm-${section}-${id}` });
+        box.checked = picked.includes(id);
+        const label = el("label", { for: box.id }, species.get(id)?.name.th ?? id);
+        label.style.margin = "0";
+        li.append(box, label);
+        ul.append(li);
+      }
+      panel.append(ul);
+      return () => [...ul.querySelectorAll<HTMLInputElement>("input:checked")].map((b) => b.value);
+    };
+    const targets = list("สู้เฉพาะฝูงที่มีหัวฝูงเป็น (ไม่เลือก = ทุกชนิด)", saved.targetSpecies, "targets");
+    const stops = list("หยุดและแจ้งเมื่อเห็นฝูงที่หัวฝูงเป็น (ไว้กดจับเอง)", saved.stopOnSpecies, "stops");
+    panel.append(el("label", {}, "ขนาดฝูงสูงสุด"));
+    const size = choices(panel, [1, 2, 3, 5, 10].map((n) => ({ value: String(n), label: `${n} ตัว` })), String(saved.maxPackSize));
+    panel.append(el("label", {}, "หยุดเมื่อ HP ตัวละครต่ำกว่า (ตรวจก่อนเริ่มฝูงถัดไป)"));
+    const hp = choices(panel, [0, 20, 30, 50, 70].map((n) => ({ value: String(n), label: n === 0 ? "ไม่หยุด" : `${n}%` })), String(saved.stopBelowHpPercent));
+    const elite = el("input", { type: "checkbox", id: "pm-elite" });
+    elite.checked = saved.allowElite;
+    const eliteRow = el("label", { for: "pm-elite" });
+    eliteRow.append(elite, document.createTextNode(" สู้ฝูง Elite ด้วย"));
+    panel.append(eliteRow);
+    const actions = el("div", { class: "pm-actions" });
+    const cancel = el("button", { type: "button" }, "ปิด");
+    const start = el("button", { type: "button", class: "primary" }, "เริ่มล่า");
+    actions.append(cancel, start);
+    panel.append(actions);
+    cancel.addEventListener("click", () => {
+      close();
+      resolve(null);
+    });
+    start.addEventListener("click", () => {
+      const settings = AutoHuntSettingsSchema.parse({
+        targetSpecies: targets(),
+        stopOnSpecies: stops(),
+        maxPackSize: Number(size()),
+        stopBelowHpPercent: Number(hp()),
+        allowElite: elite.checked,
+      });
+      try {
+        localStorage.setItem("pm-auto-hunt", JSON.stringify(settings));
+      } catch {
+        // Storage blocked: settings just are not remembered.
+      }
+      close();
+      resolve(settings);
+    });
   });
 }

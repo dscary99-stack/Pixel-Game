@@ -11,6 +11,7 @@ import type { RulesConfig } from "../rules";
 import { portalAt, type MapDefinition, type Portal, type TilePos } from "./map";
 import { DIRECTIONS, artFacing, tryStep, type Direction, type StepRejection } from "./movement";
 import type { VisiblePack } from "./encounter";
+import { AutoHuntSettingsSchema, type AutoStopReason } from "./auto-hunt";
 
 // ---------------------------------------------------------------- wire protocol
 
@@ -21,6 +22,9 @@ export const WorldClientMessageSchema = z.discriminatedUnion("t", [
   z.object({ t: z.literal("engage"), packId: z.string().min(1).max(120) }).strict(),
   /** Back from a fight: the server checks the fight is over before letting the player walk. */
   z.object({ t: z.literal("resume") }).strict(),
+  /** Start Auto Hunt on this map with these settings (C14); the server walks and fights. */
+  z.object({ t: z.literal("autoHunt"), settings: AutoHuntSettingsSchema }).strict(),
+  z.object({ t: z.literal("autoStop") }).strict(),
 ]);
 export type WorldClientMessage = z.infer<typeof WorldClientMessageSchema>;
 
@@ -52,7 +56,11 @@ export type WorldServerMessage =
   | { t: "transfer"; mapId: string; channel: number }
   | { t: "kicked"; reason: "REPLACED" | "EVICTED" }
   | { t: "error"; code: WorldErrorCode; message: string }
-  | { t: "pong"; serverTime: number };
+  | { t: "pong"; serverTime: number }
+  /** Auto Hunt turned on or off; when off, why (and the pack/species for FOUND_SPECIES). */
+  | { t: "auto"; on: boolean; reason?: AutoStopReason; detail?: string; packId?: string }
+  /** The server moved this player (Auto Hunt). */
+  | { t: "autoMoved"; x: number; y: number; facing: Facing };
 
 export type WorldErrorCode =
   | "INVALID_MESSAGE"
@@ -106,7 +114,7 @@ export type StepOutcome =
   | { kind: "rejected"; out: Outgoing[] }
   | { kind: "error"; out: Outgoing[] }
   /** Needs the server (D1 / Battle DO): the Durable Object finishes it. */
-  | { kind: "intent"; presence: Presence; msg: Extract<WorldClientMessage, { t: "engage" | "resume" }>; out: Outgoing[] };
+  | { kind: "intent"; presence: Presence; msg: Extract<WorldClientMessage, { t: "engage" | "resume" | "autoHunt" | "autoStop" }>; out: Outgoing[] };
 
 export class MapChannel {
   private readonly players = new Map<string, Presence>();
@@ -183,7 +191,7 @@ export class MapChannel {
     if (p === undefined) return { kind: "error", out: [{ to: "self", msg: { t: "error", code: "NOT_JOINED", message: "join first" } }] };
     const msg = parsed.data;
     if (msg.t === "ping") return { kind: "rejected", out: [{ to: "self", msg: { t: "pong", serverTime: now } }] };
-    if (msg.t === "engage" || msg.t === "resume") return { kind: "intent", presence: p, msg, out: [] };
+    if (msg.t === "engage" || msg.t === "resume" || msg.t === "autoHunt" || msg.t === "autoStop") return { kind: "intent", presence: p, msg, out: [] };
     return this.step(p, msg.seq, msg.dir, now);
   }
 
@@ -217,6 +225,31 @@ export class MapChannel {
       portal: portalAt(this.map, p.pos.x, p.pos.y),
       out: [
         { to: "self", msg: { t: "ack", seq, x: p.pos.x, y: p.pos.y } },
+        { to: "others", msg: { t: "moved", sid: p.sid, x: p.pos.x, y: p.pos.y, facing: p.facing } },
+      ],
+    };
+  }
+
+  /**
+   * A step the server takes for the player (Auto Hunt). Same tile, corner and speed rules as a
+   * client step; the player is told with `autoMoved` instead of an ack.
+   */
+  autoStep(accountId: string, dir: Direction, now: number): StepOutcome {
+    const p = this.players.get(accountId);
+    if (p === undefined) return { kind: "error", out: [] };
+    if (p.battleId !== null) return { kind: "rejected", out: [] };
+    const r = tryStep(this.rules, this.map, p.pos, dir, p.readyAt, now);
+    if (!r.ok) return { kind: "rejected", out: [] };
+    p.pos = r.pos;
+    p.readyAt = r.readyAt;
+    p.facing = artFacing(dir);
+    p.dirty = true;
+    return {
+      kind: "moved",
+      presence: p,
+      portal: portalAt(this.map, p.pos.x, p.pos.y),
+      out: [
+        { to: "self", msg: { t: "autoMoved", x: p.pos.x, y: p.pos.y, facing: p.facing } },
         { to: "others", msg: { t: "moved", sid: p.sid, x: p.pos.x, y: p.pos.y, facing: p.facing } },
       ],
     };
