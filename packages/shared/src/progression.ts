@@ -1,8 +1,12 @@
 /**
- * EXP, levels and stat points (chapter 03 §4, chapter 04 §3–§4, P03). The curve and EXP amounts are
- * prototype values (tagged P03/P05 in rules.ts): the design has no tested EXP table yet.
+ * EXP, levels and stat points (chapter 03 §4, chapter 04 §3–§4, P03).
  *
+ * - Players follow Nut's EXP table (exp-proposal-1.0, PROVISIONAL; see rules.ts playerExpTable).
+ *   Companions use their own prototype curve: the proposal forbids reusing the player table for them.
  * - Level is derived from cumulative EXP; the stored level is only a cache the server re-syncs.
+ *   EXP stops at the cap's cumulative total (no banking toward Lv201) and `need` is null at the cap.
+ * - A kill or capture gives the reference EXP of the enemy's fixed species level; never scaled by map
+ *   or by the player's level (C01).
  * - The player character and every companion that started the fight each get the full EXP of a kill
  *   or capture, KO'd included; nothing is split (chapter 04 §4). Auto battles give the same EXP (P01).
  * - Players spend +3 points per level with the P03 cost bands; stats only go up (no free respec).
@@ -10,46 +14,109 @@
  *   only its level-based HP/MP for now.
  */
 import { z } from "zod";
-import type { Rank, RulesConfig } from "./rules";
+import type { RulesConfig } from "./rules";
 import { PrimaryStatsSchema, type PrimaryStats } from "./schemas";
 import { PRIMARY_STATS, statRaiseCost, totalStatPointsAtLevel, validateAllocation } from "./stats";
 
-/** EXP needed to go from `level` to `level + 1`. */
-export function expToNext(rules: RulesConfig, level: number): number {
-  const { base, exponent } = rules.provisional.expCurve.value;
-  return Math.round(base * Math.pow(level, exponent));
+export type ExpCurve = "player" | "companion";
+
+/** Reference EXP of one normal wild enemy at fixed species level `m`: 20 + 6M + 2M². */
+export function referenceNormalExp(rules: RulesConfig, m: number): number {
+  const { base, linear, quadratic } = rules.provisional.referenceNormalExp.value;
+  return base + linear * m + quadratic * m * m;
 }
 
-/** Cumulative EXP needed to reach `level` from Lv1. */
-export function expForLevel(rules: RulesConfig, level: number): number {
-  let total = 0;
-  for (let l = 1; l < level; l++) total += expToNext(rules, l);
-  return total;
-}
+const roundHalfUpTo10 = (x: number) => 10 * Math.floor(x / 10 + 0.5);
 
-/** The level a cumulative EXP total reaches, capped. */
-export function levelForExp(rules: RulesConfig, exp: number, cap: number): number {
-  let level = 1;
-  let need = expToNext(rules, 1);
-  let left = exp;
-  while (level < cap && left >= need) {
-    left -= need;
-    level++;
-    need = expToNext(rules, level);
+/** Target minutes from level L to L+1, linear between adjacent anchors. */
+function targetMinutes(anchors: readonly (readonly [number, number])[], level: number): number {
+  for (let i = 1; i < anchors.length; i++) {
+    const [l0, m0] = anchors[i - 1]!;
+    const [l1, m1] = anchors[i]!;
+    if (level <= l1) return m0 + ((m1 - m0) * (level - l0)) / (l1 - l0);
   }
-  return level;
+  return anchors[anchors.length - 1]![1];
+}
+
+/** Per-level EXP and cumulative totals for one curve, built once per rules object. */
+interface Table {
+  cap: number;
+  /** toNext[L] for 1 <= L < cap. */
+  toNext: number[];
+  /** cumulative[L] = EXP to reach L from Lv1, for 1 <= L <= cap. */
+  cumulative: number[];
+}
+const tables = new WeakMap<RulesConfig, Record<ExpCurve, Table>>();
+
+function build(cap: number, need: (level: number) => number): Table {
+  const toNext = [0];
+  const cumulative = [0, 0];
+  for (let l = 1; l < cap; l++) {
+    toNext[l] = need(l);
+    cumulative[l + 1] = cumulative[l]! + toNext[l]!;
+  }
+  return { cap, toNext, cumulative };
+}
+
+function table(rules: RulesConfig, curve: ExpCurve): Table {
+  let t = tables.get(rules);
+  if (t === undefined) {
+    const { anchors, killsPerMinute } = rules.provisional.playerExpTable.value;
+    const { base, exponent } = rules.provisional.companionExpCurve.value;
+    t = {
+      player: build(rules.confirmed.playerMaxLevel.value, (l) => roundHalfUpTo10(targetMinutes(anchors, l) * killsPerMinute * referenceNormalExp(rules, l))),
+      companion: build(rules.provisional.companionMaxLevel.value, (l) => Math.round(base * Math.pow(l, exponent))),
+    };
+    tables.set(rules, t);
+  }
+  return t[curve];
+}
+
+/** The curve's level cap. */
+export function maxLevel(rules: RulesConfig, curve: ExpCurve): number {
+  return table(rules, curve).cap;
+}
+
+/** EXP needed to go from `level` to `level + 1`; null at (or past) the cap. */
+export function expToNext(rules: RulesConfig, curve: ExpCurve, level: number): number | null {
+  const t = table(rules, curve);
+  return level >= 1 && level < t.cap ? t.toNext[level]! : null;
+}
+
+/** Cumulative EXP needed to reach `level` from Lv1 (clamped to the cap). */
+export function expForLevel(rules: RulesConfig, curve: ExpCurve, level: number): number {
+  const t = table(rules, curve);
+  return t.cumulative[Math.max(1, Math.min(t.cap, level))]!;
+}
+
+/** Most EXP a curve can hold: the cap's cumulative total. Grants beyond it are dropped. */
+export function expCap(rules: RulesConfig, curve: ExpCurve): number {
+  return expForLevel(rules, curve, maxLevel(rules, curve));
+}
+
+/** The level a cumulative EXP total reaches. */
+export function levelForExp(rules: RulesConfig, curve: ExpCurve, exp: number): number {
+  const { cap, cumulative } = table(rules, curve);
+  let lo = 1;
+  let hi = cap;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (cumulative[mid]! <= exp) lo = mid;
+    else hi = mid - 1;
+  }
+  return lo;
 }
 
 /** Progress inside the current level, for an EXP bar. */
-export function expProgress(rules: RulesConfig, exp: number, cap: number): { level: number; into: number; need: number | null } {
-  const level = levelForExp(rules, exp, cap);
-  if (level >= cap) return { level, into: 0, need: null };
-  return { level, into: exp - expForLevel(rules, level), need: expToNext(rules, level) };
+export function expProgress(rules: RulesConfig, curve: ExpCurve, exp: number): { level: number; into: number; need: number | null } {
+  const level = levelForExp(rules, curve, exp);
+  const need = expToNext(rules, curve, level);
+  return { level, into: need === null ? 0 : exp - expForLevel(rules, curve, level), need };
 }
 
-/** EXP from defeating (or capturing) one wild enemy. Wild level never scales by map (C01). */
-export function killExp(rules: RulesConfig, wildLevel: number, rank: Rank | null): number {
-  return rules.provisional.killExpPerWildLevel.value * wildLevel * rules.provisional.rankExpMultiplier.value[rank ?? "NORMAL"];
+/** EXP from defeating (or capturing) one wild enemy at its fixed species level (C01). */
+export function killExp(rules: RulesConfig, wildLevel: number): number {
+  return referenceNormalExp(rules, wildLevel);
 }
 
 /** EXP a companion gets from the same reward. */

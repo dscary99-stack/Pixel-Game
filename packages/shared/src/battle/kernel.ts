@@ -494,7 +494,7 @@ function knockOut(ctx: Ctx, u: BattleUnit): void {
     speciesId: u.speciesId!,
     originMode: ctx.s.originMode,
     items: rollLoot(ctx.rules, table, ctx.s.originMode, ctx.rng),
-    exp: killExp(ctx.rules, u.level, u.rank),
+    exp: killExp(ctx.rules, u.level),
   };
   ctx.s.entitlements.push(entitlement);
   ctx.emit({ type: "RewardEntitled", entitlement });
@@ -574,7 +574,7 @@ function doCapture(ctx: Ctx, actor: BattleUnit, target: BattleUnit, itemId: stri
     speciesId: species.id,
     element: target.element,
     level: ctx.rules.confirmed.capturedInitialLevel.value,
-    exp: killExp(ctx.rules, target.level, target.rank),
+    exp: killExp(ctx.rules, target.level),
   };
   ctx.s.entitlements.push(entitlement);
   ctx.emit({ type: "RewardEntitled", entitlement });

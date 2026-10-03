@@ -123,12 +123,26 @@ export const RULES = {
     // Encounters (Phase C). Hunting speed numbers are P12 assumptions.
     packRespawnMs: provisional(60_000, "P12", "a visible pack is re-rolled this often; a player who fought it waits for the next one"),
     engageRangeTiles: provisional(1, "P10", "must stand next to (or on) the pack to start a fight"),
-    // EXP and levels (chapter 04 §4, chapter 13 §4). The design has no tested EXP table yet; this is
-    // a prototype curve (tagged P03, the levelling entry) chosen while the user's decision card is open.
-    // expToNext(L) = round(base * L^exponent); a kill gives perWildLevel * wildLevel * rank multiplier.
-    expCurve: provisional({ base: 30, exponent: 1.8 } as const, "P03", "EXP curve has no register entry: prototype, no tested table exists (chapter 13 §4)"),
-    killExpPerWildLevel: provisional(10, "P03", "a successful capture gives the same EXP as a kill (chapter 04 §3 proposal)"),
-    rankExpMultiplier: provisional({ NORMAL: 1, ELITE: 3, BOSS: 10 } as const, "P03", "prototype"),
+    // EXP and levels. The player table is Nut's "exp-proposal-1.0" (docs/design/EXP_DESIGN_LV001_200.md,
+    // 2026-10-03, PROVISIONAL): minutes per level from linear anchors, times 2 reference kills a minute,
+    // times the reference EXP of a normal kill at that level, rounded half-up to 10. The JSON beside it is
+    // checked row by row in tests. It is for the player's base level only.
+    playerExpTable: provisional(
+      {
+        anchors: [[1, 1], [10, 4], [25, 12], [49, 40], [50, 41], [80, 90], [119, 180], [120, 185], [150, 360], [170, 600], [190, 900], [199, 1200]],
+        killsPerMinute: 2,
+      } as const,
+      "P03",
+      "Nut's exp-proposal-1.0 (2026-10-03): 120 normal kills/hour reference, not playtested; Lv200 needs 5,465,771,910 EXP",
+    ),
+    // Reference EXP of a normal wild enemy at fixed species level M: 20 + 6M + 2M². The proposal calls this
+    // a budget per species; until species carry their own EXP every species uses it. Elite/Boss get the same
+    // (the proposal rejects a flat x10 for bosses; their EXP comes with content). A capture gives the same EXP
+    // as a kill (chapter 04 §3 proposal).
+    referenceNormalExp: provisional({ base: 20, linear: 6, quadratic: 2 } as const, "P03", "Nut's exp-proposal-1.0 normal_xp_formula"),
+    // Companions must not reuse the player table (proposal §6); their own table is undecided. Until then
+    // companions keep the earlier prototype curve: expToNext(L) = round(base * L^exponent).
+    companionExpCurve: provisional({ base: 30, exponent: 1.8 } as const, "P05", "companion-only prototype until a companion EXP table is decided (proposal §6)"),
     companionExpMultiplier: provisional(1, "P05", "chapter 04 §4: each companion that started the fight gets its own EXP; tuning OPEN"),
     // Sigil removal (chapter 05 §4, chapter 06). Coins per Sigil by the equipment's required level:
     // [fromLevelInclusive, coins]. Lv50/120/200 = 3 hours of the chapter 06 manual net example;

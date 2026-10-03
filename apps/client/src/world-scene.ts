@@ -363,7 +363,7 @@ export class WorldScene extends Phaser.Scene {
     const c = this.bundle?.character;
     if (c === undefined) return void this.hud.setText(where);
     const v = vitals(c, this.bundle?.equipment ?? []);
-    const xp = expProgress(rules, c.xp, rules.confirmed.playerMaxLevel.value);
+    const xp = expProgress(rules, "player", c.xp);
     const points = unspentPoints(rules, c.level, c.primaryStats);
     this.hud.setText(`${where}\n${c.name} Lv${c.level} (EXP ${xp.need === null ? "MAX" : `${xp.into}/${xp.need}`})${points > 0 ? ` · แต้มว่าง ${points}` : ""} · HP ${v.hp}/${v.maxHp} · MP ${v.mp}/${v.maxMp} · ทีม ${c.team.length}/5 · เหรียญ ${this.bundle?.coins ?? 0}`);
   }

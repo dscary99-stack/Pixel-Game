@@ -611,8 +611,7 @@ export function statsPanel(api: CharacterApi, start: CharacterBundle): Promise<C
     const draw = () => {
       body.replaceChildren();
       const c = bundle.character;
-      const cap = RULES.confirmed.playerMaxLevel.value;
-      const xp = expProgress(RULES, c.xp, cap);
+      const xp = expProgress(RULES, "player", c.xp);
       const left = unspentPoints(RULES, c.level, draft);
       const d = deriveStats(c.level, draft, gearBonuses(wornGear(bundle.equipment, equipmentDefs).defs));
       body.append(

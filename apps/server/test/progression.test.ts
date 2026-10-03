@@ -2,7 +2,7 @@
  * EXP through reward receipts, level sync and stat allocation on the D1 migrations (node:sqlite).
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { PRODUCTION_RULES, exampleContentMaps, expForLevel, type Entitlement } from "@pmrpg/shared";
+import { PRODUCTION_RULES, exampleContentMaps, expCap, expForLevel, type Entitlement } from "@pmrpg/shared";
 import { CharacterStore } from "../src/character-store";
 import { Economy } from "../src/economy";
 import { SqliteD1, freshDb, type Db } from "./sqlite-d1";
@@ -70,7 +70,7 @@ describe("EXP from rewards (chapter 04 §4)", () => {
   });
 
   it("levels follow cumulative EXP on the next read; points become spendable", async () => {
-    await eco.grant(kill("e1", expForLevel(PRODUCTION_RULES, 3)), A);
+    await eco.grant(kill("e1", expForLevel(PRODUCTION_RULES, "player", 3)), A);
     const c = (await store.get(A))!;
     expect(c.level).toBe(3);
     expect((await store.companions(A)).find((p) => p.id === "mon:mole")?.currentLevel).toBe(3);
@@ -81,6 +81,20 @@ describe("EXP from rewards (chapter 04 §4)", () => {
   });
 });
 
+describe("the level cap", () => {
+  it("EXP stops at the Lv200 total; nothing is banked toward Lv201 (Nut's table §7)", async () => {
+    const cap = expCap(PRODUCTION_RULES, "player");
+    db.prepare("UPDATE characters SET xp = ? WHERE id = ?").run(cap - 10, charId);
+    await eco.grant(kill("e1", 500), A);
+    expect(xp("characters", charId)).toBe(cap);
+    expect((await store.get(A))!.level).toBe(200);
+    // The companion stops at its own curve's cap.
+    db.prepare("UPDATE monster_instances SET xp = ? WHERE id = 'mon:mole'").run(expCap(PRODUCTION_RULES, "companion") - 1);
+    await eco.grant(kill("e2", 500), A);
+    expect(xp("monster_instances", "mon:mole")).toBe(expCap(PRODUCTION_RULES, "companion"));
+  });
+});
+
 describe("stat allocation (P03)", () => {
   beforeEach(async () => {
     await eco.settle({ reservationId: `res:${BATTLE}`, battleId: BATTLE, accountId: A, outcome: "victory", unused: {}, allies: [], entitlementIds: [] });
@@ -88,7 +102,7 @@ describe("stat allocation (P03)", () => {
 
   it("spends level points with a version check; refuses over budget, lowering and stale writes", async () => {
     expect(await store.allocate(A, { expectedVersion: 1, stats: { STR: 11, VIT: 10, INT: 10, DEX: 10, AGI: 10, SPI: 10 } })).toMatchObject({ reason: "OVER_BUDGET" });
-    db.prepare("UPDATE characters SET xp = ? WHERE id = ?").run(expForLevel(PRODUCTION_RULES, 2), charId);
+    db.prepare("UPDATE characters SET xp = ? WHERE id = ?").run(expForLevel(PRODUCTION_RULES, "player", 2), charId);
     const r = await store.allocate(A, { expectedVersion: 1, stats: { STR: 12, VIT: 11, INT: 10, DEX: 10, AGI: 10, SPI: 10 } });
     expect(r).toMatchObject({ status: "saved", character: { level: 2, version: 2, primaryStats: { STR: 12, VIT: 11 } } });
     expect(await store.allocate(A, { expectedVersion: 1, stats: { STR: 12, VIT: 11, INT: 10, DEX: 10, AGI: 10, SPI: 10 } })).toMatchObject({ reason: "STALE_VERSION" });
@@ -97,7 +111,7 @@ describe("stat allocation (P03)", () => {
   });
 
   it("two allocations from the same version: one lands", async () => {
-    db.prepare("UPDATE characters SET xp = ? WHERE id = ?").run(expForLevel(PRODUCTION_RULES, 2), charId);
+    db.prepare("UPDATE characters SET xp = ? WHERE id = ?").run(expForLevel(PRODUCTION_RULES, "player", 2), charId);
     const [x, y] = await Promise.all([
       store.allocate(A, { expectedVersion: 1, stats: { STR: 13, VIT: 10, INT: 10, DEX: 10, AGI: 10, SPI: 10 } }),
       store.allocate(A, { expectedVersion: 1, stats: { STR: 10, VIT: 13, INT: 10, DEX: 10, AGI: 10, SPI: 10 } }),
@@ -108,7 +122,7 @@ describe("stat allocation (P03)", () => {
   });
 
   it("not during a fight", async () => {
-    db.prepare("UPDATE characters SET xp = ? WHERE id = ?").run(expForLevel(PRODUCTION_RULES, 2), charId);
+    db.prepare("UPDATE characters SET xp = ? WHERE id = ?").run(expForLevel(PRODUCTION_RULES, "player", 2), charId);
     await eco.reserve({ reservationId: "res:battle:y", accountId: A, battleId: "battle:y", bag: {}, companionIds: [] });
     expect(await store.allocate(A, { expectedVersion: 1, stats: { STR: 13, VIT: 10, INT: 10, DEX: 10, AGI: 10, SPI: 10 } })).toMatchObject({ reason: "IN_BATTLE" });
   });

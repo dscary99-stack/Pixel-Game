@@ -61,7 +61,7 @@ const first = await fight(A, "gate_moles", async (battleId) => {
 });
 out.firstFight = { outcome: first.state.status, exp: first.state.entitlements.map((e: Msg) => `${e.kind}:${e.exp}`) };
 let b = await me();
-out.afterFirst = { level: b.character.level, xp: b.character.xp, bar: expProgress(R, b.character.xp, 200), points: unspentPoints(R, b.character.level, b.character.primaryStats) };
+out.afterFirst = { level: b.character.level, xp: b.character.xp, bar: expProgress(R, "player", b.character.xp), points: unspentPoints(R, b.character.level, b.character.primaryStats) };
 const pet = b.companions[0];
 if (pet !== undefined) {
   await http("PUT", "/character/team", { expectedVersion: b.character.version, companionIds: [pet.id] });

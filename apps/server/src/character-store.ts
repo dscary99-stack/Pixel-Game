@@ -159,8 +159,6 @@ export class CharacterStore {
    * the next read.
    */
   async syncLevels(accountId: string): Promise<void> {
-    const cap = this.rules.confirmed.playerMaxLevel.value;
-    const petCap = this.rules.provisional.companionMaxLevel.value;
     const ch = await this.db.prepare(`SELECT id, xp, level FROM characters WHERE account_id = ?`).bind(accountId).first<{ id: string; xp: number; level: number }>();
     const { results: pets } = await this.db
       .prepare(`SELECT id, xp, current_level AS level FROM monster_instances WHERE owner_id = ?`)
@@ -168,11 +166,11 @@ export class CharacterStore {
       .all<{ id: string; xp: number; level: number }>();
     const stmts: SqlBound[] = [];
     if (ch !== null) {
-      const level = levelForExp(this.rules, ch.xp, cap);
+      const level = levelForExp(this.rules, "player", ch.xp);
       if (level > ch.level) stmts.push(this.db.prepare(`UPDATE characters SET level = ? WHERE id = ? AND level < ?`).bind(level, ch.id, level));
     }
     for (const p of pets) {
-      const level = levelForExp(this.rules, p.xp, petCap);
+      const level = levelForExp(this.rules, "companion", p.xp);
       if (level > p.level) stmts.push(this.db.prepare(`UPDATE monster_instances SET current_level = ? WHERE id = ? AND current_level < ?`).bind(level, p.id, level));
     }
     if (stmts.length > 0) await this.db.batch(stmts);
