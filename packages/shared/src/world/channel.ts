@@ -10,12 +10,17 @@ import { z } from "zod";
 import type { RulesConfig } from "../rules";
 import { portalAt, type MapDefinition, type Portal, type TilePos } from "./map";
 import { DIRECTIONS, artFacing, tryStep, type Direction, type StepRejection } from "./movement";
+import type { VisiblePack } from "./encounter";
 
 // ---------------------------------------------------------------- wire protocol
 
 export const WorldClientMessageSchema = z.discriminatedUnion("t", [
   z.object({ t: z.literal("step"), seq: z.number().int().min(1).max(2 ** 31), dir: z.enum(DIRECTIONS) }).strict(),
   z.object({ t: z.literal("ping") }).strict(),
+  /** Start a private fight against a visible pack (O05). */
+  z.object({ t: z.literal("engage"), packId: z.string().min(1).max(120) }).strict(),
+  /** Back from a fight: the server checks the fight is over before letting the player walk. */
+  z.object({ t: z.literal("resume") }).strict(),
 ]);
 export type WorldClientMessage = z.infer<typeof WorldClientMessageSchema>;
 
@@ -36,7 +41,12 @@ export type WorldServerMessage =
   | { t: "left"; sid: string }
   | { t: "moved"; sid: string; x: number; y: number; facing: Facing }
   | { t: "ack"; seq: number; x: number; y: number }
-  | { t: "correct"; seq: number; x: number; y: number; reason: StepRejection | "STALE_SEQ" }
+  | { t: "correct"; seq: number; x: number; y: number; reason: StepRejection | "STALE_SEQ" | "IN_BATTLE" }
+  /** The packs this player can engage right now (already-fought ones are left out). */
+  | { t: "packs"; packs: VisiblePack[] }
+  /** A private fight exists for this player; `resumed` when it was already running (reconnect). */
+  | { t: "encounter"; battleId: string; resumed: boolean }
+  | { t: "resumed" }
   | { t: "transfer"; mapId: string; channel: number }
   | { t: "kicked"; reason: "REPLACED" | "EVICTED" }
   | { t: "error"; code: WorldErrorCode; message: string }
@@ -50,7 +60,13 @@ export type WorldErrorCode =
   | "NO_ACCOUNT"
   | "UNKNOWN_MAP"
   | "UNKNOWN_CHANNEL"
-  | "SESSION_REPLACED";
+  | "SESSION_REPLACED"
+  | "IN_BATTLE"
+  | "TOO_FAR"
+  | "NO_SUCH_PACK"
+  | "NO_HUNT_HERE"
+  | "NO_CHARACTER"
+  | "ENCOUNTER_REFUSED";
 
 // ---------------------------------------------------------------- presence
 
@@ -66,6 +82,8 @@ export interface Presence {
   lastSeq: number;
   /** Moved since the last position save. */
   dirty: boolean;
+  /** Set while the player is in a private fight; they cannot walk until it is over. */
+  battleId: string | null;
 }
 
 /** A message for the acting player, for everyone else in the channel, or for one player. */
@@ -80,7 +98,9 @@ export type JoinResult =
 export type StepOutcome =
   | { kind: "moved"; presence: Presence; out: Outgoing[]; portal: Portal | null }
   | { kind: "rejected"; out: Outgoing[] }
-  | { kind: "error"; out: Outgoing[] };
+  | { kind: "error"; out: Outgoing[] }
+  /** Needs the server (D1 / Battle DO): the Durable Object finishes it. */
+  | { kind: "intent"; presence: Presence; msg: Extract<WorldClientMessage, { t: "engage" | "resume" }>; out: Outgoing[] };
 
 export class MapChannel {
   private readonly players = new Map<string, Presence>();
@@ -125,6 +145,7 @@ export class MapChannel {
       readyAt: now,
       lastSeq: 0,
       dirty: false,
+      battleId: null,
     };
     // A fresh connection starts its own step numbering.
     presence.lastSeq = 0;
@@ -156,7 +177,16 @@ export class MapChannel {
     if (p === undefined) return { kind: "error", out: [{ to: "self", msg: { t: "error", code: "NOT_JOINED", message: "join first" } }] };
     const msg = parsed.data;
     if (msg.t === "ping") return { kind: "rejected", out: [{ to: "self", msg: { t: "pong", serverTime: now } }] };
+    if (msg.t === "engage" || msg.t === "resume") return { kind: "intent", presence: p, msg, out: [] };
     return this.step(p, msg.seq, msg.dir, now);
+  }
+
+  /** Mark a player as in (or out of) a private fight. */
+  setBattle(accountId: string, battleId: string | null): Presence | null {
+    const p = this.players.get(accountId);
+    if (p === undefined) return null;
+    p.battleId = battleId;
+    return p;
   }
 
   private step(p: Presence, seq: number, dir: Direction, now: number): StepOutcome {
@@ -164,6 +194,9 @@ export class MapChannel {
       return { kind: "rejected", out: [{ to: "self", msg: { t: "correct", seq, x: p.pos.x, y: p.pos.y, reason: "STALE_SEQ" } }] };
     }
     p.lastSeq = seq;
+    if (p.battleId !== null) {
+      return { kind: "rejected", out: [{ to: "self", msg: { t: "correct", seq, x: p.pos.x, y: p.pos.y, reason: "IN_BATTLE" } }] };
+    }
     const r = tryStep(this.rules, this.map, p.pos, dir, p.readyAt, now);
     if (!r.ok) {
       return { kind: "rejected", out: [{ to: "self", msg: { t: "correct", seq, x: p.pos.x, y: p.pos.y, reason: r.reason } }] };

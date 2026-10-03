@@ -17,7 +17,7 @@
  * create step never lands, the scheduled reconciler asks the DO and releases only a reservation
  * whose battle provably never started.
  */
-import { DEV_FIXTURE_RULES, EXAMPLE_START_MAP, PRODUCTION_RULES, exampleMapRegistry, type BattleSetup } from "@pmrpg/shared";
+import { DEV_FIXTURE_RULES, DEV_STARTER_ITEMS, EXAMPLE_START_MAP, devPlayer, PRODUCTION_RULES, exampleMapRegistry, type BattleSetup } from "@pmrpg/shared";
 import { resolveAccount } from "./auth";
 import type { Env, RoomOp, RoomReply } from "./battle-do";
 import { Economy } from "./economy";
@@ -97,8 +97,8 @@ async function worldRoute(request: Request, env: Env, url: URL): Promise<Respons
   const accountId = resolveAccount(request, env);
   if (accountId === null) return json(401, { error: "UNAUTHENTICATED" });
   const rules = env.ENVIRONMENT === "dev" ? DEV_FIXTURE_RULES : PRODUCTION_RULES;
-  // Dev accounts appear on first use; real account creation waits for the auth provider (O11).
-  if (env.ENVIRONMENT === "dev") await economyFor(env).devGrant(`devaccount:${accountId}`, accountId, {});
+  // Dev accounts appear on first use with a starter bag; real account creation waits for O11.
+  if (env.ENVIRONMENT === "dev") await economyFor(env).devGrant(`devstarter:${accountId}`, accountId, DEV_STARTER_ITEMS);
 
   if (request.method === "GET" && url.pathname === "/world/where") {
     const where = await new WorldStore(env.DB, MAPS, EXAMPLE_START_MAP).where(accountId);
@@ -119,7 +119,7 @@ async function worldRoute(request: Request, env: Env, url: URL): Promise<Respons
 }
 
 /** Placeholder until characters have names (Phase D): the account id without its prefix. */
-const displayName = (accountId: string) => accountId.replace(/^acct:/, "").slice(0, 16);
+export const displayName = (accountId: string) => accountId.replace(/^acct:/, "").slice(0, 16);
 
 async function devRoute(request: Request, env: Env, url: URL): Promise<Response> {
   if (env.ENVIRONMENT !== "dev") return json(404, { error: "NOT_FOUND" });
@@ -157,18 +157,7 @@ function devSetup(battleId: string, accountId: string): BattleSetup {
     battleId,
     originMode: "manual",
     seed: crypto.randomUUID(),
-    player: {
-      accountId,
-      name: "Tester",
-      level: 10,
-      element: "FIRE",
-      primaryStats: { STR: 25, VIT: 18, INT: 10, DEX: 14, AGI: 14, SPI: 10 },
-      gear: { PATK: 30 },
-      skillIds: ["skill:player_power_strike"],
-      basicAttackRange: "melee",
-      row: "front",
-      slot: 1,
-    },
+    player: devPlayer(accountId, "Tester"),
     companions: [],
     enemies: [
       { unitId: "e1", speciesId: "species:armor_crab", element: "EARTH", row: "front", slot: 1 },

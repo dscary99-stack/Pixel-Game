@@ -136,7 +136,7 @@
 | O02 | คู่ใจที่รับมาสูงกว่าจะใช้พลังอย่างไร | เสนอ effectiveLevel <= player+5; ยังไม่อนุมัติ ห้ามทำให้เป็นกฎยืนยัน; อีกทางใช้พลังเต็มตาม trade gap |
 | O03 | เพดานและรางวัล Rebirth | เสนอ3ขั้น โบนัสรวมเหนือฐาน +4/+7/+10%ตามขั้น ไม่ใช่บวกสามขั้นเข้าด้วยกัน; ผู้ใช้ยังไม่ยืนยันจำนวนครั้ง; ไม่มี infinite stat assumption |
 | O04 | ใบอนุญาต Rebirth | เสนอplayer200+บททดสอบ; ขั้นต่อไปและการรับโอนต้องตัดสินใจ |
-| O05 | Encounter normal/Elite มีสิทธิ์แบบใด | เสนอเห็นฝูงร่วม แต่ไฟต์ส่วนตัวไม่แย่งตัว; คำว่าmonsterร่วมmapของผู้ใช้หมายถึงชนิดพบหลายพื้นที่ ไม่ใช่การยืนยัน encounter entitlement |
+| O05 | Encounter normal/Elite มีสิทธิ์แบบใด | **ตัดสินแล้ว 3 ต.ค. 2026 (ผู้ใช้):** ทุกคนเห็นฝูงเดียวกัน แต่ใครกดเข้าก็ได้ไฟต์ส่วนตัว ไม่แย่งตัว (`RULES.confirmed.privateEncounters`); รายละเอียด respawn ต่อผู้เล่นยังเป็น P12 |
 | O06 | สกิลไม่ซ้ำเข้มแค่ไหน | ยืนยันเอกลักษณ์; เสนอใช้ primitives ร่วม แต่ชุด/เงื่อนไขเฉพาะชนิด; ไม่สร้างระบบใหม่ทุกสกิลโดยอัตโนมัติ |
 | O07 | Capture rates/ranks/โบนัส | สูตรและเพดานแต่ละRank ยังต้องทำตาราง; ฉบับนี้เสนอไม่มี pity; ยังไม่ถือเป็นคำยืนยันก่อน live |
 | O08 | Class/เผ่าเปลี่ยนข้ามต้นสายได้หรือไม่ | เสนอทุกเผ่าเลือกทุกอาชีพ; ระบบเปลี่ยนสายที่ปลดล็อกเป็นข้อเสนอ; เปลี่ยนอาชีพต้น/เผ่ายังไม่มีรายละเอียด |
@@ -735,7 +735,7 @@ map identityต้องมีbiome,route,monster composition,combat problem,tar
 overworldspriteแทนฝูง; leaderที่เห็นต้องอยู่ในbattleจริง species/elementเดิม; rosterpersistตอนเริ่ม ไม่rerollreload
 แสดงleaderlevel/element,normal-elite-boss,packsize range,riskก่อนเข้า; autoใช้maxrangeเพื่อเลือกขนาดที่อนุญาต
 packsize1–3,3–5,6–8,9–10พิเศษ; ใช้encounter budget,roles,healer/CCcapsไม่แค่รวมlevel
-O05ยังOPEN: เสนอเห็นฝูงร่วมแต่per-playerencounterไม่แย่ง; ถ้าใช้ต้องมีinstance/entitlement IDs,respawnstateต่อผู้เล่นและlease ไม่กดซ้ำแล้วreset
+O05ตัดสินแล้ว3ต.ค.2026: เห็นฝูงร่วมแต่per-playerencounterไม่แย่ง; ถ้าใช้ต้องมีinstance/entitlement IDs,respawnstateต่อผู้เล่นและlease ไม่กดซ้ำแล้วreset
 ไม่อนุมานคำว่าmonsterร่วมmapเป็นsharedkillstealing ผู้ใช้หมายถึงspeciesพบหลายที่
 Eliteproposal1modifierช่วงต้น2ช่วงสูงจากallowedpairs: crystalshield,backlinehunter,morale,telegraphedmagiccounter,lowHPenrage
 จับEliteได้speciesเดิม/elementเดิม Lv1 ไม่transferwildmultipliers; historybadgeได้; normalcaptureไม่กลายเป็นของด้อยถาวร

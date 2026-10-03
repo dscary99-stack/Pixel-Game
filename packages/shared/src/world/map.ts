@@ -6,6 +6,8 @@
  * Art (tilesets, y-sorting, occlusion) is not part of this contract yet.
  */
 import { z } from "zod";
+import { RULES } from "../rules";
+import { SpawnEntrySchema, type SpeciesDefinition } from "../schemas";
 
 export const MapId = z.string().regex(/^map:[a-z0-9_]+$/, 'expected id like "map:snake_case"');
 
@@ -37,6 +39,24 @@ export const PortalSchema = z
   .strict();
 export type Portal = z.infer<typeof PortalSchema>;
 
+/**
+ * A place on a field map where a visible pack stands (chapter 07 §3). The server rolls the pack
+ * from `entries`; everyone in the channel sees the same pack, and each player who engages gets a
+ * private fight against exactly that roster (O05, decided 2026-10-03).
+ */
+export const SpawnPointSchema = z
+  .object({
+    id: z.string().regex(/^[a-z0-9_]{1,24}$/),
+    at: TilePosSchema,
+    rank: z.enum(["NORMAL", "ELITE"]),
+    /** [min, max] enemies in the pack; the player sees this range before engaging. */
+    packSize: z.tuple([z.number().int().min(1), z.number().int().min(1)]),
+    /** Weighted species and element weights; the first roll is the visible leader. */
+    entries: z.array(SpawnEntrySchema).min(1),
+  })
+  .strict();
+export type SpawnPoint = z.infer<typeof SpawnPointSchema>;
+
 export const MapDefinitionSchema = z
   .object({
     id: MapId,
@@ -51,6 +71,7 @@ export const MapDefinitionSchema = z
     /** Where a player with no saved position on this map appears. */
     spawn: TilePosSchema,
     portals: z.array(PortalSchema),
+    spawns: z.array(SpawnPointSchema),
   })
   .strict();
 export type MapDefinition = z.infer<typeof MapDefinitionSchema>;
@@ -80,9 +101,11 @@ export interface MapIssue {
 
 /**
  * Registry validator: grid is rectangular with known tiles, spawn and portal tiles are walkable,
- * every portal lands on a walkable, non-portal tile of a map that exists.
+ * every portal lands on a walkable, non-portal tile of a map that exists. With a species registry,
+ * pack spawns are checked too: towns have none, packs fit the enemy cap (C05), species exist and
+ * elements are ones the species can have (C07).
  */
-export function validateMaps(maps: readonly MapDefinition[]): MapIssue[] {
+export function validateMaps(maps: readonly MapDefinition[], species?: ReadonlyMap<string, SpeciesDefinition>): MapIssue[] {
   const issues: MapIssue[] = [];
   const byId = new Map(maps.map((m) => [m.id, m]));
   if (byId.size !== maps.length) issues.push({ mapId: "*", message: "duplicate map id" });
@@ -110,6 +133,30 @@ export function validateMaps(maps: readonly MapDefinition[]): MapIssue[] {
       }
       if (!isWalkable(target, p.to.x, p.to.y)) issues.push({ mapId: m.id, message: `portal lands on a blocked tile of ${p.to.mapId}` });
       if (portalAt(target, p.to.x, p.to.y) !== null) issues.push({ mapId: m.id, message: `portal lands on another portal in ${p.to.mapId}` });
+    }
+    if (m.kind === "town" && m.spawns.length > 0) issues.push({ mapId: m.id, message: "towns have no hunting spawns" });
+    const spawnIds = new Set<string>();
+    for (const sp of m.spawns) {
+      const where = `spawn ${sp.id}`;
+      if (spawnIds.has(sp.id)) issues.push({ mapId: m.id, message: `${where} id is duplicated` });
+      spawnIds.add(sp.id);
+      if (!isWalkable(m, sp.at.x, sp.at.y) || portalAt(m, sp.at.x, sp.at.y) !== null) issues.push({ mapId: m.id, message: `${where} is not on open ground` });
+      const [min, max] = sp.packSize;
+      if (min > max) issues.push({ mapId: m.id, message: `${where} pack size min > max` });
+      if (max > RULES.confirmed.maxEnemyUnits.value) issues.push({ mapId: m.id, message: `${where} pack can exceed ${RULES.confirmed.maxEnemyUnits.value} enemies` });
+      if (species === undefined) continue;
+      for (const e of sp.entries) {
+        const def = species.get(e.speciesId);
+        if (def === undefined) {
+          issues.push({ mapId: m.id, message: `${where} uses unknown species ${e.speciesId}` });
+          continue;
+        }
+        const elements = Object.entries(e.elementWeights).filter(([, w]) => (w ?? 0) > 0).map(([el]) => el);
+        if (elements.length === 0) issues.push({ mapId: m.id, message: `${where} ${e.speciesId} has no element weights` });
+        for (const el of elements) {
+          if (!def.allowedElements.includes(el as never)) issues.push({ mapId: m.id, message: `${where} ${e.speciesId} cannot be ${el}` });
+        }
+      }
     }
   }
   return issues;

@@ -31,6 +31,7 @@ const tiny: MapDefinition = {
   tiles: ["#####", "#.#.#", "#...#", "#####"],
   spawn: { x: 1, y: 1 },
   portals: [],
+  spawns: [],
 };
 
 describe("map registry", () => {

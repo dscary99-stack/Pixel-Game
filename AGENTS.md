@@ -28,6 +28,7 @@ npm run db:migrate:local  # ใส่ D1 migrations ลงฐานข้อม�
 npm run dev:server     # wrangler dev :8787; เปิด client ด้วย ?server
 npm run smoke:server   # end-to-end ไฟต์ กับ wrangler dev ที่รันอยู่
 npm run smoke:world    # end-to-end การเดิน 2 ผู้เล่น (WebSocket) กับ wrangler dev ที่รันอยู่
+npm run smoke:encounter # end-to-end เดินเข้าทุ่ง → สู้ฝูง → กลับที่เดิม (ไฟต์ส่วนตัว O05) กับ wrangler dev
 ```
 
 ## กติกาการแก้โค้ด

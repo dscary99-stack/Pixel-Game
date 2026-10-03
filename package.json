@@ -2,7 +2,7 @@
   "name": "pixel-monster-rpg",
   "private": true,
   "version": "0.1.0",
-  "description": "Pixel Monster RPG prototype — Phase A (design contracts, schemas, deterministic combat kernel)",
+  "description": "Pixel Monster RPG prototype \u2014 Phase A (design contracts, schemas, deterministic combat kernel)",
   "type": "module",
   "workspaces": [
     "packages/*",
@@ -17,6 +17,7 @@
     "dev:server": "npm run dev -w @pmrpg/server",
     "smoke:server": "node apps/server/scripts/smoke.mjs",
     "smoke:world": "node apps/server/scripts/world-smoke.mjs",
+    "smoke:encounter": "vite-node apps/server/scripts/encounter-smoke.ts",
     "db:migrate:local": "cd apps/server && wrangler d1 migrations apply pixel-monster-rpg-dev --local",
     "check": "npm run typecheck && npm test && npm run build:client && npm run build:server"
   },

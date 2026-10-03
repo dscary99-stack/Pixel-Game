@@ -69,6 +69,11 @@ export const RULES = {
     sigilRemovalPremiumRoute: confirmed(false, "C25"),
     premiumPower: confirmed(false, "C26"),
     playersVisibleInMap: confirmed(true, "C03", "maps are split into channels"),
+    privateEncounters: confirmed(
+      true,
+      "O05",
+      "user decision 2026-10-03: everyone sees the same packs, each player who engages gets a private fight; no kill-stealing",
+    ),
   },
   provisional: {
     autoHuntLootRetention: provisional(0.7, "P01", "multiplier, applied once per candidate; not 0.70%"),
@@ -115,6 +120,9 @@ export const RULES = {
     channelsPerMap: provisional(2, "P11", "prototype channel count per map"),
     channelCapacity: provisional(50, "P11", "players per channel; not a load-tested number"),
     positionSaveIntervalMs: provisional(10_000, "P11", "how often a channel writes moved players' positions to D1"),
+    // Encounters (Phase C). Hunting speed numbers are P12 assumptions.
+    packRespawnMs: provisional(60_000, "P12", "a visible pack is re-rolled this often; a player who fought it waits for the next one"),
+    engageRangeTiles: provisional(1, "P10", "must stand next to (or on) the pack to start a fight"),
   },
   unresolved: {
     tradeLevelGap: open<number>("O01", "user range 20–40; proposal +30"),

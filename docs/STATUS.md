@@ -1,6 +1,6 @@
-# สถานะงาน — Phase A + Battle settlement + Phase B (walking slice)
+# สถานะงาน — Phase A + Battle settlement + Phase B (walking slice) + Phase C แรก (encounter)
 
-อัปเดต: 3 ตุลาคม 2026 · ผู้ทำล่าสุด: Claude · ระยะ: **B — Walking slice** (บท13 §1) ต่อจาก A และ Battle DO ↔ D1 ตามบท11 §3
+อัปเดต: 3 ตุลาคม 2026 · ผู้ทำล่าสุด: Claude · ระยะ: **C แรก — เจอฝูงในทุ่ง → สู้ → กลับที่เดิม** (บท07 §3, บท11 §3 ข้อ 1) ต่อจาก B
 
 ไฟล์นี้คือสถานะที่ใช้ส่งต่อระหว่าง Claude และ Codex ทุกงานที่จบให้แก้ไฟล์นี้ก่อน commit
 
@@ -29,11 +29,20 @@ Repo: https://github.com/dscary99-stack/Pixel-Game · Phase A merge แล้ว
 | ตำแหน่งใน D1 | `apps/server/migrations/0003_player_positions.sql`, `src/world-store.ts` | ตำแหน่งจริงของตัวละคร + `generation` (เชื่อมใหม่ = gen ใหม่; connection เก่าบันทึกทับไม่ได้); ตัวละครใหม่เกิดที่หมู่บ้านเท่านั้น; ขอเข้าแผนที่อื่นที่ไม่ได้อยู่ → ถูกส่งกลับ (กันวาร์ป) |
 | Worker | `apps/server/src/index.ts` | `GET /world/where`, `GET /world/:map/:channel` (WebSocket); dev รับ `?dev_account=` เพราะ browser ใส่ header ใน WebSocket ไม่ได้ |
 | Phaser world scene | `apps/client/src/world-{scene,transport}.ts` | หน้าแรกคือการเดิน (`?battle` = ฉากต่อสู้เดิม); ลูกศร/WASD/คลิก, predict ก้าวตัวเองแล้ว snap กลับเมื่อ server ปฏิเสธ, กด 1/2 เปลี่ยน channel; `?server&account=ชื่อ` เปิดหลายแท็บเห็นกัน |
+| คำตัดสิน O05 | `rules.ts` (`RULES.confirmed.privateEncounters`), `GAME_DESIGN_MASTER.md` | ผู้ใช้ตัดสิน 3 ต.ค. 2026: ทุกคนเห็นฝูงเดียวกัน ใครกดเข้าก็ได้ไฟต์ส่วนตัว ไม่แย่งตัว |
+| จุดเกิดฝูง (shared) | `packages/shared/src/world/{map,encounter}.ts` | `SpawnPoint` ในแผนที่ + validator (เมืองห้ามมีฝูง, ≤10 ตัว C05, species/ธาตุต้องมีจริง C07); `rollPack` ด้วย RNG ของ server, `visiblePack` (หัวฝูง Lv/ธาตุ, Rank, ช่วงจำนวน), `packEnemies` (จัดแถว), `defaultCombatBag`, รอบ respawn |
+| Encounter ใน Map DO | `apps/server/src/map-do.ts` | สุ่มฝูงครั้งเดียวต่อรอบเก็บใน DO storage (โหลดใหม่ไม่สุ่มใหม่); `engage` ตรวจเมือง/ระยะ/ฝูงมีจริง/เคยสู้ → จองไฟต์ใน D1 → reserve กระเป๋า → สร้าง Battle DO จาก roster เดิม; ระหว่างไฟต์เดินไม่ได้ (`IN_BATTLE`); เชื่อมใหม่กลางไฟต์ได้ไฟต์เดิมคืน; `resume` ถาม Battle DO ว่าจบจริงก่อนให้เดิน |
+| สิทธิ์ไฟต์ใน D1 | `apps/server/migrations/0004_encounter_claims.sql`, `src/encounter-store.ts` | 1 แถวต่อ (บัญชี, ฝูงรอบนั้น), battle id คำนวณจากคู่นี้ → กดซ้ำ/retry ได้ไฟต์เดิม; ฝูงที่สู้แล้วซ่อนเฉพาะคนนั้นจนรอบถัดไป |
+| ตัวละครแทน (dev) | `packages/shared/src/dev-fixtures.ts` (`devPlayer`, `DEV_STARTER_ITEMS`) | ยังไม่มีตารางตัวละคร: dev ใช้ผู้เล่น Lv10 คงที่ + ของเริ่มต้น; นอก dev `engage` ตอบ `NO_CHARACTER` |
+| Client เดิน ↔ สู้ | `apps/client/src/{world-scene,world-transport,battle-scene,transport}.ts` | วาดฝูง (สีธาตุหัวฝูง, ชื่อ Lv จำนวน), คลิกฝูง → เดินไปข้าง ๆ แล้วขอสู้; ฉากต่อสู้ต่อไฟต์ที่ server สร้าง (attach); จบแล้วปุ่ม "กลับไปเดินต่อ"; โหมด local preview สุ่มฝูง/สู้ในเบราว์เซอร์ได้ (ไม่บันทึก) |
 | Reconciler | `apps/server/src/index.ts` (`scheduled`, cron ทุกนาที) | reservation ที่ค้าง `reserved` เกิน 2 นาที → ถาม DO ก่อน; DO ไม่มีไฟต์ → เขียน tombstone แล้วจึงคืนของ; ไฟต์ที่เริ่มแล้วไม่ถูกแตะ |
 
 ## ผลตรวจล่าสุด
 
-- `npm run check` ผ่าน: typecheck 3 แพ็กเกจ, **127 tests ผ่าน** (shared 78, server 49), Vite build, `wrangler deploy --dry-run` (D1 + BATTLE + MAP + cron)
+- `npm run check` ผ่าน: typecheck 3 แพ็กเกจ, **142 tests ผ่าน** (shared 88, server 54), Vite build, `wrangler deploy --dry-run` (D1 + BATTLE + MAP + cron)
+- Test ใหม่ Phase C (+15): validator จับฝูงในเมือง/id ซ้ำ/ยืนบนกำแพง/min>max/เกิน 10 ตัว/species ไม่มี/ธาตุที่ species เป็นไม่ได้, จำนวนและธาตุที่สุ่มอยู่ในช่วง, หัวฝูงที่เห็น = ตัวแรกในไฟต์, จัดแถวผ่าน validator ทุกขนาด 1–10, รอบ respawn, ระยะ engage และห้ามในเมือง, กระเป๋าเริ่มต้นตามเพดาน P15, เดินระหว่างไฟต์ถูก `correct`; D1: ฝูงเดียวกันให้ไฟต์คนละอันต่อผู้เล่น, claim ซ้ำ/พร้อมกันได้แถวเดียว roster เดิม, นับว่าสู้แล้วเมื่อมี reservation เท่านั้น, ไฟต์ที่ถูก release ยังซ่อนฝูงและไม่ค้าง
+- `npm run smoke:encounter` (ใหม่) กับ `wrangler dev`: ขอสู้ในเมือง → `NO_HUNT_HERE`, A/B เห็นฝูงชุดเดียวกัน, ไกลเกิน → `TOO_FAR`, เดินไปข้างฝูงแล้วได้ไฟต์, ฝูงหายจากจอ A แต่ B ยังเห็น และ B กดได้ไฟต์ของตัวเอง (battle id ต่างกัน), เดินระหว่างไฟต์ → `IN_BATTLE`, กดซ้ำได้ไฟต์เดิม, รีโหลดกลางไฟต์ได้ไฟต์คืนที่ตำแหน่งเดิม, ขอกลับก่อนจบ → `IN_BATTLE`, ศัตรูหัวฝูงตรงกับที่เห็น, Auto จบ `victory`, settle ครบ ของเข้า inventory (`item:crab_shell`×2), กลับมาเดินต่อจากช่องเดิม, ขอสู้ฝูงเดิมซ้ำ → `NO_SUCH_PACK`; `smoke:world` และ `smoke:server` ยังผ่าน
+- ภาพหน้าจอ 2 ผู้เล่นโหมด server (`/mnt/project-files/pixel-game-screenshots/hunt-*.png`): เห็นฝูง 3 ฝูง, คลิกฝูง → เดินไปแล้วเข้าฉากต่อสู้, Auto ชนะ, อีกคนยังเห็นฝูงนั้น, กดกลับแล้วอยู่ที่เดิมและฝูงที่สู้แล้วหายจากจอเรา; โหมด local preview ก็เดิน→สู้→กลับได้; ไม่มี console error
 - Test ใหม่ Phase B (+25): แผนที่ตัวอย่างผ่าน validator และ validator จับแผนที่เสีย, ชนกำแพง/น้ำ, ห้ามตัดมุม, speed hack 40 ก้าวพร้อมกันผ่านแค่ 3, ยืนนิ่งนานไม่สะสมก้าว, เดินจริง 400 ก้าวมี jitter ±100ms ผ่านทุกก้าว, BFS ใช้กฎเดียวกับ server, 2 คนเห็นกัน join/move/leave, เชื่อมซ้ำไม่เพิ่มผู้เล่น, seq ซ้ำไม่ขยับ, ข้อความผิดรูปแบบ, channel เต็ม; D1: ตัวละครใหม่เกิดที่เมืองเท่านั้น, เข้าแผนที่อื่นไม่ได้, reconnect ได้ตำแหน่งเดิม, connection เก่าบันทึก/ผ่านประตูไม่ได้, ประตูย้ายแผนที่, ช่องที่บันทึกเดินไม่ได้แล้ว → spawn, join พร้อมกัน 2 channel เหลือ gen ปัจจุบันเดียว
 - `npm run smoke:world` กับ `wrangler dev` (WebSocket จริง + Map DO + D1 local): A/B เห็นกัน, B เห็น A เดิน, ชนกำแพงถูก `correct`, speed hack 20 ก้าวผ่าน 3, ข้อความขยะ → `INVALID_MESSAGE`, ขอเข้าทุ่งทั้งที่อยู่เมือง → `transfer` กลับเมือง, เชื่อมซ้ำ → อันเก่า `REPLACED` ตำแหน่ง/sid เดิม B ไม่เห็นคนเพิ่ม, เปลี่ยน channel → อันเก่า `EVICTED` B เห็น A ออก ตำแหน่งเดิม, เดินเข้าประตู → ถึงทุ่งที่ (1,8), ออกแล้วกลับเข้าได้ตำแหน่งเดิม, ไม่มี auth → 401
 - ภาพหน้าจอ 2 แท็บ (Playwright + Chromium) โหมด server: เห็นกันทั้งสองฝั่ง, คลิกเดินผ่านประตูไปทุ่งได้, ไม่มี console error (`/mnt/project-files/pixel-game-screenshots/world-*.png`)
@@ -70,6 +79,11 @@ Repo: https://github.com/dscary99-stack/Pixel-Game · Phase A merge แล้ว
 | A22 | 2 channel ต่อแผนที่ 50 คนต่อ channel; ผ่านประตูแล้วได้ channel เลขเดิมในแผนที่ใหม่ | `channelsPerMap`, `channelCapacity` (P11) |
 | A23 | บันทึกตำแหน่งลง D1 ตอนออก/ผ่านประตู/เปลี่ยน channel และทุก 10 วินาทีถ้าขยับ; DO ล่มกลางทาง → ย้อนได้ไม่เกิน 10 วินาที | `positionSaveIntervalMs` (P11) |
 | A24 | ชื่อที่คนอื่นเห็นตอนนี้คือ account id ตัด `acct:` (ยังไม่มีชื่อตัวละคร); คนอื่นไม่เห็น account id จริง ได้แค่ `sid` สุ่ม | Phase D |
+| A25 | ฝูงเกิดใหม่ทุก 60 วินาที (รอบตามนาฬิกา server ทั้ง channel); ฝูงที่เราสู้แล้วซ่อนเฉพาะเราจนรอบถัดไป ไม่มี daily cap | `packRespawnMs` (P12) |
+| A26 | ต้องยืนติดฝูง (ห่าง ≤1 ช่องรวมทแยง) จึงกดสู้ได้; server ตรวจระยะจากตำแหน่งจริง | `engageRangeTiles` (P10) |
+| A27 | ฝูงตัวอย่าง 1–2 ตัว (หอย 1 ตัว), Rank NORMAL ทั้งหมด, หัวฝูง = ตัวแรกที่สุ่มและอยู่แถวหน้ากลาง | EXAMPLE content |
+| A28 | ยังไม่มีหน้าเลือกของ: กระเป๋าต่อสู้ = ของที่มีจริง เรียง heal → capture → revive → support → attack ตามเพดาน P15 | `defaultCombatBag` |
+| A29 | ฝูงถูกสุ่มเมื่อมีคนใน channel ต้องใช้ (ไม่ใช่ทุกรอบตลอดเวลา) และเก็บใน DO storage; DO รีสตาร์ทกลางรอบได้ฝูงเดิม | บท11 §1 |
 
 ## OPEN ที่โค้ดคืน `UNRESOLVED_RULE` แทนการเลือกเอง
 
@@ -84,7 +98,9 @@ O01–O04 (trade gap, effective level, Rebirth) ไม่เกี่ยวก�
 
 - ยังไม่มี status effect (stun/sleep/poison), shield, passive/innate trigger, บอสหลาย action, AoE
 - ยังไม่มี EXP/เลเวลอัป, Bond, Rebirth, อัปสกิล
-- ยังไม่มี encounter: เดินในทุ่งยังไม่เจอมอนสเตอร์ (Phase C); ไฟต์ยังสร้างผ่าน endpoint dev ด้วยคอนเทนต์ EXAMPLE เท่านั้น และ O05 (สิทธิ์ encounter ร่วม) ยังเปิด
+- Encounter ใช้ได้เฉพาะ dev: ยังไม่มีตารางตัวละคร (Phase D) จึงสู้ด้วยตัวละครแทน Lv10 ไม่มีคู่ใจ; HP/MP หลังไฟต์ไม่ติดตัวกลับมา (เก็บแค่ใน `result_json`)
+- ยังไม่มี Auto Hunt (เดินหาฝูงเอง), EXP, ฝูง ELITE/บอส, ฝูงเดินไปมา; ฝูงยืนที่จุดเกิดคงที่
+- คอนเทนต์ฝูงเป็น EXAMPLE (`draft`) ห้าม publish
 - ยังไม่มี interest area: ทุกคนใน channel ได้ข่าวทุกการขยับ (พอสำหรับ 50 คน/แผนที่เล็ก ไม่ใช่ขนาด MMO)
 - ยังไม่มี rate limit ของข้อความ WebSocket นอกจากกฎความเร็วเดิน; ไม่มี heartbeat timeout ของ server (ใช้ close ของ WebSocket)
 - ยังไม่มีชื่อตัวละคร/ตัวละครหลายตัวต่อบัญชี (O10), ไม่มีการเลือก channel อัตโนมัติเมื่อเต็ม
@@ -102,7 +118,7 @@ O01–O04 (trade gap, effective level, Rebirth) ไม่เกี่ยวก�
 
 ## งานถัดไปที่แนะนำ
 
-1. Phase C แรก: เจอมอนสเตอร์ในทุ่ง → เข้าฉากต่อสู้ → กลับมาที่เดิม (ต้องตัดสิน O05 encounter ร่วมหรือแยก; ระหว่างนี้ใช้แบบไฟต์ส่วนตัวได้โดยไม่แย่งตัว)
+1. Phase D แรก: ตารางตัวละคร (stat, เลเวล, HP ที่ติดตัว, คู่ใจในทีม) แทนตัวละคร dev เพื่อให้ encounter ใช้นอก dev ได้ แล้วเพิ่ม EXP หลังไฟต์ (ต้องมีตาราง EXP)
 2. ตัดสิน O15 (cooldown tick, revive, หนี, status tick, stalemate) และ O11 (นโยบายหลุดกลางไฟต์) แล้วเพิ่ม status effects และทางปิดไฟต์ที่ถูกทิ้ง
 3. Art proof หนึ่งตัวละคร 4 ทิศ + gear 12 layers + tileset หนึ่งชุด (บท10, ค้างจาก Phase A)
 4. ตาราง equipment instance + ล็อกอุปกรณ์ตอนจอง, อ่าน snapshot คู่ใจจาก D1

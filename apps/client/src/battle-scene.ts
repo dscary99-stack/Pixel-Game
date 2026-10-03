@@ -10,7 +10,7 @@ import type { BattleTransport, Snapshot } from "./transport";
 const W = 960;
 const H = 540;
 
-const ELEMENT_COLOR: Record<Element, number> = {
+export const ELEMENT_COLOR: Record<Element, number> = {
   FIRE: 0xf26b3a,
   WATER: 0x3a8ef2,
   EARTH: 0xb08a4a,
@@ -43,8 +43,22 @@ export class BattleScene extends Phaser.Scene {
     super("battle");
   }
 
-  init(data: { transport: BattleTransport }) {
+  private onExit: (() => void) | null = null;
+  private exitButton: Phaser.GameObjects.Text | null = null;
+
+  /**
+   * `onExit` is set when the fight came from the world: once the fight is over a button takes the
+   * player back to where they stood. Phaser reuses this scene object, so every field resets here.
+   */
+  init(data: { transport: BattleTransport; onExit?: () => void }) {
     this.transport = data.transport;
+    this.onExit = data.onExit ?? null;
+    this.exitButton = null;
+    this.views = new Map();
+    this.selectedTarget = null;
+    this.log = [];
+    this.autoOn = false;
+    this.busy = false;
   }
 
   async create() {
@@ -66,9 +80,11 @@ export class BattleScene extends Phaser.Scene {
 
     // Auto only runs while this page is open and visible (C14: no offline farming).
     this.time.addEvent({ delay: 650, loop: true, callback: () => void this.autoTick() });
-    document.addEventListener("visibilitychange", () => {
+    const onHide = () => {
       if (document.visibilityState !== "visible" && this.autoOn) this.toggleAuto();
-    });
+    };
+    document.addEventListener("visibilitychange", onHide);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => document.removeEventListener("visibilitychange", onHide));
 
     const { snapshot, events } = await this.transport.start();
     this.apply(snapshot, events);
@@ -197,6 +213,10 @@ export class BattleScene extends Phaser.Scene {
     this.turnText.setText(
       state.status === "active" ? `รอบ ${state.round} · ตาของ ${actor?.name ?? "-"} · แตะศัตรูเพื่อเลือกเป้า` : `จบไฟต์: ${state.status}`,
     );
+    if (state.status !== "active" && this.onExit !== null && this.exitButton === null) {
+      const exit = this.onExit;
+      this.exitButton = this.button(W - 200, 20, "กลับไปเดินต่อ", () => exit()).setFixedSize(184, 48).setBackgroundColor("#2f7a4a");
+    }
   }
 
   private position(u: BattleUnit) {

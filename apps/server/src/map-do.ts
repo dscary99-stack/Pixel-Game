@@ -2,6 +2,11 @@
  * Map Channel Durable Object: one object per map + channel (chapter 11 §1). Holds live presence,
  * validates every step, broadcasts what changed, and saves positions to D1.
  *
+ * Encounters (Phase C, O05 decided 2026-10-03): the channel rolls visible packs per respawn cycle
+ * and keeps them in its storage, so everyone sees the same roster and a reload never re-rolls it.
+ * Engaging claims a private fight in D1, reserves the bag, and creates the Battle DO from exactly
+ * that roster. Other players keep seeing and fighting the same pack.
+ *
  * Uses the WebSocket Hibernation API. Each socket's attachment carries that player's presence, so
  * the channel can be rebuilt after the object sleeps without a separate presence table. The
  * Worker authenticates and passes the account in a header; this object is never reachable directly.
@@ -12,13 +17,32 @@ import {
   EXAMPLE_START_MAP,
   MapChannel,
   PRODUCTION_RULES,
+  Rng,
+  defaultCombatBag,
+  exampleContentMaps,
   exampleMapRegistry,
+  huntingAllowed,
+  inEngageRange,
+  packCycle,
+  packEnemies,
+  packInstanceId,
+  rollPack,
+  seedRng,
+  visiblePack,
+  type BattleSetup,
+  type MapDefinition,
   type Outgoing,
+  type PackInstance,
   type Presence,
+  type PublicBattleState,
+  devPlayer,
   type RulesConfig,
+  type WorldErrorCode,
   type WorldServerMessage,
 } from "@pmrpg/shared";
-import type { Env } from "./battle-do";
+import type { Env, RoomReply } from "./battle-do";
+import { Economy } from "./economy";
+import { EncounterStore } from "./encounter-store";
 import { WorldStore } from "./world-store";
 
 /** What each hibernatable socket remembers. */
@@ -35,14 +59,22 @@ export const mapObjectName = (mapId: string, channel: number) => `${mapId}#${cha
 export class MapChannelDurableObject extends DurableObject<Env> {
   private readonly rules: RulesConfig;
   private readonly maps = exampleMapRegistry();
+  private readonly content = exampleContentMaps();
   private readonly store: WorldStore;
+  private readonly encounters: EncounterStore;
+  private readonly economy: Economy;
   private channel: MapChannel | null = null;
+  private packs: { cycle: number; list: PackInstance[] } | null = null;
+  /** Accounts with an engage or resume in flight; a second tap waits for the first answer. */
+  private readonly busy = new Set<string>();
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     this.rules = env.ENVIRONMENT === "dev" ? DEV_FIXTURE_RULES : PRODUCTION_RULES;
     // Phase B ships EXAMPLE maps only; a versioned content bundle replaces this later.
     this.store = new WorldStore(env.DB, this.maps, EXAMPLE_START_MAP);
+    this.encounters = new EncounterStore(env.DB);
+    this.economy = new Economy(env.DB, this.rules);
   }
 
   /** Rebuild the channel from live sockets (after hibernation) or create it on first join. */
@@ -106,8 +138,16 @@ export class MapChannelDurableObject extends DurableObject<Env> {
       old.close(4001, "replaced");
     }
     this.ctx.acceptWebSocket(server, [accountId]);
-    server.serializeAttachment({ mapId, channel: channelNo, generation: claim.generation, presence: joined.presence } satisfies Attachment);
+    const attachment: Attachment = { mapId, channel: channelNo, generation: claim.generation, presence: joined.presence };
+    server.serializeAttachment(attachment);
     this.deliver(accountId, joined.out);
+    // Reconnecting in the middle of a fight puts the player straight back into it.
+    const open = await this.encounters.openBattle(accountId);
+    if (open !== null && (await this.battleStatus(accountId, open)) === "active") {
+      this.setBattle(server, attachment, open);
+      safeSend(server, { t: "encounter", battleId: open, resumed: true });
+    }
+    await this.sendPacks(accountId, mapId, channelNo);
     await this.ensureSaveAlarm();
     return new Response(null, { status: 101, webSocket: client });
   }
@@ -126,6 +166,18 @@ export class MapChannelDurableObject extends DurableObject<Env> {
       }
     }
     const r = channel.handle(a.presence.accountId, raw, Date.now());
+    if (r.kind === "intent") {
+      const account = a.presence.accountId;
+      if (this.busy.has(account)) return;
+      this.busy.add(account);
+      try {
+        if (r.msg.t === "engage") await this.engage(ws, a, r.msg.packId);
+        else await this.resume(ws, a);
+      } finally {
+        this.busy.delete(account);
+      }
+      return;
+    }
     if (r.kind === "moved") ws.serializeAttachment({ ...a, presence: r.presence } satisfies Attachment);
     this.deliver(a.presence.accountId, r.out);
     if (r.kind === "moved" && r.portal !== null) {
@@ -163,8 +215,123 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     }
   }
 
-  /** Periodic position save for players who moved (P11 positionSaveIntervalMs). */
+  // ---------------------------------------------------------------- encounters
+
+  /** This cycle's packs: loaded from storage if already rolled, else rolled once and stored. */
+  private async currentPacks(map: MapDefinition, channel: number): Promise<PackInstance[]> {
+    if (!huntingAllowed(map) || map.spawns.length === 0) return [];
+    const cycle = packCycle(this.rules, Date.now());
+    if (this.packs?.cycle === cycle) return this.packs.list;
+    const key = `packs:${cycle}`;
+    let list = await this.ctx.storage.get<PackInstance[]>(key);
+    if (list === undefined) {
+      // Server RNG, fresh per cycle; the roster is stored before anyone can see or fight it.
+      const rng = new Rng(seedRng(crypto.randomUUID()));
+      list = map.spawns.map((sp) => rollPack(sp, packInstanceId(map.id, channel, sp.id, cycle), rng));
+      const old = await this.ctx.storage.list({ prefix: "packs:" });
+      await this.ctx.storage.delete([...old.keys()]);
+      await this.ctx.storage.put(key, list);
+    }
+    this.packs = { cycle, list };
+    return list;
+  }
+
+  /** Send one player the packs they can engage (ones they already fought are left out). */
+  private async sendPacks(accountId: string, mapId: string, channel: number): Promise<void> {
+    const map = this.maps.get(mapId)!;
+    const list = await this.currentPacks(map, channel);
+    const fought = await this.encounters.fought(accountId, list.map((p) => p.packId));
+    const packs = list.filter((p) => !fought.has(p.packId)).map((p) => visiblePack(p, this.content.species));
+    this.deliver(accountId, [{ to: "self", msg: { t: "packs", packs } }]);
+  }
+
+  private async engage(ws: WebSocket, a: Attachment, packId: string): Promise<void> {
+    const account = a.presence.accountId;
+    const presence = this.ensureChannel(a.mapId, a.channel).get(account);
+    const map = this.maps.get(a.mapId)!;
+    const fail = (code: WorldErrorCode, message: string) => safeSend(ws, { t: "error", code, message });
+    if (presence === undefined) return fail("NOT_JOINED", "join first");
+    if (!huntingAllowed(map)) return fail("NO_HUNT_HERE", "no hunting in towns");
+    if (presence.battleId !== null) {
+      safeSend(ws, { t: "encounter", battleId: presence.battleId, resumed: true });
+      return;
+    }
+    // No character table yet (Phase D): only dev has a stand-in character to fight with.
+    if (this.env.ENVIRONMENT !== "dev") return fail("NO_CHARACTER", "characters are not implemented outside dev yet");
+    const pack = (await this.currentPacks(map, a.channel)).find((p) => p.packId === packId);
+    if (pack === undefined) return fail("NO_SUCH_PACK", "that pack is gone; a new one appears next cycle");
+    if (!inEngageRange(this.rules, presence.pos, pack.at)) return fail("TOO_FAR", "walk next to the pack first");
+    if ((await this.encounters.fought(account, [packId])).has(packId)) return fail("NO_SUCH_PACK", "you already fought this pack");
+
+    const { battleId, roster } = await this.encounters.claim(account, packId, pack.members);
+    const reservationId = `res:${battleId}`;
+    // A retry after a crash reuses the bag already reserved; otherwise reserve a fresh default bag.
+    const prior = await this.economy.reservedBag(reservationId);
+    // A released reservation means this fight was cancelled before it started; the pack stays
+    // hidden for this player until the next cycle (fought() counts it), never a second free start.
+    if (prior !== null && prior.status !== "reserved" && prior.status !== "active") return fail("NO_SUCH_PACK", "that fight is over");
+    let bag = prior?.bag;
+    if (bag === undefined) {
+      const kind = (id: string) => this.content.items.get(id)?.kind;
+      bag = defaultCombatBag(this.rules, await this.economy.balances(account), kind);
+      const reserved = await this.economy.reserve({ reservationId, accountId: account, battleId, bag, companionIds: [] });
+      if (reserved.status === "rejected") {
+        if (reserved.reason === "BATTLE_IN_PROGRESS") return fail("IN_BATTLE", "finish your other fight first");
+        return fail("ENCOUNTER_REFUSED", reserved.reason);
+      }
+    }
+    const setup: BattleSetup = {
+      battleId,
+      originMode: "manual",
+      seed: crypto.randomUUID(),
+      player: devPlayer(account, presence.name),
+      companions: [],
+      enemies: packEnemies({ ...pack, members: roster }),
+      bag,
+    };
+    const created = (await this.battle(battleId).handle(account, { kind: "create", setup, reservationId })) as RoomReply;
+    if (!created.ok) return fail("ENCOUNTER_REFUSED", created.code);
+
+    this.setBattle(ws, a, battleId);
+    await this.store.save(account, a.generation, a.mapId, presence.pos);
+    safeSend(ws, { t: "encounter", battleId, resumed: false });
+    await this.sendPacks(account, a.mapId, a.channel);
+  }
+
+  private async resume(ws: WebSocket, a: Attachment): Promise<void> {
+    const account = a.presence.accountId;
+    const presence = this.ensureChannel(a.mapId, a.channel).get(account);
+    if (presence === undefined) return;
+    if (presence.battleId !== null) {
+      if ((await this.battleStatus(account, presence.battleId)) === "active") {
+        safeSend(ws, { t: "error", code: "IN_BATTLE", message: "the fight is still going" });
+        safeSend(ws, { t: "encounter", battleId: presence.battleId, resumed: true });
+        return;
+      }
+      this.setBattle(ws, a, null);
+    }
+    safeSend(ws, { t: "resumed" });
+    await this.sendPacks(account, a.mapId, a.channel);
+  }
+
+  private setBattle(ws: WebSocket, a: Attachment, battleId: string | null): void {
+    const p = this.ensureChannel(a.mapId, a.channel).setBattle(a.presence.accountId, battleId) ?? { ...a.presence, battleId };
+    ws.serializeAttachment({ ...a, presence: p } satisfies Attachment);
+  }
+
+  private battle(battleId: string) {
+    return this.env.BATTLE.get(this.env.BATTLE.idFromName(battleId));
+  }
+
+  /** The fight's real status from its Battle DO; the client's word is never taken for it. */
+  private async battleStatus(accountId: string, battleId: string): Promise<PublicBattleState["status"] | "missing"> {
+    const r = (await this.battle(battleId).handle(accountId, { kind: "view" })) as RoomReply;
+    return r.ok ? (r.body as { state: PublicBattleState }).state.status : "missing";
+  }
+
+  /** Periodic position save for players who moved (P11 positionSaveIntervalMs); new packs each cycle. */
   override async alarm(): Promise<void> {
+    const cycleBefore = this.packs?.cycle ?? null;
     for (const ws of this.ctx.getWebSockets()) {
       const a = ws.deserializeAttachment() as Attachment | null;
       if (a === null || !a.presence.dirty) continue;
@@ -172,6 +339,12 @@ export class MapChannelDurableObject extends DurableObject<Env> {
       await this.store.save(live.accountId, a.generation, a.mapId, live.pos);
       live.dirty = false;
       ws.serializeAttachment({ ...a, presence: live } satisfies Attachment);
+    }
+    // A new respawn cycle: everyone gets the new packs (including ones they fought last cycle).
+    const sockets = this.ctx.getWebSockets().map((ws) => ws.deserializeAttachment() as Attachment | null).filter((x): x is Attachment => x !== null);
+    const first = sockets[0];
+    if (first !== undefined && cycleBefore !== packCycle(this.rules, Date.now())) {
+      for (const s of sockets) await this.sendPacks(s.presence.accountId, s.mapId, s.channel);
     }
     await this.ensureSaveAlarm();
   }

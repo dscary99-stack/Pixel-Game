@@ -13,4 +13,5 @@ export * from "./dev-fixtures";
 export * from "./world/map";
 export * from "./world/movement";
 export * from "./world/channel";
+export * from "./world/encounter";
 export * from "./content/maps";

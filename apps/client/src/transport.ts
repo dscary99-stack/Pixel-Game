@@ -88,19 +88,26 @@ export class HttpTransport implements BattleTransport {
   private generation = 0;
   private snap!: Snapshot;
 
+  /**
+   * `attach`: the battle already exists (the Map Channel created it when the player engaged a pack),
+   * so start() only claims a session and reads it. Otherwise start() asks dev-create for an example.
+   */
   constructor(
     private readonly base: string,
     private readonly battleId: string,
     private readonly devAccount: string,
+    private readonly attach = false,
   ) {
     this.label = `SERVER · ${base || "wrangler dev via Vite proxy"}`;
   }
 
   async start() {
-    const created = await this.call<{ events: BattleEvent[] }>("POST", "dev-create", {});
+    const events = this.attach
+      ? (await this.call<{ events: BattleEvent[] }>("GET", "events?since=0")).events
+      : (await this.call<{ events: BattleEvent[] }>("POST", "dev-create", {})).events;
     this.generation = (await this.call<{ sessionGeneration: number }>("POST", "session")).sessionGeneration;
     await this.refresh();
-    return { snapshot: this.snap, events: created.events };
+    return { snapshot: this.snap, events };
   }
 
   async send(command: BattleCommand) {

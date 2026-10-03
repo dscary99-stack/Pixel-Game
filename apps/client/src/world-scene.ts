@@ -7,8 +7,10 @@ import Phaser from "phaser";
 import {
   DEV_FIXTURE_RULES,
   TILE_LEGEND,
+  exampleContentMaps,
   exampleMapRegistry,
   findPath,
+  inEngageRange,
   portalAt,
   stepCostMs,
   tryStep,
@@ -17,8 +19,10 @@ import {
   type PublicPlayer,
   type TileChar,
   type TilePos,
+  type VisiblePack,
   type WorldServerMessage,
 } from "@pmrpg/shared";
+import { ELEMENT_COLOR } from "./battle-scene";
 import type { WorldTransport } from "./world-transport";
 
 const W = 960;
@@ -42,11 +46,22 @@ interface PlayerView {
   pos: TilePos;
 }
 
+interface PackView {
+  pack: VisiblePack;
+  objects: Phaser.GameObjects.GameObject[];
+}
+
 const FACE_OFFSET: Record<PublicPlayer["facing"], [number, number]> = { N: [0, -12], S: [0, 12], E: [10, 0], W: [-10, 0] };
 
 export class WorldScene extends Phaser.Scene {
   private transport!: WorldTransport;
   private readonly maps = exampleMapRegistry();
+  private readonly species = exampleContentMaps().species;
+  private packs = new Map<string, PackView>();
+  /** Walking to this pack; engage once next to it. */
+  private pendingEngage: string | null = null;
+  /** A private fight is open; walking waits until the server says it is over. */
+  private inBattle = false;
   private map: MapDefinition | null = null;
   private channelNo = 1;
   private layer: Phaser.GameObjects.Container | null = null;
@@ -76,7 +91,7 @@ export class WorldScene extends Phaser.Scene {
     this.hud = this.add.text(8, 40, "", style).setScrollFactor(0).setDepth(100);
     this.notice = this.add.text(W / 2, H - 40, "", { ...style, fontSize: "15px" }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
     this.add
-      .text(W - 8, 8, "ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · 1/2 เปลี่ยน channel", style)
+      .text(W - 8, 8, "ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel", style)
       .setOrigin(1, 0)
       .setScrollFactor(0)
       .setDepth(100);
@@ -139,11 +154,22 @@ export class WorldScene extends Phaser.Scene {
         this.nextConnect = { mapId: m.mapId, channel: m.channel };
         this.flash(`กำลังไป ${this.maps.get(m.mapId)?.name.th ?? m.mapId}…`);
         break;
+      case "packs":
+        this.showPacks(m.packs);
+        break;
+      case "encounter":
+        this.startBattle(m.battleId, m.resumed);
+        break;
+      case "resumed":
+        this.inBattle = false;
+        this.flash("กลับมาที่เดิมแล้ว");
+        break;
       case "kicked":
         this.stopped = true;
         this.flash(m.reason === "REPLACED" ? "บัญชีนี้เชื่อมต่อจากที่อื่นแล้ว (หน้านี้หยุดควบคุม)" : "ย้ายไป channel อื่นแล้ว");
         break;
       case "error":
+        if (m.code === "TOO_FAR" || m.code === "NO_SUCH_PACK" || m.code === "NO_HUNT_HERE") this.pendingEngage = null;
         this.flash(`${m.code}: ${m.message}`);
         break;
       case "pong":
@@ -162,6 +188,8 @@ export class WorldScene extends Phaser.Scene {
     this.layer?.destroy(true);
     for (const v of this.players.values()) [v.body, v.nose, v.label].forEach((o) => o.destroy());
     this.players.clear();
+    this.showPacks([]);
+    this.pendingEngage = null;
     this.seq = 0;
     this.readyAt = 0;
 
@@ -237,6 +265,52 @@ export class WorldScene extends Phaser.Scene {
     v.body.setDepth(10 + pos.y / 1000);
   }
 
+  /** Everyone in the channel sees the same packs; ones this player already fought are left out. */
+  private showPacks(packs: VisiblePack[]) {
+    for (const v of this.packs.values()) v.objects.forEach((o) => o.destroy());
+    this.packs.clear();
+    for (const p of packs) {
+      const [px, py] = center(p);
+      const color = ELEMENT_COLOR[p.leader.element];
+      const body = this.add.rectangle(px, py, 24, 20, color).setStrokeStyle(2, p.rank === "ELITE" ? 0xffd84a : 0x1b1830).setDepth(9);
+      const shadow = this.add.ellipse(px, py + 12, 26, 8, 0x000000, 0.35).setDepth(8);
+      const [min, max] = p.sizeRange;
+      const name = this.species.get(p.leader.speciesId)?.name.th ?? p.leader.speciesId;
+      const label = this.add
+        .text(px, py - 14, `${name} Lv${p.leader.level} · ${min === max ? min : `${min}–${max}`} ตัว`, {
+          fontFamily: "sans-serif",
+          fontSize: "11px",
+          color: "#ffd0c0",
+          backgroundColor: "#00000088",
+          padding: { x: 3, y: 1 },
+        })
+        .setOrigin(0.5, 1)
+        .setDepth(12);
+      this.tweens.add({ targets: body, y: py - 3, duration: 500, yoyo: true, repeat: -1, ease: "Sine.InOut" });
+      this.packs.set(p.packId, { pack: p, objects: [body, shadow, label] });
+    }
+    if (this.pendingEngage !== null && !this.packs.has(this.pendingEngage)) this.pendingEngage = null;
+  }
+
+  private startBattle(battleId: string, resumed: boolean) {
+    this.path = [];
+    this.pendingEngage = null;
+    this.inBattle = true;
+    // A repeat (double tap, reconnect) while the fight is on screen changes nothing.
+    if (this.scene.isActive("battle")) return;
+    this.flash(resumed ? "กลับเข้าไฟต์ที่ค้างอยู่" : "เข้าไฟต์!");
+    this.scene.launch("battle", {
+      transport: this.transport.battle(battleId),
+      onExit: () => {
+        this.scene.stop("battle");
+        this.scene.wake();
+        // The server checks the fight really ended; until it says "resumed" the player stays put.
+        this.transport.resume();
+      },
+    });
+    this.scene.sleep();
+  }
+
   private refreshHud() {
     const m = this.map;
     this.hud.setText(m === null ? "กำลังเชื่อมต่อ…" : `${m.name.th} · channel ${this.channelNo} · ผู้เล่นที่เห็น ${this.players.size} คน`);
@@ -254,6 +328,12 @@ export class WorldScene extends Phaser.Scene {
     const self = this.selfView();
     if (this.map === null || self === null || this.stopped) return;
     const target = { x: Math.floor(p.worldX / TILE), y: Math.floor(p.worldY / TILE) };
+    const pack = [...this.packs.values()].find((v) => v.pack.x === target.x && v.pack.y === target.y)?.pack;
+    this.pendingEngage = pack?.packId ?? null;
+    if (pack !== undefined && inEngageRange(rules, self.pos, pack)) {
+      this.path = [];
+      return;
+    }
     const path = findPath(this.map, self.pos, target);
     if (path === null) return this.flash("ไปตรงนั้นไม่ได้");
     this.path = path;
@@ -277,10 +357,21 @@ export class WorldScene extends Phaser.Scene {
 
   override update(time: number) {
     const self = this.selfView();
-    if (this.map === null || self === null || this.stopped || this.nextConnect !== null) return;
+    if (this.map === null || self === null || this.stopped || this.nextConnect !== null || this.inBattle) return;
+    const engaging = this.pendingEngage === null ? undefined : this.packs.get(this.pendingEngage)?.pack;
+    if (engaging !== undefined && inEngageRange(rules, self.pos, engaging)) {
+      // Next to the pack: ask the server for the fight. It checks range and the pack itself.
+      this.path = [];
+      this.pendingEngage = null;
+      this.transport.engage(engaging.packId);
+      return;
+    }
     if (time < this.readyAt) return;
     const held = this.heldDirection();
-    if (held !== null) this.path = [];
+    if (held !== null) {
+      this.path = [];
+      this.pendingEngage = null;
+    }
     let dir = held ?? this.path.shift() ?? null;
     if (dir === null) return;
     // Predict with the same rule the server uses; a blocked diagonal slides along one axis.

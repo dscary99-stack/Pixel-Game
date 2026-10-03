@@ -329,6 +329,12 @@ export class Economy {
     return Object.fromEntries(results.map((r) => [r.item_id, r.quantity]));
   }
 
+  /** The bag a reservation holds (immutable once reserved), or null if there is no reservation. */
+  async reservedBag(reservationId: string): Promise<{ status: ReservationStatus; bag: Record<string, number> } | null> {
+    const row = await this.row(reservationId);
+    return row === null ? null : { status: row.status, bag: JSON.parse(row.bag_json) as Record<string, number> };
+  }
+
   async reservation(reservationId: string): Promise<{ status: ReservationStatus; outcome: string | null } | null> {
     const r = await this.db
       .prepare(`SELECT status, outcome FROM battle_reservations WHERE reservation_id = ?`)

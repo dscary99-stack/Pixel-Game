@@ -19,6 +19,9 @@ const game = new Phaser.Game({
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
 });
 
+// Dev builds expose the game so browser checks can find things on screen.
+if (import.meta.env.DEV) (window as unknown as { __game: Phaser.Game }).__game = game;
+
 if (params.has("battle")) {
   // Each battle page load is a fresh dev account: an account with an unfinished battle cannot start
   // another one (reservation lock), and abandoning a fight has no policy yet (O11/O15).
@@ -32,6 +35,8 @@ if (params.has("battle")) {
   // otherwise one per browser tab, kept across reloads so a reload is a reconnect, not a new player.
   const account = params.get("account") ?? sessionAccount();
   game.scene.add("world", WorldScene, true, { transport: server !== null ? new ServerWorldTransport(server, account) : new LocalWorldTransport() });
+  // Started by the world scene when the player engages a pack.
+  game.scene.add("battle", BattleScene, false);
 }
 
 function sessionAccount(): string {
