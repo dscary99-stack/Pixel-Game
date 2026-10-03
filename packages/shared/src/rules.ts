@@ -194,9 +194,9 @@ export const RULES = {
       "Nut OK'd 2026-10-03: the R1/R2/R3 variant works once the companion fights at this level; before it the base skill is used",
     ),
     rebirthBranchChangeCoins: provisional(
-      [20_000, 60_000, 160_000] as const,
+      [50_000, 150_000, 400_000] as const,
       "P05",
-      "coins to switch the branch of stage 1/2/3 at the town NPC (Nut: a coin sink); 40% of that stage's Rebirth price",
+      "coins to switch the branch of stage 1/2/3 at the town NPC (Nut: a coin sink, burn more); the same as that stage's Rebirth price",
     ),
     // Party (chapter 08 "Party", P02): bonus while partners hunt on the same map and channel.
     partyMaxMembers: provisional(4, "P02"),

@@ -109,7 +109,7 @@ describe("companion Rebirth (chapter 04 §7)", () => {
 });
 
 describe("Rebirth variants (chapter 04 §7; Nut 2026-10-03)", () => {
-  const branchReq = (operationId: string, expectedBranch: "A" | "B", branch: "A" | "B", expectedCost = 20_000) => ({
+  const branchReq = (operationId: string, expectedBranch: "A" | "B", branch: "A" | "B", expectedCost = 50_000) => ({
     operationId,
     companionId: PET,
     stage: 1,
@@ -135,11 +135,11 @@ describe("Rebirth variants (chapter 04 §7; Nut 2026-10-03)", () => {
     const r = await Promise.all([town.changeRebirthBranch(A, branchReq("branch_1", "B", "A")), town.changeRebirthBranch(A, branchReq("branch_1", "B", "A"))]);
     expect(r.map((x) => x.status)).toEqual(["done", "done"]);
     expect(choices()).toEqual({ "1": "A" });
-    expect(await town.coins(A)).toBe(100_000 - 50_000 - 20_000);
+    expect(await town.coins(A)).toBe(100_000 - 50_000 - 50_000);
     // The old branch is gone, so a stale second switch is refused and charges nothing.
     expect(await town.changeRebirthBranch(A, branchReq("branch_2", "B", "A"))).toMatchObject({ reason: "CHANGED" });
-    expect(await town.coins(A)).toBe(30_000);
+    expect(await town.coins(A)).toBe(0);
     // A stage not reached yet cannot be switched.
-    expect(await town.changeRebirthBranch(A, { ...branchReq("branch_3", "A", "B", 60_000), stage: 2 })).toMatchObject({ reason: "CHANGED" });
+    expect(await town.changeRebirthBranch(A, { ...branchReq("branch_3", "A", "B", 150_000), stage: 2 })).toMatchObject({ reason: "CHANGED" });
   });
 });
