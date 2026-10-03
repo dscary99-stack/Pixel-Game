@@ -1,0 +1,15 @@
+{
+  "name": "@pmrpg/client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Phaser client. Renders server events; never decides damage, loot, capture or ownership.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "@pmrpg/shared": "*",
+    "phaser": "^4.0.0"
+  }
+}

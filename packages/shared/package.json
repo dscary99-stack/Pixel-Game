@@ -1,0 +1,13 @@
+{
+  "name": "@pmrpg/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared rules: typed IDs, content schemas, config, validators and the deterministic combat kernel. Pure functions only.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "zod": "^4.0.0"
+  }
+}

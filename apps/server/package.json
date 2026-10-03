@@ -1,0 +1,18 @@
+{
+  "name": "@pmrpg/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Worker + Battle Durable Object (server-authoritative contracts). Prototype; not deployed.",
+  "scripts": {
+    "dev": "wrangler dev --env=\"\" --ip 127.0.0.1 --port 8787"
+  },
+  "dependencies": {
+    "@pmrpg/shared": "*",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250101.0",
+    "wrangler": "^4.147.0"
+  }
+}

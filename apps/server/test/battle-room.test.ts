@@ -1,0 +1,166 @@
+import { describe, expect, it } from "vitest";
+import { DEV_FIXTURE_RULES, PRODUCTION_RULES, exampleContentMaps, type BattleSetup, type CommandResponse } from "@pmrpg/shared";
+import { BattleRoom, MemoryStorage, RoomError } from "../src/battle-room";
+import { resolveAccount } from "../src/auth";
+
+const content = exampleContentMaps();
+const OWNER = "acct:owner";
+
+function setup(): BattleSetup {
+  return {
+    battleId: "battle:room",
+    originMode: "manual",
+    seed: "room-seed",
+    player: {
+      accountId: OWNER,
+      name: "Nut",
+      level: 20,
+      element: "FIRE",
+      primaryStats: { STR: 35, VIT: 25, INT: 10, DEX: 17, AGI: 20, SPI: 10 },
+      gear: { PATK: 70 },
+      skillIds: [],
+      basicAttackRange: "melee",
+      row: "front",
+      slot: 1,
+      hp: 500,
+    },
+    companions: [],
+    enemies: [
+      { unitId: "e1", speciesId: "species:armor_crab", element: "EARTH", row: "front", slot: 0 },
+      { unitId: "e2", speciesId: "species:ember_fox", element: "FIRE", row: "front", slot: 1 },
+    ],
+    bag: { "item:small_potion": 3, "item:armor_crab_capture": 2 },
+  };
+}
+
+async function newRoom(storage = new MemoryStorage()) {
+  const room = new BattleRoom(storage, DEV_FIXTURE_RULES, content, "dev");
+  await room.create(setup());
+  return { room, storage };
+}
+
+const potion = (stateVersion: number, sessionGeneration = 0, commandId: string = crypto.randomUUID()) => ({
+  commandId,
+  sessionGeneration,
+  expectedStateVersion: stateVersion,
+  command: { type: "item", actorId: "player", itemId: "item:small_potion", targetId: "player" },
+});
+
+const accepted = (r: CommandResponse) => {
+  if (r.status !== "accepted") throw new Error(`${r.reasonCode}: ${r.message}`);
+  return r;
+};
+
+describe("BattleRoom (server authority)", () => {
+  it("creates idempotently and keeps the RNG state private", async () => {
+    const { room } = await newRoom();
+    const again = await room.create(setup());
+    expect(again.state.battleId).toBe("battle:room");
+    expect(JSON.stringify(await room.view(OWNER))).not.toContain('"rng"');
+  });
+
+  it("replays a retried commandId without using the item again", async () => {
+    const { room } = await newRoom();
+    const v = (await room.view(OWNER)).stateVersion;
+    const cmd = potion(v);
+    const first = accepted(await room.command(OWNER, cmd));
+    const retry = accepted(await room.command(OWNER, cmd));
+    expect(retry.replayed).toBe(true);
+    expect(retry.events).toEqual(first.events);
+    const state = await room.view(OWNER);
+    expect(state.bag["item:small_potion"]).toBe(2);
+    expect(state.stateVersion).toBe(first.stateVersion);
+  });
+
+  it("refuses a reused commandId with a different payload", async () => {
+    const { room } = await newRoom();
+    const v = (await room.view(OWNER)).stateVersion;
+    const id = crypto.randomUUID();
+    accepted(await room.command(OWNER, potion(v, 0, id)));
+    const other = { ...potion(v, 0, id), command: { type: "guard", actorId: "player" } };
+    expect(await room.command(OWNER, other)).toMatchObject({ status: "rejected", reasonCode: "INVALID_COMMAND" });
+  });
+
+  it("rejects a stale expectedStateVersion", async () => {
+    const { room } = await newRoom();
+    const v = (await room.view(OWNER)).stateVersion;
+    expect(await room.command(OWNER, potion(v + 7))).toMatchObject({ status: "rejected", reasonCode: "STALE_STATE" });
+  });
+
+  it("rejects commands from another account, whatever the body says", async () => {
+    const { room } = await newRoom();
+    const v = (await room.view(OWNER)).stateVersion;
+    expect(await room.command("acct:intruder", potion(v))).toMatchObject({ status: "rejected", reasonCode: "NOT_OWNER" });
+  });
+
+  it("revokes the older session after a reconnect claims a new generation", async () => {
+    const { room } = await newRoom();
+    const gen = await room.claimSession(OWNER);
+    const v = (await room.view(OWNER)).stateVersion;
+    expect(await room.command(OWNER, potion(v, gen - 1))).toMatchObject({ status: "rejected", reasonCode: "SESSION_REVOKED" });
+    accepted(await room.command(OWNER, potion(v, gen)));
+  });
+
+  it("does not ack or lose anything when storage fails mid-command; the retry applies once", async () => {
+    const storage = new MemoryStorage();
+    const { room } = await newRoom(storage);
+    const v = (await room.view(OWNER)).stateVersion;
+    const cmd = potion(v);
+    storage.failNextWrite = true;
+    await expect(room.command(OWNER, cmd)).rejects.toThrow("simulated storage failure");
+    expect((await room.view(OWNER)).bag["item:small_potion"]).toBe(3);
+    accepted(await room.command(OWNER, cmd));
+    accepted(await room.command(OWNER, cmd));
+    expect((await room.view(OWNER)).bag["item:small_potion"]).toBe(2);
+  });
+
+  it("lets a reconnecting client resume from its event cursor without duplicates", async () => {
+    const { room } = await newRoom();
+    const before = (await room.view(OWNER)).eventSeq;
+    const r = accepted(await room.command(OWNER, potion((await room.view(OWNER)).stateVersion)));
+    const resumed = await room.eventsSince(before);
+    expect(resumed.map((e) => e.eventId)).toEqual(r.events.map((e) => e.eventId));
+    expect(new Set((await room.eventsSince(0)).map((e) => e.seq)).size).toBe((await room.eventsSince(0)).length);
+  });
+
+  it("runs Auto Battle one step per client request and never captures", async () => {
+    const { room } = await newRoom();
+    for (let i = 0; i < 200; i++) {
+      const s = await room.view(OWNER);
+      if (s.status !== "active") break;
+      accepted(await room.command(OWNER, { commandId: crypto.randomUUID(), sessionGeneration: 0, expectedStateVersion: s.stateVersion }, "auto"));
+    }
+    const end = await room.view(OWNER);
+    expect(end.status).not.toBe("active");
+    expect((await room.eventsSince(0)).some((e) => e.type === "CaptureResolved")).toBe(false);
+  });
+
+  it("refuses to run with fixture rules outside dev (OPEN rules have no production default)", () => {
+    expect(() => new BattleRoom(new MemoryStorage(), DEV_FIXTURE_RULES, content, "production")).toThrow(RoomError);
+    expect(() => new BattleRoom(new MemoryStorage(), PRODUCTION_RULES, content, "production")).not.toThrow();
+  });
+
+  it("returns UNRESOLVED_RULE for capture on production rules (O07 open)", async () => {
+    const room = new BattleRoom(new MemoryStorage(), PRODUCTION_RULES, content, "staging");
+    await room.create(setup());
+    const s = await room.view(OWNER);
+    // Player SPD 120 beats both example enemies, so the player acts first.
+    expect(await room.actor()).toBe("player");
+    const r = await room.command(OWNER, {
+      commandId: crypto.randomUUID(),
+      sessionGeneration: 0,
+      expectedStateVersion: s.stateVersion,
+      command: { type: "capture", actorId: "player", targetId: "e1", itemId: "item:armor_crab_capture" },
+    });
+    expect(r).toMatchObject({ status: "rejected", reasonCode: "UNRESOLVED_RULE" });
+  });
+});
+
+describe("Worker auth stub (O11 open)", () => {
+  const req = new Request("https://x/battles/b", { headers: { "x-dev-account": "acct:nut" } });
+  it("accepts the dev header only in dev with DEV_AUTH", () => {
+    expect(resolveAccount(req, { ENVIRONMENT: "dev", DEV_AUTH: "true" })).toBe("acct:nut");
+    expect(resolveAccount(req, { ENVIRONMENT: "dev" })).toBeNull();
+    expect(resolveAccount(req, { ENVIRONMENT: "production", DEV_AUTH: "true" })).toBeNull();
+  });
+});
