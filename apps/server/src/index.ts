@@ -9,6 +9,9 @@
  *   POST /battles/:id/auto         Auto Battle step; the open client's heartbeat drives it
  *   GET  /dev/inventory?battle=ID  (dev only) the caller's D1 item balances and that battle's reservation
  *   POST /dev/reconcile            (dev only) run the reconciler now, ignoring reservation age
+ *   GET  /character                the caller's character, team and owned companions (404 NO_CHARACTER)
+ *   POST /character                create the character (idempotent on operationId; one per account)
+ *   PUT  /character/team           set the team (expectedVersion; ≤5, no duplicate species, outside fights)
  *   GET  /world/where              where the caller's character is saved (map + channel)
  *   GET  /world/:mapId/:channel    WebSocket into that Map Channel DO (walking, presence)
  *
@@ -17,9 +20,19 @@
  * create step never lands, the scheduled reconciler asks the DO and releases only a reservation
  * whose battle provably never started.
  */
-import { DEV_FIXTURE_RULES, DEV_STARTER_ITEMS, EXAMPLE_START_MAP, devPlayer, PRODUCTION_RULES, exampleMapRegistry, type BattleSetup } from "@pmrpg/shared";
+import {
+  DEV_FIXTURE_RULES,
+  DEV_STARTER_ITEMS,
+  EXAMPLE_START_MAP,
+  PRODUCTION_RULES,
+  devPlayer,
+  exampleContentMaps,
+  exampleMapRegistry,
+  type BattleSetup,
+} from "@pmrpg/shared";
 import { resolveAccount } from "./auth";
 import type { Env, RoomOp, RoomReply } from "./battle-do";
+import { CharacterStore } from "./character-store";
 import { Economy } from "./economy";
 
 import { mapObjectName } from "./map-do";
@@ -32,7 +45,10 @@ const MAX_BODY_BYTES = 4096;
 /** PROVISIONAL ops setting: a reservation still not activated after this long is checked. */
 const RESERVATION_STALE_MS = 2 * 60_000;
 
-const economyFor = (env: Env) => new Economy(env.DB, env.ENVIRONMENT === "dev" ? DEV_FIXTURE_RULES : PRODUCTION_RULES);
+const rulesFor = (env: Env) => (env.ENVIRONMENT === "dev" ? DEV_FIXTURE_RULES : PRODUCTION_RULES);
+const economyFor = (env: Env) => new Economy(env.DB, rulesFor(env));
+const SPECIES = exampleContentMaps().species;
+const charactersFor = (env: Env) => new CharacterStore(env.DB, rulesFor(env), SPECIES);
 
 /** Release reservations whose battle never started (the DO confirms and tombstones first). */
 async function reconcile(env: Env, staleMs: number): Promise<{ checked: number; released: string[] }> {
@@ -57,6 +73,7 @@ export default {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/dev/")) return devRoute(request, env, url);
     if (url.pathname.startsWith("/world/")) return worldRoute(request, env, url);
+    if (url.pathname === "/character" || url.pathname.startsWith("/character/")) return characterRoute(request, env, url);
     const m = url.pathname.match(/^\/battles\/([a-z0-9_:-]{1,80})(?:\/([a-z-]+))?$/);
     if (m === null) return json(404, { error: "NOT_FOUND" });
     const battleId = m[1]!;
@@ -113,12 +130,37 @@ async function worldRoute(request: Request, env: Env, url: URL): Promise<Respons
   if (request.headers.get("Upgrade") !== "websocket") return json(426, { error: "EXPECTED_WEBSOCKET" });
 
   // Identity goes to the object in headers the Worker sets; anything the client sent is dropped.
-  const headers = new Headers({ Upgrade: "websocket", "x-account": accountId, "x-map": mapId, "x-channel": String(channel), "x-name": displayName(accountId) });
+  const name = (await charactersFor(env).get(accountId))?.name ?? displayName(accountId);
+  const headers = new Headers({ Upgrade: "websocket", "x-account": accountId, "x-map": mapId, "x-channel": String(channel), "x-name": encodeURIComponent(name) });
   const stub = env.MAP.get(env.MAP.idFromName(mapObjectName(mapId, channel)));
   return stub.fetch(new Request(request.url, { headers }));
 }
 
-/** Placeholder until characters have names (Phase D): the account id without its prefix. */
+async function characterRoute(request: Request, env: Env, url: URL): Promise<Response> {
+  const accountId = resolveAccount(request, env);
+  if (accountId === null) return json(401, { error: "UNAUTHENTICATED" });
+  const store = charactersFor(env);
+  if (request.method === "GET" && url.pathname === "/character") {
+    const character = await store.get(accountId);
+    if (character === null) return json(404, { error: "NO_CHARACTER" });
+    return json(200, { character, companions: await store.companions(accountId) });
+  }
+  const body = await readJson(request);
+  if (body === undefined) return json(400, { error: "INVALID_REQUEST" });
+  if (request.method === "POST" && url.pathname === "/character") {
+    const r = await store.create(accountId, body);
+    if (r.status === "rejected") return json(r.reason === "CHARACTER_EXISTS" ? 409 : 400, { error: r.reason, message: r.message });
+    return json(200, r);
+  }
+  if (request.method === "PUT" && url.pathname === "/character/team") {
+    const r = await store.setTeam(accountId, body);
+    if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
+    return json(200, r);
+  }
+  return json(404, { error: "NOT_FOUND" });
+}
+
+/** Fallback name for a player who has not created a character: the account id without its prefix. */
 export const displayName = (accountId: string) => accountId.replace(/^acct:/, "").slice(0, 16);
 
 async function devRoute(request: Request, env: Env, url: URL): Promise<Response> {

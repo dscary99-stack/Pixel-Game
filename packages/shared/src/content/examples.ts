@@ -31,6 +31,16 @@ export const EXAMPLE_SKILLS: SkillDefinition[] = [
   dmg("skill:snail_glare", "ส่องลดหลบ", "magic", 0.8, 0, "WATER", "ranged", 5, 0),
   skill("skill:snail_ally_shield", "โล่เพื่อน", "passive"),
   skill("skill:snail_innate_mp_return", "โล่หมดอายุคืนMP", "passive"),
+  // Supply mole (ตุ่นเสบียง), chapter 04 §2 kit; Lv2 near the town gate
+  heal("skill:mole_light_heal", "ฮีลเบา", 0.8, 10, 6),
+  skill("skill:mole_cost_cut", "ลดต้นทุนสกิลถัดไปเพื่อน", "passive"),
+  dmg("skill:mole_weakening_hit", "โจมตีลดATK", "physical", 1.1, 0, "EARTH", "melee", 4, 0),
+  skill("skill:mole_innate_mp_refund", "basicสำเร็จคืนMPเล็ก", "passive"),
+  // Bell bird (นกกระดิ่ง), chapter 04 §2 kit; Lv3
+  skill("skill:bird_haste", "SPDรอบหน้า", "passive"),
+  skill("skill:bird_cleanse", "cleanse1ชนิด", "passive"),
+  dmg("skill:bird_back_peck", "โจมตีหลัง", "physical", 1.0, 0, "WIND", "ranged", 4, 0),
+  skill("skill:bird_innate_resist", "cleanseครั้งแรกให้resist", "passive"),
   // Player prototype skill
   dmg("skill:player_power_strike", "ฟันแรง", "physical", 1.6, 0, "NEUTRAL", "melee", 8, 0),
 ];
@@ -51,12 +61,25 @@ export const EXAMPLE_SPECIES: SpeciesDefinition[] = [
     "skill:snail_glare",
     "skill:snail_ally_shield",
   ], "skill:snail_innate_mp_return", 0.3, { STR: 8, VIT: 14, INT: 12, DEX: 10, AGI: 6, SPI: 20 }, "ranged"),
+  // Starter-field species so a new Lv1 character has something it can beat (EXAMPLE levels).
+  species("species:supply_mole", "ตุ่นเสบียง", 2, "support", ["EARTH", "WATER"], [
+    "skill:mole_light_heal",
+    "skill:mole_cost_cut",
+    "skill:mole_weakening_hit",
+  ], "skill:mole_innate_mp_refund", 0.35, { STR: 7, VIT: 8, INT: 6, DEX: 7, AGI: 6, SPI: 9 }, "melee"),
+  species("species:bell_bird", "นกกระดิ่ง", 3, "control", ["WIND", "LIGHT"], [
+    "skill:bird_haste",
+    "skill:bird_cleanse",
+    "skill:bird_back_peck",
+  ], "skill:bird_innate_resist", 0.3, { STR: 8, VIT: 7, INT: 8, DEX: 10, AGI: 12, SPI: 8 }, "ranged"),
 ];
 
 export const EXAMPLE_SIGILS: SigilDefinition[] = [
   sigil("sigil:armor_crab", "species:armor_crab", ["SHIELD"], 0.0005),
   sigil("sigil:ember_fox", "species:ember_fox", ["WEAPON_PHYSICAL"], 0.0002),
   sigil("sigil:lantern_snail", "species:lantern_snail", ["WEAPON_SUPPORT"], 0.0001),
+  sigil("sigil:supply_mole", "species:supply_mole", ["FEET"], 0.0005),
+  sigil("sigil:bell_bird", "species:bell_bird", ["BACK"], 0.0005),
 ];
 
 export const EXAMPLE_ITEMS: ItemDefinition[] = [
@@ -79,12 +102,20 @@ export const EXAMPLE_ITEMS: ItemDefinition[] = [
   { id: "item:crab_shell", ...meta, name: { th: "กระดองปู" }, kind: "material", vendorPrice: 5 },
   { id: "item:fox_tail_ash", ...meta, name: { th: "เถ้าหางจิ้งจอก" }, kind: "material", vendorPrice: 6 },
   { id: "item:snail_glow_slime", ...meta, name: { th: "เมือกเรืองแสง" }, kind: "material", vendorPrice: 4 },
+  { id: "item:mole_fur", ...meta, name: { th: "ขนตุ่น" }, kind: "material", vendorPrice: 2 },
+  { id: "item:bell_feather", ...meta, name: { th: "ขนนกกระดิ่ง" }, kind: "material", vendorPrice: 3 },
   { id: "item:river_pebble", ...meta, name: { th: "กรวดริมน้ำ" }, kind: "material", vendorPrice: 1 },
 ];
 
 export const EXAMPLE_LOOT_TABLES: LootTable[] = EXAMPLE_SPECIES.map((s) => {
   const sg = EXAMPLE_SIGILS.find((g) => g.sourceSpeciesId === s.id)!;
-  const own = { "species:armor_crab": "item:crab_shell", "species:ember_fox": "item:fox_tail_ash", "species:lantern_snail": "item:snail_glow_slime" }[
+  const own = {
+    "species:armor_crab": "item:crab_shell",
+    "species:ember_fox": "item:fox_tail_ash",
+    "species:lantern_snail": "item:snail_glow_slime",
+    "species:supply_mole": "item:mole_fur",
+    "species:bell_bird": "item:bell_feather",
+  }[
     s.id as "species:armor_crab"
   ] as LootTable["pools"][number]["entries"][number]["itemId"];
   return {

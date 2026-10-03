@@ -1,6 +1,8 @@
 import Phaser from "phaser";
 import type { BattleSetup, MonsterInstance } from "@pmrpg/shared";
 import { BattleScene, GAME_SIZE } from "./battle-scene";
+import { CharacterApi } from "./character-api";
+import { createCharacterForm } from "./character-ui";
 import { HttpTransport, LocalPreviewTransport, type BattleTransport } from "./transport";
 import { WorldScene } from "./world-scene";
 import { LocalWorldTransport, ServerWorldTransport } from "./world-transport";
@@ -34,7 +36,16 @@ if (params.has("battle")) {
   // Dev identity: `?account=name` picks one (open two tabs with different names to see each other);
   // otherwise one per browser tab, kept across reloads so a reload is a reconnect, not a new player.
   const account = params.get("account") ?? sessionAccount();
-  game.scene.add("world", WorldScene, true, { transport: server !== null ? new ServerWorldTransport(server, account) : new LocalWorldTransport() });
+  if (server !== null) {
+    // Server mode needs a stored character (Phase D); a new account makes one first.
+    const api = new CharacterApi(server, account);
+    void (async () => {
+      const bundle = (await api.get()) ?? (await createCharacterForm(api));
+      game.scene.add("world", WorldScene, true, { transport: new ServerWorldTransport(server, account), api, bundle });
+    })();
+  } else {
+    game.scene.add("world", WorldScene, true, { transport: new LocalWorldTransport(), api: null, bundle: null });
+  }
   // Started by the world scene when the player engages a pack.
   game.scene.add("battle", BattleScene, false);
 }

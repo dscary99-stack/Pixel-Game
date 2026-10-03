@@ -2,96 +2,9 @@
 // fight it to the end, come back to the same spot. Private fights (O05): the pack stays visible
 // to the other player. Run `npm run db:migrate:local` and `npm run dev:server` first, then
 // `npm run smoke:encounter`.
-import { DIR_DELTA, exampleMapRegistry, findPath, inEngageRange, stepCostMs, PRODUCTION_RULES, type Direction, type TilePos } from "@pmrpg/shared";
+import { approach, api, connect, lastPacks, run, sleep, toField, type Msg } from "./smoke-lib";
 
-const api = process.env.API ?? "http://127.0.0.1:8787";
-const wsBase = api.replace(/^http/, "ws");
-const run = Date.now().toString(36);
 const acct = (n: string) => `acct:e${run}_${n}`;
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const maps = exampleMapRegistry();
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Msg = any;
-
-interface Client {
-  sock: WebSocket;
-  inbox: Msg[];
-  seq: number;
-  pos: TilePos;
-  mapId: string;
-  send(m: object): void;
-  wait(pred: (m: Msg) => boolean, ms?: number, from?: number): Promise<Msg>;
-}
-
-async function connect(account: string, mapId: string, channel = 1): Promise<Client> {
-  const sock = new WebSocket(`${wsBase}/world/${mapId}/${channel}?dev_account=${encodeURIComponent(account)}`);
-  const c: Client = {
-    sock,
-    inbox: [],
-    seq: 0,
-    pos: { x: 0, y: 0 },
-    mapId,
-    send: (m) => sock.send(JSON.stringify(m)),
-    async wait(pred, ms = 4000, from = 0) {
-      for (let t = 0; t < ms; t += 25) {
-        const hit = c.inbox.slice(from).find(pred);
-        if (hit) return hit;
-        await sleep(25);
-      }
-      throw new Error(`timeout on ${account}; last=${JSON.stringify(c.inbox.slice(-4))}`);
-    },
-  };
-  sock.onmessage = (e) => c.inbox.push(JSON.parse(String(e.data)));
-  const w = await c.wait((m) => m.t === "welcome" || m.t === "transfer");
-  if (w.t === "transfer") {
-    sock.close();
-    return connect(account, w.mapId, w.channel);
-  }
-  c.pos = { x: w.self.x, y: w.self.y };
-  c.mapId = w.mapId;
-  return c;
-}
-
-/** Walk a path one acknowledged step at a time at the honest walking speed. */
-async function walk(c: Client, path: Direction[]): Promise<Msg | null> {
-  for (const dir of path) {
-    const seq = ++c.seq;
-    const from = c.inbox.length;
-    c.send({ t: "step", seq, dir });
-    const r = await c.wait((m) => (m.t === "ack" || m.t === "correct") && m.seq === seq, 4000, from);
-    if (r.t === "correct") return r;
-    c.pos = { x: r.x, y: r.y };
-    await sleep(stepCostMs(PRODUCTION_RULES, dir) + 10);
-  }
-  return null;
-}
-
-async function toField(account: string): Promise<Client> {
-  let c = await connect(account, "map:dawn_town");
-  const town = maps.get("map:dawn_town")!;
-  if (c.mapId === "map:dawn_town") {
-    await walk(c, findPath(town, c.pos, { x: 23, y: 8 })!);
-    const t = await c.wait((m) => m.t === "transfer");
-    c.sock.close();
-    c = await connect(account, t.mapId, t.channel);
-  }
-  return c;
-}
-
-/** Walk until within engage range of the pack (P10: next to it). */
-async function approach(c: Client, pack: TilePos) {
-  const field = maps.get(c.mapId)!;
-  const steps: Direction[] = [];
-  let q = { ...c.pos };
-  for (const d of findPath(field, q, pack)!) {
-    if (inEngageRange(PRODUCTION_RULES, q, pack)) break;
-    steps.push(d);
-    q = { x: q.x + DIR_DELTA[d][0], y: q.y + DIR_DELTA[d][1] };
-  }
-  await walk(c, steps);
-}
-
-const lastPacks = (c: Client) => c.inbox.filter((m) => m.t === "packs").at(-1)!.packs as Msg[];
 const out: Record<string, unknown> = {};
 
 // No hunting in town.
@@ -108,6 +21,19 @@ await B.wait((m) => m.t === "packs");
 const packsA = lastPacks(A);
 out.packsSeen = packsA.map((p) => `${p.spawnId} ${p.leader.speciesId} ${p.leader.element} Lv${p.leader.level} [${p.sizeRange}]`);
 out.sameForBoth = JSON.stringify(packsA) === JSON.stringify(lastPacks(B));
+
+// No character yet: no fight (Phase D). Then both players make one.
+const target0 = packsA[0];
+A.send({ t: "engage", packId: target0.packId });
+out.noCharacter = (await A.wait((m) => m.t === "error" && m.code === "NO_CHARACTER")).code;
+for (const who of ["a", "b"]) {
+  const r = await fetch(`${api}/character`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-dev-account": acct(who) },
+    body: JSON.stringify({ operationId: `op_${run}_${who}`, name: `ผู้เล่น ${who}`, classId: "class:striker", raceId: "race:human", element: "FIRE" }),
+  });
+  if (!r.ok) throw new Error(await r.text());
+}
 
 const target = packsA.sort((p, q) => Math.abs(p.x - A.pos.x) + Math.abs(p.y - A.pos.y) - (Math.abs(q.x - A.pos.x) + Math.abs(q.y - A.pos.y)))[0];
 A.send({ t: "engage", packId: target.packId });

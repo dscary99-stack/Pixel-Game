@@ -23,6 +23,8 @@ import {
   type WorldServerMessage,
 } from "@pmrpg/shared";
 import { ELEMENT_COLOR } from "./battle-scene";
+import type { CharacterApi, CharacterBundle } from "./character-api";
+import { teamPanel, vitals } from "./character-ui";
 import type { WorldTransport } from "./world-transport";
 
 const W = 960;
@@ -55,6 +57,10 @@ const FACE_OFFSET: Record<PublicPlayer["facing"], [number, number]> = { N: [0, -
 
 export class WorldScene extends Phaser.Scene {
   private transport!: WorldTransport;
+  /** Server mode only: the stored character (Phase D). Null in the local preview. */
+  private api: CharacterApi | null = null;
+  private bundle: CharacterBundle | null = null;
+  private panelOpen = false;
   private readonly maps = exampleMapRegistry();
   private readonly species = exampleContentMaps().species;
   private packs = new Map<string, PackView>();
@@ -80,8 +86,10 @@ export class WorldScene extends Phaser.Scene {
     super("world");
   }
 
-  init(data: { transport: WorldTransport }) {
+  init(data: { transport: WorldTransport; api: CharacterApi | null; bundle: CharacterBundle | null }) {
     this.transport = data.transport;
+    this.api = data.api;
+    this.bundle = data.bundle;
   }
 
   create() {
@@ -91,7 +99,7 @@ export class WorldScene extends Phaser.Scene {
     this.hud = this.add.text(8, 40, "", style).setScrollFactor(0).setDepth(100);
     this.notice = this.add.text(W / 2, H - 40, "", { ...style, fontSize: "15px" }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
     this.add
-      .text(W - 8, 8, "ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel", style)
+      .text(W - 8, 8, `ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · T ทีม" : ""}`, style)
       .setOrigin(1, 0)
       .setScrollFactor(0)
       .setDepth(100);
@@ -101,6 +109,18 @@ export class WorldScene extends Phaser.Scene {
     this.keys = kb.addKeys({ up: K.UP, down: K.DOWN, left: K.LEFT, right: K.RIGHT, w: K.W, a: K.A, s: K.S, d: K.D }) as typeof this.keys;
     kb.on("keydown-ONE", () => this.switchChannel(1));
     kb.on("keydown-TWO", () => this.switchChannel(2));
+    kb.on("keydown-T", () => void this.openTeam());
+    if (this.api !== null) {
+      this.add
+        .text(8, 100, "ทีมคู่ใจ (T)", { ...style, backgroundColor: "#463f6b", padding: { x: 12, y: 10 } })
+        .setScrollFactor(0)
+        .setDepth(100)
+        .setInteractive({ useHandCursor: true })
+        .on("pointerdown", (_p: Pointer, _x: number, _y: number, e: Phaser.Types.Input.EventData) => {
+          e.stopPropagation();
+          void this.openTeam();
+        });
+    }
     this.input.on("pointerdown", (p: Phaser.Input.Pointer) => this.tapMove(p));
 
     void this.connect(null, null);
@@ -163,12 +183,27 @@ export class WorldScene extends Phaser.Scene {
       case "resumed":
         this.inBattle = false;
         this.flash("กลับมาที่เดิมแล้ว");
+        void this.reloadCharacter();
+        break;
+      case "rested":
+        this.flash("พักในเมือง: HP/MP ฟื้นเต็มแล้ว");
+        void this.reloadCharacter();
         break;
       case "kicked":
         this.stopped = true;
         this.flash(m.reason === "REPLACED" ? "บัญชีนี้เชื่อมต่อจากที่อื่นแล้ว (หน้านี้หยุดควบคุม)" : "ย้ายไป channel อื่นแล้ว");
         break;
       case "error":
+        if (m.code === "SETTLING") {
+          // The server is still recording the fight's rewards; ask again in a moment.
+          this.time.delayedCall(600, () => this.transport.resume());
+          break;
+        }
+        if (m.code === "NEED_REST") {
+          this.pendingEngage = null;
+          this.flash("ทุกคนในทีมล้มอยู่ กลับไปพักในหมู่บ้านก่อน");
+          break;
+        }
         if (m.code === "TOO_FAR" || m.code === "NO_SUCH_PACK" || m.code === "NO_HUNT_HERE") this.pendingEngage = null;
         this.flash(`${m.code}: ${m.message}`);
         break;
@@ -313,7 +348,39 @@ export class WorldScene extends Phaser.Scene {
 
   private refreshHud() {
     const m = this.map;
-    this.hud.setText(m === null ? "กำลังเชื่อมต่อ…" : `${m.name.th} · channel ${this.channelNo} · ผู้เล่นที่เห็น ${this.players.size} คน`);
+    const where = m === null ? "กำลังเชื่อมต่อ…" : `${m.name.th} · channel ${this.channelNo} · ผู้เล่นที่เห็น ${this.players.size} คน`;
+    const c = this.bundle?.character;
+    if (c === undefined) return void this.hud.setText(where);
+    const v = vitals(c);
+    this.hud.setText(`${where}\n${c.name} Lv${c.level} · HP ${v.hp}/${v.maxHp} · MP ${v.mp}/${v.maxMp} · ทีม ${c.team.length}/5`);
+  }
+
+  private async reloadCharacter() {
+    if (this.api === null) return;
+    this.bundle = (await this.api.get()) ?? this.bundle;
+    this.refreshHud();
+  }
+
+  /** Team screen; walking input pauses while it is open. Not during a fight (P15). */
+  private async openTeam() {
+    if (this.api === null || this.panelOpen) return;
+    if (this.inBattle) return this.flash("เปลี่ยนทีมได้นอกไฟต์เท่านั้น");
+    this.panelOpen = true;
+    this.path = [];
+    this.input.keyboard!.enabled = false;
+    try {
+      await this.reloadCharacter();
+      if (this.bundle === null) return;
+      const saved = await teamPanel(this.api, this.bundle);
+      if (saved !== null) {
+        this.flash(`บันทึกทีมแล้ว (${saved.team.length} ตัว)`);
+        await this.reloadCharacter();
+      }
+    } finally {
+      this.input.keyboard!.enabled = true;
+      this.input.keyboard!.resetKeys();
+      this.panelOpen = false;
+    }
   }
 
   private flash(text: string) {
@@ -357,7 +424,7 @@ export class WorldScene extends Phaser.Scene {
 
   override update(time: number) {
     const self = this.selfView();
-    if (this.map === null || self === null || this.stopped || this.nextConnect !== null || this.inBattle) return;
+    if (this.map === null || self === null || this.stopped || this.nextConnect !== null || this.inBattle || this.panelOpen) return;
     const engaging = this.pendingEngage === null ? undefined : this.packs.get(this.pendingEngage)?.pack;
     if (engaging !== undefined && inEngageRange(rules, self.pos, engaging)) {
       // Next to the pack: ask the server for the fight. It checks range and the pack itself.

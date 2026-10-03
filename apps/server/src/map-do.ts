@@ -26,6 +26,8 @@ import {
   packCycle,
   packEnemies,
   packInstanceId,
+  companionSetups,
+  playerSetup,
   rollPack,
   seedRng,
   visiblePack,
@@ -35,12 +37,12 @@ import {
   type PackInstance,
   type Presence,
   type PublicBattleState,
-  devPlayer,
   type RulesConfig,
   type WorldErrorCode,
   type WorldServerMessage,
 } from "@pmrpg/shared";
 import type { Env, RoomReply } from "./battle-do";
+import { CharacterStore } from "./character-store";
 import { Economy } from "./economy";
 import { EncounterStore } from "./encounter-store";
 import { WorldStore } from "./world-store";
@@ -63,6 +65,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
   private readonly store: WorldStore;
   private readonly encounters: EncounterStore;
   private readonly economy: Economy;
+  private readonly characters: CharacterStore;
   private channel: MapChannel | null = null;
   private packs: { cycle: number; list: PackInstance[] } | null = null;
   /** Accounts with an engage or resume in flight; a second tap waits for the first answer. */
@@ -75,6 +78,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     this.store = new WorldStore(env.DB, this.maps, EXAMPLE_START_MAP);
     this.encounters = new EncounterStore(env.DB);
     this.economy = new Economy(env.DB, this.rules);
+    this.characters = new CharacterStore(env.DB, this.rules, this.content.species);
   }
 
   /** Rebuild the channel from live sockets (after hibernation) or create it on first join. */
@@ -96,7 +100,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     const accountId = request.headers.get("x-account");
     const mapId = request.headers.get("x-map");
     const channelNo = Number(request.headers.get("x-channel"));
-    const name = request.headers.get("x-name") ?? "?";
+    const name = decodeURIComponent(request.headers.get("x-name") ?? "%3F");
     if (accountId === null || mapId === null || !Number.isInteger(channelNo)) return new Response("bad request", { status: 400 });
 
     const pair = new WebSocketPair();
@@ -147,6 +151,8 @@ export class MapChannelDurableObject extends DurableObject<Env> {
       this.setBattle(server, attachment, open);
       safeSend(server, { t: "encounter", battleId: open, resumed: true });
     }
+    // Towns are rest points: HP/MP come back for free (chapter 03 §3), never during a fight.
+    if (this.maps.get(mapId)?.kind === "town" && (await this.characters.rest(accountId))) safeSend(server, { t: "rested" });
     await this.sendPacks(accountId, mapId, channelNo);
     await this.ensureSaveAlarm();
     return new Response(null, { status: 101, webSocket: client });
@@ -256,8 +262,12 @@ export class MapChannelDurableObject extends DurableObject<Env> {
       safeSend(ws, { t: "encounter", battleId: presence.battleId, resumed: true });
       return;
     }
-    // No character table yet (Phase D): only dev has a stand-in character to fight with.
-    if (this.env.ENVIRONMENT !== "dev") return fail("NO_CHARACTER", "characters are not implemented outside dev yet");
+    const loadout = await this.characters.loadout(account);
+    if (loadout === null) return fail("NO_CHARACTER", "create a character first");
+    const { character, instances } = loadout;
+    // HP/MP carry over; a team that is all knocked out has to rest before the next fight.
+    const alive = (hp: number | null) => hp === null || hp > 0;
+    if (!alive(character.hp) && ![...instances.values()].some((i) => alive(i.hp))) return fail("NEED_REST", "everyone is knocked out; rest in town");
     const pack = (await this.currentPacks(map, a.channel)).find((p) => p.packId === packId);
     if (pack === undefined) return fail("NO_SUCH_PACK", "that pack is gone; a new one appears next cycle");
     if (!inEngageRange(this.rules, presence.pos, pack.at)) return fail("TOO_FAR", "walk next to the pack first");
@@ -274,7 +284,14 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     if (bag === undefined) {
       const kind = (id: string) => this.content.items.get(id)?.kind;
       bag = defaultCombatBag(this.rules, await this.economy.balances(account), kind);
-      const reserved = await this.economy.reserve({ reservationId, accountId: account, battleId, bag, companionIds: [] });
+      const reserved = await this.economy.reserve({
+        reservationId,
+        accountId: account,
+        battleId,
+        bag,
+        companionIds: character.team.map((t) => t.instanceId),
+        characterId: character.id,
+      });
       if (reserved.status === "rejected") {
         if (reserved.reason === "BATTLE_IN_PROGRESS") return fail("IN_BATTLE", "finish your other fight first");
         return fail("ENCOUNTER_REFUSED", reserved.reason);
@@ -284,8 +301,8 @@ export class MapChannelDurableObject extends DurableObject<Env> {
       battleId,
       originMode: "manual",
       seed: crypto.randomUUID(),
-      player: devPlayer(account, presence.name),
-      companions: [],
+      player: playerSetup(account, character),
+      companions: companionSetups(character.team, instances),
       enemies: packEnemies({ ...pack, members: roster }),
       bag,
     };
@@ -308,7 +325,28 @@ export class MapChannelDurableObject extends DurableObject<Env> {
         safeSend(ws, { t: "encounter", battleId: presence.battleId, resumed: true });
         return;
       }
+      // Rewards and HP land in D1 before the player walks on: wait briefly for the settlement
+      // (each view nudges the Battle DO's outbox), else ask the client to try again.
+      const rid = `res:${presence.battleId}`;
+      let r = await this.economy.reservation(rid);
+      for (let i = 0; i < 10 && r?.status === "active"; i++) {
+        await new Promise((done) => setTimeout(done, 200));
+        await this.battleStatus(account, presence.battleId);
+        r = await this.economy.reservation(rid);
+      }
+      if (r?.status === "active") return safeSend(ws, { t: "error", code: "SETTLING", message: "recording the fight; try again" });
       this.setBattle(ws, a, null);
+      if (r?.outcome === "defeat") {
+        // A wiped team goes back to the rest point (chapter 03 §3); arriving in town restores it.
+        const town = this.maps.get(EXAMPLE_START_MAP)!;
+        const ok = await this.store.moveTo(account, a.generation, a.mapId, { mapId: town.id, x: town.spawn.x, y: town.spawn.y }, a.channel);
+        ws.serializeAttachment(null);
+        this.deliver(account, this.ensureChannel(a.mapId, a.channel).leave(account).out);
+        safeSend(ws, { t: "resumed" });
+        safeSend(ws, ok ? { t: "transfer", mapId: town.id, channel: a.channel } : { t: "kicked", reason: "REPLACED" });
+        ws.close(1000, ok ? "transfer" : "replaced");
+        return;
+      }
     }
     safeSend(ws, { t: "resumed" });
     await this.sendPacks(account, a.mapId, a.channel);

@@ -24,6 +24,8 @@ export interface ReserveRequest {
   bag: Record<string, number>;
   /** Companion MonsterInstance ids that fight in this battle. */
   companionIds: string[];
+  /** The stored character that fights (Phase D); settlement writes its HP/MP back. */
+  characterId?: string;
 }
 
 export type ReservationStatus = "reserved" | "active" | "settled" | "released";
@@ -101,7 +103,8 @@ export class Economy {
     const bag = normalizeBag(req.bag);
     const companions = [...new Set(req.companionIds)].sort();
     if (bag === null || companions.length !== req.companionIds.length) return { status: "rejected", reservationId: rid, reason: "INVALID_REQUEST" };
-    const hash = await hashJson({ accountId: req.accountId, battleId: req.battleId, bag, companions });
+    const characterId = req.characterId ?? null;
+    const hash = await hashJson({ accountId: req.accountId, battleId: req.battleId, bag, companions, ...(characterId === null ? {} : { characterId }) });
 
     const existing = await this.row(rid);
     if (existing !== null) {
@@ -133,7 +136,7 @@ export class Economy {
            SELECT ?, ?, ?, 'reserved', ?, ?, ?, ?, ? WHERE ${guards.length > 0 ? guards.join(" AND ") : "1"}
            ON CONFLICT DO NOTHING`,
         )
-        .bind(rid, req.accountId, req.battleId, JSON.stringify({ companionIds: companions }), JSON.stringify(Object.fromEntries(bag)), hash, at, at, ...guardArgs),
+        .bind(rid, req.accountId, req.battleId, JSON.stringify(characterId === null ? { companionIds: companions } : { companionIds: companions, characterId }), JSON.stringify(Object.fromEntries(bag)), hash, at, at, ...guardArgs),
     ];
     bag.forEach(([itemId, qty], i) => {
       stmts.push(
@@ -251,6 +254,27 @@ export class Economy {
           .bind(`settle:${rid}`, i, s.accountId, itemId, qty, at, rid, hash),
       );
     });
+    // HP/MP carry over (chapter 03 §3): the character named in the reservation and each companion
+    // still locked to it. Written before the unlock, which clears lock_ref.
+    const player = s.allies.find((a) => a.unitId === "player");
+    if (player !== undefined) {
+      stmts.push(
+        this.db
+          .prepare(
+            `UPDATE characters SET hp = ?, mp = ?
+             WHERE account_id = ? AND id = (SELECT json_extract(loadout_json, '$.characterId') FROM battle_reservations WHERE reservation_id = ?) AND ${ours}`,
+          )
+          .bind(resource(player.hp), resource(player.mp), s.accountId, rid, rid, hash),
+      );
+    }
+    for (const a of s.allies) {
+      if (a.instanceId === null) continue;
+      stmts.push(
+        this.db
+          .prepare(`UPDATE monster_instances SET hp = ?, mp = ? WHERE id = ? AND owner_id = ? AND lock_ref = ? AND ${ours}`)
+          .bind(resource(a.hp), resource(a.mp), a.instanceId, s.accountId, rid, rid, hash),
+      );
+    }
     stmts.push(this.unlockCompanions(rid, ours, [rid, hash]));
     await this.db.batch(stmts);
 
@@ -391,3 +415,6 @@ function normalizeBag(bag: Record<string, number>): [string, number][] | null {
 }
 
 const marks = (n: number) => Array.from({ length: n }, () => "?").join(", ");
+
+/** A reported HP/MP value as a stored one: whole, never negative. */
+const resource = (v: number) => Math.max(0, Math.floor(Number.isFinite(v) ? v : 0));

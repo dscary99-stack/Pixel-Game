@@ -68,8 +68,23 @@ export const EXAMPLE_MAPS: MapDefinition[] = [
       { at: { x: 0, y: 7 }, to: { mapId: "map:dawn_town", x: 22, y: 7 }, label: "หมู่บ้านรุ่งอรุณ" },
       { at: { x: 0, y: 8 }, to: { mapId: "map:dawn_town", x: 22, y: 8 }, label: "หมู่บ้านรุ่งอรุณ" },
     ],
-    // Small packs (1–2) suit the Lv10 dev character; chapter 07 §3 size bands go up to 9–10.
+    // EXAMPLE packs. Single Lv2–3 packs by the gate are what a new Lv1 character can beat alone;
+    // the pond, meadow and south packs need a higher level or a team. Chapter 07 §3 size bands go up to 9–10.
     spawns: [
+      {
+        id: "gate_moles",
+        at: { x: 6, y: 5 },
+        rank: "NORMAL",
+        packSize: [1, 1],
+        entries: [{ speciesId: "species:supply_mole", weight: 1, elementWeights: { EARTH: 2, WATER: 1 }, groupRules: { min: 1, max: 1 } }],
+      },
+      {
+        id: "gate_birds",
+        at: { x: 6, y: 11 },
+        rank: "NORMAL",
+        packSize: [1, 1],
+        entries: [{ speciesId: "species:bell_bird", weight: 1, elementWeights: { WIND: 2, LIGHT: 1 }, groupRules: { min: 1, max: 1 } }],
+      },
       {
         id: "pond_crabs",
         at: { x: 9, y: 6 },

@@ -27,7 +27,7 @@ const content = exampleContentMaps();
 const maps = exampleMapRegistry();
 const field = maps.get("map:dawn_field")!;
 const town = maps.get("map:dawn_town")!;
-const spawn = field.spawns[0]!;
+const spawn = field.spawns.find((s) => s.id === "pond_crabs")!;
 
 describe("pack spawns", () => {
   it("example spawns validate against the species registry", () => {

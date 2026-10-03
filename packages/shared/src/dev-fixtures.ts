@@ -44,4 +44,6 @@ export const DEV_STARTER_ITEMS: Record<string, number> = {
   "item:armor_crab_capture": 3,
   "item:ember_fox_capture": 3,
   "item:lantern_snail_capture": 3,
+  "item:supply_mole_capture": 3,
+  "item:bell_bird_capture": 3,
 };

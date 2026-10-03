@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 // `?server` (empty) uses this proxy to reach `wrangler dev` on :8787 without CORS.
 const proxy = {
   "/battles": "http://127.0.0.1:8787",
+  "/character": "http://127.0.0.1:8787",
   "/world": { target: "http://127.0.0.1:8787", ws: true },
 };
 

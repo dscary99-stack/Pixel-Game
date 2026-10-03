@@ -47,6 +47,8 @@ export type WorldServerMessage =
   /** A private fight exists for this player; `resumed` when it was already running (reconnect). */
   | { t: "encounter"; battleId: string; resumed: boolean }
   | { t: "resumed" }
+  /** HP/MP of the character and free companions are full again (town rest, chapter 03 §3). */
+  | { t: "rested" }
   | { t: "transfer"; mapId: string; channel: number }
   | { t: "kicked"; reason: "REPLACED" | "EVICTED" }
   | { t: "error"; code: WorldErrorCode; message: string }
@@ -66,7 +68,11 @@ export type WorldErrorCode =
   | "NO_SUCH_PACK"
   | "NO_HUNT_HERE"
   | "NO_CHARACTER"
-  | "ENCOUNTER_REFUSED";
+  | "ENCOUNTER_REFUSED"
+  /** Nobody in the team can fight; rest in town first. */
+  | "NEED_REST"
+  /** The fight ended but its rewards are still being recorded; ask again shortly. */
+  | "SETTLING";
 
 // ---------------------------------------------------------------- presence
 
