@@ -46,6 +46,8 @@ export interface BattleUnit {
   primaryStats?: PrimaryStats;
   /** Statuses on this unit now (status.ts). Absent on older states = none. */
   statuses?: ActiveStatus[];
+  /** The last skill this unit used in this fight (skill lock takes it). */
+  lastSkillId?: string;
   ko: boolean;
   /** Captured enemies leave the fight without kill loot. */
   retired: boolean;
@@ -161,14 +163,14 @@ export type BattleEventBody =
   | { type: "ItemConsumed"; itemId: string; remaining: number }
   | { type: "UnitKnockedOut"; unitId: string }
   /** A side effect of an action on its user or target (lifesteal, recoil, MP restore). */
-  | { type: "ResourceChanged"; unitId: string; source: "lifesteal" | "recoil" | "restore_mp"; hp: number; mp: number; hpAfter: number; mpAfter: number }
+  | { type: "ResourceChanged"; unitId: string; source: "lifesteal" | "recoil" | "restore_mp" | "leech" | "mana_burn" | "mp_regen"; hp: number; mp: number; hpAfter: number; mpAfter: number }
   /** A status landed, was refreshed, missed its roll, met immunity, ran out or was ended early. */
   | {
       type: "StatusChanged";
       unitId: string;
       statusId: StatusId;
       sourceId: string | null;
-      change: "applied" | "refreshed" | "resisted" | "immune" | "expired" | "removed";
+      change: "applied" | "refreshed" | "resisted" | "immune" | "blocked" | "expired" | "removed";
       turnsLeft: number;
       stacks: number;
       /** The final chance (0–100) for a roll; null when nothing was rolled. */
@@ -176,6 +178,8 @@ export type BattleEventBody =
     }
   /** Damage (+) or healing (−) over time at the start of the unit's turn. */
   | { type: "StatusTick"; unitId: string; statusId: StatusId; hp: number; hpAfter: number }
+  /** Confuse or charm sent an attack to the actor's own side. */
+  | { type: "ActionRedirected"; actorId: string; statusId: StatusId; fromId: string; toId: string }
   /** The unit loses this turn to a control status. */
   | { type: "TurnSkipped"; unitId: string; statusId: StatusId }
   | { type: "EnemyDefeated"; unitId: string; speciesId: string }

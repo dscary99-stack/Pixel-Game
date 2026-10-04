@@ -257,17 +257,30 @@ export class BattleScene extends Phaser.Scene {
         const th = STATUS_DEFINITIONS[e.statusId].th;
         const chance = e.chancePct === null ? "" : ` (โอกาส ${Math.round(e.chancePct)}%)`;
         const who = this.name(e.unitId);
+        if (e.change === "applied" && STATUS_DEFINITIONS[e.statusId].instant !== undefined) {
+          this.popup(e.unitId, th, "#ffd36b");
+          return this.pushLog(`${who} โดน${th}${chance}`);
+        }
         if (e.change === "applied" || e.change === "refreshed") {
           this.popup(e.unitId, th, STATUS_DEFINITIONS[e.statusId].harmful ? "#ff9b6b" : "#7dd3ff");
           return this.pushLog(`${who} ติด${th} ${e.turnsLeft} เทิร์น${e.stacks > 1 ? ` ×${e.stacks}` : ""}${chance}`);
         }
         if (e.change === "resisted") return this.pushLog(`${who} ต้าน${th}ได้${chance}`);
         if (e.change === "immune") return this.pushLog(`${who} ไม่ติด${th} (บอสกันการควบคุม)`);
+        if (e.change === "blocked") return this.pushLog(`${who} ไม่ติด${th} (ถูกกันไว้)`);
+        if (e.change === "expired") return this.pushLog(`${who} หมดผล${th}`);
         return this.pushLog(`${who} หาย${th}`);
       }
       case "StatusTick":
         this.popup(e.unitId, e.hp < 0 ? `${-e.hp}` : `+${e.hp}`, e.hp < 0 ? "#c58cff" : "#7dff9b");
         return this.pushLog(`${this.name(e.unitId)} ${STATUS_DEFINITIONS[e.statusId].th} ${e.hp < 0 ? e.hp : `+${e.hp}`}`);
+      case "ActionRedirected":
+        return this.pushLog(`${this.name(e.actorId)} ${STATUS_DEFINITIONS[e.statusId].th} หันไปทำใส่ ${this.name(e.toId)} แทน ${this.name(e.fromId)}`);
+      case "ResourceChanged": {
+        const label = { lifesteal: "ดูดเลือด", recoil: "สะท้อนกลับตัวเอง", restore_mp: "ฟื้น MP", leech: "ถูกดูดพลัง", mana_burn: "เผามานา", mp_regen: "ฟื้น MP" }[e.source];
+        const parts = [e.hp !== 0 ? `HP ${e.hp > 0 ? "+" : ""}${e.hp}` : "", e.mp !== 0 ? `MP ${e.mp > 0 ? "+" : ""}${e.mp}` : ""].filter(Boolean).join(" ");
+        return parts === "" ? undefined : this.pushLog(`${this.name(e.unitId)} ${label} ${parts}`);
+      }
       case "TurnSkipped":
         return this.pushLog(`${this.name(e.unitId)} ${STATUS_DEFINITIONS[e.statusId].th} ข้ามเทิร์น`);
       case "BattleEnded":

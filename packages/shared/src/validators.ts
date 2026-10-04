@@ -42,6 +42,10 @@ export type ErrorCode =
   | "ON_COOLDOWN"
   /** A silenced unit cannot use skills that cost MP. */
   | "SILENCED"
+  /** Another status forbids this command (disarm, root, berserk, mini, skill lock). */
+  | "STATUS_BLOCKED"
+  /** A taunted unit must target the taunter. */
+  | "TAUNTED"
   | "AUTO_CAPTURE_FORBIDDEN"
   /** Auto Battle asked again before the server's action cadence allows. */
   | "TOO_FAST"

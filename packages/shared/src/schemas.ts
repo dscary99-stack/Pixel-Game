@@ -62,8 +62,15 @@ export const StatusApplicationSchema = z
     /** The affected unit's own turns. */
     turns: z.number().int().min(1).max(10),
     stacks: z.number().int().min(1).max(5).optional(),
+    /** imbue / element_ward: the element. */
+    element: ElementSchema.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((a, ctx) => {
+    if ((STATUS_DEFINITIONS[a.statusId].needsElement === true) !== (a.element !== undefined)) {
+      ctx.addIssue({ code: "custom", message: `${a.statusId} ${a.element === undefined ? "needs" : "takes no"} element` });
+    }
+  });
 export type StatusApplication = z.infer<typeof StatusApplicationSchema>;
 
 export const DamageEffectSchema = z
@@ -88,6 +95,8 @@ export const DamageEffectSchema = z
     recoilPct: z.number().int().min(1).max(100).optional(),
     /** Tried on the target after a hit that lands. */
     statuses: z.array(StatusApplicationSchema).max(3).optional(),
+    /** Extra damage % against a target with this status; `consume` removes the status with the hit. */
+    bonusVsStatus: z.object({ statusId: z.enum(STATUS_IDS), bonusPct: z.number().int().min(1).max(200), consume: z.boolean() }).strict().optional(),
   })
   .strict();
 

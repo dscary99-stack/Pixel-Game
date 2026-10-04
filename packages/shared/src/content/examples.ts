@@ -25,12 +25,12 @@ export const EXAMPLE_SKILLS: SkillDefinition[] = [
   dmg("skill:crab_shield_bash", "ใช้โล่บางส่วนโจมตี", "physical", 1.3, 0, "EARTH", "melee", 6, 0, { statuses: [{ statusId: "stun", chancePct: 20, turns: 1 }] }),
   skill("skill:crab_innate_mp_refund", "รับแทนสำเร็จลดMPครั้งหน้า", "passive"),
   // Ember fox (จิ้งจอกสะเก็ด)
-  dmg("skill:fox_mark_bite", "กัดติดmark", "physical", 1.2, 0, "FIRE", "melee", 4, 0, { statuses: [{ statusId: "bleed", chancePct: 35, turns: 3 }] }),
+  dmg("skill:fox_mark_bite", "กัดติดmark", "physical", 1.2, 0, "FIRE", "melee", 4, 0, { statuses: [{ statusId: "mark", chancePct: 80, turns: 2 }, { statusId: "bleed", chancePct: 35, turns: 3 }] }),
   // EXAMPLE level tables (each skill grows its own way, chapter 04 §5): the volley spreads to more targets.
   steps(dmg("skill:fox_light_volley", "หมู่เบา", "physical", 0.9, 5, "FIRE", "ranged", 5, 0, { statuses: [{ statusId: "burn", chancePct: 30, turns: 2 }] }), [
     ["power", 5], ["power", 5], ["power", 5], ["extra_targets", 1], ["power", 5], ["power", 5], ["mp_cost", -1], ["extra_targets", 1], ["power", 10],
   ]),
-  steps(dmg("skill:fox_consume_mark", "กินmarkโจมตีหนัก", "physical", 1.6, 0, "FIRE", "melee", 10, 2), [
+  steps(dmg("skill:fox_consume_mark", "กินmarkโจมตีหนัก", "physical", 1.6, 0, "FIRE", "melee", 10, 2, { bonusVsStatus: { statusId: "mark", bonusPct: 50, consume: true } }), [
     ["power", 6], ["power", 6], ["mp_cost", -2], ["power", 6], ["power", 6], ["cooldown", -1], ["power", 6], ["power", 6], ["power", 10],
   ]),
   skill("skill:fox_innate_kill_heal", "กำจัดเป้าหมายmarkแล้วฮีลเล็ก", "passive"),

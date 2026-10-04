@@ -217,18 +217,50 @@ export const RULES = {
         /** Total up/down on one stat stays within ±this %. */
         statModCapPct: 50,
         blindAccuracyPct: 30,
-        evasionUpPct: 15,
+        evasionShiftPct: 15,
+        accuracyShiftPct: 15,
+        critShiftPct: 15,
         resShiftPct: 20,
         poisonPctMaxHp: 5,
         /** Nut 2026-10-04: poison takes the most HP; burn and bleed less, with stat downs instead. */
         burnPctMaxHp: 3,
         /** Up to 3 stacks, so at most 3%, still below poison. */
         bleedPctMaxHpPerStack: 1,
+        /** Grows a stack each tick (max 4): 1, 2, 3, 4%. */
+        toxicPctMaxHpPerStack: 1,
+        frostbitePctMaxHp: 2,
+        /** Frostbite at this many stacks turns into a 1-turn freeze. */
+        frostbiteFreezeStacks: 3,
+        corrodePctMaxHp: 1,
+        /** Taken from the unit and given to whoever put it there. */
+        leechPctMaxHp: 3,
+        /** Shock: lost after each action the unit takes. */
+        shockPctMaxHp: 3,
+        manaBurnPctMaxMp: 10,
         regenPctMaxHp: 6,
+        mpRegenPctMaxMp: 8,
         /** A boss never loses more than this % of max HP to one status tick. */
         bossDotMaxHpPctPerTick: 1,
         /** A paralyzed unit (SPD 0, Nut 2026-10-04) loses its turn on this roll. */
         paralyzeSkipChancePct: 25,
+        fearSkipChancePct: 30,
+        /** A confused unit's attack or damage skill goes to its own side on this roll (charm: always). */
+        confuseRedirectChancePct: 50,
+        vulnerablePct: 20,
+        markPct: 15,
+        dmgReductionPct: 20,
+        elementWardPct: 30,
+        antiHealPct: 50,
+        mpCostUpPct: 50,
+        /** A linked unit hit passes this % of the damage to every other linked unit on its side. */
+        linkSharePct: 30,
+        /** Reflect: magic damage taken; thorns: physical damage taken. Sent back to the attacker. */
+        reflectPct: 30,
+        thornsPct: 15,
+        focusPct: 50,
+        lifestealUpPct: 20,
+        /** Oil + a fire hit: extra damage on that hit, then burn. */
+        oilFireBonusPct: 30,
       } as const,
       "P04",
       "O15 parts: PROVISIONAL numbers; timing (own-turn durations, ticks at turn start, refresh, boss hard-control immunity) is the list Nut reviewed 2026-10-04",

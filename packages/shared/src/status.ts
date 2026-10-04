@@ -7,22 +7,25 @@
  * - Some high stats offset the chance (each harmful status names the primary stat that resists it).
  * - Effect hit offsets effect resistance, but the chance never goes above the skill's own chance:
  *     chance = skillChance × (1 − max(0, resistance − effectHit) / 100)
+ * - Side effects: poison takes the most HP; burn and bleed take less but lower stats; paralyze puts
+ *   SPD at 0 and may cost the turn.
+ * - "The other statuses you thought of too": the whole catalog §3 list is built here, except what still
+ *   waits on another OPEN rule (shield ordering O15, capture-rate statuses O07, weather/terrain).
  * Nut reviewed the rest of the proposed O15 list (catalog §3.8) and only struck the immunity turn, so
  * the timing below follows it (PROVISIONAL):
  * - Durations count the affected unit's own turns and go down when its turn ends. A status put on a
  *   unit during its own turn does not count that turn.
- * - Damage and healing over time happen when the affected unit's turn starts, before it acts.
+ * - Over-time effects happen when the affected unit's turn starts, before it acts.
  * - The same status again refreshes the duration (the longer one wins); stacking statuses add stacks
  *   up to their cap.
  * - Ups and downs of the same stat add up, then the total is capped (statusTuning.statModCapPct).
- * - Bosses are immune to hard control; immunity is checked before the chance.
+ * - Bosses are immune to hard control (`hardControl`); immunity is checked before the chance.
  * - Silence blocks skills that cost MP only; passives and basic attacks still work.
  * - Every status ends with the fight.
- * Side effects (Nut 2026-10-04): poison takes the most HP; burn and bleed take less but lower stats
- * (burn: ATK and MATK, bleed: DEF per stack); paralyze puts SPD at 0 and may cost the turn.
+ * The behaviour of each status lives in the battle kernel; this file holds what it is and its numbers.
  */
 import type { RulesConfig } from "./rules";
-import type { PrimaryStats } from "./schemas";
+import type { Element, PrimaryStats } from "./schemas";
 import type { DerivedStats } from "./stats";
 
 /** UI names of the two secondary stats (Nut is picking the wording; text only). */
@@ -34,13 +37,29 @@ export const STATUS_IDS = [
   "stun",
   "sleep",
   "freeze",
+  "petrify",
   "paralyze",
+  "fear",
   "silence",
-  // damage over time
+  "disarm",
+  "root",
+  "confuse",
+  "charm",
+  "berserk",
+  "taunt",
+  "mini",
+  "doom",
+  // damage and drain over time
   "poison",
+  "toxic",
   "burn",
   "bleed",
-  // stat down
+  "frostbite",
+  "shock",
+  "corrode",
+  "leech",
+  "mana_burn",
+  // stat down and other harmful
   "blind",
   "atk_down",
   "matk_down",
@@ -48,7 +67,19 @@ export const STATUS_IDS = [
   "mdef_down",
   "spd_down",
   "evasion_down",
+  "crit_down",
   "res_down",
+  "vulnerable",
+  "mark",
+  "anti_heal",
+  "unbuffable",
+  "seal",
+  "skill_lock",
+  "mp_cost_up",
+  "link",
+  "zombie",
+  "wet",
+  "oil",
   // buffs
   "atk_up",
   "matk_up",
@@ -56,88 +87,213 @@ export const STATUS_IDS = [
   "mdef_up",
   "spd_up",
   "evasion_up",
+  "accuracy_up",
+  "crit_up",
   "res_up",
   "regen",
+  "mp_regen",
+  "dmg_reduction",
+  "reflect",
+  "thorns",
+  "immunity",
+  "endure",
+  "invincible",
+  "stealth",
+  "counter",
+  "protect",
+  "focus",
+  "imbue",
+  "element_ward",
+  "lifesteal_up",
+  "rage",
+  // instant: happen when they land and are not kept on the unit
+  "knockback",
+  "pull",
+  "delay",
+  "dispel",
+  "steal_buff",
+  "invert",
+  "advance",
+  "cleanse",
+  "extend",
 ] as const;
 export type StatusId = (typeof STATUS_IDS)[number];
 
 /** Derived stats a status may change by a percentage of the unit's own value. */
 export type ScaledStat = "patk" | "matk" | "pdef" | "mdef" | "spd";
 /** Derived stats a status changes by points (they are already percentages). */
-export type PointStat = "accuracyPct" | "evasionPct" | "effectResPct";
+export type PointStat = "accuracyPct" | "evasionPct" | "critPct" | "effectResPct";
+
+type Tuning = RulesConfig["provisional"]["statusTuning"]["value"];
+/** Tuning keys that hold a % of max HP or MP per turn. */
+export type OverTimeKey = {
+  [K in keyof Tuning]: K extends `${string}Pct${"MaxHp" | "MaxMp" | "MaxHpPerStack"}` ? K : never;
+}[keyof Tuning];
+/** Tuning keys that hold a point change. */
+export type PointKey = "blindAccuracyPct" | "evasionShiftPct" | "accuracyShiftPct" | "critShiftPct" | "resShiftPct";
+
+/** Things a status stops the unit from doing. */
+export type StatusBlock = "mp_skills" | "skills" | "attack" | "items" | "move" | "flee" | "helpful_statuses" | "passives";
+
+export type InstantEffect = "knockback" | "pull" | "delay" | "dispel" | "steal_buff" | "invert" | "advance" | "cleanse" | "extend";
 
 export interface StatusDefinition {
   id: StatusId;
   th: string;
   /** Harmful statuses go on enemies and are resisted; helpful ones go on allies and always use the skill's chance. */
   harmful: boolean;
-  category: "control" | "dot" | "stat" | "buff";
+  category: "control" | "dot" | "stat" | "buff" | "instant";
   /** The primary stat whose points resist it (Nut 2026-10-04: some high stats offset the chance). */
   resistStat: keyof PrimaryStats | null;
-  /** Bosses are immune (proposal accepted 2026-10-04). */
+  /** Bosses are immune (hard control and instant kills). */
   hardControl?: true;
-  /** The unit loses its turn: always, or on a roll each turn. */
-  skipsTurn?: "always" | "chance";
-  /** Taking damage ends it. */
+  /** The unit loses its turn: always, or on the roll in this tuning key each turn. */
+  skipsTurn?: "always" | "paralyzeSkipChancePct" | "fearSkipChancePct";
   endsOnDamage?: true;
-  /** Damage of this element ends it. */
-  endsOnElement?: "FIRE";
-  /** Blocks skills that cost MP. */
-  blocksMpSkills?: true;
-  /** Per stack: tuning key for the % of max HP lost (+) or regained (−) at turn start. */
-  overTime?: "poison" | "burn" | "bleed" | "regen";
-  /** Per stack: sign × statusTuning.statModPct on these stats. */
-  scaled?: Partial<Record<ScaledStat, 1 | -1 | 0.5 | -0.5>>;
+  endsOnElement?: Element;
+  blocks?: StatusBlock[];
+  /** At turn start: lose (harmful) or regain (helpful) this % of max HP/MP. */
+  overTime?: { resource: "hp" | "mp"; key: OverTimeKey; perStack?: true };
+  /** Gains a stack each time it ticks, up to the cap (toxic, corrode). */
+  growsEachTick?: true;
+  /** Per stack: factor × statusTuning.statModPct on these stats. */
+  scaled?: Partial<Record<ScaledStat, number>>;
   /** These stats become 0 while it lasts (after every other change). */
   zeroes?: ScaledStat[];
-  /** Per stack: tuning key for the points added (+) or removed (−). */
-  points?: Partial<Record<PointStat, "blind" | "evasionUp" | "resShift">>;
-  pointSign?: 1 | -1;
+  /** Per stack: sign × the tuning key's points. */
+  points?: Partial<Record<PointStat, [1 | -1, PointKey]>>;
+  /** Needs an element when applied (imbue, element ward). */
+  needsElement?: true;
+  instant?: InstantEffect;
   maxStacks: number;
 }
 
 const def = (d: Omit<StatusDefinition, "maxStacks"> & { maxStacks?: number }): StatusDefinition => ({ maxStacks: 1, ...d });
+const bad = (id: StatusId, th: string, category: StatusDefinition["category"], resistStat: StatusDefinition["resistStat"], more: Partial<StatusDefinition> = {}) =>
+  def({ id, th, harmful: true, category, resistStat, ...more });
+const good = (id: StatusId, th: string, more: Partial<StatusDefinition> = {}) => def({ id, th, harmful: false, category: "buff", resistStat: null, ...more });
 
 export const STATUS_DEFINITIONS: Readonly<Record<StatusId, StatusDefinition>> = {
-  stun: def({ id: "stun", th: "มึน", harmful: true, category: "control", resistStat: "VIT", hardControl: true, skipsTurn: "always" }),
-  sleep: def({ id: "sleep", th: "หลับ", harmful: true, category: "control", resistStat: "INT", hardControl: true, skipsTurn: "always", endsOnDamage: true }),
-  freeze: def({ id: "freeze", th: "แช่แข็ง", harmful: true, category: "control", resistStat: "VIT", hardControl: true, skipsTurn: "always", endsOnElement: "FIRE" }),
-  paralyze: def({ id: "paralyze", th: "ชา", harmful: true, category: "control", resistStat: "AGI", skipsTurn: "chance", zeroes: ["spd"] }),
-  silence: def({ id: "silence", th: "ใบ้", harmful: true, category: "control", resistStat: "INT", blocksMpSkills: true }),
-  poison: def({ id: "poison", th: "พิษ", harmful: true, category: "dot", resistStat: "VIT", overTime: "poison" }),
-  burn: def({ id: "burn", th: "เผาไหม้", harmful: true, category: "dot", resistStat: "VIT", overTime: "burn", scaled: { patk: -0.5, matk: -0.5 } }),
-  bleed: def({ id: "bleed", th: "เลือดออก", harmful: true, category: "dot", resistStat: "VIT", overTime: "bleed", scaled: { pdef: -0.5 }, maxStacks: 3 }),
-  blind: def({ id: "blind", th: "ตาบอด", harmful: true, category: "stat", resistStat: "DEX", points: { accuracyPct: "blind" }, pointSign: -1 }),
-  atk_down: def({ id: "atk_down", th: "ATK ลด", harmful: true, category: "stat", resistStat: null, scaled: { patk: -1 } }),
-  matk_down: def({ id: "matk_down", th: "MATK ลด", harmful: true, category: "stat", resistStat: null, scaled: { matk: -1 } }),
-  def_down: def({ id: "def_down", th: "DEF ลด", harmful: true, category: "stat", resistStat: null, scaled: { pdef: -1 } }),
-  mdef_down: def({ id: "mdef_down", th: "MDEF ลด", harmful: true, category: "stat", resistStat: null, scaled: { mdef: -1 } }),
-  spd_down: def({ id: "spd_down", th: "ช้า", harmful: true, category: "stat", resistStat: "AGI", scaled: { spd: -1 } }),
-  evasion_down: def({ id: "evasion_down", th: "หลบลด", harmful: true, category: "stat", resistStat: null, points: { evasionPct: "evasionUp" }, pointSign: -1 }),
-  res_down: def({ id: "res_down", th: `${EFFECT_RES_NAME_TH}ลด`, harmful: true, category: "stat", resistStat: "SPI", points: { effectResPct: "resShift" }, pointSign: -1 }),
-  atk_up: def({ id: "atk_up", th: "ATK เพิ่ม", harmful: false, category: "buff", resistStat: null, scaled: { patk: 1 } }),
-  matk_up: def({ id: "matk_up", th: "MATK เพิ่ม", harmful: false, category: "buff", resistStat: null, scaled: { matk: 1 } }),
-  def_up: def({ id: "def_up", th: "DEF เพิ่ม", harmful: false, category: "buff", resistStat: null, scaled: { pdef: 1 } }),
-  mdef_up: def({ id: "mdef_up", th: "MDEF เพิ่ม", harmful: false, category: "buff", resistStat: null, scaled: { mdef: 1 } }),
-  spd_up: def({ id: "spd_up", th: "เร่ง", harmful: false, category: "buff", resistStat: null, scaled: { spd: 1 } }),
-  evasion_up: def({ id: "evasion_up", th: "หลบเพิ่ม", harmful: false, category: "buff", resistStat: null, points: { evasionPct: "evasionUp" }, pointSign: 1 }),
-  res_up: def({ id: "res_up", th: `${EFFECT_RES_NAME_TH}เพิ่ม`, harmful: false, category: "buff", resistStat: null, points: { effectResPct: "resShift" }, pointSign: 1 }),
-  regen: def({ id: "regen", th: "ฟื้นต่อเนื่อง", harmful: false, category: "buff", resistStat: null, overTime: "regen" }),
+  // ---- control
+  stun: bad("stun", "มึน", "control", "VIT", { hardControl: true, skipsTurn: "always" }),
+  sleep: bad("sleep", "หลับ", "control", "INT", { hardControl: true, skipsTurn: "always", endsOnDamage: true }),
+  freeze: bad("freeze", "แช่แข็ง", "control", "VIT", { hardControl: true, skipsTurn: "always", endsOnElement: "FIRE" }),
+  petrify: bad("petrify", "กลายเป็นหิน", "control", "VIT", { hardControl: true, skipsTurn: "always", scaled: { pdef: 1.5, mdef: 1.5 } }),
+  paralyze: bad("paralyze", "ชา", "control", "AGI", { skipsTurn: "paralyzeSkipChancePct", zeroes: ["spd"] }),
+  fear: bad("fear", "กลัว", "control", "SPI", { skipsTurn: "fearSkipChancePct", scaled: { patk: -0.5, matk: -0.5 } }),
+  silence: bad("silence", "ใบ้", "control", "INT", { blocks: ["mp_skills"] }),
+  disarm: bad("disarm", "ปลดอาวุธ", "control", "STR", { blocks: ["attack"] }),
+  root: bad("root", "ตรึง", "control", "AGI", { blocks: ["move", "flee"] }),
+  confuse: bad("confuse", "สับสน", "control", "INT"),
+  charm: bad("charm", "เสน่ห์", "control", "SPI", { hardControl: true }),
+  berserk: bad("berserk", "คลั่ง", "control", "SPI", { blocks: ["skills", "items"], scaled: { patk: 1, pdef: -1 } }),
+  taunt: bad("taunt", "ยั่วยุ", "control", "SPI"),
+  mini: bad("mini", "ตัวจิ๋ว", "control", "SPI", { hardControl: true, blocks: ["skills"], scaled: { patk: -2.5, matk: -2.5 } }),
+  doom: bad("doom", "สาปมรณะ", "control", "SPI", { hardControl: true }),
+  // ---- over time
+  poison: bad("poison", "พิษ", "dot", "VIT", { overTime: { resource: "hp", key: "poisonPctMaxHp" } }),
+  toxic: bad("toxic", "พิษร้าย", "dot", "VIT", { overTime: { resource: "hp", key: "toxicPctMaxHpPerStack", perStack: true }, growsEachTick: true, maxStacks: 4 }),
+  burn: bad("burn", "เผาไหม้", "dot", "VIT", { overTime: { resource: "hp", key: "burnPctMaxHp" }, scaled: { patk: -0.5, matk: -0.5 } }),
+  bleed: bad("bleed", "เลือดออก", "dot", "VIT", { overTime: { resource: "hp", key: "bleedPctMaxHpPerStack", perStack: true }, scaled: { pdef: -0.5 }, maxStacks: 3 }),
+  frostbite: bad("frostbite", "หนาวกัด", "dot", "VIT", { overTime: { resource: "hp", key: "frostbitePctMaxHp" }, scaled: { spd: -0.5 }, maxStacks: 3 }),
+  shock: bad("shock", "ไฟช็อต", "dot", "VIT"),
+  corrode: bad("corrode", "กัดกร่อน", "dot", "VIT", { overTime: { resource: "hp", key: "corrodePctMaxHp" }, growsEachTick: true, scaled: { pdef: -0.5 }, maxStacks: 5 }),
+  leech: bad("leech", "ดูดพลัง", "dot", "VIT", { overTime: { resource: "hp", key: "leechPctMaxHp" } }),
+  mana_burn: bad("mana_burn", "เผามานา", "dot", "SPI", { overTime: { resource: "mp", key: "manaBurnPctMaxMp" } }),
+  // ---- stat down and other harmful
+  blind: bad("blind", "ตาบอด", "stat", "DEX", { points: { accuracyPct: [-1, "blindAccuracyPct"] } }),
+  atk_down: bad("atk_down", "ATK ลด", "stat", null, { scaled: { patk: -1 } }),
+  matk_down: bad("matk_down", "MATK ลด", "stat", null, { scaled: { matk: -1 } }),
+  def_down: bad("def_down", "DEF ลด", "stat", null, { scaled: { pdef: -1 } }),
+  mdef_down: bad("mdef_down", "MDEF ลด", "stat", null, { scaled: { mdef: -1 } }),
+  spd_down: bad("spd_down", "ช้า", "stat", "AGI", { scaled: { spd: -1 } }),
+  evasion_down: bad("evasion_down", "หลบลด", "stat", null, { points: { evasionPct: [-1, "evasionShiftPct"] } }),
+  crit_down: bad("crit_down", "คริลด", "stat", null, { points: { critPct: [-1, "critShiftPct"] } }),
+  res_down: bad("res_down", `${EFFECT_RES_NAME_TH}ลด`, "stat", "SPI", { points: { effectResPct: [-1, "resShiftPct"] } }),
+  vulnerable: bad("vulnerable", "เปราะบาง", "stat", null),
+  mark: bad("mark", "ถูกหมายหัว", "stat", null),
+  anti_heal: bad("anti_heal", "ฮีลไม่เข้า", "stat", "SPI"),
+  unbuffable: bad("unbuffable", "ห้ามบัฟ", "stat", "SPI", { blocks: ["helpful_statuses"] }),
+  seal: bad("seal", "ผนึก", "stat", "SPI", { blocks: ["passives"] }),
+  skill_lock: bad("skill_lock", "สกิลล็อก", "stat", "INT"),
+  mp_cost_up: bad("mp_cost_up", "MP แพง", "stat", "INT"),
+  link: bad("link", "ลิงก์", "stat", "SPI"),
+  zombie: bad("zombie", "ซอมบี้", "stat", "SPI"),
+  wet: bad("wet", "เปียก", "stat", null),
+  oil: bad("oil", "น้ำมัน", "stat", null),
+  // ---- buffs
+  atk_up: good("atk_up", "ATK เพิ่ม", { scaled: { patk: 1 } }),
+  matk_up: good("matk_up", "MATK เพิ่ม", { scaled: { matk: 1 } }),
+  def_up: good("def_up", "DEF เพิ่ม", { scaled: { pdef: 1 } }),
+  mdef_up: good("mdef_up", "MDEF เพิ่ม", { scaled: { mdef: 1 } }),
+  spd_up: good("spd_up", "เร่ง", { scaled: { spd: 1 } }),
+  evasion_up: good("evasion_up", "หลบเพิ่ม", { points: { evasionPct: [1, "evasionShiftPct"] } }),
+  accuracy_up: good("accuracy_up", "แม่นเพิ่ม", { points: { accuracyPct: [1, "accuracyShiftPct"] } }),
+  crit_up: good("crit_up", "คริเพิ่ม", { points: { critPct: [1, "critShiftPct"] } }),
+  res_up: good("res_up", `${EFFECT_RES_NAME_TH}เพิ่ม`, { points: { effectResPct: [1, "resShiftPct"] } }),
+  regen: good("regen", "ฟื้นต่อเนื่อง", { overTime: { resource: "hp", key: "regenPctMaxHp" } }),
+  mp_regen: good("mp_regen", "ฟื้น MP ต่อเนื่อง", { overTime: { resource: "mp", key: "mpRegenPctMaxMp" } }),
+  dmg_reduction: good("dmg_reduction", "ลดดาเมจ"),
+  reflect: good("reflect", "สะท้อนเวท"),
+  thorns: good("thorns", "หนาม"),
+  immunity: good("immunity", "ภูมิคุ้มกัน"),
+  endure: good("endure", "อึด"),
+  invincible: good("invincible", "คงกระพัน"),
+  stealth: good("stealth", "ล่องหน"),
+  counter: good("counter", "ท่าสวน"),
+  protect: good("protect", "ถูกปกป้อง"),
+  focus: good("focus", "ชาร์จพลัง"),
+  imbue: good("imbue", "อาวุธธาตุ", { needsElement: true }),
+  element_ward: good("element_ward", "ต้านธาตุ", { needsElement: true }),
+  lifesteal_up: good("lifesteal_up", "ดูดเลือดเพิ่ม"),
+  rage: good("rage", "เดือดดาล", { scaled: { patk: 0.5 }, maxStacks: 5 }),
+  // ---- instant
+  knockback: bad("knockback", "ผลักไปหลัง", "instant", "STR", { instant: "knockback" }),
+  pull: bad("pull", "ดึงมาหน้า", "instant", "STR", { instant: "pull" }),
+  delay: bad("delay", "ถ่วงคิว", "instant", "AGI", { instant: "delay" }),
+  dispel: bad("dispel", "สลายบัฟ", "instant", "SPI", { instant: "dispel" }),
+  steal_buff: bad("steal_buff", "ขโมยบัฟ", "instant", "SPI", { instant: "steal_buff" }),
+  invert: bad("invert", "กลับขั้น", "instant", "SPI", { instant: "invert" }),
+  advance: good("advance", "ดันคิว", { category: "instant", instant: "advance" }),
+  cleanse: good("cleanse", "ล้างสถานะ", { category: "instant", instant: "cleanse" }),
+  extend: good("extend", "ยืดบัฟ", { category: "instant", instant: "extend" }),
+};
+
+/** Buff ↔ debuff pairs used by `invert`. */
+export const INVERT_PAIRS: Readonly<Partial<Record<StatusId, StatusId>>> = {
+  atk_up: "atk_down",
+  matk_up: "matk_down",
+  def_up: "def_down",
+  mdef_up: "mdef_down",
+  spd_up: "spd_down",
+  evasion_up: "evasion_down",
+  accuracy_up: "blind",
+  crit_up: "crit_down",
+  res_up: "res_down",
+  regen: "poison",
 };
 
 export function isStatusId(id: string): id is StatusId {
   return (STATUS_IDS as readonly string[]).includes(id);
 }
 
+export function statusBlocks(statuses: readonly ActiveStatus[] | undefined, what: StatusBlock): ActiveStatus | undefined {
+  return statuses?.find((s) => STATUS_DEFINITIONS[s.statusId].blocks?.includes(what) === true);
+}
+
 /** One status on a unit in a fight. */
 export interface ActiveStatus {
   statusId: StatusId;
-  /** Who put it there (null for none). */
+  /** Who put it there (null for none). Taunt, protect and leech point at this unit. */
   sourceId: string | null;
   turnsLeft: number;
   stacks: number;
   /** Put on during the unit's own turn: that turn does not count down. */
   fresh: boolean;
+  /** imbue / element_ward. */
+  element?: Element;
+  /** skill_lock: the skill that is locked. */
+  skillId?: string;
 }
 
 /**
@@ -165,14 +321,11 @@ export function statsWithStatuses(rules: RulesConfig, base: DerivedStats, status
   if (statuses === undefined || statuses.length === 0) return base;
   const t = rules.provisional.statusTuning.value;
   const pct: Record<ScaledStat, number> = { patk: 0, matk: 0, pdef: 0, mdef: 0, spd: 0 };
-  const pts: Record<PointStat, number> = { accuracyPct: 0, evasionPct: 0, effectResPct: 0 };
+  const pts: Record<PointStat, number> = { accuracyPct: 0, evasionPct: 0, critPct: 0, effectResPct: 0 };
   for (const s of statuses) {
     const d = STATUS_DEFINITIONS[s.statusId];
-    for (const [k, sign] of Object.entries(d.scaled ?? {}) as [ScaledStat, number][]) pct[k] += sign * t.statModPct * s.stacks;
-    for (const [k, key] of Object.entries(d.points ?? {}) as [PointStat, "blind" | "evasionUp" | "resShift"][]) {
-      const size = key === "blind" ? t.blindAccuracyPct : key === "evasionUp" ? t.evasionUpPct : t.resShiftPct;
-      pts[k] += (d.pointSign ?? 1) * size * s.stacks;
-    }
+    for (const [k, factor] of Object.entries(d.scaled ?? {}) as [ScaledStat, number][]) pct[k] += factor * t.statModPct * s.stacks;
+    for (const [k, [sign, key]] of Object.entries(d.points ?? {}) as [PointStat, [number, PointKey]][]) pts[k] += sign * t[key] * s.stacks;
   }
   const cap = t.statModCapPct;
   const out = { ...base };
@@ -185,13 +338,28 @@ export function statsWithStatuses(rules: RulesConfig, base: DerivedStats, status
   return out;
 }
 
-/** HP change at turn start for one over-time status: positive = damage, negative = healing. */
-export function overTimeAmount(rules: RulesConfig, def: StatusDefinition, stacks: number, maxHp: number, isBoss: boolean): number {
+/**
+ * HP or MP change at turn start for one over-time status: positive = loss, negative = gain. A boss never
+ * loses more than `bossDotMaxHpPctPerTick` of its max HP to one tick.
+ */
+export function overTimeAmount(rules: RulesConfig, def: StatusDefinition, stacks: number, max: number, isBoss: boolean): number {
   if (def.overTime === undefined) return 0;
   const t = rules.provisional.statusTuning.value;
-  const pct =
-    def.overTime === "poison" ? t.poisonPctMaxHp : def.overTime === "burn" ? t.burnPctMaxHp : def.overTime === "bleed" ? t.bleedPctMaxHpPerStack * stacks : t.regenPctMaxHp;
-  const capped = isBoss && def.harmful ? Math.min(pct, t.bossDotMaxHpPctPerTick) : pct;
-  const amount = Math.max(1, Math.floor((maxHp * capped) / 100));
+  const pct = t[def.overTime.key] * (def.overTime.perStack === true ? stacks : 1);
+  const capped = isBoss && def.harmful && def.overTime.resource === "hp" ? Math.min(pct, t.bossDotMaxHpPctPerTick) : pct;
+  const amount = Math.max(1, Math.floor((max * capped) / 100));
   return def.harmful ? amount : -amount;
+}
+
+/** The incoming damage factor from the target's statuses (vulnerable, mark, damage reduction, element ward). */
+export function incomingDamageFactor(rules: RulesConfig, statuses: readonly ActiveStatus[] | undefined, element: Element): number {
+  const t = rules.provisional.statusTuning.value;
+  let pct = 0;
+  for (const s of statuses ?? []) {
+    if (s.statusId === "vulnerable") pct += t.vulnerablePct;
+    else if (s.statusId === "mark") pct += t.markPct;
+    else if (s.statusId === "dmg_reduction") pct -= t.dmgReductionPct;
+    else if (s.statusId === "element_ward" && s.element === element) pct -= t.elementWardPct;
+  }
+  return Math.max(0, (100 + pct) / 100);
 }
