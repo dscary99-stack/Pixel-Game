@@ -31,3 +31,4 @@ export * from "./content/maps";
 export * from "./shop";
 export * from "./affix";
 export * from "./craft";
+export * from "./quest";

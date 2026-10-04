@@ -869,6 +869,13 @@ export class TownServices {
            ON CONFLICT (account_id, profession) DO UPDATE SET mastery = excluded.mastery WHERE craft_mastery.mastery = ?`,
         )
         .bind(accountId, recipe.profession, after, ...ours.args, before),
+      // Quest progress (chapter 09): crafts of this profession, counted per craft.
+      this.db
+        .prepare(
+          `INSERT INTO quest_activity (account_id, activity_id, kind, subject, quantity, at)
+           SELECT ?, ?, 'craft', ?, ?, ? WHERE ${ours.sql} ON CONFLICT DO NOTHING`,
+        )
+        .bind(accountId, ledgerId, recipe.profession, times, at, ...ours.args),
     ];
     if (quote.coins > 0) {
       stmts.push(

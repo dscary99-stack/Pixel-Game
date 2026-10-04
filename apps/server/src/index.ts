@@ -14,6 +14,8 @@
  *   GET  /party, POST /party, POST /party/join {partyId}, POST /party/leave   party (P02)
  *   POST /town/affix/reroll        roll one gear affix again for coins + material (operationId, equipmentId, slot, expectedAffixes, expectedCost)
  *   POST /character/equipment/affix/choose  keep the old or the new affix (operationId, equipmentId, rerollOperationId, keep)
+ *   GET  /quests                   today's and this week's quest boards with progress (chapter 09)
+ *   POST /quests/claim             claim a daily reward or the weekly main reward (periodId, slot)
  *   POST /town/craft               make a recipe 1–10 times (operationId, recipeId, times, expectedCoins)
  *   POST /town/buy                 buy from a town shop at the shown total (operationId, shopId, lines, expectedTotal)
  *   POST /town/rebirth             companion Rebirth at the town NPC (operationId, companionId, expectedStage)
@@ -55,6 +57,7 @@ import { mapObjectName } from "./map-do";
 import { WorldStore } from "./world-store";
 import { TownServices, type ServiceResult } from "./town-services";
 import { PartyStore, type PartyResult } from "./party-store";
+import { QuestStore } from "./quest-store";
 
 export { BattleDurableObject } from "./battle-do";
 export { MapChannelDurableObject } from "./map-do";
@@ -69,6 +72,7 @@ const CONTENT = { ...exampleContentMaps(), shops: exampleShopRegistry(), recipes
 const charactersFor = (env: Env) => new CharacterStore(env.DB, rulesFor(env), CONTENT);
 const TOWNS = [...exampleMapRegistry().values()].filter((m) => m.kind === "town").map((m) => m.id);
 const townFor = (env: Env) => new TownServices(env.DB, rulesFor(env), CONTENT, TOWNS);
+const questsFor = (env: Env) => new QuestStore(env.DB, rulesFor(env), { ...CONTENT, maps: exampleMapRegistry() }, TOWNS);
 
 /** DEV ONLY: dev accounts appear on first use with a starter bag and starter gear; real account creation waits for O11. */
 async function devStarter(env: Env, accountId: string): Promise<void> {
@@ -102,7 +106,7 @@ export default {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/dev/")) return devRoute(request, env, url);
     if (url.pathname.startsWith("/world/")) return worldRoute(request, env, url);
-    if (url.pathname === "/character" || url.pathname.startsWith("/character/") || url.pathname.startsWith("/town/")) return characterRoute(request, env, url);
+    if (url.pathname === "/character" || url.pathname.startsWith("/character/") || url.pathname.startsWith("/town/") || url.pathname.startsWith("/quests")) return characterRoute(request, env, url);
     if (url.pathname === "/party" || url.pathname.startsWith("/party/")) return partyRoute(request, env, url);
     const m = url.pathname.match(/^\/battles\/([a-z0-9_:-]{1,80})(?:\/([a-z-]+))?$/);
     if (m === null) return json(404, { error: "NOT_FOUND" });
@@ -197,8 +201,17 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
       bag: await economyFor(env).balances(accountId),
     });
   }
+  if (request.method === "GET" && url.pathname === "/quests") {
+    const view = await questsFor(env).view(accountId);
+    return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
+  }
   const body = await readJson(request);
   if (body === undefined) return json(400, { error: "INVALID_REQUEST" });
+  if (request.method === "POST" && url.pathname === "/quests/claim") {
+    const r = await questsFor(env).claim(accountId, body);
+    if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
+    return json(200, { ...r, coins: await townFor(env).coins(accountId) });
+  }
   if (request.method === "POST" && url.pathname === "/character") {
     const r = await store.create(accountId, body);
     if (r.status === "rejected") return json(r.reason === "CHARACTER_EXISTS" ? 409 : 400, { error: r.reason, message: r.message });

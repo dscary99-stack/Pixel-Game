@@ -145,6 +145,28 @@ export const RULES = {
      * Values are P12 economy assumptions (Claude's first pass); resources are spent on the roll.
      */
     affixRerollCost: provisional({ coinsBase: 300, coinsPerLevel: 60, materialBase: 2, materialPerTenLevels: 1 } as const, "P12", "coins = 300 + 60 × item level; material = 2 + 1 per 10 item levels"),
+    /**
+     * Daily / Weekly quests (chapter 09, P13). Periods reset at a server-defined UTC hour (21:00 UTC =
+     * 04:00 Bangkok), weekly on Monday at that hour. Daily: 8 choices, rewards for up to 4. Weekly:
+     * several choices, the main reward once enough are done. Counts and rewards are Claude's first
+     * pass (P12); quest EXP is a share of the character's current level step.
+     */
+    quests: provisional(
+      {
+        resetHourUtc: 21,
+        dailyChoices: 8,
+        dailyClaims: 4,
+        weeklyChoices: 6,
+        weeklyMainNeeds: 3,
+        /** Quests only name monsters whose wild level is at most the character's level + this. */
+        levelSlack: 3,
+        daily: { coinsBase: 40, coinsPerLevel: 8, expPctOfLevel: 8, itemId: "item:small_potion", itemQty: 2 },
+        weekly: { coinsBase: 400, coinsPerLevel: 60, expPctOfLevel: 40, itemId: "item:phoenix_feather", itemQty: 1 },
+        counts: { hunt: 10, areaHunt: 20, capture: 1, craft: 3, deliver: 5, weeklyHunt: 40, weeklyAreaHunt: 100, weeklyCapture: 3, weeklyCraft: 10, weeklyBoss: 2 },
+      } as const,
+      "P13",
+      "chapter 09 Daily 8 choose 4, Weekly several ways; numbers are Claude's first pass",
+    ),
     affixLevelScalePct: provisional(2, "P09", "affix value × (1 + 2% per item level above 1); Claude's first pass"),
     bossActions: provisional({ maxPerRound: 3 } as const, "P15", "bosses act up to 3 times a round; statuses count once per round"),
     /**
@@ -355,6 +377,8 @@ export const RULES = {
     fleeChance: open<number>("O15", "flee formula"),
     reviveRules: open<true>("O15", "revive timeline"),
     stalemateResolution: open<true>("O15"),
+    /** Chapter 09: what happens to a weekly reward nobody claimed before the week ended. */
+    weeklyExpiredClaim: open<true>("chapter09", "expired unclaimed weekly reward policy; must never let two periods be claimed twice"),
   },
 } as const;
 

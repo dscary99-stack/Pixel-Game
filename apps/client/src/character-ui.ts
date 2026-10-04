@@ -4,6 +4,9 @@
  * comes with the art pass (chapter 10 §4).
  */
 import {
+  questGoalText,
+  type QuestBoardView,
+  type QuestReward,
   EXAMPLE_RECIPES,
   PROFESSIONS,
   PROFESSION_NAME_TH,
@@ -832,6 +835,98 @@ export function craftPanel(api: CharacterApi, start: CharacterBundle): Promise<C
       body.append(list, el("div", { class: "pm-note" }, "สร้างได้ในเมืองเท่านั้น · สร้างสำเร็จทุกครั้งถ้าวัตถุดิบครบ · สูตร/ตัวเลขเป็นตัวอย่าง (P12)"));
     };
     draw();
+  });
+}
+
+/**
+ * Daily / Weekly quests (chapter 09): today's 8 quests (rewards for 4), this week's quests and its
+ * main reward, with progress the server counted and when each board resets. Deliveries ask first,
+ * since they hand over the items.
+ */
+export function questPanel(api: CharacterApi): Promise<void> {
+  return new Promise((resolve) => {
+    const { panel, close } = overlay();
+    let busy = false;
+    const body = el("div");
+    const note = el("div", { class: "pm-note", "data-quest-note": "" });
+    const error = el("div", { class: "pm-error", role: "alert" });
+    const actions = el("div", { class: "pm-actions" });
+    const done = el("button", { type: "button", class: "primary" }, "ปิด");
+    actions.append(done);
+    panel.append(el("h2", {}, "เควส"), body, note, error, actions);
+    done.addEventListener("click", () => {
+      close();
+      resolve();
+    });
+    const names = {
+      species: (id: string) => species.get(id)?.name.th ?? id,
+      item: (id: string) => itemDefs.get(id)?.name.th ?? id,
+      map: (id: string) => maps.get(id)?.name.th ?? id,
+      profession: (p: Profession) => PROFESSION_NAME_TH[p],
+    };
+    const rewardText = (r: QuestReward) =>
+      [`${r.coins} เหรียญ`, r.exp > 0 ? `EXP ${r.exp}` : "", ...r.items.map((i) => `${names.item(i.itemId)} ×${i.quantity}`)].filter((x) => x !== "").join(" · ");
+    const resetText = (iso: string) => new Date(iso).toLocaleString("th-TH", { weekday: "short", hour: "2-digit", minute: "2-digit" });
+
+    const claim = async (periodId: string, slot: number | "main", confirmText?: string) => {
+      if (busy) return;
+      if (confirmText !== undefined && !window.confirm(confirmText)) return;
+      busy = true;
+      error.textContent = "";
+      try {
+        const r = await api.claimQuest(periodId, slot);
+        note.textContent = `ได้รับ ${rewardText(r.result.reward)}${r.result.delivered === undefined ? "" : ` (ส่ง ${names.item(r.result.delivered.itemId)} ×${r.result.delivered.quantity})`}`;
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+      } finally {
+        busy = false;
+        await load();
+      }
+    };
+
+    const board = (v: QuestBoardView) => {
+      const daily = v.cadence === "daily";
+      const head = daily
+        ? `รายวัน · รับรางวัลได้อีก ${v.claimsLeft} ครั้ง · รีเซ็ต ${resetText(v.period.endsAt)}`
+        : `รายสัปดาห์ · ทำ ${v.needs} อย่างรับรางวัลใหญ่ · รีเซ็ต ${resetText(v.period.endsAt)}`;
+      body.append(el("h3", {}, head), el("div", { class: "pm-note" }, `รางวัล${daily ? "ต่อเควส" : "ใหญ่"}: ${rewardText(v.reward)}`));
+      const list = el("ul", { class: "pm-list", "data-board": v.cadence });
+      v.goals.forEach((g, i) => {
+        const li = el("li", { "data-quest": String(i) });
+        li.append(el("span", { class: "pm-grow" }, `${questGoalText(g.goal, names)} · ${g.progress}/${g.goal.count}${g.claimed ? " · รับแล้ว" : g.done ? " · สำเร็จ" : ""}`));
+        if (daily) {
+          const b = el("button", { type: "button" }, g.claimed ? "รับแล้ว" : "รับรางวัล");
+          b.disabled = g.claimed || !g.done || v.claimsLeft === 0;
+          const ask = g.goal.kind === "deliver" ? `ส่ง ${names.item(g.goal.itemId)} ×${g.goal.count} (ของจะถูกใช้)?` : undefined;
+          b.addEventListener("click", () => void claim(v.period.id, i, ask));
+          li.append(b);
+        }
+        list.append(li);
+      });
+      body.append(list);
+      if (!daily) {
+        const doneCount = v.goals.filter((g) => g.done).length;
+        const b = el("button", { type: "button", "data-quest": "main" }, v.claimsLeft === 0 ? "รับรางวัลใหญ่แล้ว" : `รับรางวัลใหญ่ (${doneCount}/${v.needs})`);
+        b.disabled = v.claimsLeft === 0 || doneCount < (v.needs ?? 0);
+        b.addEventListener("click", () => void claim(v.period.id, "main"));
+        const row = el("div", { class: "pm-actions" });
+        row.append(b);
+        body.append(row);
+      }
+    };
+
+    const load = async () => {
+      try {
+        const v = await api.quests();
+        body.replaceChildren();
+        board(v.daily);
+        board(v.weekly);
+        body.append(el("div", { class: "pm-note" }, "นับความคืบหน้าตั้งแต่เริ่มรอบ ไม่ต้องรับเควสก่อน · ล่าอัตโนมัตินับการล่า · เควสเป็นโบนัส ล่าต่อได้ไม่จำกัด · ตัวเลขเป็นค่าทดลอง (P13)"));
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+      }
+    };
+    void load();
   });
 }
 

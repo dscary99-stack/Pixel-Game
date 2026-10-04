@@ -28,7 +28,7 @@ import {
 } from "@pmrpg/shared";
 import { ELEMENT_COLOR, type BattleScene } from "./battle-scene";
 import type { CharacterApi, CharacterBundle } from "./character-api";
-import { autoHuntPanel, craftPanel, equipmentPanel, partyPanel, rebirthPanel, shopPanel, skillPanel, statsPanel, teamPanel, vitals } from "./character-ui";
+import { autoHuntPanel, craftPanel, questPanel, equipmentPanel, partyPanel, rebirthPanel, shopPanel, skillPanel, statsPanel, teamPanel, vitals } from "./character-ui";
 import type { WorldTransport } from "./world-transport";
 
 const W = 960;
@@ -136,7 +136,7 @@ export class WorldScene extends Phaser.Scene {
         this.huntBox.setVisible(false);
       });
     this.add
-      .text(W - 8, 8, `ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · C สเตตัส · T ทีม · E อุปกรณ์ · B ร้าน / R จุติคู่ใจ (ในเมือง) · K สกิล/Bond · H ล่าอัตโนมัติ · P ปาร์ตี้" : ""}`, style)
+      .text(W - 8, 8, `ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · C สเตตัส · T ทีม · E อุปกรณ์ · B ร้าน / F สร้างของ / R จุติคู่ใจ (ในเมือง) · K สกิล/Bond · H ล่าอัตโนมัติ · P ปาร์ตี้ · Q เควส" : ""}`, style)
       .setOrigin(1, 0)
       .setScrollFactor(0)
       .setDepth(100);
@@ -155,6 +155,7 @@ export class WorldScene extends Phaser.Scene {
     kb.on("keydown-R", () => void this.openRebirth());
     kb.on("keydown-P", () => void this.openParty());
     kb.on("keydown-K", () => void this.openSkills());
+    kb.on("keydown-Q", () => void this.openQuests());
     if (this.api !== null) {
       const button = (x: number, label: string, open: () => Promise<void>) =>
         this.add
@@ -175,7 +176,8 @@ export class WorldScene extends Phaser.Scene {
       const hunt = button(stats.x + stats.width + 8, "ล่าอัตโนมัติ (H)", () => this.toggleAutoHunt());
       const reborn = button(hunt.x + hunt.width + 8, "จุติ (R)", () => this.openRebirth());
       const party = button(reborn.x + reborn.width + 8, "ปาร์ตี้ (P)", () => this.openParty());
-      button(party.x + party.width + 8, "สกิล (K)", () => this.openSkills());
+      const skills = button(party.x + party.width + 8, "สกิล (K)", () => this.openSkills());
+      button(skills.x + skills.width + 8, "เควส (Q)", () => this.openQuests());
     }
     this.input.on("pointerdown", (p: Phaser.Input.Pointer) => this.tapMove(p));
 
@@ -514,6 +516,22 @@ export class WorldScene extends Phaser.Scene {
     return this.withPanel("สร้างของได้นอกไฟต์เท่านั้น", async (api, bundle) => {
       await craftPanel(api, bundle);
     });
+  }
+
+  /** Quests: allowed anywhere, also during fights and Auto Hunt (claims change no fight). */
+  private async openQuests() {
+    if (this.api === null || this.panelOpen) return;
+    const api = this.api;
+    this.panelOpen = true;
+    this.input.keyboard!.enabled = false;
+    try {
+      await questPanel(api);
+    } finally {
+      this.input.keyboard!.enabled = true;
+      this.input.keyboard!.resetKeys();
+      this.panelOpen = false;
+    }
+    await this.reloadCharacter();
   }
 
   /** Party: allowed anywhere, also during Auto Hunt (it changes no fight in progress). */

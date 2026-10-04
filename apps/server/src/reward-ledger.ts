@@ -124,7 +124,19 @@ export class RewardLedger {
             .bind(id, i, recipientId, line.itemId, line.quantity, at, id, recipientId, hash),
         );
       });
-    } else if (entitlement.kind === "capture") {
+    }
+    // Quest progress (chapter 09): a kill or capture counts once, when its reward lands.
+    if (entitlement.kind === "kill" || entitlement.kind === "capture") {
+      stmts.push(
+        this.db
+          .prepare(
+            `INSERT INTO quest_activity (account_id, activity_id, kind, subject, quantity, at)
+             SELECT ?, ?, ?, ?, 1, ? WHERE ${OWN_RECEIPT} ON CONFLICT DO NOTHING`,
+          )
+          .bind(recipientId, id, entitlement.kind, entitlement.speciesId, at, id, recipientId, hash),
+      );
+    }
+    if (entitlement.kind === "capture") {
       // Captured companions start at the confirmed initial level with Bond 0 (C09, C11). The server
       // picks the growth seed here; a replayed grant keeps the first row (ON CONFLICT DO NOTHING).
       const start = this.rules.provisional.primaryStatStart.value;

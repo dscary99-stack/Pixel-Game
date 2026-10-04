@@ -35,6 +35,7 @@ npm run smoke:town     # end-to-end ใส่/ถอด Sigil (เสียเ�
 npm run smoke:progression # end-to-end ไฟต์ได้ EXP (ตัวละคร+คู่ใจ) → เลเวลอัป → ลงแต้มสเตตัส กับ wrangler dev
 npm run smoke:auto        # end-to-end ล่าอัตโนมัติ: server เดินหาฝูง → สู้เอง (auto_hunt) → ไฟต์ถัดไป → หยุดแล้วได้สรุป → หลุดแล้วหยุด กับ wrangler dev
 npm run smoke:party       # end-to-end ปาร์ตี้: ตั้ง/เข้าด้วยรหัส → เพื่อนในแผนที่เดียวกันที่เพิ่งสู้ให้โบนัส EXP/วัสดุตอนเริ่มไฟต์ → คนนอกปาร์ตี้ไม่ได้ กับ wrangler dev
+npm run smoke:quest       # end-to-end เควส: กระดานรายวัน/สัปดาห์สุ่มครั้งเดียว → ส่งของที่บอร์ดในเมือง (ของถูกใช้ ได้รางวัลครั้งเดียว) → คราฟต์นับเข้าเควส → ยังไม่เสร็จ/รางวัลใหญ่ถูกปฏิเสธ กับ wrangler dev
 npm run smoke:boss        # end-to-end บอสเจ้าถิ่น: เห็นบอสบนแผนที่ → ไกลเกินถูกปฏิเสธ → เดินไปท้าเอง → ไฟต์ส่วนตัวมีลูกน้อง/phase → แพ้แล้วท้าใหม่ได้ไฟต์ใหม่ กับ wrangler dev
 ```
 

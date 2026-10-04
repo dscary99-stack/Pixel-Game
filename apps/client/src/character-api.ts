@@ -2,7 +2,7 @@
  * Character and team requests (server mode). The server decides everything; the client shows
  * what it gets back. Identity uses the dev header until O11 picks auth.
  */
-import type { CharacterView, CreateCharacterRequest, EquipSlot, EquipmentView, MonsterInstance, PartyView, PrimaryStats, Profession, Rarity, RolledAffix } from "@pmrpg/shared";
+import type { CharacterView, CreateCharacterRequest, EquipSlot, EquipmentView, MonsterInstance, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RolledAffix } from "@pmrpg/shared";
 
 export type StoredCompanion = MonsterInstance & { hp: number | null; mp: number | null };
 
@@ -92,6 +92,15 @@ export class CharacterApi {
 
   buy(shopId: string, lines: { itemId: string; quantity: number }[], expectedTotal: number) {
     return this.call<{ coins: number; result: { total: number } }>("POST", "/town/buy", { operationId: opId("buy"), shopId, lines, expectedTotal });
+  }
+
+  quests() {
+    return this.call<{ daily: QuestBoardView; weekly: QuestBoardView }>("GET", "/quests");
+  }
+
+  /** The claim key is the period + slot, so a retried claim never pays twice. */
+  claimQuest(periodId: string, slot: number | "main") {
+    return this.call<{ coins: number; replayed: boolean; result: { reward: QuestReward; delivered?: { itemId: string; quantity: number } } }>("POST", "/quests/claim", { periodId, slot });
   }
 
   party() {
