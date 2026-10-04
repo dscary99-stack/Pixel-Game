@@ -19,6 +19,7 @@ import {
   AutoBattlePolicySchema,
   NO_AUTO_POLICY,
   type AutoBattlePolicy,
+  type AutoBattlePolicyInput,
   createBattle,
   currentActor,
   publicView,
@@ -216,7 +217,7 @@ export class BattleRoom {
       const last = await this.storage.get<number>(K.lastAutoAt);
       const gap = this.rules.provisional.autoBattleActionMs.value - AUTO_JITTER_MS;
       if (last !== undefined && this.now() - last < gap) return rejectNow("TOO_FAST", `Auto acts once per ${this.rules.provisional.autoBattleActionMs.value} ms`);
-      command = chooseAutoCommand(state, this.content, env.policy);
+      command = chooseAutoCommand(state, this.content, env.policy, this.rules);
       if (command === null) return rejectNow("BATTLE_OVER", "nothing to do");
     }
     const r = applyCommand(this.rules, this.content, state, command, { source: kind, causeId: env.commandId });
@@ -249,7 +250,7 @@ export class BattleRoom {
    * Auto Hunt switch, set by the Map Channel for the owner. Off hands the fight back to the player;
    * the reward mode fixed at the start never changes (chapter 08).
    */
-  async setAutopilot(accountId: string, on: boolean, policy: AutoBattlePolicy = NO_AUTO_POLICY): Promise<void> {
+  async setAutopilot(accountId: string, on: boolean, policy: AutoBattlePolicyInput = {}): Promise<void> {
     const state = await this.requireState();
     if (state.ownerAccountId !== accountId) throw new RoomError("NOT_OWNER", "not your battle");
     await this.storage.putMany({ [K.autopilot]: on, [K.autopolicy]: AutoBattlePolicySchema.parse(policy) });
@@ -269,7 +270,7 @@ export class BattleRoom {
     const state = await this.requireState();
     if (state.status !== "active") return "over";
     const policy = (await this.storage.get<AutoBattlePolicy>(K.autopolicy)) ?? NO_AUTO_POLICY;
-    const command = chooseAutoCommand(state, this.content, policy);
+    const command = chooseAutoCommand(state, this.content, policy, this.rules);
     if (command === null) return "idle";
     const r = applyCommand(this.rules, this.content, state, command, { source: "auto", causeId: `autopilot:${state.stateVersion}` });
     if (!r.ok) return "idle";

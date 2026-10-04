@@ -762,6 +762,16 @@ export function autoHuntPanel(speciesIds: readonly string[]): Promise<AutoHuntSe
       return () =>
         on.checked ? [{ itemId: d.id, target: target() as "ally" | "self", hpBelowPercent: Number(below()), maxPerFight: Number(max()) }] : [];
     });
+    // Skills Auto may use (chapter 08 rule engine): heal, cleanse, buff, debuff, then damage.
+    const useSkills = el("input", { type: "checkbox", id: "pm-use-skills" });
+    useSkills.checked = saved.skills.use;
+    const useSkillsRow = el("label", { for: "pm-use-skills" });
+    useSkillsRow.append(useSkills, document.createTextNode(" ให้ Auto ใช้สกิล (ฮีล → ล้างสถานะ → บัฟ → ดีบัฟ → โจมตี)"));
+    panel.append(useSkillsRow);
+    panel.append(el("label", {}, "เก็บ MP สำรองไว้อย่างน้อย"));
+    const reserve = choices(panel, [0, 10, 20, 30, 50].map((n) => ({ value: String(n), label: `${n}%` })), String(saved.skills.mpReservePercent));
+    panel.append(el("label", {}, "ใช้สกิลฮีลเมื่อ HP เพื่อนต่ำกว่า"));
+    const healBelow = choices(panel, [30, 40, 50, 60, 70].map((n) => ({ value: String(n), label: `${n}%` })), String(saved.skills.healBelowPercent));
     const itemsOut = el("input", { type: "checkbox", id: "pm-items-out" });
     itemsOut.checked = saved.stopWhenItemsOut;
     const itemsOutRow = el("label", { for: "pm-items-out" });
@@ -790,6 +800,7 @@ export function autoHuntPanel(speciesIds: readonly string[]): Promise<AutoHuntSe
         stopBelowMpPercent: Number(mp()),
         stopBelowCompanionHpPercent: Number(compHp()),
         itemRules: ruleRows.flatMap((r) => r()),
+        skills: { use: useSkills.checked, mpReservePercent: Number(reserve()), healBelowPercent: Number(healBelow()) },
         stopWhenItemsOut: itemsOut.checked,
         allowElite: elite.checked,
       });
@@ -804,13 +815,15 @@ export function autoHuntPanel(speciesIds: readonly string[]): Promise<AutoHuntSe
   });
 }
 
-/** The Auto item rules saved with the Auto Hunt settings; manual Auto Battle uses the same ones. */
-export function savedAutoPolicy(): { itemRules: AutoHuntSettings["itemRules"] } {
+/** The Auto item and skill rules saved with the Auto Hunt settings; manual Auto Battle uses the same ones. */
+export function savedAutoPolicy(): Pick<AutoHuntSettings, "itemRules" | "skills"> {
+  let saved: AutoHuntSettings;
   try {
-    return { itemRules: AutoHuntSettingsSchema.parse(JSON.parse(localStorage.getItem("pm-auto-hunt") ?? "{}")).itemRules };
+    saved = AutoHuntSettingsSchema.parse(JSON.parse(localStorage.getItem("pm-auto-hunt") ?? "{}"));
   } catch {
-    return { itemRules: [] };
+    saved = AutoHuntSettingsSchema.parse({});
   }
+  return { itemRules: saved.itemRules, skills: saved.skills };
 }
 
 /**

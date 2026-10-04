@@ -26,7 +26,7 @@ function cast(r: RulesConfig, inst: MonsterInstance, skillId: string, prep: (s: 
   const setup = baseSetup({ companions: [{ instance: inst, row: "front", slot: 0, ...(hp === undefined ? {} : { hp }) }] });
   setup.player.level = 200;
   let s: BattleState = ok(createBattle(r, c, setup)).state;
-  for (let i = 0; i < 20 && currentActor(s)?.unitId !== "ally:m1"; i++) s = ok(applyCommand(r, c, s, chooseAutoCommand(s)!, { source: "player" })).state;
+  for (let i = 0; i < 20 && currentActor(s)?.unitId !== "ally:m1"; i++) s = ok(applyCommand(r, c, s, { type: "guard", actorId: currentActor(s)!.unitId }, { source: "player" })).state;
   prep(s);
   const res = ok(applyCommand(r, c, s, { type: "skill", actorId: "ally:m1", skillId, targetId: "e1" }, { source: "player" }));
   const act = res.events.find((e) => e.type === "ActionResolved") as Extract<BattleEvent, { type: "ActionResolved" }>;

@@ -15,7 +15,7 @@ import type { RulesConfig } from "../rules";
 import { portalAt, type MapDefinition, type TilePos } from "./map";
 import { findPathWhere, type Direction } from "./movement";
 import { inEngageRange, type VisiblePack } from "./encounter";
-import { AutoItemRuleSchema } from "../battle/auto-policy";
+import { AutoItemRuleSchema, AutoSkillRuleSchema } from "../battle/auto-policy";
 
 const SpeciesRef = z.string().regex(/^species:[a-z0-9_]+$/);
 
@@ -37,6 +37,8 @@ export const AutoHuntSettingsSchema = z
     stopBelowCompanionHpPercent: z.number().int().min(0).max(90).default(0),
     /** Items Auto may use in fights, in priority order (chapter 08 allowed items / max spend). */
     itemRules: z.array(AutoItemRuleSchema).max(5).default([]),
+    /** How Auto uses skills in fights (heal, cleanse, buff, debuff, damage; MP reserve). */
+    skills: AutoSkillRuleSchema.prefault({}),
     /** Stop between fights once every item in the rules has run out. */
     stopWhenItemsOut: z.boolean().default(false),
   })

@@ -7,7 +7,7 @@
  * slow or failing D1 never delays combat acks and only one drain runs at a time per battle.
  */
 import { DurableObject } from "cloudflare:workers";
-import { DEV_FIXTURE_RULES, PRODUCTION_RULES, exampleContentMaps, type AutoBattlePolicy, type BattleSetup, type RulesConfig } from "@pmrpg/shared";
+import { DEV_FIXTURE_RULES, PRODUCTION_RULES, exampleContentMaps, type AutoBattlePolicyInput, type BattleSetup, type RulesConfig } from "@pmrpg/shared";
 import { BattleRoom, RoomError, type Environment, type OutboxSummary, type RoomStorage } from "./battle-room";
 import { Economy } from "./economy";
 
@@ -130,6 +130,6 @@ export type RoomOp =
   | { kind: "events"; cursor: number }
   | { kind: "command"; body: unknown }
   | { kind: "auto"; body: unknown }
-  | { kind: "autopilot"; on: boolean; policy?: AutoBattlePolicy };
+  | { kind: "autopilot"; on: boolean; policy?: AutoBattlePolicyInput };
 
 export type RoomReply = { ok: true; body: unknown } | { ok: false; code: string; message: string };

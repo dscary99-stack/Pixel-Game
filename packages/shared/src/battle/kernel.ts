@@ -8,7 +8,7 @@
 import { applyBond, bondBonusPercent } from "../bond";
 import { companionCombatProfile } from "../companion-growth";
 import { companionKit, effectiveSkillLevel, masteryForVictory, skillLevelCap, skillLevelMods, trainedSkillLevel } from "../skill-training";
-import { NO_AUTO_POLICY, type AutoBattlePolicy } from "./auto-policy";
+import { AutoBattlePolicySchema, type AutoBattlePolicyInput } from "./auto-policy";
 import { computeDamage, computeHeal, critChanceBp, hitChanceBp } from "../damage";
 import { rollLoot } from "../loot";
 import { companionExp, killExp } from "../progression";
@@ -825,17 +825,18 @@ function doAttack(ctx: Ctx, actor: BattleUnit, target: BattleUnit, _skill: null)
 }
 
 /** What using a skill costs this unit now: its level's table (chapter 04 §5), then MP cost up. */
-function skillCost(ctx: Ctx, actor: BattleUnit, skill: SkillDefinition) {
-  const mods = skillLevelMods(ctx.rules, skill, actor.skillLevels?.[skill.id] ?? 1);
+function skillCost(rules: RulesConfig, actor: BattleUnit, skill: SkillDefinition) {
+  const mods = skillLevelMods(rules, skill, actor.skillLevels?.[skill.id] ?? 1);
   const baseMp = Math.max(0, skill.mpCost + mods.mpCost);
-  const mpCost = statusOf(actor, "mp_cost_up") === undefined ? baseMp : Math.ceil((baseMp * (100 + tuning(ctx).mpCostUpPct)) / 100);
+  const up = rules.provisional.statusTuning.value.mpCostUpPct;
+  const mpCost = statusOf(actor, "mp_cost_up") === undefined ? baseMp : Math.ceil((baseMp * (100 + up)) / 100);
   return { mods, mpCost, cooldown: Math.max(0, skill.cooldown + mods.cooldown) };
 }
 
 function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUnit): void {
   if (!actor.skillIds.includes(skillId)) reject("INVALID_COMMAND", `${actor.unitId} has no skill ${skillId}`);
   const skill = requireActiveSkill(ctx.content, skillId);
-  const { mods, mpCost, cooldown } = skillCost(ctx, actor, skill);
+  const { mods, mpCost, cooldown } = skillCost(ctx.rules, actor, skill);
   if (cooldown > 0 && ctx.rules.unresolved.cooldownTick.value === null) {
     reject("UNRESOLVED_RULE", "skill cooldown tick point is OPEN (O15)");
   }
@@ -1137,10 +1138,11 @@ function doFlee(ctx: Ctx, actor: BattleUnit): void {
  */
 function enemyAct(ctx: Ctx, u: BattleUnit): void {
   const disarmed = statusBlocks(u.statuses, "attack") !== undefined;
-  const options = enemySkillOptions(ctx, u);
+  const options = skillOptions(ctx.rules, ctx.content, ctx.s, u, ctx.rules.provisional.enemyAi.value.healBelowHpPct);
   if (options.length > 0 && (disarmed || ctx.rng.chanceBp(ctx.rules.provisional.enemyAi.value.skillChancePct * 100))) {
     const pick = options[ctx.rng.nextInt(options.length)]!;
-    return doSkill(ctx, u, pick.skillId, pick.target);
+    const target = pick.pool.length === 1 ? pick.pool[0]! : pick.pool[ctx.rng.nextInt(pick.pool.length)]!;
+    return doSkill(ctx, u, pick.skill.id, target);
   }
   if (disarmed) {
     u.guarding = true;
@@ -1153,7 +1155,7 @@ function enemyAct(ctx: Ctx, u: BattleUnit): void {
   doAttack(ctx, u, target, null);
 }
 
-/** Whether putting this status on `t` would do anything (so the AI does not waste a turn). */
+/** Whether putting this status on `t` would do anything (so an AI does not waste a turn). */
 function worthApplying(caster: BattleUnit, t: BattleUnit, statusId: StatusId): boolean {
   const list = t.statuses ?? [];
   const has = (harmful: boolean) => list.some((x) => STATUS_DEFINITIONS[x.statusId].harmful === harmful);
@@ -1172,39 +1174,59 @@ function worthApplying(caster: BattleUnit, t: BattleUnit, statusId: StatusId): b
   }
 }
 
-/** The skills an enemy could use right now, each with the target the AI would give it. */
-function enemySkillOptions(ctx: Ctx, u: BattleUnit): { skillId: string; target: BattleUnit }[] {
+/** What an AI considers a skill to be, best first for Auto: heal, cleanse, buff, debuff, damage. */
+type SkillRole = "heal" | "cleanse" | "buff" | "debuff" | "damage";
+const ROLE_ORDER: readonly SkillRole[] = ["heal", "cleanse", "buff", "debuff", "damage"];
+interface SkillOption {
+  skill: SkillDefinition;
+  role: SkillRole;
+  mpCost: number;
+  /** Targets worth using it on, best first (lowest HP share; a taunter alone when taunted). */
+  pool: BattleUnit[];
+}
+
+/**
+ * The skills `u` could use right now with the targets worth it. It applies the same checks as a manual
+ * command (MP, cooldown and the OPEN tick rule, silence, skill lock, taunt, range), so an AI pick never
+ * fails validation; heals wait for someone under `healBelowPct` of max HP.
+ */
+function skillOptions(rules: RulesConfig, content: Pick<BattleContent, "skills">, state: BattleState, u: BattleUnit, healBelowPct: number): SkillOption[] {
   const st = u.statuses ?? [];
   if (u.skillIds.length === 0 || statusBlocks(st, "skills") !== undefined) return [];
-  const ai = ctx.rules.provisional.enemyAi.value;
-  const out: { skillId: string; target: BattleUnit }[] = [];
+  const foes: Side = u.side === "ally" ? "enemy" : "ally";
+  const byHp = (a: BattleUnit, b: BattleUnit) => a.hp / a.stats.maxHp - b.hp / b.stats.maxHp || (a.unitId < b.unitId ? -1 : 1);
   const useful = (t: BattleUnit, list: readonly StatusApplication[]) => list.some((a) => worthApplying(u, t, a.statusId));
+  const out: SkillOption[] = [];
   for (const skillId of u.skillIds) {
-    const skill = ctx.content.skills.get(skillId);
+    const skill = content.skills.get(skillId);
     if (skill === undefined || skill.kind !== "active" || skill.effectSequence.length !== 1) continue;
-    const { mpCost, cooldown } = skillCost(ctx, u, skill);
-    if (cooldown > 0 && ctx.rules.unresolved.cooldownTick.value === null) continue;
+    const { mpCost, cooldown } = skillCost(rules, u, skill);
+    if (cooldown > 0 && rules.unresolved.cooldownTick.value === null) continue;
     if ((u.cooldowns[skillId] ?? 0) > 0 || u.mp < mpCost) continue;
     if (mpCost > 0 && statusBlocks(st, "mp_skills") !== undefined) continue;
     if (st.some((x) => x.statusId === "skill_lock" && x.skillId === skillId)) continue;
     const effect = skill.effectSequence[0]!;
     const onEnemy = effect.kind === "damage" || (effect.kind === "status" && skill.targetRule === "single_enemy");
     let pool: BattleUnit[];
+    let role: SkillRole;
     if (onEnemy) {
       if (skill.targetRule !== "single_enemy") continue;
-      pool = validTargets(ctx.s, "ally", skill.range);
-      const taunter = tauntedBy(ctx.s, u);
+      pool = validTargets(state, foes, skill.range).sort(byHp);
+      const taunter = tauntedBy(state, u);
       if (taunter !== undefined && pool.includes(taunter)) pool = [taunter];
       if (effect.kind === "status") pool = pool.filter((t) => useful(t, effect.statuses));
+      role = effect.kind === "damage" ? "damage" : "debuff";
     } else {
-      pool = skill.targetRule === "self" ? [u] : ctx.s.units.filter((x) => x.side === u.side && active(x));
+      pool = (skill.targetRule === "self" ? [u] : state.units.filter((x) => x.side === u.side && active(x))).sort(byHp);
       if (effect.kind === "heal") {
-        pool = pool.filter((t) => t.hp * 100 < ai.healBelowHpPct * t.stats.maxHp).sort((a, b) => a.hp / a.stats.maxHp - b.hp / b.stats.maxHp);
-        pool = pool.slice(0, 1);
-      } else if (effect.kind === "status") pool = pool.filter((t) => useful(t, effect.statuses));
+        pool = pool.filter((t) => t.hp * 100 < healBelowPct * t.stats.maxHp).slice(0, 1);
+        role = "heal";
+      } else {
+        if (effect.kind === "status") pool = pool.filter((t) => useful(t, effect.statuses));
+        role = effect.kind === "status" && effect.statuses.some((a) => a.statusId === "cleanse") ? "cleanse" : "buff";
+      }
     }
-    if (pool.length === 0) continue;
-    out.push({ skillId, target: pool[pool.length === 1 ? 0 : ctx.rng.nextInt(pool.length)]! });
+    if (pool.length > 0) out.push({ skill, role, mpCost, pool });
   }
   return out;
 }
@@ -1270,11 +1292,14 @@ function companionResults(ctx: Ctx, outcome: "victory" | "defeat" | "fled"): voi
  */
 export function chooseAutoCommand(
   state: BattleState,
-  content?: Pick<BattleContent, "items">,
-  policy: AutoBattlePolicy = NO_AUTO_POLICY,
+  content?: Pick<BattleContent, "items"> & Partial<Pick<BattleContent, "skills">>,
+  policyInput: AutoBattlePolicyInput = {},
+  /** Needed for skills (costs, the OPEN cooldown rule); without it Auto only attacks. */
+  rules?: RulesConfig,
 ): BattleCommand | null {
   const actor = currentActor(state);
   if (actor === null || actor.side !== "ally") return null;
+  const policy = AutoBattlePolicySchema.parse(policyInput);
   if (actor.kind === "player" && content !== undefined) {
     for (const rule of policy.itemRules) {
       if (content.items.get(rule.itemId)?.kind !== "heal") continue;
@@ -1286,8 +1311,19 @@ export function chooseAutoCommand(
       if (low !== undefined) return { type: "item", actorId: actor.unitId, itemId: rule.itemId, targetId: low.unitId };
     }
   }
+  // Skills (chapter 08 rule engine): heal, cleanse, buff, debuff, then damage, while MP stays above
+  // the player's reserve. Each skill is used on the best target it is worth using on.
+  const disarmed = statusBlocks(actor.statuses, "attack") !== undefined;
+  const sk = policy.skills;
+  if (rules !== undefined && content?.skills !== undefined && sk.use) {
+    const options = skillOptions(rules, { skills: content.skills }, state, actor, sk.healBelowPercent).filter(
+      (o) => (actor.mp - o.mpCost) * 100 >= sk.mpReservePercent * actor.stats.maxMp || o.mpCost === 0,
+    );
+    const best = options.sort((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role))[0];
+    if (best !== undefined) return { type: "skill", actorId: actor.unitId, skillId: best.skill.id, targetId: best.pool[0]!.unitId };
+  }
   // Disarmed: guard. Taunted: hit the taunter when it can be reached.
-  if (statusBlocks(actor.statuses, "attack") !== undefined) return { type: "guard", actorId: actor.unitId };
+  if (disarmed) return { type: "guard", actorId: actor.unitId };
   const targets = validTargets(state, "enemy", actor.basicAttackRange);
   if (targets.length === 0) return null;
   const taunter = tauntedBy(state, actor);

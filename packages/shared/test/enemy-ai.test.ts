@@ -102,3 +102,37 @@ describe("wild enemies use their species' skills (P15 enemyAi)", () => {
     expect(changes.map((e) => e.statusId)).toContain("mark");
   });
 });
+
+describe("Auto uses skills (chapter 08 rule engine)", () => {
+  function auto(skillIds: string[], f: (me: BattleState["units"][number]) => void = () => {}) {
+    const c = content();
+    const setup = baseSetup();
+    setup.player.skillIds = skillIds;
+    let s = ok(createBattle(productionRules, c, setup)).state;
+    for (let i = 0; i < 20 && currentActor(s)?.unitId !== "player"; i++) s = ok(applyCommand(productionRules, c, s, { type: "guard", actorId: currentActor(s)!.unitId }, { source: "player" })).state;
+    s = structuredClone(s);
+    const me = s.units.find((u) => u.unitId === "player")!;
+    me.hp = me.stats.maxHp;
+    f(me);
+    return { c, s, me };
+  }
+
+  it("uses a damage skill on the lowest-HP target while MP stays above the reserve; otherwise attacks", () => {
+    const { c, s, me } = auto(["skill:player_power_strike"]);
+    expect(chooseAutoCommand(s, c, {}, productionRules)).toMatchObject({ type: "skill", skillId: "skill:player_power_strike" });
+    // Without the rules (old callers) or with skills off, Auto only attacks.
+    expect(chooseAutoCommand(s, c, {})).toMatchObject({ type: "attack" });
+    expect(chooseAutoCommand(s, c, { skills: { use: false } }, productionRules)).toMatchObject({ type: "attack" });
+    me.mp = Math.ceil((me.stats.maxMp * 30) / 100) + 7; // 8 MP would dip under the 30% reserve
+    expect(chooseAutoCommand(s, c, {}, productionRules)).toMatchObject({ type: "attack" });
+    expect(chooseAutoCommand(s, c, { skills: { mpReservePercent: 0 } }, productionRules)).toMatchObject({ type: "skill" });
+  });
+
+  it("heals before it attacks once someone is under the heal line", () => {
+    const hurt = auto(["skill:player_power_strike", "skill:mole_light_heal"], (me) => (me.hp = Math.floor(me.stats.maxHp / 3)));
+    expect(chooseAutoCommand(hurt.s, hurt.c, {}, productionRules)).toMatchObject({ type: "skill", skillId: "skill:mole_light_heal", targetId: "player" });
+    const fine = auto(["skill:player_power_strike", "skill:mole_light_heal"]);
+    expect(chooseAutoCommand(fine.s, fine.c, {}, productionRules)).toMatchObject({ skillId: "skill:player_power_strike" });
+    expect(chooseAutoCommand(hurt.s, hurt.c, { skills: { healBelowPercent: 20 } }, productionRules)).toMatchObject({ skillId: "skill:player_power_strike" });
+  });
+});

@@ -19,9 +19,26 @@ export const AutoItemRuleSchema = z
   .strict();
 export type AutoItemRule = z.infer<typeof AutoItemRuleSchema>;
 
+/**
+ * Auto skill use (chapter 08 rule engine steps 2–6): heal, cleanse, buff, debuff, then damage, each
+ * on the best target worth it, while MP stays at or above the reserve; otherwise a basic attack.
+ */
+export const AutoSkillRuleSchema = z
+  .object({
+    use: z.boolean().default(true),
+    /** Keep at least this percent of max MP; a skill that would go below it is skipped. */
+    mpReservePercent: z.number().int().min(0).max(90).default(30),
+    /** Heal skills wait until someone is below this percent of max HP. */
+    healBelowPercent: z.number().int().min(10).max(95).default(50),
+  })
+  .strict();
+export type AutoSkillRule = z.infer<typeof AutoSkillRuleSchema>;
+
 export const AutoBattlePolicySchema = z
-  .object({ itemRules: z.array(AutoItemRuleSchema).max(5).default([]) })
+  .object({ itemRules: z.array(AutoItemRuleSchema).max(5).default([]), skills: AutoSkillRuleSchema.prefault({}) })
   .strict();
 export type AutoBattlePolicy = z.infer<typeof AutoBattlePolicySchema>;
+export type AutoBattlePolicyInput = z.input<typeof AutoBattlePolicySchema>;
 
-export const NO_AUTO_POLICY: AutoBattlePolicy = { itemRules: [] };
+/** No items; skills on with the default reserve. */
+export const NO_AUTO_POLICY: AutoBattlePolicy = AutoBattlePolicySchema.parse({});

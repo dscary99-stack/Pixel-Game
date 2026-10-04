@@ -53,6 +53,7 @@ describe("Auto Hunt settings (chapter 08, PROVISIONAL)", () => {
       stopBelowMpPercent: 0,
       stopBelowCompanionHpPercent: 0,
       itemRules: [],
+      skills: { use: true, mpReservePercent: 30, healBelowPercent: 50 },
       stopWhenItemsOut: false,
     });
     expect(AutoHuntSettingsSchema.parse({ itemRules: [{ itemId: "item:small_potion" }] }).itemRules).toEqual([

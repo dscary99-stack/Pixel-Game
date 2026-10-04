@@ -471,7 +471,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
       const status = await this.battleStatus(account, presence.battleId);
       if (status === "active") {
         if (auto.piloting !== presence.battleId) {
-          await this.battle(presence.battleId).handle(account, { kind: "autopilot", on: true, policy: { itemRules: auto.settings.itemRules } });
+          await this.battle(presence.battleId).handle(account, { kind: "autopilot", on: true, policy: { itemRules: auto.settings.itemRules, skills: auto.settings.skills } });
           this.setAuto(ws, { ...auto, piloting: presence.battleId });
         }
         return;
