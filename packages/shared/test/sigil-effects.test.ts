@@ -51,8 +51,8 @@ describe("Sigil names (Nut 2026-10-04: a prefix before the piece's name)", () =>
     const c = content();
     const sword = [...c.equipment.values()].find((d) => d.category === "WEAPON")!;
     const owned: EquipmentView[] = [
-      { id: "e1", definitionId: sword.id, refineLevel: 0, lockState: "free", slot: "MAIN_HAND", sigils: ["sigil:ember_fox", "sigil:ember_fox"] },
-      { id: "e2", definitionId: sword.id, refineLevel: 0, lockState: "free", slot: null, sigils: ["sigil:armor_crab"] },
+      { id: "e1", definitionId: sword.id, refineLevel: 0, lockState: "free", slot: "MAIN_HAND", sigils: ["sigil:ember_fox", "sigil:ember_fox"], rarity: "COMMON", affixes: [] },
+      { id: "e2", definitionId: sword.id, refineLevel: 0, lockState: "free", slot: null, sigils: ["sigil:armor_crab"], rarity: "COMMON", affixes: [] },
     ];
     expect(wornGear(owned, c.equipment).sigilIds).toEqual(["sigil:ember_fox", "sigil:ember_fox"]);
     expect(unit(fight(["sigil:ember_fox", "sigil:ember_fox"]).s, "player").sigils).toEqual({ "sigil:ember_fox": 2 });

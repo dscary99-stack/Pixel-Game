@@ -543,7 +543,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
       const owned = auto.settings.itemRules.length > 0 ? await this.economy.balances(account) : {};
       const verdict = autoHuntReadiness(
         auto.settings,
-        vital(deriveStats(character.level, character.primaryStats, gearBonuses(worn.defs)), character.hp, character.mp),
+        vital(deriveStats(character.level, character.primaryStats, gearBonuses(worn.defs, worn.affixes)), character.hp, character.mp),
         [...instances.values()].map((i) => {
           const prof = companionCombatProfile(this.rules, this.content.species.get(i.speciesId)!, i, character.level);
           return vital(deriveStats(prof.level, prof.primaryStats), i.hp, i.mp);

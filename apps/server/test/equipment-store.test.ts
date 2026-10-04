@@ -58,6 +58,26 @@ describe("equipment grants", () => {
     expect(await eco.balance(A, "item:crab_shell")).toBe(1);
   });
 
+  it("a dropped piece gets a rarity and affixes from its pool, kept on a retried grant", async () => {
+    const e = kill("battle:r", [{ itemId: "equip:ember_fang_dagger", quantity: 3 }]);
+    expect(await eco.grant(e, A)).toMatchObject({ status: "granted" });
+    const read = () =>
+      db.prepare("SELECT id, rarity, affixes_json FROM equipment_instances WHERE owner_id = ? AND definition_id = ? ORDER BY id").all(A, "equip:ember_fang_dagger") as { id: string; rarity: string; affixes_json: string }[];
+    const first = read();
+    expect(first).toHaveLength(3);
+    const pool = content.affixPools.get("affix:weapon_physical")!;
+    for (const r of first) {
+      const affixes = JSON.parse(r.affixes_json) as { stat: string; value: number }[];
+      expect(affixes).toHaveLength(PRODUCTION_RULES.provisional.affixCountByRarity.value[r.rarity as "COMMON"]);
+      for (const a of affixes) expect(pool.entries.map((x) => x.stat)).toContain(a.stat);
+    }
+    await Promise.all([eco.grant(e, A), eco.grant(e, A)]);
+    expect(read()).toEqual(first);
+    // The equipment list and the fight both see them.
+    const views = await store.equipment(A);
+    expect(views.find((v) => v.id === first[0]!.id)).toMatchObject({ rarity: first[0]!.rarity, affixes: JSON.parse(first[0]!.affixes_json) });
+  });
+
   it("dev starter gear is granted once", async () => {
     await store.devGrantEquipment("devgear:a", A, DEV_STARTER_EQUIPMENT);
     // The character also came with the starter kit (shop.ts).

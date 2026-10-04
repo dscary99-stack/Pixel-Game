@@ -104,8 +104,8 @@ describe("gear in battle stats", () => {
     expect(weaponRange(defs.get("equip:training_bow"), "melee")).toBe("ranged");
     const worn = wornGear(
       [
-        { id: "sword", definitionId: "equip:wooden_sword", refineLevel: 0, lockState: "free", slot: "MAIN_HAND", sigils: [] },
-        { id: "bag", definitionId: "equip:cloth_tunic", refineLevel: 0, lockState: "free", slot: null, sigils: [] },
+        { id: "sword", definitionId: "equip:wooden_sword", refineLevel: 0, lockState: "free", slot: "MAIN_HAND", sigils: [], rarity: "COMMON", affixes: [] },
+        { id: "bag", definitionId: "equip:cloth_tunic", refineLevel: 0, lockState: "free", slot: null, sigils: [], rarity: "COMMON", affixes: [] },
       ],
       defs,
     );

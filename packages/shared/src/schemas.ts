@@ -591,13 +591,37 @@ export const EquipmentDefinitionSchema = z
   });
 export type EquipmentDefinition = z.infer<typeof EquipmentDefinitionSchema>;
 
+/** Gear rarity (chapter 05 §2): sets how many random affixes a piece carries. */
+export const RaritySchema = z.enum(["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY"]);
+export type Rarity = z.infer<typeof RaritySchema>;
+
+/** One rolled option on a piece of gear. */
+export const RolledAffixSchema = z.object({ stat: z.string(), value: z.number() }).strict();
+export type RolledAffix = z.infer<typeof RolledAffixSchema>;
+
+/**
+ * Random option pool for a type of gear (chapter 05 §3): which stats can roll and their range at
+ * item Lv1 (scaled by the piece's level). Never drop, EXP or capture bonuses.
+ */
+export const AffixPoolSchema = z
+  .object({
+    id: z.string().regex(/^affix:[a-z0-9_]+$/),
+    ...contentMeta,
+    entries: z
+      .array(z.object({ stat: z.string().min(1), weight: z.number().int().positive(), min: z.number().int().min(1), max: z.number().int().min(1) }).strict())
+      .min(1),
+  })
+  .strict();
+export type AffixPool = z.infer<typeof AffixPoolSchema>;
+
 export const EquipmentInstanceSchema = z
   .object({
     id: z.string().min(1),
     definitionId: EquipmentDefinitionId,
     ownerId: z.string().min(1),
     refineLevel: z.number().int().min(0).max(10),
-    rolledAffixes: z.array(z.object({ stat: z.string(), value: z.number() }).strict()).max(3),
+    rarity: RaritySchema.default("COMMON"),
+    rolledAffixes: z.array(RolledAffixSchema).max(3),
     /** Socket index -> installed sigil definition id, or null for empty. Duplicate ids allowed (C24). */
     sigilSockets: z.array(SigilId.nullable()),
     lockState: z.enum(["free", "in_battle", "in_escrow"]),

@@ -13,7 +13,7 @@ import type { RulesConfig } from "./rules";
 import { ElementSchema, type Element, type MonsterInstance, type PrimaryStats, type SpeciesDefinition } from "./schemas";
 import type { BattleSetup, Range } from "./battle/types";
 import { gearBonuses, weaponRange } from "./equipment";
-import type { EquipmentDefinition } from "./schemas";
+import type { EquipmentDefinition, RolledAffix } from "./schemas";
 
 export interface ClassDefinition {
   id: string;
@@ -152,7 +152,7 @@ export function teamFormation(
 export function playerSetup(
   accountId: string,
   c: CharacterView,
-  worn: { defs: readonly EquipmentDefinition[]; mainHand?: EquipmentDefinition; sigilIds?: readonly string[] } = { defs: [] },
+  worn: { defs: readonly EquipmentDefinition[]; mainHand?: EquipmentDefinition; sigilIds?: readonly string[]; affixes?: readonly RolledAffix[] } = { defs: [] },
 ): BattleSetup["player"] {
   const cls = CLASS1_DEFINITIONS.find((d) => d.id === c.classId);
   return {
@@ -161,7 +161,7 @@ export function playerSetup(
     level: c.level,
     element: c.element,
     primaryStats: { ...c.primaryStats },
-    gear: gearBonuses(worn.defs),
+    gear: gearBonuses(worn.defs, worn.affixes),
     ...(c.hp === null ? {} : { hp: c.hp }),
     ...(c.mp === null ? {} : { mp: c.mp }),
     skillIds: [...PLACEHOLDER_PLAYER_SKILLS],

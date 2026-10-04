@@ -38,7 +38,8 @@ import {
   SLOT_FOR_CATEGORY,
   deriveStats,
   exampleContentMaps,
-  gearBonuses,
+  wornBonuses,
+  RARITY_NAME_TH,
   sellQuote,
   sigilCapacity,
   equipmentDisplayName,
@@ -50,6 +51,7 @@ import {
   type Element,
   type EquipSlot,
   type EquipmentView,
+  type EquipmentDefinition,
   type PrimaryStats,
   type SigilGroup,
   PRIMARY_STATS,
@@ -104,6 +106,8 @@ const CSS = `
 .pm-dot { width: 14px; height: 14px; border-radius: 3px; flex: none; }
 .pm-slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; }
 .pm-slot { border: 1px solid #463f6b; border-radius: 6px; padding: 6px 8px; min-height: 44px; font-size: 13px; background: #1b1830; }
+.pm-affix { display: block; color: #8fd1a8; font-size: 11px; }
+.pm-r-COMMON { color: #ffffff; } .pm-r-UNCOMMON { color: #6fdc8c; } .pm-r-RARE { color: #6aa8ff; } .pm-r-EPIC { color: #c58bff; } .pm-r-LEGENDARY { color: #ffb648; }
 .pm-slot b { display: block; font-size: 11px; color: #a9a3c4; font-weight: normal; }
 .pm-slot button { margin-top: 4px; min-height: 30px; padding: 2px 8px; font-size: 12px; border-radius: 4px; border: 1px solid #463f6b; background: #322b4d; color: #fff; cursor: pointer; }
 .pm-stats { font-size: 13px; color: #d8d4ea; margin: 10px 0; line-height: 1.6; }
@@ -213,7 +217,7 @@ export function createCharacterForm(api: CharacterApi): Promise<CharacterBundle>
 
 /** Max HP/MP for the HUD, from the shared stat formula with worn gear. */
 export function vitals(c: CharacterView, equipment: readonly EquipmentView[] = []) {
-  const d = deriveStats(c.level, c.primaryStats, gearBonuses(wornGear(equipment, equipmentDefs).defs));
+  const d = deriveStats(c.level, c.primaryStats, wornBonuses(equipment, equipmentDefs));
   return { hp: c.hp ?? d.maxHp, maxHp: d.maxHp, mp: c.mp ?? d.maxMp, maxMp: d.maxMp };
 }
 
@@ -233,6 +237,12 @@ export const SLOT_TH: Record<EquipSlot, string> = {
 };
 
 const STAT_TH: Record<string, string> = {
+  STR: "STR",
+  VIT: "VIT",
+  INT: "INT",
+  DEX: "DEX",
+  AGI: "AGI",
+  SPI: "SPI",
   HP: "HP",
   MP: "MP",
   PATK: "โจมตีกาย",
@@ -266,6 +276,15 @@ const GROUP_TH: Record<SigilGroup, string> = {
   BACK: "หลัง",
   AURA: "ออร่า",
 };
+
+/** A piece's name coloured by rarity (icon-free; the rarity is also in the tooltip and affix line). */
+function gearName(def: EquipmentDefinition, piece: EquipmentView): HTMLElement {
+  return el("span", { class: `pm-r-${piece.rarity}`, title: RARITY_NAME_TH[piece.rarity] }, equipmentDisplayName(def, piece.sigils, sigilDefs));
+}
+
+/** "[หายาก] STR +2 · คริ% +1", or the rarity alone for a piece without affixes. */
+const affixLine = (piece: EquipmentView) =>
+  `[${RARITY_NAME_TH[piece.rarity]}]${piece.affixes.length === 0 ? "" : " " + piece.affixes.map((a) => `${STAT_TH[a.stat] ?? a.stat} +${a.value}`).join(" · ")}`;
 
 const statLine = (stats: Record<string, number | undefined>) =>
   Object.entries(stats)
@@ -332,7 +351,7 @@ export function equipmentPanel(api: CharacterApi, start: CharacterBundle): Promi
       body.replaceChildren();
       const c = bundle.character;
       const worn = new Map(bundle.equipment.filter((e) => e.slot !== null).map((e) => [e.slot!, e]));
-      const gear = gearBonuses(wornGear(bundle.equipment, equipmentDefs).defs);
+      const gear = wornBonuses(bundle.equipment, equipmentDefs);
       const d = deriveStats(c.level, c.primaryStats, gear);
       body.append(
         el(
@@ -347,7 +366,8 @@ export function equipmentPanel(api: CharacterApi, start: CharacterBundle): Promi
         box.append(el("b", {}, SLOT_TH[slot]));
         const piece = worn.get(slot);
         const def = piece === undefined ? undefined : equipmentDefs.get(piece.definitionId);
-        box.append(document.createTextNode(def === undefined ? (piece === undefined ? "ว่าง" : piece.definitionId) : equipmentDisplayName(def, piece!.sigils, sigilDefs)));
+        if (def === undefined) box.append(document.createTextNode(piece === undefined ? "ว่าง" : piece.definitionId));
+        else box.append(gearName(def, piece!), el("small", { class: "pm-affix" }, affixLine(piece!)));
         if (piece !== undefined) {
           const off = el("button", { type: "button" }, "ถอด");
           off.addEventListener("click", () => void send(slot, null));
@@ -365,7 +385,13 @@ export function equipmentPanel(api: CharacterApi, start: CharacterBundle): Promi
         const def = equipmentDefs.get(piece.definitionId);
         const li = el("li", { "data-piece": piece.definitionId });
         const text = el("span", { class: "pm-grow" });
-        text.textContent = def === undefined ? piece.definitionId : `${equipmentDisplayName(def, piece.sigils, sigilDefs)} · Lv${def.requiredLevel}${def.handedness === "two_hand" ? " · สองมือ" : ""} · ${statLine(def.baseStats)}`;
+        if (def === undefined) text.textContent = piece.definitionId;
+        else
+          text.append(
+            gearName(def, piece),
+            ` · Lv${def.requiredLevel}${def.handedness === "two_hand" ? " · สองมือ" : ""} · ${statLine(def.baseStats)}`,
+            el("small", { class: "pm-affix" }, affixLine(piece)),
+          );
         li.append(text);
         const targets = def === undefined ? [] : def.handedness === "two_hand" ? (["MAIN_HAND"] as const) : SLOT_FOR_CATEGORY[def.category];
         for (const slot of targets) {
@@ -692,7 +718,7 @@ export function statsPanel(api: CharacterApi, start: CharacterBundle): Promise<C
       const c = bundle.character;
       const xp = expProgress(RULES, "player", c.xp);
       const left = unspentPoints(RULES, c.level, draft);
-      const d = deriveStats(c.level, draft, gearBonuses(wornGear(bundle.equipment, equipmentDefs).defs));
+      const d = deriveStats(c.level, draft, wornBonuses(bundle.equipment, equipmentDefs));
       body.append(
         el("div", { class: "pm-stats" }, `${c.name} Lv${c.level} · EXP ${xp.need === null ? "สูงสุด" : `${xp.into.toLocaleString()}/${xp.need.toLocaleString()}`} · EXP สะสม ${c.xp.toLocaleString()}`),
         el("div", { class: "pm-stats", "data-points": String(left) }, `แต้มว่าง ${left}`),

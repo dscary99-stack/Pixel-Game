@@ -17,6 +17,8 @@ const made = await http("POST", "/character", { operationId: `op_${run}`, name: 
 let bundle = (await http("GET", "/character")).body;
 const piece = (def: string) => bundle.equipment.find((e: Msg) => e.definitionId === def)?.id as string;
 out.starter = bundle.equipment.map((e: Msg) => `${e.definitionId}@${e.slot ?? "bag"}`);
+// Starter pieces are plain: Common with no affixes (chapter 05 §2).
+if (!bundle.equipment.every((e: Msg) => e.rarity === "COMMON" && Array.isArray(e.affixes) && e.affixes.length === 0)) throw new Error("starter gear should be plain Common");
 
 // 2. Equip and swap: a two-hand staff, then armour; bad requests are refused.
 let version = made.body.character.version as number;
@@ -69,7 +71,9 @@ out.drops = end.state.entitlements.filter((e: Msg) => e.kind === "kill").flatMap
 // 4. After settlement the gear is free again and can change.
 bundle = (await http("GET", "/character")).body;
 out.locksAfter = [...new Set(bundle.equipment.map((e: Msg) => e.lockState))];
-out.gearDrops = bundle.equipment.filter((e: Msg) => !out.starter!.toString().includes(e.definitionId)).map((e: Msg) => e.definitionId);
+out.gearDrops = bundle.equipment
+  .filter((e: Msg) => !out.starter!.toString().includes(e.definitionId))
+  .map((e: Msg) => `${e.definitionId} ${e.rarity}${e.affixes.map((a: Msg) => ` ${a.stat}+${a.value}`).join("")}`);
 out.unequipAfter = (await equip("ARMOR", null)).status;
 A.sock.close();
 console.log(JSON.stringify(out, null, 1));

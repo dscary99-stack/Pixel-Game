@@ -7,6 +7,13 @@ import type { PrimaryStats } from "./schemas";
 export const PRIMARY_STATS = ["STR", "VIT", "INT", "DEX", "AGI", "SPI"] as const;
 
 export interface GearBonuses {
+  /** Primary stats from gear affixes (chapter 05 §3); added before the formulas. */
+  STR?: number;
+  VIT?: number;
+  INT?: number;
+  DEX?: number;
+  AGI?: number;
+  SPI?: number;
   HP?: number;
   MP?: number;
   PATK?: number;
@@ -43,8 +50,16 @@ export interface DerivedStats {
   effectResPct: number;
 }
 
-export function deriveStats(level: number, p: PrimaryStats, gear: GearBonuses = {}): DerivedStats {
+export function deriveStats(level: number, base: PrimaryStats, gear: GearBonuses = {}): DerivedStats {
   const L = level;
+  const p: PrimaryStats = {
+    STR: base.STR + (gear.STR ?? 0),
+    VIT: base.VIT + (gear.VIT ?? 0),
+    INT: base.INT + (gear.INT ?? 0),
+    DEX: base.DEX + (gear.DEX ?? 0),
+    AGI: base.AGI + (gear.AGI ?? 0),
+    SPI: base.SPI + (gear.SPI ?? 0),
+  };
   return {
     maxHp: 400 + 30 * (L - 1) + 25 * p.VIT + (gear.HP ?? 0),
     maxMp: 60 + 4 * (L - 1) + 3 * p.INT + 5 * p.SPI + (gear.MP ?? 0),

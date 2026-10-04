@@ -132,6 +132,15 @@ export const RULES = {
      * passives on its last, so a 3-action boss does not burn statuses 3× as fast. Never carried over to
      * companions: a captured boss acts once like any companion. Claude's first pass.
      */
+    /**
+     * Gear rarity and affixes (chapter 05 §2–§3, P09). Rarity of a dropped piece by weight (out of
+     * 1000); Legendary needs a unique effect, which no gear has yet, so it never rolls. Affix count
+     * per rarity (at most 3). Affix values grow by this percent of the Lv1 value per item level.
+     * Claude's first pass, tune in playtests.
+     */
+    gearRarityWeights: provisional({ COMMON: 600, UNCOMMON: 280, RARE: 100, EPIC: 20, LEGENDARY: 0 } as const, "P09", "Claude's first pass"),
+    affixCountByRarity: provisional({ COMMON: 0, UNCOMMON: 1, RARE: 2, EPIC: 3, LEGENDARY: 3 } as const, "P09", "chapter 05 §3: random affixes <= 3 by rarity"),
+    affixLevelScalePct: provisional(2, "P09", "affix value × (1 + 2% per item level above 1); Claude's first pass"),
     bossActions: provisional({ maxPerRound: 3 } as const, "P15", "bosses act up to 3 times a round; statuses count once per round"),
     /**
      * Wild enemy AI (chapter 08 rule engine, same validator as manual): each turn a usable skill is

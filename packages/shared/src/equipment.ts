@@ -3,17 +3,23 @@
  * off-hand item only the off hand, a two-hand weapon leaves the off hand empty (O09 keeps dual-wield
  * class rules open, so any class may hold two one-hand weapons for now).
  *
- * Gear changes happen outside fights (P15). Gear adds derived stats only (`GearBonuses`); affixes,
- * rarity, refining and Sigil effects are later work.
+ * Gear changes happen outside fights (P15). Gear adds its base stats plus its rolled affixes
+ * (`GearBonuses`, affix.ts); refining is later work.
  */
 import { z } from "zod";
-import { EquipSlotSchema, type EquipSlot, type EquipmentDefinition, type EquipmentInstance, type SigilDefinition } from "./schemas";
+import { EquipSlotSchema, type EquipSlot, type EquipmentDefinition, type EquipmentInstance, type Rarity, type RolledAffix, type SigilDefinition } from "./schemas";
 import type { RulesConfig } from "./rules";
 import type { GearBonuses } from "./stats";
 import type { Range } from "./battle/types";
 import { SLOT_FOR_CATEGORY, validateLoadout, type ValidationIssue } from "./validators";
 
 export const GEAR_STAT_KEYS = [
+  "STR",
+  "VIT",
+  "INT",
+  "DEX",
+  "AGI",
+  "SPI",
   "HP",
   "MP",
   "PATK",
@@ -104,7 +110,7 @@ export function planEquip(
   const full = Object.fromEntries(
     Object.entries(next).map(([s, id]) => {
       const i = instances.get(id)!;
-      return [s, { ...i, ownerId: "", refineLevel: 0, rolledAffixes: [], lockState: "free" } as EquipmentInstance];
+      return [s, { ...i, ownerId: "", refineLevel: 0, rarity: "COMMON", rolledAffixes: [], lockState: "free" } as EquipmentInstance];
     }),
   ) as Partial<Record<EquipSlot, EquipmentInstance>>;
   const issues = validateLoadout(rules, full, defs, sigils);
@@ -112,10 +118,14 @@ export function planEquip(
   return { ok: true, loadout: next, removed };
 }
 
-/** Summed gear stats. A two-hand weapon already keeps the off hand empty, so nothing is skipped. */
-export function gearBonuses(defs: readonly EquipmentDefinition[]): GearBonuses {
+/**
+ * Summed gear stats: base stats plus every worn affix. A two-hand weapon already keeps the off hand
+ * empty, so nothing is skipped.
+ */
+export function gearBonuses(defs: readonly EquipmentDefinition[], affixes: readonly RolledAffix[] = []): GearBonuses {
   const out: Record<string, number> = {};
   for (const d of defs) for (const [k, v] of Object.entries(d.baseStats)) out[k] = (out[k] ?? 0) + v;
+  for (const a of affixes) out[a.stat] = (out[a.stat] ?? 0) + a.value;
   return out as GearBonuses;
 }
 
@@ -134,13 +144,15 @@ export interface EquipmentView {
   slot: EquipSlot | null;
   /** Installed Sigil ids, in socket order. */
   sigils: string[];
+  rarity: Rarity;
+  affixes: RolledAffix[];
 }
 
 /** The worn pieces' definitions and the main-hand weapon, for `playerSetup` and the HUD. */
 export function wornGear(
   owned: readonly EquipmentView[],
   defs: ReadonlyMap<string, EquipmentDefinition>,
-): { defs: EquipmentDefinition[]; mainHand?: EquipmentDefinition; sigilIds: string[] } {
+): { defs: EquipmentDefinition[]; mainHand?: EquipmentDefinition; sigilIds: string[]; affixes: RolledAffix[] } {
   const worn = owned.filter((e) => e.slot !== null);
   const main = worn.find((e) => e.slot === "MAIN_HAND");
   const mainHand = main === undefined ? undefined : defs.get(main.definitionId);
@@ -148,6 +160,13 @@ export function wornGear(
     defs: worn.map((e) => defs.get(e.definitionId)).filter((d): d is EquipmentDefinition => d !== undefined),
     // Every Sigil in the worn pieces, one entry per copy: their effects go into fights.
     sigilIds: worn.flatMap((e) => e.sigils),
+    affixes: worn.flatMap((e) => e.affixes),
     ...(mainHand === undefined ? {} : { mainHand }),
   };
+}
+
+/** Stats from everything worn: base stats plus affixes. */
+export function wornBonuses(owned: readonly EquipmentView[], defs: ReadonlyMap<string, EquipmentDefinition>): GearBonuses {
+  const w = wornGear(owned, defs);
+  return gearBonuses(w.defs, w.affixes);
 }

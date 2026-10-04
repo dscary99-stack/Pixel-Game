@@ -6,7 +6,25 @@
  * equipment created_operation_id UNIQUE. Goal: the business effect happens once. The network may still
  * deliver twice; that is fine.
  */
-import { BOND_MAX, COMPANION_GROWTH_VERSION, expCap, type Entitlement, type RulesConfig } from "@pmrpg/shared";
+import {
+  BOND_MAX,
+  COMPANION_GROWTH_VERSION,
+  Rng,
+  exampleContentMaps,
+  expCap,
+  rollGear,
+  seedRng,
+  type AffixPool,
+  type EquipmentDefinition,
+  type Entitlement,
+  type RulesConfig,
+} from "@pmrpg/shared";
+
+/** Gear content the ledger needs to roll a dropped piece's rarity and affixes. */
+export interface GearContent {
+  equipment: ReadonlyMap<string, EquipmentDefinition>;
+  affixPools: ReadonlyMap<string, AffixPool>;
+}
 
 /** The subset of the D1 API we use, so tests can run it on node:sqlite. */
 export interface SqlBound {
@@ -55,6 +73,7 @@ export class RewardLedger {
     private readonly db: SqlDb,
     private readonly rules: RulesConfig,
     private readonly now: () => string = () => new Date().toISOString(),
+    private readonly gear: GearContent = exampleContentMaps(),
   ) {}
 
   async grant(entitlement: Entitlement, recipientId: string): Promise<GrantResult> {
@@ -77,17 +96,21 @@ export class RewardLedger {
     if (entitlement.kind === "kill") {
       entitlement.items.forEach((line, i) => {
         // Equipment drops are instances, not stackable items (chapter 05 §1): one row per piece,
-        // keyed by entitlement, line and piece number so a retried grant adds nothing.
+        // keyed by entitlement, line and piece number so a retried grant adds nothing. Rarity and
+        // affixes are rolled here from an unguessable seed (like a capture's growth seed); a
+        // replayed grant keeps the first row (ON CONFLICT DO NOTHING).
         if (line.itemId.startsWith("equip:")) {
+          const def = this.gear.equipment.get(line.itemId);
           for (let n = 0; n < line.quantity; n++) {
             const op = `${id}:${i}:${n}`;
+            const rolled = def === undefined ? { rarity: "COMMON", affixes: [] } : rollGear(this.rules, def, this.gear.affixPools.get(def.affixPoolId), new Rng(seedRng(crypto.randomUUID())));
             stmts.push(
               this.db
                 .prepare(
-                  `INSERT INTO equipment_instances (id, definition_id, owner_id, created_operation_id, created_at)
-                   SELECT ?, ?, ?, ?, ? WHERE ${OWN_RECEIPT} ON CONFLICT DO NOTHING`,
+                  `INSERT INTO equipment_instances (id, definition_id, owner_id, rarity, affixes_json, created_operation_id, created_at)
+                   SELECT ?, ?, ?, ?, ?, ?, ? WHERE ${OWN_RECEIPT} ON CONFLICT DO NOTHING`,
                 )
-                .bind(`eq:${op}`, line.itemId, recipientId, op, at, id, recipientId, hash),
+                .bind(`eq:${op}`, line.itemId, recipientId, rolled.rarity, JSON.stringify(rolled.affixes), op, at, id, recipientId, hash),
             );
           }
           return;
