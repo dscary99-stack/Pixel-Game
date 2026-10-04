@@ -119,6 +119,13 @@ export const RULES = {
     formationFrontSlots: provisional(3, "P15"),
     formationBackSlots: provisional(3, "P15"),
     actionsPerRound: provisional(1, "P15"),
+    /**
+     * Wild enemy AI (chapter 08 rule engine, same validator as manual): each turn a usable skill is
+     * picked with this chance, else a basic attack. Heals only when an ally is under the HP line, and
+     * a status-only skill only when the target lacks that status. Wild skills work at the level cap
+     * their wild level allows (chapter 04 §5 table). Claude's first pass, tune in playtests.
+     */
+    enemyAi: provisional({ skillChancePct: 50, healBelowHpPct: 50 } as const, "P15", "wild enemies use their species' skills; Claude's first pass"),
     companionMaxLevel: provisional(200, "P05"),
     /** Combat bag (chapter 03 §2): 8 distinct item types, per-kind stack caps. */
     combatBagMaxTypes: provisional(8, "P15", "chapter 03 §2 proposal"),

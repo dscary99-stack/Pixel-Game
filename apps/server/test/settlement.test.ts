@@ -30,7 +30,8 @@ function setup(): BattleSetup {
       level: 20,
       element: "FIRE",
       primaryStats: { STR: 35, VIT: 25, INT: 10, DEX: 17, AGI: 20, SPI: 10 },
-      gear: { PATK: 70 },
+      // Strong enough to win against enemies that also use skills.
+      gear: { PATK: 200, PDEF: 60, MDEF: 60 },
       skillIds: [],
       basicAttackRange: "melee",
       row: "front",

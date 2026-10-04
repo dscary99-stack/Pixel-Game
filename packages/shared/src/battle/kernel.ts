@@ -7,7 +7,7 @@
  */
 import { applyBond, bondBonusPercent } from "../bond";
 import { companionCombatProfile } from "../companion-growth";
-import { companionKit, effectiveSkillLevel, masteryForVictory, skillLevelMods, trainedSkillLevel } from "../skill-training";
+import { companionKit, effectiveSkillLevel, masteryForVictory, skillLevelCap, skillLevelMods, trainedSkillLevel } from "../skill-training";
 import { NO_AUTO_POLICY, type AutoBattlePolicy } from "./auto-policy";
 import { computeDamage, computeHeal, critChanceBp, hitChanceBp } from "../damage";
 import { rollLoot } from "../loot";
@@ -210,6 +210,10 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
     if (!content.lootTables.has(sp.lootTableId)) reject("MISSING_REFERENCE", `loot table ${sp.lootTableId}`);
     // Wild level is the species' fixed level everywhere (C29). There is no override input.
     const stats = deriveStats(sp.fixedWildLevel, sp.wildPrimaryStats);
+    // Wild monsters fight with their species' active skills, at the cap their wild level allows.
+    for (const id of sp.skillIds) if (!content.skills.has(id)) reject("MISSING_REFERENCE", `skill ${id}`);
+    const wildSkillIds = sp.skillIds.filter((id) => content.skills.get(id)?.kind === "active");
+    const wildSkillLevel = skillLevelCap(rules, sp.fixedWildLevel);
     units.push({
       unitId: e.unitId,
       side: "enemy",
@@ -225,7 +229,8 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
       stats,
       hp: stats.maxHp,
       mp: stats.maxMp,
-      skillIds: [],
+      skillIds: wildSkillIds,
+      skillLevels: Object.fromEntries(wildSkillIds.map((id) => [id, wildSkillLevel])),
       basicAttackRange: sp.basicAttackRange,
       primaryStats: { ...sp.wildPrimaryStats },
       statuses: [],
@@ -819,14 +824,18 @@ function doAttack(ctx: Ctx, actor: BattleUnit, target: BattleUnit, _skill: null)
   strike(ctx, actor, redirectedTarget(ctx, actor, target), "attack", null, { damageType: "physical", coefficient: 1, flat: 0, element });
 }
 
+/** What using a skill costs this unit now: its level's table (chapter 04 §5), then MP cost up. */
+function skillCost(ctx: Ctx, actor: BattleUnit, skill: SkillDefinition) {
+  const mods = skillLevelMods(ctx.rules, skill, actor.skillLevels?.[skill.id] ?? 1);
+  const baseMp = Math.max(0, skill.mpCost + mods.mpCost);
+  const mpCost = statusOf(actor, "mp_cost_up") === undefined ? baseMp : Math.ceil((baseMp * (100 + tuning(ctx).mpCostUpPct)) / 100);
+  return { mods, mpCost, cooldown: Math.max(0, skill.cooldown + mods.cooldown) };
+}
+
 function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUnit): void {
   if (!actor.skillIds.includes(skillId)) reject("INVALID_COMMAND", `${actor.unitId} has no skill ${skillId}`);
   const skill = requireActiveSkill(ctx.content, skillId);
-  // What the skill's level adds, by its own table (chapter 04 §5; Nut 2026-10-03).
-  const mods = skillLevelMods(ctx.rules, skill, actor.skillLevels?.[skillId] ?? 1);
-  const baseMp = Math.max(0, skill.mpCost + mods.mpCost);
-  const mpCost = statusOf(actor, "mp_cost_up") === undefined ? baseMp : Math.ceil((baseMp * (100 + tuning(ctx).mpCostUpPct)) / 100);
-  const cooldown = Math.max(0, skill.cooldown + mods.cooldown);
+  const { mods, mpCost, cooldown } = skillCost(ctx, actor, skill);
   if (cooldown > 0 && ctx.rules.unresolved.cooldownTick.value === null) {
     reject("UNRESOLVED_RULE", "skill cooldown tick point is OPEN (O15)");
   }
@@ -1121,9 +1130,19 @@ function doFlee(ctx: Ctx, actor: BattleUnit): void {
 // ================================================================ enemy AI and end
 
 /** Prototype AI: basic attack on a random valid target. */
+/**
+ * Wild enemy turn (chapter 08 rule engine, P15 enemyAi): a usable skill by chance, else a basic
+ * attack; disarmed with no skill left, it guards. Every pick passes the same checks as a manual
+ * command, so the AI never tries what the validator would refuse.
+ */
 function enemyAct(ctx: Ctx, u: BattleUnit): void {
-  // Disarmed: it can only guard.
-  if (statusBlocks(u.statuses, "attack") !== undefined) {
+  const disarmed = statusBlocks(u.statuses, "attack") !== undefined;
+  const options = enemySkillOptions(ctx, u);
+  if (options.length > 0 && (disarmed || ctx.rng.chanceBp(ctx.rules.provisional.enemyAi.value.skillChancePct * 100))) {
+    const pick = options[ctx.rng.nextInt(options.length)]!;
+    return doSkill(ctx, u, pick.skillId, pick.target);
+  }
+  if (disarmed) {
     u.guarding = true;
     return actionEvent(ctx, u, "guard", null);
   }
@@ -1132,6 +1151,62 @@ function enemyAct(ctx: Ctx, u: BattleUnit): void {
   const taunter = tauntedBy(ctx.s, u);
   const target = taunter !== undefined && targets.includes(taunter) ? taunter : targets[ctx.rng.nextInt(targets.length)]!;
   doAttack(ctx, u, target, null);
+}
+
+/** Whether putting this status on `t` would do anything (so the AI does not waste a turn). */
+function worthApplying(caster: BattleUnit, t: BattleUnit, statusId: StatusId): boolean {
+  const list = t.statuses ?? [];
+  const has = (harmful: boolean) => list.some((x) => STATUS_DEFINITIONS[x.statusId].harmful === harmful);
+  switch (statusId) {
+    case "protect":
+      return t.unitId !== caster.unitId && statusOf(t, "protect") === undefined;
+    case "cleanse":
+      return has(true);
+    case "dispel":
+    case "steal_buff":
+    case "invert":
+    case "extend":
+      return has(false);
+    default:
+      return STATUS_DEFINITIONS[statusId].instant !== undefined || statusOf(t, statusId) === undefined;
+  }
+}
+
+/** The skills an enemy could use right now, each with the target the AI would give it. */
+function enemySkillOptions(ctx: Ctx, u: BattleUnit): { skillId: string; target: BattleUnit }[] {
+  const st = u.statuses ?? [];
+  if (u.skillIds.length === 0 || statusBlocks(st, "skills") !== undefined) return [];
+  const ai = ctx.rules.provisional.enemyAi.value;
+  const out: { skillId: string; target: BattleUnit }[] = [];
+  const useful = (t: BattleUnit, list: readonly StatusApplication[]) => list.some((a) => worthApplying(u, t, a.statusId));
+  for (const skillId of u.skillIds) {
+    const skill = ctx.content.skills.get(skillId);
+    if (skill === undefined || skill.kind !== "active" || skill.effectSequence.length !== 1) continue;
+    const { mpCost, cooldown } = skillCost(ctx, u, skill);
+    if (cooldown > 0 && ctx.rules.unresolved.cooldownTick.value === null) continue;
+    if ((u.cooldowns[skillId] ?? 0) > 0 || u.mp < mpCost) continue;
+    if (mpCost > 0 && statusBlocks(st, "mp_skills") !== undefined) continue;
+    if (st.some((x) => x.statusId === "skill_lock" && x.skillId === skillId)) continue;
+    const effect = skill.effectSequence[0]!;
+    const onEnemy = effect.kind === "damage" || (effect.kind === "status" && skill.targetRule === "single_enemy");
+    let pool: BattleUnit[];
+    if (onEnemy) {
+      if (skill.targetRule !== "single_enemy") continue;
+      pool = validTargets(ctx.s, "ally", skill.range);
+      const taunter = tauntedBy(ctx.s, u);
+      if (taunter !== undefined && pool.includes(taunter)) pool = [taunter];
+      if (effect.kind === "status") pool = pool.filter((t) => useful(t, effect.statuses));
+    } else {
+      pool = skill.targetRule === "self" ? [u] : ctx.s.units.filter((x) => x.side === u.side && active(x));
+      if (effect.kind === "heal") {
+        pool = pool.filter((t) => t.hp * 100 < ai.healBelowHpPct * t.stats.maxHp).sort((a, b) => a.hp / a.stats.maxHp - b.hp / b.stats.maxHp);
+        pool = pool.slice(0, 1);
+      } else if (effect.kind === "status") pool = pool.filter((t) => useful(t, effect.statuses));
+    }
+    if (pool.length === 0) continue;
+    out.push({ skillId, target: pool[pool.length === 1 ? 0 : ctx.rng.nextInt(pool.length)]! });
+  }
+  return out;
 }
 
 function checkEnd(ctx: Ctx): void {

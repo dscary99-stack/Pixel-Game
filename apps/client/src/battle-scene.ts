@@ -224,17 +224,20 @@ export class BattleScene extends Phaser.Scene {
     switch (e.type) {
       case "RoundStarted":
         return this.pushLog(`— รอบ ${e.round} —`);
-      case "ActionResolved":
+      case "ActionResolved": {
+        const via = e.skillId === null ? "" : ` [${CONTENT.skills.get(e.skillId)?.name.th ?? e.skillId}]`;
         if (e.damage !== null && e.targetId) {
           this.popup(e.targetId, e.hit ? `${e.damage}${e.crit ? "!" : ""}` : "พลาด", e.crit ? "#ffd84a" : "#ffffff");
-          return this.pushLog(`${this.name(e.actorId)} → ${this.name(e.targetId)}: ${e.hit ? e.damage : "พลาด"}${e.crit ? " (คริ)" : ""}`);
+          return this.pushLog(`${this.name(e.actorId)}${via} → ${this.name(e.targetId)}: ${e.hit ? e.damage : "พลาด"}${e.crit ? " (คริ)" : ""}`);
         }
         if (e.heal !== null && e.targetId) {
           this.popup(e.targetId, `+${e.heal}`, "#7dff9b");
-          return this.pushLog(`${this.name(e.actorId)} ฟื้น ${this.name(e.targetId)} +${e.heal}`);
+          return this.pushLog(`${this.name(e.actorId)}${via} ฟื้น ${this.name(e.targetId)} +${e.heal}`);
         }
         if (e.action === "guard") return this.pushLog(`${this.name(e.actorId)} ป้องกัน`);
+        if (e.action === "skill" && e.targetId) return this.pushLog(`${this.name(e.actorId)} ใช้${via} ใส่ ${this.name(e.targetId)}`);
         return;
+      }
       case "CaptureResolved":
         return this.pushLog(`จับ ${this.name(e.targetId)}: ${e.success ? "สำเร็จ (ได้ Lv1)" : "ไม่สำเร็จ"} โอกาส ${(e.probability * 100).toFixed(0)}%`);
       case "EnemyDefeated":

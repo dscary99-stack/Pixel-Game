@@ -13,6 +13,7 @@ import type {
   DamageEffect,
   SkillDefinition,
   SkillLevelStep,
+  StatusApplication,
   SpeciesDefinition,
 } from "../schemas";
 
@@ -20,7 +21,7 @@ const meta = { version: 1, status: "draft", example: true } as const;
 
 export const EXAMPLE_SKILLS: SkillDefinition[] = [
   // Armor crab (ปูเกราะ)
-  skill("skill:crab_take_hit", "รับแทน1ครั้ง", "passive"),
+  support("skill:crab_take_hit", "รับแทน", 5, { statusId: "protect", chancePct: 100, turns: 2 }),
   skill("skill:crab_self_shield", "โล่ตน", "passive"),
   dmg("skill:crab_shield_bash", "ใช้โล่บางส่วนโจมตี", "physical", 1.3, 0, "EARTH", "melee", 6, 0, { statuses: [{ statusId: "stun", chancePct: 20, turns: 1 }] }),
   skill("skill:crab_innate_mp_refund", "รับแทนสำเร็จลดMPครั้งหน้า", "passive"),
@@ -47,8 +48,8 @@ export const EXAMPLE_SKILLS: SkillDefinition[] = [
   dmg("skill:mole_weakening_hit", "โจมตีลดATK", "physical", 1.1, 0, "EARTH", "melee", 4, 0, { statuses: [{ statusId: "atk_down", chancePct: 60, turns: 2 }] }),
   skill("skill:mole_innate_mp_refund", "basicสำเร็จคืนMPเล็ก", "passive"),
   // Bell bird (นกกระดิ่ง), chapter 04 §2 kit; Lv3
-  skill("skill:bird_haste", "SPDรอบหน้า", "passive"),
-  skill("skill:bird_cleanse", "cleanse1ชนิด", "passive"),
+  support("skill:bird_haste", "เร่งเพื่อน", 4, { statusId: "spd_up", chancePct: 100, turns: 2 }),
+  support("skill:bird_cleanse", "ล้างสถานะ1ชนิด", 5, { statusId: "cleanse", chancePct: 100, turns: 1 }),
   dmg("skill:bird_back_peck", "โจมตีหลัง", "physical", 1.0, 0, "WIND", "ranged", 4, 0),
   skill("skill:bird_innate_resist", "cleanseครั้งแรกให้resist", "passive"),
   // Rebirth variants (chapter 04 §7, EXAMPLE): same role, played differently. Crab follows chapter 04's example.
@@ -213,6 +214,23 @@ function dmg(
     mpCost,
     cooldown,
     effectSequence: [{ kind: "damage", damageType, coefficient, flat, element, ...primitives }],
+    tags: [],
+  };
+}
+
+/** A status-only skill on one ally (EXAMPLE): buffs, protect, cleanse. */
+function support(id: string, th: string, mpCost: number, status: StatusApplication): SkillDefinition {
+  return {
+    id,
+    ...meta,
+    name: { th },
+    kind: "active",
+    ownerKind: "companion",
+    targetRule: "single_ally",
+    range: "ranged",
+    mpCost,
+    cooldown: 0,
+    effectSequence: [{ kind: "status", statuses: [status] }],
     tags: [],
   };
 }
