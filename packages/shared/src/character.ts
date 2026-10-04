@@ -56,7 +56,7 @@ export const RACE_DEFINITIONS: readonly RaceDefinition[] = [
 export const PLAYER_ELEMENTS = ["FIRE", "WATER", "EARTH", "WIND", "LIGHT", "SHADOW"] as const satisfies readonly Element[];
 
 /** Placeholder active skill for every class until class kits exist. */
-export const PLACEHOLDER_PLAYER_SKILLS = ["skill:player_power_strike"];
+export const PLACEHOLDER_PLAYER_SKILLS = ["skill:player_power_strike", "skill:player_sweep"];
 
 const classIds = CLASS1_DEFINITIONS.map((c) => c.id) as [string, ...string[]];
 const raceIds = RACE_DEFINITIONS.map((r) => r.id) as [string, ...string[]];

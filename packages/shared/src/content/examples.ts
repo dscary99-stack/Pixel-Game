@@ -24,7 +24,7 @@ const meta = { version: 1, status: "draft", example: true } as const;
 export const EXAMPLE_SKILLS: SkillDefinition[] = [
   // Armor crab (ปูเกราะ)
   support("skill:crab_take_hit", "รับแทน", 5, { statusId: "protect", chancePct: 100, turns: 2 }),
-  skill("skill:crab_self_shield", "โล่ตน", "passive"),
+  support("skill:crab_self_shield", "โล่ตน", 5, { statusId: "shield", chancePct: 100, turns: 2, shieldPct: 20 }, "self"),
   dmg("skill:crab_shield_bash", "ใช้โล่บางส่วนโจมตี", "physical", 1.3, 0, "EARTH", "melee", 6, 0, { statuses: [{ statusId: "stun", chancePct: 20, turns: 1 }] }),
   innate("skill:crab_innate_mp_refund", "รับแทนสำเร็จคืนMP", [{ on: "protected_ally", then: [{ kind: "restore_mp", target: "self", amount: 3 }] }]),
   // Ember fox (จิ้งจอกสะเก็ด)
@@ -42,8 +42,8 @@ export const EXAMPLE_SKILLS: SkillDefinition[] = [
     ["power", 5], ["power", 5], ["mp_cost", -2], ["power", 5], ["power", 5], ["power", 5], ["extra_targets", 1], ["power", 5], ["mp_cost", -2],
   ]),
   dmg("skill:snail_glare", "ส่องลดหลบ", "magic", 0.8, 0, "WATER", "ranged", 5, 0, { statuses: [{ statusId: "evasion_down", chancePct: 70, turns: 2 }] }),
-  skill("skill:snail_ally_shield", "โล่เพื่อน", "passive"),
-  skill("skill:snail_innate_mp_return", "โล่หมดอายุคืนMP", "passive"),
+  support("skill:snail_ally_shield", "โล่เพื่อน", 6, { statusId: "shield", chancePct: 100, turns: 2, shieldPct: 18 }),
+  innate("skill:snail_innate_mp_return", "โล่หมดอายุคืนMP", [{ on: "shield_expired", then: [{ kind: "restore_mp", target: "self", amount: 4 }] }]),
   // Supply mole (ตุ่นเสบียง), chapter 04 §2 kit; Lv2 near the town gate
   heal("skill:mole_light_heal", "ฮีลเบา", 0.8, 10, 6),
   skill("skill:mole_cost_cut", "ลดต้นทุนสกิลถัดไปเพื่อน", "passive"),
@@ -55,8 +55,8 @@ export const EXAMPLE_SKILLS: SkillDefinition[] = [
   dmg("skill:bird_back_peck", "โจมตีหลัง", "physical", 1.0, 0, "WIND", "ranged", 4, 0),
   innate("skill:bird_innate_resist", "cleanseครั้งแรกให้ต้านสถานะ", [{ on: "used_skill", skillApplies: "cleanse", oncePerBattle: true, then: [{ kind: "status", target: "other", statuses: [{ statusId: "res_up", chancePct: 100, turns: 2 }] }] }]),
   // Rebirth variants (chapter 04 §7, EXAMPLE): same role, played differently. Crab follows chapter 04's example.
-  variant(skill("skill:crab_shield_thick", "โล่หนา (โล่มาก ใช้MPสูง)", "passive"), "skill:crab_self_shield"),
-  variant(skill("skill:crab_shield_shared", "โล่บางแชร์ (โล่บางให้เพื่อนด้วย)", "passive"), "skill:crab_self_shield"),
+  variant(support("skill:crab_shield_thick", "โล่หนา (โล่มาก ใช้MPสูง)", 9, { statusId: "shield", chancePct: 100, turns: 2, shieldPct: 35 }, "self"), "skill:crab_self_shield"),
+  variant(support("skill:crab_shield_shared", "โล่บางแชร์ (โล่บางให้ทั้งทีม)", 8, { statusId: "shield", chancePct: 100, turns: 2, shieldPct: 10 }, "all_allies"), "skill:crab_self_shield"),
   variant(innate("skill:crab_innate_mp_surge", "รับแทนสำเร็จคืนMPมากขึ้น", [{ on: "protected_ally", then: [{ kind: "restore_mp", target: "self", amount: 6 }] }]), "skill:crab_innate_mp_refund"),
   variant(innate("skill:crab_innate_small_heal", "รับแทนสำเร็จฮีลเล็กแทน", [{ on: "protected_ally", then: [{ kind: "heal", target: "self", pctMaxHp: 4 }] }]), "skill:crab_innate_mp_refund"),
   variant(dmg("skill:crab_pierce_bash", "กระแทกเจาะเกราะ", "physical", 1.3, 0, "EARTH", "melee", 6, 0, { penetrationPct: 30 }), "skill:crab_shield_bash"),
@@ -69,6 +69,8 @@ export const EXAMPLE_SKILLS: SkillDefinition[] = [
   variant(dmg("skill:fox_reckless_dash", "พุ่งเสี่ยงตาย", "physical", 2.2, 0, "FIRE", "melee", 10, 2, { recoilPct: 20 }), "skill:fox_consume_mark"),
   // Player prototype skill
   dmg("skill:player_power_strike", "ฟันแรง", "physical", 1.6, 0, "NEUTRAL", "melee", 8, 0),
+  // Area example (Nut 2026-10-04): hits the whole row of the chosen enemy, each with its own roll.
+  { ...dmg("skill:player_sweep", "กวาดแถว", "physical", 0.7, 0, "NEUTRAL", "melee", 10, 0), targetRule: "enemy_row" },
 ];
 
 export const EXAMPLE_SPECIES: SpeciesDefinition[] = [
@@ -226,14 +228,14 @@ function dmg(
 }
 
 /** A status-only skill on one ally (EXAMPLE): buffs, protect, cleanse. */
-function support(id: string, th: string, mpCost: number, status: StatusApplication): SkillDefinition {
+function support(id: string, th: string, mpCost: number, status: StatusApplication, targetRule: SkillDefinition["targetRule"] = "single_ally"): SkillDefinition {
   return {
     id,
     ...meta,
     name: { th },
     kind: "active",
     ownerKind: "companion",
-    targetRule: "single_ally",
+    targetRule,
     range: "ranged",
     mpCost,
     cooldown: 0,

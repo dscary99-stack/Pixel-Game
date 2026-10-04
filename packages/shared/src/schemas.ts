@@ -64,9 +64,14 @@ export const StatusApplicationSchema = z
     stacks: z.number().int().min(1).max(5).optional(),
     /** imbue / element_ward: the element. */
     element: ElementSchema.optional(),
+    /** shield: its size as a % of the target's max HP. */
+    shieldPct: z.number().int().min(1).max(100).optional(),
   })
   .strict()
   .superRefine((a, ctx) => {
+    if ((STATUS_DEFINITIONS[a.statusId].needsAmount === true) !== (a.shieldPct !== undefined)) {
+      ctx.addIssue({ code: "custom", message: `${a.statusId} ${a.shieldPct === undefined ? "needs" : "takes no"} shieldPct` });
+    }
     if ((STATUS_DEFINITIONS[a.statusId].needsElement === true) !== (a.element !== undefined)) {
       ctx.addIssue({ code: "custom", message: `${a.statusId} ${a.element === undefined ? "needs" : "takes no"} element` });
     }
@@ -150,6 +155,8 @@ export const PASSIVE_EVENTS = [
   "hp_below",
   "protected_ally",
   "used_skill",
+  /** A shield this unit put on someone ran out of time without breaking (other = the shielded unit). */
+  "shield_expired",
 ] as const;
 export type PassiveEvent = (typeof PASSIVE_EVENTS)[number];
 
@@ -222,6 +229,16 @@ export const SkillLevelStepSchema = z
   .strict();
 export type SkillLevelStep = z.infer<typeof SkillLevelStepSchema>;
 
+/**
+ * Who a skill can aim at. Area skills (Nut 2026-10-04 "ทำระบบ AOE ได้เลย") hit every unit they
+ * cover, each with its own hit and crit roll: all enemies in reach, the row of the chosen enemy, or the
+ * whole own side. A melee area skill reaches the front row only while it stands (same reach rule).
+ */
+export const TARGET_RULES = ["single_enemy", "all_enemies", "enemy_row", "single_ally", "all_allies", "self", "none"] as const;
+export type TargetRule = (typeof TARGET_RULES)[number];
+export const targetsEnemies = (r: TargetRule) => r === "single_enemy" || r === "all_enemies" || r === "enemy_row";
+export const isAreaRule = (r: TargetRule) => r === "all_enemies" || r === "enemy_row" || r === "all_allies";
+
 export const SkillDefinitionSchema = z
   .object({
     id: SkillId,
@@ -229,8 +246,7 @@ export const SkillDefinitionSchema = z
     name: LocalizedName,
     kind: z.enum(["active", "passive"]),
     ownerKind: z.enum(["player", "companion", "enemy"]),
-    /** Phase A supports single-target actives only; AoE waits for O15 (evade vs AoE). */
-    targetRule: z.enum(["single_enemy", "single_ally", "self", "none"]),
+    targetRule: z.enum(TARGET_RULES),
     range: z.enum(["melee", "ranged"]),
     mpCost: z.number().int().min(0),
     /** Owner turns before reuse. Tick point is O15. */
@@ -263,7 +279,10 @@ export const SkillDefinitionSchema = z
       ctx.addIssue({ code: "custom", message: "passive skills have no direct effect sequence or MP cost in Phase A" });
     }
     for (const e of s.effectSequence) {
-      const onEnemy = e.kind === "damage" || (e.kind === "status" && s.targetRule === "single_enemy");
+      const onEnemy = targetsEnemies(s.targetRule);
+      if (s.kind === "active" && e.kind === "damage" && !onEnemy) ctx.addIssue({ code: "custom", message: "damage skills aim at enemies" });
+      if (s.kind === "active" && e.kind === "heal" && onEnemy) ctx.addIssue({ code: "custom", message: "heal skills aim at allies" });
+      if (s.kind === "active" && s.targetRule === "none") ctx.addIssue({ code: "custom", message: "an active skill needs a target rule" });
       for (const a of e.statuses ?? []) {
         if (STATUS_DEFINITIONS[a.statusId].harmful !== onEnemy) {
           ctx.addIssue({ code: "custom", message: `${a.statusId} is ${onEnemy ? "helpful" : "harmful"} and cannot go on ${onEnemy ? "an enemy" : "an ally"}` });

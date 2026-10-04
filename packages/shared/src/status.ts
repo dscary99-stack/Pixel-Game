@@ -10,7 +10,8 @@
  * - Side effects: poison takes the most HP; burn and bleed take less but lower stats; paralyze puts
  *   SPD at 0 and may cost the turn.
  * - "The other statuses you thought of too": the whole catalog §3 list is built here, except what still
- *   waits on another OPEN rule (shield ordering O15, capture-rate statuses O07, weather/terrain).
+ *   waits on another OPEN rule (capture-rate statuses O07, weather/terrain).
+ * - Shield (Nut 2026-10-04): it soaks damage after every damage reduction, before HP.
  * Nut reviewed the rest of the proposed O15 list (catalog §3.8) and only struck the immunity turn, so
  * the timing below follows it (PROVISIONAL):
  * - Durations count the affected unit's own turns and go down when its turn ends. A status put on a
@@ -101,6 +102,7 @@ export const STATUS_IDS = [
   "stealth",
   "counter",
   "protect",
+  "shield",
   "focus",
   "imbue",
   "element_ward",
@@ -164,6 +166,8 @@ export interface StatusDefinition {
   points?: Partial<Record<PointStat, [1 | -1, PointKey]>>;
   /** Needs an element when applied (imbue, element ward). */
   needsElement?: true;
+  /** shield: the application says how big it is (`shieldPct` of the target's max HP). */
+  needsAmount?: true;
   instant?: InstantEffect;
   maxStacks: number;
 }
@@ -242,6 +246,7 @@ export const STATUS_DEFINITIONS: Readonly<Record<StatusId, StatusDefinition>> = 
   stealth: good("stealth", "ล่องหน"),
   counter: good("counter", "ท่าสวน"),
   protect: good("protect", "ถูกปกป้อง"),
+  shield: good("shield", "โล่", { needsAmount: true }),
   focus: good("focus", "ชาร์จพลัง"),
   imbue: good("imbue", "อาวุธธาตุ", { needsElement: true }),
   element_ward: good("element_ward", "ต้านธาตุ", { needsElement: true }),
@@ -294,6 +299,8 @@ export interface ActiveStatus {
   element?: Element;
   /** skill_lock: the skill that is locked. */
   skillId?: string;
+  /** shield: damage it can still soak. */
+  shieldHp?: number;
 }
 
 /**

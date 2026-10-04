@@ -15,6 +15,7 @@ import { companionExp, killExp } from "../progression";
 import { Rng, seedRng } from "../rng";
 import type { RulesConfig } from "../rules";
 import type { DamageEffect, ItemDefinition, LootTable, PassiveAction, PassiveEvent, PassiveModifier, SkillDefinition, SpeciesDefinition, StatusApplication } from "../schemas";
+import { isAreaRule, targetsEnemies } from "../schemas";
 import { deriveStats, type DerivedStats } from "../stats";
 import {
   INVERT_PAIRS,
@@ -486,6 +487,11 @@ function endTurn(ctx: Ctx, u: BattleUnit): void {
       u.hp = 0;
       knockOut(ctx, u);
     }
+    // The unit that put up a shield that ran its time out (snail innate: MP back).
+    if (st.statusId === "shield" && st.sourceId !== null) {
+      const src = ctx.s.units.find((x) => x.unitId === st.sourceId);
+      if (src !== undefined) firePassives(ctx, src, "shield_expired", { other: u });
+    }
   }
 }
 
@@ -520,8 +526,11 @@ function applyStatus(ctx: Ctx, source: BattleUnit, target: BattleUnit, a: Status
   const ownTurn = currentActor(ctx.s)?.unitId === target.unitId;
   const statuses = (target.statuses ??= []);
   let st = existing;
+  const shieldHp = a.shieldPct === undefined ? undefined : Math.max(1, Math.floor((target.stats.maxHp * a.shieldPct) / 100));
   if (st !== undefined) {
     st.turnsLeft = Math.max(st.turnsLeft, a.turns);
+    // A new shield on an old one keeps the bigger of the two (no stacking).
+    if (shieldHp !== undefined) st.shieldHp = Math.max(st.shieldHp ?? 0, shieldHp);
     st.stacks = Math.min(d.maxStacks, st.stacks + (d.maxStacks > 1 ? (a.stacks ?? 1) : 0));
     st.sourceId = source.unitId;
     st.fresh = st.fresh || ownTurn;
@@ -530,8 +539,12 @@ function applyStatus(ctx: Ctx, source: BattleUnit, target: BattleUnit, a: Status
     st = { statusId: a.statusId, sourceId: source.unitId, turnsLeft: a.turns, stacks: Math.min(d.maxStacks, a.stacks ?? 1), fresh: ownTurn };
     if (a.element !== undefined) st.element = a.element;
     if (a.statusId === "skill_lock" && target.lastSkillId !== undefined) st.skillId = target.lastSkillId;
+    if (shieldHp !== undefined) st.shieldHp = shieldHp;
     statuses.push(st);
     statusEvent(ctx, target, a.statusId, "applied", source.unitId, st, rolled ? chance : null);
+  }
+  if (st.shieldHp !== undefined && shieldHp !== undefined) {
+    ctx.emit({ type: "ShieldChanged", unitId: target.unitId, change: "gained", amount: shieldHp, shieldLeft: st.shieldHp });
   }
   // Frostbite at full stacks turns into a short freeze.
   if (a.statusId === "frostbite" && st.stacks >= tuning(ctx).frostbiteFreezeStacks) {
@@ -940,12 +953,13 @@ function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUni
   const effect = skill.effectSequence[0]!;
   if (skill.effectSequence.length !== 1) reject("UNRESOLVED_RULE", "multi-effect skills wait for O15 (multi-hit, chains)");
 
-  const onEnemy = effect.kind === "damage" || (effect.kind === "status" && skill.targetRule === "single_enemy");
+  const onEnemy = targetsEnemies(skill.targetRule);
+  const area = isAreaRule(skill.targetRule);
   if (onEnemy) {
-    if (skill.targetRule !== "single_enemy") reject("INVALID_COMMAND", "damage skill must target a single enemy in Phase A");
+    // An area skill still names one target: any enemy it can reach (enemy_row: that enemy's row).
     requireEnemyTarget(ctx, actor, target, skill.range);
   } else {
-    const allowed = skill.targetRule === "self" ? target.unitId === actor.unitId : skill.targetRule === "single_ally";
+    const allowed = skill.targetRule === "self" ? target.unitId === actor.unitId : skill.targetRule === "single_ally" || skill.targetRule === "all_allies";
     if (!allowed || target.side !== actor.side) reject("INVALID_TARGET", "this skill needs an ally target");
     if (!active(target)) reject("INVALID_TARGET", "heals do not revive (chapter 03 §6)");
   }
@@ -958,8 +972,17 @@ function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUni
   // Extra targets from the skill's level: the chosen target first, then more of the same side, each
   // resolved on its own (its own hit and crit). Picked by the server, never by the client: enemies in
   // formation order (front row first), allies by lowest HP share. Self-only skills never spread.
-  const extra =
-    mods.extraTargets <= 0 || skill.targetRule === "self"
+  // Area skills cover their whole area instead (front row first, then slot order).
+  const formation = (a: BattleUnit, b: BattleUnit) => (a.row === b.row ? a.slot - b.slot : a.row === "front" ? -1 : 1);
+  const foes: Side = actor.side === "ally" ? "enemy" : "ally";
+  const extra = area
+    ? (onEnemy
+        ? validTargets(ctx.s, foes, skill.range).filter((u) => skill.targetRule !== "enemy_row" || u.row === target.row)
+        : ctx.s.units.filter((u) => u.side === actor.side && active(u))
+      )
+        .filter((u) => u.unitId !== target.unitId)
+        .sort(formation)
+    : mods.extraTargets <= 0 || skill.targetRule === "self"
       ? []
       : onEnemy
         ? validTargets(ctx.s, actor.side === "ally" ? "enemy" : "ally", skill.range)
@@ -968,10 +991,11 @@ function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUni
         : ctx.s.units
             .filter((u) => u.side === actor.side && active(u) && u.unitId !== target.unitId)
             .sort((a, b) => a.hp / a.stats.maxHp - b.hp / b.stats.maxHp || (a.unitId < b.unitId ? -1 : 1));
-  for (const t of [target, ...extra.slice(0, mods.extraTargets)]) {
+  for (const t of [target, ...(area ? extra : extra.slice(0, mods.extraTargets))]) {
     if (!active(t)) continue;
     if (effect.kind === "damage") {
-      strike(ctx, actor, redirectedTarget(ctx, actor, t), "skill", skillId, { ...effect, coefficient });
+      // Protect covers single-target hits only: an area hit lands on everyone it covers.
+      strike(ctx, actor, redirectedTarget(ctx, actor, t), "skill", skillId, { ...effect, coefficient }, false, area);
     } else if (effect.kind === "status") {
       // No damage and no hit roll: each status rolls its own chance (O15, Nut 2026-10-04).
       actionEvent(ctx, actor, "skill", t, { skillId });
@@ -999,11 +1023,11 @@ type StrikeEffect = { damageType: "physical" | "magic"; coefficient: number; fla
   Pick<DamageEffect, "penetrationPct" | "accuracyBonusPct" | "critBonusPct" | "execute" | "lifestealPct" | "recoilPct" | "statuses" | "bonusVsStatus">
 >;
 
-function strike(ctx: Ctx, actor: BattleUnit, chosen: BattleUnit, action: "attack" | "skill", skillId: string | null, eff: StrikeEffect, isCounter = false): void {
+function strike(ctx: Ctx, actor: BattleUnit, chosen: BattleUnit, action: "attack" | "skill", skillId: string | null, eff: StrikeEffect, isCounter = false, area = false): void {
   const rules = ctx.rules;
   const t = tuning(ctx);
-  // A protector steps in front of the unit it protects (catalog §3.4).
-  const target = protectorFor(ctx, actor, chosen);
+  // A protector steps in front of the unit it protects (catalog §3.4), except against area hits.
+  const target = area ? chosen : protectorFor(ctx, actor, chosen);
   if (target !== chosen) firePassives(ctx, target, "protected_ally", { other: chosen });
   // Statuses change the numbers of both sides (status.ts); max HP never changes.
   const a = statsWithStatuses(rules, actor.stats, actor.statuses);
@@ -1052,12 +1076,24 @@ function strike(ctx: Ctx, actor: BattleUnit, chosen: BattleUnit, action: "attack
     damage = 0;
     removeStatus(ctx, target, "invincible");
   }
+  // Shield (Nut 2026-10-04): soaks what is left after every reduction, before HP.
+  const shield = statusOf(target, "shield");
+  let absorbed = 0;
+  if (damage > 0 && shield?.shieldHp !== undefined) {
+    absorbed = Math.min(shield.shieldHp, damage);
+    shield.shieldHp -= absorbed;
+    damage -= absorbed;
+  }
   if (damage >= target.hp && target.hp > 1 && statusOf(target, "endure") !== undefined) {
     damage = target.hp - 1;
     removeStatus(ctx, target, "endure");
   }
   target.hp = Math.max(0, target.hp - damage);
   actionEvent(ctx, actor, action, target, { skillId, hit: true, crit, damage, breakdown, targetHpAfter: target.hp });
+  if (absorbed > 0 && shield !== undefined) {
+    ctx.emit({ type: "ShieldChanged", unitId: target.unitId, change: shield.shieldHp! > 0 ? "absorbed" : "broken", amount: absorbed, shieldLeft: shield.shieldHp! });
+    if (shield.shieldHp === 0) removeStatus(ctx, target, "shield");
+  }
   // Lifesteal and recoil work on the damage that landed, not on overkill.
   const dealt = hpBefore - target.hp;
   const lifesteal = (eff.lifestealPct ?? 0) + (statusOf(actor, "lifesteal_up") !== undefined ? t.lifestealUpPct : 0);
@@ -1321,11 +1357,10 @@ function skillOptions(rules: RulesConfig, content: Pick<BattleContent, "skills">
     if (mpCost > 0 && statusBlocks(st, "mp_skills") !== undefined) continue;
     if (st.some((x) => x.statusId === "skill_lock" && x.skillId === skillId)) continue;
     const effect = skill.effectSequence[0]!;
-    const onEnemy = effect.kind === "damage" || (effect.kind === "status" && skill.targetRule === "single_enemy");
+    const onEnemy = targetsEnemies(skill.targetRule);
     let pool: BattleUnit[];
     let role: SkillRole;
     if (onEnemy) {
-      if (skill.targetRule !== "single_enemy") continue;
       pool = validTargets(state, foes, skill.range).sort(byHp);
       const taunter = tauntedBy(state, u);
       if (taunter !== undefined && pool.includes(taunter)) pool = [taunter];

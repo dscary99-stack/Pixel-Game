@@ -55,12 +55,12 @@ describe("wild enemies use their species' skills (P15 enemyAi)", () => {
   it("carry the species' active skills at the level cap their wild level allows", () => {
     const { s } = duel(productionRules, "species:armor_crab");
     const crab = s.units.find((u) => u.unitId === "e1")!;
-    expect(crab.skillIds).toEqual(["skill:crab_take_hit", "skill:crab_shield_bash"]);
-    expect(crab.skillLevels).toEqual({ "skill:crab_take_hit": skillLevelCap(productionRules, 6), "skill:crab_shield_bash": skillLevelCap(productionRules, 6) });
+    expect(crab.skillIds).toEqual(["skill:crab_take_hit", "skill:crab_self_shield", "skill:crab_shield_bash"]);
+    expect(Object.values(crab.skillLevels!)).toEqual([1, 1, 1].map(() => skillLevelCap(productionRules, 6)));
   });
 
   it("use a damage skill through the same checks as a player (MP spent); at 0% they only attack", () => {
-    const always = duel(withAi(productionRules, 100), "species:armor_crab");
+    const always = duel(withAi(productionRules, 100), "species:armor_crab", ["skill:crab_take_hit", "skill:crab_shield_bash"]);
     const mp = always.s.units.find((u) => u.unitId === "e1")!.mp;
     const { r, acts } = always.enemyTurn(always.s);
     // Protect needs another ally to guard, so the bash is the only option.
@@ -81,7 +81,7 @@ describe("wild enemies use their species' skills (P15 enemyAi)", () => {
   });
 
   it("disarmed, they still use a skill; disarmed and silenced, they guard", () => {
-    const d = duel(withAi(productionRules, 0), "species:armor_crab");
+    const d = duel(withAi(productionRules, 0), "species:armor_crab", ["skill:crab_shield_bash"]);
     expect(d.enemyTurn(edit(d.s, (e) => (e.statuses = [st("disarm")]))).acts[0]).toMatchObject({ action: "skill", skillId: "skill:crab_shield_bash" });
     expect(d.enemyTurn(edit(d.s, (e) => (e.statuses = [st("disarm"), st("silence")]))).acts[0]).toMatchObject({ action: "guard" });
   });

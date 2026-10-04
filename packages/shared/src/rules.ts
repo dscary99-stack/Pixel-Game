@@ -83,6 +83,7 @@ export const RULES = {
     // Status effects (chapter 03 §6, O15 parts decided by Nut 2026-10-04; see status.ts).
     statusLandsByChance: confirmed(true, "O15", "Nut 2026-10-04: every status has a chance to land, not 100%, unless a skill sets 100%"),
     controlImmunityAfterControl: confirmed(false, "O15", "Nut 2026-10-04: no immunity turn after stun/sleep/freeze"),
+    shieldAfterDamageReduction: confirmed(true, "O15", "Nut 2026-10-04: a shield soaks damage after damage reduction"),
     statsOffsetStatusChance: confirmed(true, "O15", "Nut 2026-10-04: some high stats offset the chance of a status landing"),
     effectHitCappedAtSkillChance: confirmed(
       true,

@@ -109,7 +109,9 @@ for (const spawnId of ["meadow_foxes", "pond_crabs"]) {
   if (!lastPacks(A).some((p) => p.spawnId === spawnId)) continue;
   const r = await fightAt(A, spawnId);
   (out.strongFights as string[]).push(`${spawnId}: ${r.view.state.status}`);
-  if (r.view.state.status === "defeat") {
+  // A win with the character down also sends the team back to rest (enemies now use skills too).
+  const sentBack = await A.wait((m) => m.t === "transfer", 1500, r.from).catch(() => null);
+  if (r.view.state.status === "defeat" || sentBack !== null) {
     const t = await A.wait((m) => m.t === "transfer", 4000, r.from);
     out.sentTo = t.mapId;
     const hurt = (await http("GET", "/character")).body.character.hp;

@@ -186,6 +186,8 @@ export type BattleEventBody =
   | { type: "ActionRedirected"; actorId: string; statusId: StatusId; fromId: string; toId: string }
   /** A passive or innate of this unit fired (catalog §4); its effects follow as their own events. */
   | { type: "PassiveTriggered"; unitId: string; skillId: string; on: PassiveEvent }
+  /** A shield was put on, soaked part of a hit, or broke (Nut 2026-10-04: after damage reduction). */
+  | { type: "ShieldChanged"; unitId: string; change: "gained" | "absorbed" | "broken"; amount: number; shieldLeft: number }
   /** The unit loses this turn to a control status. */
   | { type: "TurnSkipped"; unitId: string; statusId: StatusId }
   | { type: "EnemyDefeated"; unitId: string; speciesId: string }

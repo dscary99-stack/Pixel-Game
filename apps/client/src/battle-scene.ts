@@ -173,19 +173,56 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
+  /** The skill menu: one button per skill of the unit whose turn it is (name and MP). */
+  private skillMenu: Phaser.GameObjects.Text[] = [];
+  private closeSkillMenu() {
+    for (const b of this.skillMenu) b.destroy();
+    this.skillMenu = [];
+  }
+  private openSkillMenu(actor: BattleUnit) {
+    this.closeSkillMenu();
+    if (actor.skillIds.length === 0) return this.pushLog("ตัวนี้ยังไม่มีสกิลที่ใช้ได้");
+    actor.skillIds.forEach((id, i) => {
+      const sk = CONTENT.skills.get(id);
+      const area = sk && ["all_enemies", "enemy_row", "all_allies"].includes(sk.targetRule) ? " (หมู่)" : "";
+      const b = this.add
+        .text(16 + i * 132, 410, `${sk?.name.th ?? id}${area}\n${sk?.mpCost ?? 0} MP`, { fontFamily: "sans-serif", fontSize: "12px", color: "#ffffff", backgroundColor: "#2f6b5a", padding: { x: 6, y: 6 }, fixedWidth: 124, align: "center" })
+        .setInteractive({ useHandCursor: true });
+      b.on("pointerdown", () => {
+        this.closeSkillMenu();
+        void this.useSkill(actor, id);
+      });
+      this.skillMenu.push(b);
+    });
+  }
+  /** Picks the target a skill needs: the selected enemy or ally if it fits, else a sensible default. */
+  private skillTarget(actor: BattleUnit, skillId: string): string | null {
+    const rule = CONTENT.skills.get(skillId)?.targetRule ?? "single_enemy";
+    const sel = this.selectedTarget === null ? undefined : this.unit(this.selectedTarget);
+    if (rule === "self") return actor.unitId;
+    if (rule === "single_ally" || rule === "all_allies") return sel !== undefined && sel.side === actor.side ? sel.unitId : actor.unitId;
+    return sel !== undefined && sel.side !== actor.side ? sel.unitId : this.firstEnemy();
+  }
+  private async useSkill(actor: BattleUnit, skillId: string) {
+    const target = this.skillTarget(actor, skillId);
+    if (target === null) return this.pushLog("ไม่มีเป้าหมายสำหรับสกิลนี้");
+    await this.send({ type: "skill", actorId: actor.unitId, skillId, targetId: target });
+  }
+
   private async act(kind: "attack" | "skill" | "guard" | "item" | "capture") {
     if (this.watching) return this.pushLog("กำลังล่าอัตโนมัติ: กด หยุดล่า ก่อนสั่งเอง");
     if (this.busy || this.snap.state.status !== "active" || this.snap.actor === null) return;
     const actor = this.unit(this.snap.actor)!;
-    const target = this.selectedTarget ?? this.firstEnemy();
+    const sel = this.selectedTarget === null ? undefined : this.unit(this.selectedTarget);
+    const target = sel !== undefined && sel.side === "enemy" ? sel.unitId : this.firstEnemy();
     let cmd: BattleCommand | null = null;
+    if (kind !== "skill") this.closeSkillMenu();
     switch (kind) {
       case "attack":
         if (target) cmd = { type: "attack", actorId: actor.unitId, targetId: target };
         break;
       case "skill":
-        if (target && actor.skillIds[0]) cmd = { type: "skill", actorId: actor.unitId, skillId: actor.skillIds[0], targetId: target };
-        break;
+        return this.openSkillMenu(actor);
       case "guard":
         cmd = { type: "guard", actorId: actor.unitId };
         break;
@@ -199,6 +236,11 @@ export class BattleScene extends Phaser.Scene {
       }
     }
     if (cmd === null) return this.pushLog("ไม่มีเป้าหมาย/สกิลสำหรับคำสั่งนี้");
+    await this.send(cmd);
+  }
+
+  private async send(cmd: BattleCommand) {
+    if (this.busy) return;
     this.busy = true;
     try {
       const { response, snapshot } = await this.transport.send(cmd);
@@ -287,6 +329,13 @@ export class BattleScene extends Phaser.Scene {
       case "PassiveTriggered":
         this.popup(e.unitId, CONTENT.skills.get(e.skillId)?.name.th ?? e.skillId, "#ffe08a");
         return this.pushLog(`${this.name(e.unitId)} ความสามารถติดตัว [${CONTENT.skills.get(e.skillId)?.name.th ?? e.skillId}] ทำงาน`);
+      case "ShieldChanged":
+        if (e.change === "gained") {
+          this.popup(e.unitId, `โล่ ${e.amount}`, "#9fd8ff");
+          return this.pushLog(`${this.name(e.unitId)} ได้โล่ ${e.amount}`);
+        }
+        this.popup(e.unitId, `โล่ −${e.amount}`, "#9fd8ff");
+        return this.pushLog(`${this.name(e.unitId)} โล่รับ ${e.amount}${e.change === "broken" ? " (แตก)" : ` เหลือ ${e.shieldLeft}`}`);
       case "TurnSkipped":
         return this.pushLog(`${this.name(e.unitId)} ${STATUS_DEFINITIONS[e.statusId].th} ข้ามเทิร์น`);
       case "BattleEnded":
@@ -303,7 +352,8 @@ export class BattleScene extends Phaser.Scene {
       if (!v) {
         const body = this.add.rectangle(x, y, 48, 56, ELEMENT_COLOR[u.element]).setStrokeStyle(3, 0x0b0a12).setInteractive({ useHandCursor: true });
         body.on("pointerdown", () => {
-          if (u.side === "enemy") this.selectedTarget = u.unitId;
+          // Enemies for attacks and enemy skills; allies for heals, buffs and shields.
+          if (!u.ko && !u.retired) this.selectedTarget = u.unitId;
           this.render(this.snap.state);
         });
         if (u.cosmetic !== undefined) this.drawCosmetic(body, u.cosmetic);
