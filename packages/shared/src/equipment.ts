@@ -140,12 +140,14 @@ export interface EquipmentView {
 export function wornGear(
   owned: readonly EquipmentView[],
   defs: ReadonlyMap<string, EquipmentDefinition>,
-): { defs: EquipmentDefinition[]; mainHand?: EquipmentDefinition } {
+): { defs: EquipmentDefinition[]; mainHand?: EquipmentDefinition; sigilIds: string[] } {
   const worn = owned.filter((e) => e.slot !== null);
   const main = worn.find((e) => e.slot === "MAIN_HAND");
   const mainHand = main === undefined ? undefined : defs.get(main.definitionId);
   return {
     defs: worn.map((e) => defs.get(e.definitionId)).filter((d): d is EquipmentDefinition => d !== undefined),
+    // Every Sigil in the worn pieces, one entry per copy: their effects go into fights.
+    sigilIds: worn.flatMap((e) => e.sigils),
     ...(mainHand === undefined ? {} : { mainHand }),
   };
 }

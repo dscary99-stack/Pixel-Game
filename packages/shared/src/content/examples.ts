@@ -116,12 +116,13 @@ export const EXAMPLE_SPECIES: SpeciesDefinition[] = [
   ], "skill:bird_innate_resist", 0.3, { STR: 8, VIT: 7, INT: 8, DEX: 10, AGI: 12, SPI: 8 }, "ranged"),
 ];
 
+// Effects follow chapter 05 §5's ideas (EXAMPLE numbers). Each Sigil also names the piece it is in.
 export const EXAMPLE_SIGILS: SigilDefinition[] = [
-  sigil("sigil:armor_crab", "species:armor_crab", ["SHIELD"], 0.0005),
-  sigil("sigil:ember_fox", "species:ember_fox", ["WEAPON_PHYSICAL"], 0.0002),
-  sigil("sigil:lantern_snail", "species:lantern_snail", ["WEAPON_SUPPORT"], 0.0001),
-  sigil("sigil:supply_mole", "species:supply_mole", ["ACCESSORY"], 0.0005),
-  sigil("sigil:bell_bird", "species:bell_bird", ["BACK"], 0.0005),
+  sigil("sigil:armor_crab", "species:armor_crab", ["SHIELD"], 0.0005, "กระดอง", { modifiers: [{ kind: "guard_reduction", reductionPct: 10 }] }),
+  sigil("sigil:ember_fox", "species:ember_fox", ["WEAPON_PHYSICAL"], 0.0002, "เพลิงจิ้งจอก", { modifiers: [{ kind: "damage_vs_status", statusId: "burn", bonusPct: 10 }] }),
+  sigil("sigil:lantern_snail", "species:lantern_snail", ["WEAPON_SUPPORT"], 0.0001, "แสงตะเกียง", { modifiers: [{ kind: "heal_low_hp", belowHpPct: 40, bonusPct: 15 }] }),
+  sigil("sigil:supply_mole", "species:supply_mole", ["ACCESSORY"], 0.0005, "เสบียง", { triggers: [{ on: "dealt_damage", action: "attack", then: [{ kind: "restore_mp", target: "self", amount: 1 }] }] }),
+  sigil("sigil:bell_bird", "species:bell_bird", ["BACK"], 0.0005, "กระดิ่งลม", { triggers: [{ on: "battle_start", then: [{ kind: "status", target: "self", statuses: [{ statusId: "spd_up", chancePct: 100, turns: 1 }] }] }] }),
 ];
 
 export const EXAMPLE_ITEMS: ItemDefinition[] = [
@@ -304,8 +305,10 @@ function rv(stage: number, replaces: string, a: string, b: string): NonNullable<
   return { stage, replaces, options: [{ branch: "A", skillId: a }, { branch: "B", skillId: b }] };
 }
 
-function sigil(id: string, sourceSpeciesId: string, equipGroups: SigilDefinition["equipGroups"], p: number): SigilDefinition {
+function sigil(id: string, sourceSpeciesId: string, equipGroups: SigilDefinition["equipGroups"], p: number, prefix: string, effect: z.input<typeof PassiveSchema>): SigilDefinition {
   return {
+    prefix: { th: prefix },
+    effect: PassiveSchema.parse(effect),
     id,
     ...meta,
     name: { th: `ตรา${EXAMPLE_SPECIES.find((sp) => sp.id === sourceSpeciesId)?.name.th ?? id}` },

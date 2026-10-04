@@ -83,6 +83,8 @@ export const RULES = {
     // Status effects (chapter 03 §6, O15 parts decided by Nut 2026-10-04; see status.ts).
     statusLandsByChance: confirmed(true, "O15", "Nut 2026-10-04: every status has a chance to land, not 100%, unless a skill sets 100%"),
     controlImmunityAfterControl: confirmed(false, "O15", "Nut 2026-10-04: no immunity turn after stun/sleep/freeze"),
+    sigilDuplicatesStackPercentOnPercent: confirmed(true, "O09", "Nut 2026-10-04: duplicate Sigils with weapon-type % effects stack % on % (multiplied)"),
+    sigilPrefixOnEquipment: confirmed(true, "C24", "Nut 2026-10-04: an installed Sigil puts a prefix before the equipment's name"),
     shieldAfterDamageReduction: confirmed(true, "O15", "Nut 2026-10-04: a shield soaks damage after damage reduction"),
     statsOffsetStatusChance: confirmed(true, "O15", "Nut 2026-10-04: some high stats offset the chance of a status landing"),
     effectHitCappedAtSkillChance: confirmed(
@@ -324,7 +326,7 @@ export const RULES = {
   unresolved: {
     tradeLevelGap: open<number>("O01", "user range 20–40; proposal +30"),
     captureRates: open<CaptureRateTable>("O07", "rank bounds and HP factor table"),
-    cooldownTick: open<CooldownTickPolicy>("O15", "cooldown counter tick point"),
+    cooldownTick: open<CooldownTickPolicy>("O15", "cooldown counter tick point; Nut 2026-10-04: must be per skill, details to review"),
     fleeChance: open<number>("O15", "flee formula"),
     reviveRules: open<true>("O15", "revive timeline"),
     stalemateResolution: open<true>("O15"),

@@ -93,7 +93,7 @@ describe("passives in a fight (catalog §4)", () => {
     const ready = (marked: boolean) =>
       edit(edit(w.s, "e1", (e) => ((e.hp = 1), (e.statuses = marked ? [st("mark")] : []))), "player", (p) => (p.hp = Math.floor(p.stats.maxHp / 2)));
     const r = w.run(ready(true), attack());
-    expect(of(r.events, "PassiveTriggered")).toEqual([expect.objectContaining({ unitId: "player", skillId: heal.id, on: "kill" })]);
+    expect(of(r.events, "PassiveTriggered")).toEqual([expect.objectContaining({ unitId: "player", sourceId: heal.id, on: "kill" })]);
     expect(of(r.events, "ResourceChanged")).toContainEqual(expect.objectContaining({ unitId: "player", source: "passive", hp: Math.floor(unit(w.s, "player").stats.maxHp / 10) }));
     expect(of(w.run(ready(false), attack()).events, "PassiveTriggered")).toEqual([]);
   });
@@ -134,12 +134,12 @@ describe("passives in a fight (catalog §4)", () => {
     const echo = passive("skill:t_echo", { triggers: [{ on: "used_skill", then: [{ kind: "restore_mp", target: "self", amount: 1 }] }] });
     const w = world([resist, echo], [cleanse]);
     const first = w.run(edit(w.s, "player", (p) => (p.statuses = [st("def_down")])), { type: "skill", actorId: "player", skillId: cleanse.id, targetId: "player" });
-    expect(of(first.events, "PassiveTriggered").map((e) => e.skillId)).toEqual([resist.id, echo.id]);
+    expect(of(first.events, "PassiveTriggered").map((e) => e.sourceId)).toEqual([resist.id, echo.id]);
     expect(unit(first.state, "player").statuses!.map((x) => x.statusId)).toContain("res_up");
     let s = first.state;
     for (let i = 0; i < 20 && currentActor(s)?.unitId !== "player"; i++) s = w.run(s, { type: "guard", actorId: currentActor(s)!.unitId }).state;
     const again = w.run(s, { type: "skill", actorId: "player", skillId: cleanse.id, targetId: "player" });
-    expect(of(again.events, "PassiveTriggered").map((e) => e.skillId)).toEqual([echo.id]);
+    expect(of(again.events, "PassiveTriggered").map((e) => e.sourceId)).toEqual([echo.id]);
   });
 
   it("modifiers: more damage against a status, more healing on a low target", () => {

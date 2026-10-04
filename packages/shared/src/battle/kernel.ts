@@ -14,7 +14,7 @@ import { rollLoot } from "../loot";
 import { companionExp, killExp } from "../progression";
 import { Rng, seedRng } from "../rng";
 import type { RulesConfig } from "../rules";
-import type { DamageEffect, ItemDefinition, LootTable, PassiveAction, PassiveEvent, PassiveModifier, SkillDefinition, SpeciesDefinition, StatusApplication } from "../schemas";
+import type { DamageEffect, ItemDefinition, LootTable, Passive, PassiveAction, PassiveEvent, PassiveModifier, SigilDefinition, SkillDefinition, SpeciesDefinition, StatusApplication } from "../schemas";
 import { isAreaRule, targetsEnemies } from "../schemas";
 import { deriveStats, type DerivedStats } from "../stats";
 import {
@@ -52,6 +52,8 @@ export interface BattleContent {
   skills: ReadonlyMap<string, SkillDefinition>;
   items: ReadonlyMap<string, ItemDefinition>;
   lootTables: ReadonlyMap<string, LootTable>;
+  /** Needed when the player wears Sigils (their effects). */
+  sigils?: ReadonlyMap<string, SigilDefinition>;
 }
 
 /** Enemy formation: up to 10 units in two rows of 5. Ally formation: front 3 / back 3 (P15). */
@@ -129,6 +131,11 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
   const p = setup.player;
   const pStats = deriveStats(p.level, p.primaryStats, p.gear);
   for (const sid of p.skillIds) requireActiveSkill(content, sid);
+  const sigils: Record<string, number> = {};
+  for (const id of p.sigilIds ?? []) {
+    if (content.sigils?.has(id) !== true) reject("MISSING_REFERENCE", `sigil ${id}`);
+    sigils[id] = (sigils[id] ?? 0) + 1;
+  }
   units.push({
     unitId: "player",
     side: "ally",
@@ -145,6 +152,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
     hp: clampResource(p.hp, pStats.maxHp),
     mp: clampResource(p.mp, pStats.maxMp),
     skillIds: [...p.skillIds],
+    ...(Object.keys(sigils).length > 0 ? { sigils } : {}),
     basicAttackRange: p.basicAttackRange,
     primaryStats: { ...p.primaryStats },
     statuses: [],
@@ -563,17 +571,42 @@ interface PassiveInfo {
   hpBefore?: number;
 }
 
-/** The passives a unit can use now: none while sealed (catalog §3.5). */
-function livePassives(ctx: Ctx, u: BattleUnit): SkillDefinition[] {
-  if ((u.passiveIds ?? []).length === 0 || statusBlocks(u.statuses, "passives") !== undefined) return [];
-  return u.passiveIds!.flatMap((id) => {
-    const sk = ctx.content.skills.get(id);
-    return sk?.passive === undefined ? [] : [sk];
-  });
+/** One source of passive effects: a passive skill, or a worn Sigil with how many of it are installed. */
+interface PassiveSource {
+  id: string;
+  passive: Passive;
+  count: number;
 }
 
+/** The passives a unit can use now: its passive skills and worn Sigils; none while sealed (catalog §3.5). */
+function livePassives(ctx: Ctx, u: BattleUnit): PassiveSource[] {
+  if (statusBlocks(u.statuses, "passives") !== undefined) return [];
+  const out: PassiveSource[] = [];
+  for (const id of u.passiveIds ?? []) {
+    const sk = ctx.content.skills.get(id);
+    if (sk?.passive !== undefined) out.push({ id, passive: sk.passive, count: 1 });
+  }
+  for (const [id, count] of Object.entries(u.sigils ?? {})) {
+    const sg = ctx.content.sigils?.get(id);
+    if (sg?.effect !== undefined) out.push({ id, passive: sg.effect, count });
+  }
+  return out;
+}
+
+/** guard_reduction modifiers: a guarding unit takes less again, each copy multiplying. */
+function guardBonusFactor(ctx: Ctx, u: BattleUnit): number {
+  if (!u.guarding) return 1;
+  let f = 1;
+  for (const m of passiveModifiers(ctx, u)) if (m.kind === "guard_reduction") f *= (100 - m.reductionPct) / 100;
+  return f;
+}
+
+/**
+ * Always-on modifiers, one per installed copy: the same Sigil twice gives its % twice, and the
+ * kernel multiplies them (Nut 2026-10-04: duplicate weapon-type effects stack % on %).
+ */
 function passiveModifiers(ctx: Ctx, u: BattleUnit): PassiveModifier[] {
-  return livePassives(ctx, u).flatMap((sk) => sk.passive!.modifiers);
+  return livePassives(ctx, u).flatMap((p) => Array.from({ length: p.count }, () => p.passive.modifiers).flat());
 }
 
 /**
@@ -582,8 +615,9 @@ function passiveModifiers(ctx: Ctx, u: BattleUnit): PassiveModifier[] {
  */
 function firePassives(ctx: Ctx, u: BattleUnit, on: PassiveEvent, info: PassiveInfo = {}): void {
   if (ctx.inPassive || !active(u)) return;
+  // Triggers fire once per source, however many copies of a Sigil are worn (PROVISIONAL).
   for (const sk of livePassives(ctx, u)) {
-    sk.passive!.triggers.forEach((tr, i) => {
+    sk.passive.triggers.forEach((tr, i) => {
       if (tr.on !== on || !active(u) || ctx.s.status !== "active") return;
       if (tr.action !== undefined && tr.action !== info.action) return;
       const otherStatuses = info.otherStatuses ?? info.other?.statuses ?? [];
@@ -597,7 +631,7 @@ function firePassives(ctx: Ctx, u: BattleUnit, on: PassiveEvent, info: PassiveIn
       if (tr.oncePerBattle && (u.passivesUsed ?? []).includes(key)) return;
       if (tr.chancePct < 100 && !ctx.rng.chanceBp(tr.chancePct * 100)) return;
       if (tr.oncePerBattle) (u.passivesUsed ??= []).push(key);
-      ctx.emit({ type: "PassiveTriggered", unitId: u.unitId, skillId: sk.id, on });
+      ctx.emit({ type: "PassiveTriggered", unitId: u.unitId, sourceId: sk.id, on });
       ctx.inPassive = true;
       try {
         for (const a of tr.then) passiveAction(ctx, u, a, info.other);
@@ -1059,7 +1093,7 @@ function strike(ctx: Ctx, actor: BattleUnit, chosen: BattleUnit, action: "attack
   const breakdown = computeDamage(rules, {
     ...(eff.penetrationPct === undefined ? {} : { defenseModifiers: { penetrationPct: eff.penetrationPct } }),
     ...(outgoing !== 1 ? { outgoingMultiplier: outgoing } : {}),
-    incomingMultiplier: incomingDamageFactor(rules, target.statuses, eff.element),
+    incomingMultiplier: incomingDamageFactor(rules, target.statuses, eff.element) * guardBonusFactor(ctx, target),
     attackPower: physical ? a.patk : a.matk,
     skillCoefficient: eff.coefficient,
     skillFlat: eff.flat,

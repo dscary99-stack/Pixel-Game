@@ -202,6 +202,8 @@ export type PassiveTrigger = z.infer<typeof PassiveTriggerSchema>;
 export const PassiveModifierSchema = z.discriminatedUnion("kind", [
   /** More damage against a target with this status (e.g. the fox Sigil idea: burned targets). */
   z.object({ kind: z.literal("damage_vs_status"), statusId: z.enum(STATUS_IDS), bonusPct: z.number().int().min(1).max(100) }).strict(),
+  /** While guarding, takes this % less again (the crab Sigil idea: guard, then a smaller hit). */
+  z.object({ kind: z.literal("guard_reduction"), reductionPct: z.number().int().min(1).max(50) }).strict(),
   /** Heals more on a target below this HP share (the snail Sigil idea). */
   z.object({ kind: z.literal("heal_low_hp"), belowHpPct: z.number().int().min(1).max(99), bonusPct: z.number().int().min(1).max(100) }).strict(),
 ]);
@@ -541,6 +543,14 @@ export const SigilDefinitionSchema = z
     equipGroups: z.array(SigilGroupSchema).min(1),
     effectIds: z.array(z.string()).min(1),
     stackingGroup: z.string().min(1),
+    /** Shown before the equipment's name once installed (Nut 2026-10-04), e.g. "กระดอง" ดาบไม้. */
+    prefix: LocalizedName,
+    /**
+     * What it does when worn (catalog §4 passive format). Copies of the same Sigil each add their %
+     * modifiers, multiplied together (Nut 2026-10-04: % on %); a trigger fires once per Sigil kind.
+     * Absent = no effect built yet.
+     */
+    effect: PassiveSchema.optional(),
     scope: z.enum(["global", "weapon_local"]),
     /** Probability 0–1 (0.00005 = 0.005%). Never a percent (chapter 12 §3). */
     baseDropProbability: z.number().min(C.sigilBaseDropRange.value[0]).max(C.sigilBaseDropRange.value[1]),

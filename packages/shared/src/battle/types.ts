@@ -50,6 +50,8 @@ export interface BattleUnit {
   lastSkillId?: string;
   /** Passive skills with effects this unit fights with (the companion's innate, a wild monster's innate). */
   passiveIds?: string[];
+  /** Sigils the player wears: id → installed copies (their effects, chapter 05 §4–§5). */
+  sigils?: Record<string, number>;
   /** Once-per-battle passives already used ("skillId#trigger index"). */
   passivesUsed?: string[];
   ko: boolean;
@@ -185,7 +187,8 @@ export type BattleEventBody =
   /** Confuse or charm sent an attack to the actor's own side. */
   | { type: "ActionRedirected"; actorId: string; statusId: StatusId; fromId: string; toId: string }
   /** A passive or innate of this unit fired (catalog §4); its effects follow as their own events. */
-  | { type: "PassiveTriggered"; unitId: string; skillId: string; on: PassiveEvent }
+  /** `sourceId`: the passive skill or the Sigil whose effect fired. */
+  | { type: "PassiveTriggered"; unitId: string; sourceId: string; on: PassiveEvent }
   /** A shield was put on, soaked part of a hit, or broke (Nut 2026-10-04: after damage reduction). */
   | { type: "ShieldChanged"; unitId: string; change: "gained" | "absorbed" | "broken"; amount: number; shieldLeft: number }
   /** The unit loses this turn to a control status. */
@@ -227,6 +230,8 @@ export interface BattleSetup {
     mp?: number;
     skillIds: string[];
     basicAttackRange: Range;
+    /** Every Sigil installed in the worn gear, one entry per copy. */
+    sigilIds?: string[];
   };
   companions: (Position & { instance: MonsterInstance; hp?: number; mp?: number })[];
   enemies: (Position & { unitId: string; speciesId: string; element: Element; captureWindowOpen?: boolean })[];

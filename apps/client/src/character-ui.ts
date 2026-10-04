@@ -40,6 +40,7 @@ import {
   gearBonuses,
   sellQuote,
   sigilCapacity,
+  equipmentDisplayName,
   sigilFits,
   sigilRemovalCost,
   wornGear,
@@ -345,7 +346,7 @@ export function equipmentPanel(api: CharacterApi, start: CharacterBundle): Promi
         box.append(el("b", {}, SLOT_TH[slot]));
         const piece = worn.get(slot);
         const def = piece === undefined ? undefined : equipmentDefs.get(piece.definitionId);
-        box.append(document.createTextNode(def?.name.th ?? (piece === undefined ? "ว่าง" : piece.definitionId)));
+        box.append(document.createTextNode(def === undefined ? (piece === undefined ? "ว่าง" : piece.definitionId) : equipmentDisplayName(def, piece!.sigils, sigilDefs)));
         if (piece !== undefined) {
           const off = el("button", { type: "button" }, "ถอด");
           off.addEventListener("click", () => void send(slot, null));
@@ -363,7 +364,7 @@ export function equipmentPanel(api: CharacterApi, start: CharacterBundle): Promi
         const def = equipmentDefs.get(piece.definitionId);
         const li = el("li", { "data-piece": piece.definitionId });
         const text = el("span", { class: "pm-grow" });
-        text.textContent = def === undefined ? piece.definitionId : `${def.name.th} · Lv${def.requiredLevel}${def.handedness === "two_hand" ? " · สองมือ" : ""} · ${statLine(def.baseStats)}`;
+        text.textContent = def === undefined ? piece.definitionId : `${equipmentDisplayName(def, piece.sigils, sigilDefs)} · Lv${def.requiredLevel}${def.handedness === "two_hand" ? " · สองมือ" : ""} · ${statLine(def.baseStats)}`;
         li.append(text);
         const targets = def === undefined ? [] : def.handedness === "two_hand" ? (["MAIN_HAND"] as const) : SLOT_FOR_CATEGORY[def.category];
         for (const slot of targets) {
@@ -383,7 +384,10 @@ export function equipmentPanel(api: CharacterApi, start: CharacterBundle): Promi
       drawSigils();
     };
 
-    const pieceName = (p: EquipmentView) => equipmentDefs.get(p.definitionId)?.name.th ?? p.definitionId;
+    const pieceName = (p: EquipmentView) => {
+      const def = equipmentDefs.get(p.definitionId);
+      return def === undefined ? p.definitionId : equipmentDisplayName(def, p.sigils, sigilDefs);
+    };
     const drawSigils = () => {
       body.append(el("label", {}, `ตรา Sigil · เหรียญ ${bundle.coins.toLocaleString()}`));
       const list = el("ul", { class: "pm-list", "data-section": "sigils" });

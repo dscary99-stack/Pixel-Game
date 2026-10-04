@@ -152,7 +152,7 @@ export function teamFormation(
 export function playerSetup(
   accountId: string,
   c: CharacterView,
-  worn: { defs: readonly EquipmentDefinition[]; mainHand?: EquipmentDefinition } = { defs: [] },
+  worn: { defs: readonly EquipmentDefinition[]; mainHand?: EquipmentDefinition; sigilIds?: readonly string[] } = { defs: [] },
 ): BattleSetup["player"] {
   const cls = CLASS1_DEFINITIONS.find((d) => d.id === c.classId);
   return {
@@ -165,6 +165,7 @@ export function playerSetup(
     ...(c.hp === null ? {} : { hp: c.hp }),
     ...(c.mp === null ? {} : { mp: c.mp }),
     skillIds: [...PLACEHOLDER_PLAYER_SKILLS],
+    ...(worn.sigilIds !== undefined && worn.sigilIds.length > 0 ? { sigilIds: [...worn.sigilIds] } : {}),
     basicAttackRange: weaponRange(worn.mainHand, cls?.basicAttackRange ?? "melee"),
     row: PLAYER_POSITION.row,
     slot: PLAYER_POSITION.slot,

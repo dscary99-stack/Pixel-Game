@@ -6,7 +6,8 @@
  *   allowed (C24). Socket count = min(item's maxSigilSlots, 4 for weapons / 1 for everything else).
  * - Removal always succeeds and returns the Sigil to the bag (P08), costs coins by the item's level
  *   tier, happens in town outside fights, and the cost is shown before confirming.
- * - Sigil effects are not built yet (no effect engine); an installed Sigil changes no numbers.
+ * - Effects (Nut 2026-10-04): a worn Sigil's effect uses the passive format; copies of the same Sigil
+ *   stack their % on % (multiplied). An installed Sigil also puts its prefix before the piece's name.
  */
 import { z } from "zod";
 import type { RulesConfig } from "./rules";
@@ -40,6 +41,21 @@ export const SellRequestSchema = z
   })
   .strict();
 export type SellRequest = z.infer<typeof SellRequestSchema>;
+
+/** Words for 2, 3 and 4 copies of the same Sigil in one piece's name (PROVISIONAL). */
+export const SIGIL_MULTIPLE_TH: Readonly<Record<number, string>> = { 2: "ทวิ", 3: "ตรี", 4: "จตุ" };
+
+/**
+ * The piece's name with its Sigils' prefixes in front (Nut 2026-10-04), in socket order, one per
+ * kind; copies of one Sigil read ทวิ/ตรี/จตุ + prefix. E.g. two fox Sigils in a wooden sword:
+ * "ทวิเพลิงจิ้งจอก ดาบไม้".
+ */
+export function equipmentDisplayName(def: Pick<EquipmentDefinition, "name">, sockets: readonly string[], sigils: ReadonlyMap<string, SigilDefinition>): string {
+  const counts = new Map<string, number>();
+  for (const id of sockets) counts.set(id, (counts.get(id) ?? 0) + 1);
+  const words = [...counts].map(([id, n]) => `${SIGIL_MULTIPLE_TH[n] ?? ""}${sigils.get(id)?.prefix.th ?? id}`);
+  return [...words, def.name.th].join(" ");
+}
 
 /** How many Sigils this piece can hold. */
 export function sigilCapacity(rules: RulesConfig, def: EquipmentDefinition): number {

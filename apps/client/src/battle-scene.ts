@@ -326,9 +326,11 @@ export class BattleScene extends Phaser.Scene {
         const parts = [e.hp !== 0 ? `HP ${e.hp > 0 ? "+" : ""}${e.hp}` : "", e.mp !== 0 ? `MP ${e.mp > 0 ? "+" : ""}${e.mp}` : ""].filter(Boolean).join(" ");
         return parts === "" ? undefined : this.pushLog(`${this.name(e.unitId)} ${label} ${parts}`);
       }
-      case "PassiveTriggered":
-        this.popup(e.unitId, CONTENT.skills.get(e.skillId)?.name.th ?? e.skillId, "#ffe08a");
-        return this.pushLog(`${this.name(e.unitId)} ความสามารถติดตัว [${CONTENT.skills.get(e.skillId)?.name.th ?? e.skillId}] ทำงาน`);
+      case "PassiveTriggered": {
+        const from = CONTENT.skills.get(e.sourceId)?.name.th ?? CONTENT.sigils.get(e.sourceId)?.name.th ?? e.sourceId;
+        this.popup(e.unitId, from, "#ffe08a");
+        return this.pushLog(`${this.name(e.unitId)} ${e.sourceId.startsWith("sigil:") ? "Sigil" : "ความสามารถติดตัว"} [${from}] ทำงาน`);
+      }
       case "ShieldChanged":
         if (e.change === "gained") {
           this.popup(e.unitId, `โล่ ${e.amount}`, "#9fd8ff");
