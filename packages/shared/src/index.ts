@@ -35,3 +35,4 @@ export * from "./quest";
 export * from "./journal";
 export * from "./npc-order";
 export * from "./disposal";
+export * from "./elite";

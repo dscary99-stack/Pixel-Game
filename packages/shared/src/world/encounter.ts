@@ -13,10 +13,13 @@ import type { Rng } from "../rng";
 import type { BossDefinition, Element, SpeciesDefinition } from "../schemas";
 import type { BattleSetup } from "../battle/types";
 import type { MapDefinition, SpawnPoint, TilePos } from "./map";
+import { rollEliteModifiers, type EliteModifier } from "../elite";
 
 export interface PackMember {
   speciesId: string;
   element: Element;
+  /** The leader of an ELITE pack: its modifiers, rolled with the pack (elite.ts). */
+  elite?: EliteModifier[];
 }
 
 /** A rolled pack. Server-side; the exact roster beyond the leader is not shown before the fight. */
@@ -38,7 +41,7 @@ export interface VisiblePack {
   y: number;
   rank: SpawnPoint["rank"] | "BOSS";
   sizeRange: [number, number];
-  leader: { speciesId: string; element: Element; level: number };
+  leader: { speciesId: string; element: Element; level: number; elite?: EliteModifier[] };
   /** Boss lairs only: which boss waits there (chapter 07 §5). */
   bossId?: string;
 }
@@ -80,8 +83,11 @@ function weighted<T>(rng: Rng, items: readonly T[], weight: (t: T) => number): T
   return items[items.length - 1]!;
 }
 
-/** Roll a pack from a spawn point with server RNG. */
-export function rollPack(spawn: SpawnPoint, packId: string, rng: Rng): PackInstance {
+/**
+ * Roll a pack from a spawn point with server RNG. An ELITE spawn's leader also gets its modifiers,
+ * which needs `rules` and the species (for the leader's wild level).
+ */
+export function rollPack(spawn: SpawnPoint, packId: string, rng: Rng, elite?: { rules: RulesConfig; species: ReadonlyMap<string, SpeciesDefinition> }): PackInstance {
   const [min, max] = spawn.packSize;
   const size = min + rng.nextInt(max - min + 1);
   const members: PackMember[] = [];
@@ -90,6 +96,11 @@ export function rollPack(spawn: SpawnPoint, packId: string, rng: Rng): PackInsta
     const elements = Object.entries(entry.elementWeights).filter(([, w]) => (w ?? 0) > 0) as [Element, number][];
     const [element] = weighted(rng, elements, ([, w]) => w);
     members.push({ speciesId: entry.speciesId, element });
+  }
+  if (spawn.rank === "ELITE") {
+    if (elite === undefined) throw new Error(`rollPack: elite spawn ${spawn.id} needs rules and species`);
+    const leader = members[0]!;
+    leader.elite = rollEliteModifiers(elite.rules, elite.species.get(leader.speciesId)?.fixedWildLevel ?? 1, rng);
   }
   return { packId, spawnId: spawn.id, at: { ...spawn.at }, rank: spawn.rank, sizeRange: [min, max], members };
 }
@@ -103,7 +114,12 @@ export function visiblePack(p: PackInstance, species: ReadonlyMap<string, Specie
     y: p.at.y,
     rank: p.rank,
     sizeRange: [...p.sizeRange],
-    leader: { speciesId: leader.speciesId, element: leader.element, level: species.get(leader.speciesId)?.fixedWildLevel ?? 0 },
+    leader: {
+      speciesId: leader.speciesId,
+      element: leader.element,
+      level: species.get(leader.speciesId)?.fixedWildLevel ?? 0,
+      ...(leader.elite !== undefined ? { elite: [...leader.elite] } : {}),
+    },
   };
 }
 
@@ -126,7 +142,7 @@ export function packEnemies(p: PackInstance): BattleSetup["enemies"] {
   return p.members.map((m, i) => {
     const row = i % 2 === 0 ? "front" : "back";
     const slot = (row === "front" ? front : back)[Math.floor(i / 2)]!;
-    return { unitId: `e${i + 1}`, speciesId: m.speciesId, element: m.element, row, slot };
+    return { unitId: `e${i + 1}`, speciesId: m.speciesId, element: m.element, row, slot, ...(m.elite !== undefined ? { elite: { modifiers: [...m.elite] } } : {}) };
   });
 }
 

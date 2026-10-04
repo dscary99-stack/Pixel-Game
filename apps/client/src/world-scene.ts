@@ -6,6 +6,7 @@
 import Phaser from "phaser";
 import {
   DEV_FIXTURE_RULES,
+  ELITE_MODIFIER_TH,
   TILE_LEGEND,
   exampleContentMaps,
   expProgress,
@@ -417,8 +418,11 @@ export class WorldScene extends Phaser.Scene {
       const shadow = this.add.ellipse(px, py + 12, 26, 8, 0x000000, 0.35).setDepth(8);
       const [min, max] = p.sizeRange;
       const name = this.species.get(p.leader.speciesId)?.name.th ?? p.leader.speciesId;
+      // Elites show their modifiers before engaging (chapter 07 §3).
+      const rank = boss ? "บอส " : p.rank === "ELITE" ? "★ชั้นยอด " : "";
+      const mods = p.leader.elite === undefined ? "" : `\n${p.leader.elite.map((m) => ELITE_MODIFIER_TH[m].name).join(", ")}`;
       const label = this.add
-        .text(px, py - (boss ? 19 : 14), `${boss ? "บอส " : ""}${name} Lv${p.leader.level} · ${min === max ? min : `${min}–${max}`} ตัว`, {
+        .text(px, py - (boss ? 19 : 14), `${rank}${name} Lv${p.leader.level} · ${min === max ? min : `${min}–${max}`} ตัว${mods}`, {
           fontFamily: "sans-serif",
           fontSize: "11px",
           color: "#ffd0c0",

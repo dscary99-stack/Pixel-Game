@@ -11,6 +11,7 @@ import { companionKit, effectiveSkillLevel, masteryForVictory, skillLevelCap, sk
 import { AutoBattlePolicySchema, type AutoBattlePolicyInput } from "./auto-policy";
 import { computeDamage, computeHeal, critChanceBp, hitChanceBp } from "../damage";
 import { rollLoot } from "../loot";
+import { eliteModifierIssues } from "../elite";
 import { companionExp, killExp } from "../progression";
 import { Rng, seedRng } from "../rng";
 import type { RulesConfig } from "../rules";
@@ -253,7 +254,18 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
     const base = deriveStats(sp.fixedWildLevel, sp.wildPrimaryStats);
     // A wild boss has more HP than its species (chapter 07 §5); a captured one never keeps it.
     const isBoss = bossDef !== undefined && e.unitId === "e1";
-    const stats = isBoss ? { ...base, maxHp: Math.floor(base.maxHp * bossDef!.hpMultiplier) } : base;
+    // An elite leader is tougher in the wild only (elite.ts, P12); a captured one never keeps it.
+    if (e.elite !== undefined) {
+      if (sp.rank === "BOSS" || bossDef !== undefined) reject("INVALID_COMMAND", `${e.unitId}: a boss is never an elite`);
+      const bad = eliteModifierIssues(e.elite.modifiers);
+      if (bad.length > 0) reject("INVALID_COMMAND", `${e.unitId}: ${bad.join("; ")}`);
+    }
+    const el = rules.provisional.elite.value;
+    const stats = isBoss
+      ? { ...base, maxHp: Math.floor(base.maxHp * bossDef!.hpMultiplier) }
+      : e.elite !== undefined
+        ? { ...base, maxHp: Math.floor(base.maxHp * el.hpMultiplier), patk: Math.floor((base.patk * el.powerPct) / 100), matk: Math.floor((base.matk * el.powerPct) / 100) }
+        : base;
     // Wild monsters fight with their species' active skills, at the cap their wild level allows.
     for (const id of sp.skillIds) if (!content.skills.has(id)) reject("MISSING_REFERENCE", `skill ${id}`);
     const wildSkillIds = sp.skillIds.filter((id) => content.skills.get(id)?.kind === "active");
@@ -268,7 +280,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
       instanceId: null,
       level: sp.fixedWildLevel,
       element: e.element,
-      rank: sp.rank,
+      rank: e.elite !== undefined ? "ELITE" : sp.rank,
       row: e.row,
       slot: e.slot,
       stats,
@@ -287,6 +299,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
       movedThisRound: false,
       captureWindowOpen: e.captureWindowOpen ?? sp.rank !== "BOSS",
       lootTableId: e.lootEligible === false ? null : sp.lootTableId,
+      ...(e.elite !== undefined ? { elite: { modifiers: [...e.elite.modifiers], enraged: false, moraleBroken: false, counterOn: null } } : {}),
       ...(sp.rank === "BOSS" && (sp.bossActionsPerRound ?? 1) > 1
         ? { actionsPerRound: Math.min(sp.bossActionsPerRound!, rules.provisional.bossActions.value.maxPerRound) }
         : {}),
@@ -321,6 +334,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
   const ctx = new Ctx(state, rules, content, null);
   ctx.emit({ type: "BattleStarted", originMode: state.originMode, rulesVersion: state.rulesVersion, unitIds: units.map((u) => u.unitId) });
   if (bossDef !== undefined) enterBossPhase(ctx, 0);
+  startElites(ctx);
   for (const u of units) if (active(u)) firePassives(ctx, u, "battle_start");
   startRound(ctx);
   advanceToAllyInput(ctx);
@@ -375,10 +389,11 @@ function validateFormation(rules: RulesConfig, units: BattleUnit[]): void {
  * EXP from one enemy: the character's award, and each companion's award scaled by its level at fight
  * start (unit levels never change mid-fight). Every companion that started the fight counts, KO'd or not.
  */
-function expAwards(ctx: Ctx, wildLevel: number): { exp: number; companionExp: Record<string, number> } {
-  // Party bonus (P02) on the base award, before each companion's level scaling.
+function expAwards(ctx: Ctx, wildLevel: number, elite = false): { exp: number; companionExp: Record<string, number> } {
+  // Party bonus (P02) on the base award, before each companion's level scaling; an elite leader gives more.
   const bonus = ctx.s.partyBonus?.expPercent ?? 0;
-  const exp = Math.floor((killExp(ctx.rules, wildLevel) * (100 + bonus)) / 100);
+  const base = elite ? Math.floor((killExp(ctx.rules, wildLevel) * ctx.rules.provisional.elite.value.expPct) / 100) : killExp(ctx.rules, wildLevel);
+  const exp = Math.floor((base * (100 + bonus)) / 100);
   const perCompanion: Record<string, number> = {};
   for (const a of ctx.s.units) {
     if (a.side === "ally" && a.instanceId !== null) perCompanion[a.instanceId] = companionExp(ctx.rules, exp, a.actualLevel ?? a.level, wildLevel);
@@ -1023,9 +1038,12 @@ export function validTargets(state: BattleState, side: Side, range: Range): Batt
   return front.length > 0 ? front : alive;
 }
 
+/** A backline hunter (elite) reaches the back row with everything. */
+const reach = (actor: BattleUnit, range: Range): Range => (actor.elite?.modifiers.includes("backline_hunter") === true ? "ranged" : range);
+
 function requireEnemyTarget(ctx: Ctx, actor: BattleUnit, target: BattleUnit, range: Range): void {
   const side: Side = actor.side === "ally" ? "enemy" : "ally";
-  if (!validTargets(ctx.s, side, range).some((u) => u.unitId === target.unitId)) {
+  if (!validTargets(ctx.s, side, reach(actor, range)).some((u) => u.unitId === target.unitId)) {
     reject("INVALID_TARGET", `${target.unitId} is not a valid ${range} target`);
   }
 }
@@ -1086,7 +1104,7 @@ function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUni
   const foes: Side = actor.side === "ally" ? "enemy" : "ally";
   const extra = area
     ? (onEnemy
-        ? validTargets(ctx.s, foes, skill.range).filter((u) => skill.targetRule !== "enemy_row" || u.row === target.row)
+        ? validTargets(ctx.s, foes, reach(actor, skill.range)).filter((u) => skill.targetRule !== "enemy_row" || u.row === target.row)
         : ctx.s.units.filter((u) => u.side === actor.side && active(u))
       )
         .filter((u) => u.unitId !== target.unitId)
@@ -1094,7 +1112,7 @@ function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUni
     : mods.extraTargets <= 0 || skill.targetRule === "self"
       ? []
       : onEnemy
-        ? validTargets(ctx.s, actor.side === "ally" ? "enemy" : "ally", skill.range)
+        ? validTargets(ctx.s, actor.side === "ally" ? "enemy" : "ally", reach(actor, skill.range))
             .filter((u) => u.unitId !== target.unitId)
             .sort((a, b) => (a.row === b.row ? a.slot - b.slot : a.row === "front" ? -1 : 1))
         : ctx.s.units
@@ -1204,6 +1222,7 @@ function strike(ctx: Ctx, actor: BattleUnit, chosen: BattleUnit, action: "attack
     if (shield.shieldHp! <= 0 && ctx.s.boss?.unitId === target.unitId) ctx.s.boss.shieldBroken = true;
     if (shield.shieldHp === 0) removeStatus(ctx, target, "shield");
   }
+  if (!physical && !isCounter) noteMagicHit(ctx, actor, target);
   // Lifesteal and recoil work on the damage that landed, not on overkill.
   const dealt = hpBefore - target.hp;
   const lifesteal = (eff.lifestealPct ?? 0) + (statusOf(actor, "lifesteal_up") !== undefined ? t.lifestealUpPct : 0);
@@ -1280,7 +1299,7 @@ function knockOut(ctx: Ctx, u: BattleUnit): void {
             percent: ctx.s.partyBonus?.materialDropPercent ?? 0,
             isMaterial: (id) => ctx.content.items.get(id)?.kind === "material",
           }),
-    ...expAwards(ctx, u.level),
+    ...expAwards(ctx, u.level, u.elite !== undefined),
   };
   ctx.s.entitlements.push(entitlement);
   ctx.emit({ type: "RewardEntitled", entitlement });
@@ -1318,7 +1337,7 @@ export function captureProbability(rules: RulesConfig, species: SpeciesDefinitio
   const ratio = target.hp / target.stats.maxHp;
   const step = [...table.hpFactor].sort((a, b) => a.maxHpRatio - b.maxHpRatio).find((s) => ratio <= s.maxHpRatio);
   const hpFactor = step?.factor ?? 1;
-  const [lo, hi] = table.rankBounds[species.rank];
+  const [lo, hi] = table.rankBounds[target.rank ?? species.rank];
   return Math.min(hi, Math.max(lo, species.captureBaseRate * hpFactor * 1 * 1 * itemQuality));
 }
 
@@ -1360,7 +1379,7 @@ function doCapture(ctx: Ctx, actor: BattleUnit, target: BattleUnit, itemId: stri
     speciesId: species.id,
     element: target.element,
     level: ctx.rules.confirmed.capturedInitialLevel.value,
-    ...expAwards(ctx, target.level),
+    ...expAwards(ctx, target.level, target.elite !== undefined),
   };
   ctx.s.entitlements.push(entitlement);
   ctx.emit({ type: "RewardEntitled", entitlement });
@@ -1401,6 +1420,79 @@ function doFlee(ctx: Ctx, actor: BattleUnit): void {
  * attack; disarmed with no skill left, it guards. Every pick passes the same checks as a manual
  * command, so the AI never tries what the validator would refuse.
  */
+// ================================================================ elites (chapter 07 §3, elite.ts)
+
+const elites = (ctx: Ctx) => ctx.s.units.filter((u) => u.elite !== undefined);
+
+/** Fight start: each elite shows its modifiers; the shield goes up and the pack's morale buff goes on. */
+function startElites(ctx: Ctx): void {
+  const el = ctx.rules.provisional.elite.value;
+  for (const u of elites(ctx)) {
+    for (const m of u.elite!.modifiers) ctx.emit({ type: "EliteTrait", unitId: u.unitId, modifier: m, change: "active", targetId: null });
+    if (u.elite!.modifiers.includes("crystal_shield")) applyStatus(ctx, u, u, { statusId: "shield", chancePct: 100, turns: el.crystalShieldTurns, shieldPct: el.crystalShieldPct }, true);
+    if (u.elite!.modifiers.includes("morale")) {
+      for (const x of ctx.s.units) {
+        if (x.side !== u.side || x === u || !active(x)) continue;
+        applyStatus(ctx, u, x, { statusId: "atk_up", chancePct: 100, turns: el.moraleTurns }, true);
+        applyStatus(ctx, u, x, { statusId: "matk_up", chancePct: 100, turns: el.moraleTurns }, true);
+      }
+    }
+  }
+}
+
+/** After every action: enrage under the HP line; morale breaks when the elite falls (its buffs end). */
+function checkElites(ctx: Ctx): void {
+  const el = ctx.rules.provisional.elite.value;
+  for (const u of elites(ctx)) {
+    const e = u.elite!;
+    if (!active(u)) {
+      if (e.modifiers.includes("morale") && !e.moraleBroken) {
+        e.moraleBroken = true;
+        ctx.emit({ type: "EliteTrait", unitId: u.unitId, modifier: "morale", change: "broken", targetId: null });
+        for (const x of ctx.s.units) {
+          if (x.side !== u.side || !active(x)) continue;
+          for (const id of ["atk_up", "matk_up"] as const) if (statusOf(x, id)?.sourceId === u.unitId) removeStatus(ctx, x, id);
+        }
+      }
+      if (e.counterOn !== null) {
+        ctx.emit({ type: "EliteTrait", unitId: u.unitId, modifier: "magic_counter", change: "cancelled", targetId: e.counterOn });
+        e.counterOn = null;
+      }
+      continue;
+    }
+    if (e.modifiers.includes("low_hp_enrage") && !e.enraged && u.hp * 100 < el.enrageBelowHpPct * u.stats.maxHp) {
+      e.enraged = true;
+      ctx.emit({ type: "EliteTrait", unitId: u.unitId, modifier: "low_hp_enrage", change: "enraged", targetId: null });
+      applyStatus(ctx, u, u, { statusId: "atk_up", chancePct: 100, turns: el.enrageTurns }, true);
+      applyStatus(ctx, u, u, { statusId: "spd_up", chancePct: 100, turns: el.enrageTurns }, true);
+    }
+  }
+}
+
+/** Magic landed on an elite with magic_counter: it warns who it will answer on its next action. */
+function noteMagicHit(ctx: Ctx, attacker: BattleUnit, target: BattleUnit): void {
+  const e = target.elite;
+  if (e === undefined || !e.modifiers.includes("magic_counter") || attacker.side === target.side || !active(target) || e.counterOn !== null) return;
+  e.counterOn = attacker.unitId;
+  ctx.emit({ type: "EliteTrait", unitId: target.unitId, modifier: "magic_counter", change: "warned", targetId: attacker.unitId });
+}
+
+/** The warned counter: a heavy magic strike on that attacker, reaching any row. Called off if it is gone. */
+function fireEliteCounter(ctx: Ctx, u: BattleUnit): boolean {
+  const e = u.elite;
+  if (e === undefined || e.counterOn === null) return false;
+  const target = ctx.s.units.find((x) => x.unitId === e.counterOn);
+  e.counterOn = null;
+  const blocked = statusBlocks(u.statuses, "skills") !== undefined;
+  if (target === undefined || !active(target) || blocked) {
+    ctx.emit({ type: "EliteTrait", unitId: u.unitId, modifier: "magic_counter", change: "cancelled", targetId: target?.unitId ?? null });
+    return false;
+  }
+  ctx.emit({ type: "EliteTrait", unitId: u.unitId, modifier: "magic_counter", change: "fired", targetId: target.unitId });
+  strike(ctx, u, target, "attack", null, { damageType: "magic", coefficient: ctx.rules.provisional.elite.value.counterCoefficientPct / 100, flat: 0, element: u.element }, true);
+  return true;
+}
+
 // ================================================================ bosses (chapter 07 §5, P17)
 
 function bossDefinition(ctx: Ctx): BossDefinition | undefined {
@@ -1489,6 +1581,7 @@ function fireTelegraph(ctx: Ctx, u: BattleUnit): boolean {
 
 function enemyAct(ctx: Ctx, u: BattleUnit): void {
   if (fireTelegraph(ctx, u)) return;
+  if (fireEliteCounter(ctx, u)) return;
   const disarmed = statusBlocks(u.statuses, "attack") !== undefined;
   // A boss keeps its telegraphed moves for the warned turn only.
   const reserved = ctx.s.boss?.unitId === u.unitId ? telegraphSkills(ctx) : undefined;
@@ -1502,10 +1595,13 @@ function enemyAct(ctx: Ctx, u: BattleUnit): void {
     u.guarding = true;
     return actionEvent(ctx, u, "guard", null);
   }
-  const targets = validTargets(ctx.s, "ally", u.basicAttackRange);
-  if (targets.length === 0) return;
+  const reachable = validTargets(ctx.s, "ally", reach(u, u.basicAttackRange));
+  if (reachable.length === 0) return;
+  // A backline hunter goes for the back row while anyone stands there.
+  const backRow = u.elite?.modifiers.includes("backline_hunter") === true ? reachable.filter((t) => t.row === "back") : [];
+  const targets = backRow.length > 0 ? backRow : reachable;
   const taunter = tauntedBy(ctx.s, u);
-  const target = taunter !== undefined && targets.includes(taunter) ? taunter : targets[ctx.rng.nextInt(targets.length)]!;
+  const target = taunter !== undefined && reachable.includes(taunter) ? taunter : targets[ctx.rng.nextInt(targets.length)]!;
   doAttack(ctx, u, target, null);
 }
 
@@ -1564,7 +1660,8 @@ function skillOptions(rules: RulesConfig, content: Pick<BattleContent, "skills">
     let pool: BattleUnit[];
     let role: SkillRole;
     if (onEnemy) {
-      pool = validTargets(state, foes, skill.range).sort(byHp);
+      pool = validTargets(state, foes, reach(u, skill.range)).sort(byHp);
+      if (u.elite?.modifiers.includes("backline_hunter") === true) pool.sort((a, b) => (a.row === b.row ? 0 : a.row === "back" ? -1 : 1));
       const taunter = tauntedBy(state, u);
       if (taunter !== undefined && pool.includes(taunter)) pool = [taunter];
       if (effect.kind === "status") pool = pool.filter((t) => useful(t, effect.statuses));
@@ -1587,6 +1684,7 @@ function skillOptions(rules: RulesConfig, content: Pick<BattleContent, "skills">
 function checkEnd(ctx: Ctx): void {
   if (ctx.s.status !== "active") return;
   checkBossPhase(ctx);
+  checkElites(ctx);
   const enemiesLeft = ctx.s.units.some((u) => u.side === "enemy" && active(u));
   const alliesLeft = ctx.s.units.some((u) => u.side === "ally" && active(u));
   if (!enemiesLeft) endBattle(ctx, "victory");

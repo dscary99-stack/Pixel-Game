@@ -7,6 +7,7 @@ import type { DamageBreakdown } from "../damage";
 import type { DerivedStats, GearBonuses } from "../stats";
 import type { ErrorCode } from "../validators";
 import type { ActiveStatus, StatusId } from "../status";
+import type { EliteModifier } from "../elite";
 
 export type Side = "ally" | "enemy";
 export type Row = "front" | "back";
@@ -52,6 +53,11 @@ export interface BattleUnit {
   passiveIds?: string[];
   /** Sigils the player wears: id → installed copies (their effects, chapter 05 §4–§5). */
   sigils?: Record<string, number>;
+  /**
+   * Elite leaders only (elite.ts): their modifiers, whether enrage has fired, whether morale broke,
+   * and who a warned magic counter will hit on its next action.
+   */
+  elite?: { modifiers: EliteModifier[]; enraged: boolean; moraleBroken: boolean; counterOn: string | null };
   /** Wild bosses with more than one action per round (chapter 03); absent means 1. */
   actionsPerRound?: number;
   /** Once-per-battle passives already used ("skillId#trigger index"). */
@@ -173,6 +179,8 @@ export type BattleEventBody =
   /** announced at a round's start, fired on the boss's first action of `firesRound`, or cancelled (phase change, silence, KO). */
   | { type: "BossTelegraph"; unitId: string; skillId: string; change: "announced" | "fired" | "cancelled"; firesRound: number }
   | { type: "CaptureWindowOpened"; unitId: string }
+  /** An elite modifier showed itself: in play at the start, enrage, morale broken, counter warned / fired / called off. */
+  | { type: "EliteTrait"; unitId: string; modifier: EliteModifier; change: "active" | "enraged" | "broken" | "warned" | "fired" | "cancelled"; targetId: string | null }
   /** `action`/`actionsThisRound` only for a unit with more than one action this round (bosses). */
   | { type: "TurnStarted"; unitId: string; guardEnded: boolean; action?: number; actionsThisRound?: number }
   | {
@@ -256,7 +264,7 @@ export interface BattleSetup {
     sigilIds?: string[];
   };
   companions: (Position & { instance: MonsterInstance; hp?: number; mp?: number })[];
-  enemies: (Position & { unitId: string; speciesId: string; element: Element; captureWindowOpen?: boolean; lootEligible?: boolean })[];
+  enemies: (Position & { unitId: string; speciesId: string; element: Element; captureWindowOpen?: boolean; lootEligible?: boolean; elite?: { modifiers: EliteModifier[] } })[];
   bag: Record<string, number>;
   /** Counted by the server when the fight starts (P02); never from the client. */
   partyBonus?: PartyBonus;

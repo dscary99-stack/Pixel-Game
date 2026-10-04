@@ -186,6 +186,28 @@ export const RULES = {
     affixLevelScalePct: provisional(2, "P09", "affix value × (1 + 2% per item level above 1); Claude's first pass"),
     bossActions: provisional({ maxPerRound: 3 } as const, "P15", "bosses act up to 3 times a round; statuses count once per round"),
     /**
+     * Elite packs (chapter 07 §3, elite.ts): the leader is tougher and carries 1 modifier (2 from
+     * `twoModifiersFromLevel`), picked from allowed pairs; capture keeps its species/element at Lv1 and
+     * never its multipliers. Rewards: EXP × `expPct`; loot stays the species' own table. Claude's first
+     * pass (P12 hunt speed assumptions: elite fights aim at 2–4 minutes).
+     */
+    elite: provisional(
+      {
+        hpMultiplier: 2.5,
+        powerPct: 115,
+        twoModifiersFromLevel: 60,
+        crystalShieldPct: 20,
+        crystalShieldTurns: 10,
+        moraleTurns: 10,
+        enrageBelowHpPct: 30,
+        enrageTurns: 3,
+        counterCoefficientPct: 150,
+        expPct: 300,
+      } as const,
+      "P12",
+      "elite leader HP ×2.5, ATK/MATK ×1.15, EXP ×3; 1 modifier, 2 from Lv60; Claude's first pass",
+    ),
+    /**
      * Wild enemy AI (chapter 08 rule engine, same validator as manual): each turn a usable skill is
      * picked with this chance, else a basic attack. Heals only when an ally is under the HP line, and
      * a status-only skill only when the target lacks that status. Wild skills work at the level cap

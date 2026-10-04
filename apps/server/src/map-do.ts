@@ -285,7 +285,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     if (list === undefined) {
       // Server RNG, fresh per cycle; the roster is stored before anyone can see or fight it.
       const rng = new Rng(seedRng(crypto.randomUUID()));
-      list = map.spawns.map((sp) => rollPack(sp, packInstanceId(map.id, channel, sp.id, cycle), rng));
+      list = map.spawns.map((sp) => rollPack(sp, packInstanceId(map.id, channel, sp.id, cycle), rng, { rules: this.rules, species: this.content.species }));
       const old = await this.ctx.storage.list({ prefix: "packs:" });
       await this.ctx.storage.delete([...old.keys()]);
       await this.ctx.storage.put(key, list);

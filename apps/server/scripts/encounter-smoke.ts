@@ -1,8 +1,8 @@
 // End-to-end Phase C check against `wrangler dev`: walk into the field, engage a visible pack,
 // fight it to the end, come back to the same spot. Private fights (O05): the pack stays visible
-// to the other player. Run `npm run db:migrate:local` and `npm run dev:server` first, then
+// to the other player. An elite pack shows its leader's modifiers and the fight has that elite. Run `npm run db:migrate:local` and `npm run dev:server` first, then
 // `npm run smoke:encounter`.
-import { approach, api, connect, lastPacks, run, sleep, toField, type Msg, AUTO_GAP_MS } from "./smoke-lib";
+import { approach, api, battleCall, connect, lastPacks, run, sleep, toField, type Msg, AUTO_GAP_MS } from "./smoke-lib";
 
 const acct = (n: string) => `acct:e${run}_${n}`;
 const out: Record<string, unknown> = {};
@@ -116,6 +116,24 @@ from = A2.inbox.length;
 A2.send({ t: "step", seq: ++A2.seq, dir: "S" });
 const after = await A2.wait((m) => m.t === "ack" || m.t === "correct", 3000, from);
 out.walkAfter = { result: after.t, from: standAt, to: { x: after.x, y: after.y } };
-for (const c of [A2, B]) c.sock.close();
+
+// Elite (chapter 07 §3): the leader's modifiers are visible first, and the fight's e1 carries them.
+await fetch(`${api}/character`, {
+  method: "POST",
+  headers: { "content-type": "application/json", "x-dev-account": acct("c") },
+  body: JSON.stringify({ operationId: `op_${run}_c`, name: "ผู้เล่น c", classId: "class:striker", raceId: "race:human", element: "FIRE" }),
+});
+const C = await toField(acct("c"));
+await C.wait((m) => m.t === "packs");
+const elite = lastPacks(C).find((p) => p.rank === "ELITE");
+if (elite === undefined || !Array.isArray(elite.leader.elite)) throw new Error(`no elite pack: ${JSON.stringify(lastPacks(C).map((p) => p.rank))}`);
+await approach(C, elite);
+from = C.inbox.length;
+C.send({ t: "engage", packId: elite.packId });
+const encC = await C.wait((m) => m.t === "encounter" || m.t === "error", 6000, from);
+const e1 = (await battleCall(acct("c"), encC.battleId)("GET", "")).state.units.find((u: Msg) => u.unitId === "e1");
+out.elite = { shown: elite.leader.elite, inFight: e1.elite?.modifiers, rank: e1.rank };
+if (JSON.stringify(e1.elite?.modifiers) !== JSON.stringify(elite.leader.elite) || e1.rank !== "ELITE") throw new Error(`elite mismatch: ${JSON.stringify(out.elite)}`);
+for (const c of [A2, B, C]) c.sock.close();
 console.log(JSON.stringify(out, null, 1));
 process.exit(0);

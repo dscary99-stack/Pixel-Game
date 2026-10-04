@@ -105,6 +105,17 @@ export const EXAMPLE_MAPS: MapDefinition[] = [
         entries: [{ speciesId: "species:ember_fox", weight: 1, elementWeights: { FIRE: 3, WIND: 2, SHADOW: 1 }, groupRules: { min: 1, max: 2 } }],
       },
       {
+        // EXAMPLE elite (chapter 07 §3): a tougher mole leader with one modifier and a bird or two.
+        id: "elite_moles",
+        at: { x: 14, y: 10 },
+        rank: "ELITE",
+        packSize: [2, 3],
+        entries: [
+          { speciesId: "species:supply_mole", weight: 2, elementWeights: { EARTH: 2, WATER: 1 }, groupRules: { min: 1, max: 2 } },
+          { speciesId: "species:bell_bird", weight: 1, elementWeights: { WIND: 2, LIGHT: 1 }, groupRules: { min: 1, max: 1 } },
+        ],
+      },
+      {
         id: "south_snails",
         at: { x: 8, y: 14 },
         rank: "NORMAL",

@@ -140,7 +140,7 @@ export class LocalWorldTransport implements WorldTransport {
     // Packs rolled in the browser: preview only, the real roll is on the server.
     const rng = new Rng(seedRng(crypto.randomUUID()));
     const cycle = packCycle(DEV_FIXTURE_RULES, Date.now());
-    this.packs = map.spawns.map((sp) => rollPack(sp, packInstanceId(map.id, this.channel!.channel, sp.id, cycle), rng));
+    this.packs = map.spawns.map((sp) => rollPack(sp, packInstanceId(map.id, this.channel!.channel, sp.id, cycle), rng, { rules: DEV_FIXTURE_RULES, species: this.content.species }));
     queueMicrotask(() => this.sendPacks());
     let seq = 0;
     const dirs: Direction[] = ["E", "E", "W", "W", "N", "S"];

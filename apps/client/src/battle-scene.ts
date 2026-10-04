@@ -4,7 +4,7 @@
  * it never computes damage, loot, capture or ownership itself (chapter 11 §1).
  */
 import Phaser from "phaser";
-import { DEV_FIXTURE_RULES, STATUS_DEFINITIONS, exampleContentMaps, type BattleCommand, type BattleEvent, type BattleUnit, type Element, type PublicBattleState } from "@pmrpg/shared";
+import { DEV_FIXTURE_RULES, ELITE_MODIFIER_TH, STATUS_DEFINITIONS, exampleContentMaps, type BattleCommand, type BattleEvent, type BattleUnit, type Element, type PublicBattleState } from "@pmrpg/shared";
 import type { BattleTransport, Snapshot } from "./transport";
 import { savedAutoPolicy } from "./character-ui";
 
@@ -31,6 +31,8 @@ interface UnitView {
   body: Phaser.GameObjects.Rectangle;
   hpBar: Phaser.GameObjects.Rectangle;
   label: Phaser.GameObjects.Text;
+  /** Under the HP bar: an elite leader's modifiers (so the name line above stays short). */
+  sub: Phaser.GameObjects.Text;
   ring: Phaser.GameObjects.Rectangle;
 }
 
@@ -278,6 +280,27 @@ export class BattleScene extends Phaser.Scene {
         }
         return this.pushLog(e.change === "fired" ? `${this.name(e.unitId)} ใช้ ${sk}!` : `${sk} ของ ${this.name(e.unitId)} ถูกยกเลิก`);
       }
+      case "EliteTrait": {
+        const m = ELITE_MODIFIER_TH[e.modifier];
+        const who = this.name(e.unitId);
+        switch (e.change) {
+          case "active":
+            return this.pushLog(`★ ${who} ชั้นยอด: ${m.name} (${m.hint})`);
+          case "enraged":
+            this.popup(e.unitId, "คลั่ง!", "#ff6b6b");
+            return this.pushLog(`${who} คลั่ง! โจมตีและความเร็วเพิ่ม`);
+          case "broken":
+            return this.pushLog(`${who} ล้มแล้ว ลูกฝูงเสียขวัญ (บัฟหาย)`);
+          case "warned":
+            this.popup(e.unitId, "เตรียมสวนเวท!", "#ff6b6b");
+            return this.pushLog(`⚠ ${who} จะสวนเวทใส่ ${this.name(e.targetId ?? "")} ในตาถัดไป (ป้องกันหรือหยุดมันไว้)`);
+          case "fired":
+            return this.pushLog(`${who} สวนเวทใส่ ${this.name(e.targetId ?? "")}!`);
+          case "cancelled":
+            return this.pushLog(`การสวนเวทของ ${who} ถูกยกเลิก`);
+        }
+        return;
+      }
       case "CaptureWindowOpened":
         this.popup(e.unitId, "จับได้แล้ว!", "#7dff9b");
         return this.pushLog(`${this.name(e.unitId)} อ่อนแรง: ใช้เครื่องจับได้แล้ว`);
@@ -388,7 +411,8 @@ export class BattleScene extends Phaser.Scene {
         const hpBar = this.add.rectangle(x - 25, y + 36, 50, 4, 0x6be36b).setOrigin(0, 0.5);
         // Bottom-anchored so a second line (statuses) grows upwards.
         const label = this.add.text(x, y - 37, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#ffffff", align: "center" }).setOrigin(0.5, 1);
-        v = { body, hpBar, label, ring };
+        const sub = this.add.text(x, y + 42, "", { fontFamily: "sans-serif", fontSize: "11px", color: "#ffd84a", align: "center" }).setOrigin(0.5, 0);
+        v = { body, hpBar, label, ring, sub };
         this.views.set(u.unitId, v);
       }
       v.body.setPosition(x, y).setAlpha(u.ko || u.retired ? 0.25 : 1);
@@ -396,6 +420,9 @@ export class BattleScene extends Phaser.Scene {
       v.ring.setStrokeStyle(2, u.unitId === this.snap.actor ? 0x7dff9b : 0xff6b6b);
       v.hpBar.setPosition(x - 25, y + 36).setSize(Math.max(0, 50 * (u.hp / u.stats.maxHp)), 4);
       const tags = (u.statuses ?? []).map((st) => `${STATUS_DEFINITIONS[st.statusId].th}${st.turnsLeft}`).join(" ");
+      // An elite leader says so, with its modifiers (chapter 07 §3), readable without colour.
+      const elite = u.elite === undefined ? "" : `★ชั้นยอด\n${u.elite.modifiers.map((m) => ELITE_MODIFIER_TH[m].name).join(", ")}${u.elite.counterOn !== null ? " ⚠สวน!" : ""}`;
+      v.sub.setPosition(x, y + 42).setText(elite);
       v.label.setPosition(x, y - 37).setText(`${u.name} Lv${u.level}${u.retired ? " (จับแล้ว)" : ""}${tags ? `\n${tags}` : ""}`);
     }
     const actor = this.snap.actor ? this.unit(this.snap.actor) : undefined;
