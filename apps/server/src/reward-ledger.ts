@@ -137,6 +137,15 @@ export class RewardLedger {
       );
     }
     if (entitlement.kind === "capture") {
+      // Journal element record (chapter 09): kept even after the companion leaves.
+      stmts.push(
+        this.db
+          .prepare(
+            `INSERT INTO journal_caught (account_id, species_id, element, first_at)
+             SELECT ?, ?, ?, ? WHERE ${OWN_RECEIPT} ON CONFLICT DO NOTHING`,
+          )
+          .bind(recipientId, entitlement.speciesId, entitlement.element, at, id, recipientId, hash),
+      );
       // Captured companions start at the confirmed initial level with Bond 0 (C09, C11). The server
       // picks the growth seed here; a replayed grant keeps the first row (ON CONFLICT DO NOTHING).
       const start = this.rules.provisional.primaryStatStart.value;

@@ -65,6 +65,7 @@ import {
 } from "@pmrpg/shared";
 import type { Env, RoomReply } from "./battle-do";
 import { CharacterStore } from "./character-store";
+import { JournalStore } from "./journal-store";
 import { Economy } from "./economy";
 import { EncounterStore } from "./encounter-store";
 import { PartyStore } from "./party-store";
@@ -103,6 +104,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
   private readonly parties: PartyStore;
   private readonly economy: Economy;
   private readonly characters: CharacterStore;
+  private readonly journal: JournalStore;
   private channel: MapChannel | null = null;
   private packs: { cycle: number; list: PackInstance[] } | null = null;
   /** Accounts with an engage or resume in flight; a second tap waits for the first answer. */
@@ -120,6 +122,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     this.parties = new PartyStore(env.DB, this.rules);
     this.economy = new Economy(env.DB, this.rules);
     this.characters = new CharacterStore(env.DB, this.rules, this.content);
+    this.journal = new JournalStore(env.DB, this.rules, this.content);
   }
 
   /** Rebuild the channel from live sockets (after hibernation) or create it on first join. */
@@ -168,6 +171,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
       return new Response(null, { status: 101, webSocket: client });
     }
 
+    await this.journal.recordMap(accountId, mapId);
     const channel = this.ensureChannel(mapId, channelNo);
     const joined = channel.join(accountId, name, claim.pos, Date.now());
     if (!joined.ok) {
@@ -382,6 +386,9 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     };
     const created = (await this.battle(battleId).handle(account, { kind: "create", setup, reservationId })) as RoomReply;
     if (!created.ok) return fail("ENCOUNTER_REFUSED", created.code);
+    // Journal (chapter 09): every species met in this fight, boss adds included.
+    const adds = lair === null ? [] : (this.content.bosses.get(lair.bossId!)?.adds ?? []);
+    await this.journal.recordSeen(account, [...roster, ...adds]);
 
     this.setBattle(ws, this.att(ws) ?? a, battleId);
     await this.store.save(account, a.generation, a.mapId, presence.pos);

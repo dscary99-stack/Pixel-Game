@@ -2,7 +2,7 @@
  * Character and team requests (server mode). The server decides everything; the client shows
  * what it gets back. Identity uses the dev header until O11 picks auth.
  */
-import type { CharacterView, CreateCharacterRequest, EquipSlot, EquipmentView, MonsterInstance, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RolledAffix } from "@pmrpg/shared";
+import type { CharacterView, CreateCharacterRequest, EquipSlot, EquipmentView, MonsterInstance, JournalSummary, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RolledAffix } from "@pmrpg/shared";
 
 export type StoredCompanion = MonsterInstance & { hp: number | null; mp: number | null };
 
@@ -13,6 +13,8 @@ export interface CharacterBundle {
   coins: number;
   /** Crafting mastery per profession (0..1000). */
   craftMastery: Record<Profession, number>;
+  /** Cosmetic title shown before the name (chapter 09 journal). */
+  titleId?: string | null;
   /** Item balances (materials, potions, capture items, Sigils). */
   bag: Record<string, number>;
 }
@@ -92,6 +94,14 @@ export class CharacterApi {
 
   buy(shopId: string, lines: { itemId: string; quantity: number }[], expectedTotal: number) {
     return this.call<{ coins: number; result: { total: number } }>("POST", "/town/buy", { operationId: opId("buy"), shopId, lines, expectedTotal });
+  }
+
+  journal() {
+    return this.call<JournalSummary & { titles: string[]; titleId: string | null }>("GET", "/journal");
+  }
+
+  setTitle(titleId: string | null) {
+    return this.call<{ titleId: string | null }>("PUT", "/character/title", { titleId });
   }
 
   quests() {

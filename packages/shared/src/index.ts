@@ -32,3 +32,4 @@ export * from "./shop";
 export * from "./affix";
 export * from "./craft";
 export * from "./quest";
+export * from "./journal";

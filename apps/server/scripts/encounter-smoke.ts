@@ -97,6 +97,11 @@ for (let i = 0; i < 50 && !(view.settlement.settled || view.settlement.failed > 
 }
 out.settlement = view.settlement;
 out.inventory = await (await fetch(`${api}/dev/inventory?battle=${battleId}`, { headers: H })).json();
+// Journal (chapter 09): both maps entered, the pack's species met, each defeat counted once.
+const journal = (await (await fetch(`${api}/journal`, { headers: H })).json()) as Msg;
+const leader = journal.species?.find((s: Msg) => s.speciesId === target.leader.speciesId);
+out.journal = { maps: journal.maps, leader: leader === undefined ? null : { seen: leader.seenElements, defeated: leader.defeated } };
+if (!journal.maps?.includes("map:dawn_field") || leader === undefined || leader.seenElements.length === 0) throw new Error(`journal missing records: ${JSON.stringify(out.journal)}`);
 
 // Back to walking from the same spot; the fought pack stays hidden for A.
 from = A2.inbox.length;

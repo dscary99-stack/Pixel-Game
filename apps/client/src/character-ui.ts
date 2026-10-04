@@ -4,6 +4,9 @@
  * comes with the art pass (chapter 10 §4).
  */
 import {
+  JOURNAL_TITLES,
+  levelBand,
+  type JournalSpecies,
   questGoalText,
   type QuestBoardView,
   type QuestReward,
@@ -929,6 +932,154 @@ export function questPanel(api: CharacterApi): Promise<void> {
     void load();
   });
 }
+
+/**
+ * Collection / Journal (chapter 09): each species' records kept apart (met, defeated, caught
+ * yourself, owned now, elements, raised, reborn, Bond), maps found, Sigils received / worn, and
+ * cosmetic titles. Search by level band, element, role and map. Species info (capture item, drops'
+ * Sigil) stays readable for unmet species too, since build info is never locked behind the journal.
+ */
+export function journalPanel(api: CharacterApi): Promise<void> {
+  return new Promise((resolve) => {
+    const { panel, close } = overlay();
+    const body = el("div");
+    const error = el("div", { class: "pm-error", role: "alert" });
+    const actions = el("div", { class: "pm-actions" });
+    const done = el("button", { type: "button", class: "primary" }, "ปิด");
+    actions.append(done);
+    panel.append(el("h2", {}, "สมุดบันทึก"), body, error, actions);
+    done.addEventListener("click", () => {
+      close();
+      resolve();
+    });
+    const filters = { band: "", element: "", role: "", map: "" };
+    const ROLE_TH: Record<string, string> = { tank: "แทงก์", physical: "โจมตีกายภาพ", magic: "เวท", support: "ซัพพอร์ต", control: "ควบคุม" };
+    const speciesMaps = new Map<string, string[]>();
+    for (const m of maps.values()) for (const sp of m.spawns) for (const e of sp.entries) speciesMaps.set(e.speciesId, [...new Set([...(speciesMaps.get(e.speciesId) ?? []), m.id])]);
+    for (const m of maps.values()) {
+      const b = m.bossLair === undefined ? undefined : exampleContentMaps().bosses.get(m.bossLair.bossId);
+      if (b !== undefined) speciesMaps.set(b.speciesId, [...new Set([...(speciesMaps.get(b.speciesId) ?? []), m.id])]);
+    }
+
+    let data: Awaited<ReturnType<CharacterApi["journal"]>> | null = null;
+    const draw = () => {
+      if (data === null) return;
+      const j = data;
+      body.replaceChildren();
+      const records = new Map(j.species.map((s) => [s.speciesId, s]));
+      const all = [...species.values()];
+      const met = all.filter((s) => (records.get(s.id)?.seenElements.length ?? 0) > 0).length;
+      body.append(
+        el(
+          "div",
+          { class: "pm-stats" },
+          `พบแล้ว ${met}/${all.length} ชนิด · แผนที่ ${j.maps.length}/${maps.size} · ตรา Sigil ที่ได้ ${Object.keys(j.sigilsReceived).length} แบบ · ใส่อยู่ ${j.sigilsWorn.length} แบบ`,
+        ),
+      );
+      // Titles: cosmetic only.
+      body.append(el("h3", {}, "ฉายา (แสดงหน้าชื่อ ไม่มีผลต่อพลัง)"));
+      const tl = el("ul", { class: "pm-list", "data-section": "titles" });
+      for (const t of JOURNAL_TITLES) {
+        const earned = j.titles.includes(t.id);
+        const li = el("li", { "data-title": t.id });
+        li.append(el("span", { class: "pm-grow" }, `${earned ? "★" : "☆"} ${t.name.th} — ${t.how.th}`));
+        const b = el("button", { type: "button" }, j.titleId === t.id ? "ถอด" : "ใช้");
+        b.disabled = !earned;
+        b.addEventListener("click", async () => {
+          try {
+            await api.setTitle(j.titleId === t.id ? null : t.id);
+            data = await api.journal();
+            draw();
+          } catch (e) {
+            error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+          }
+        });
+        li.append(b);
+        tl.append(li);
+      }
+      body.append(tl);
+
+      body.append(el("h3", {}, "มอนสเตอร์"));
+      const bar = el("div", { class: "pm-choices" });
+      const select = (key: keyof typeof filters, label: string, opts: { value: string; label: string }[]) => {
+        const s = el("select", { "aria-label": label, "data-filter": key });
+        s.append(el("option", { value: "" }, `${label}: ทั้งหมด`));
+        for (const o of opts) {
+          const op = el("option", { value: o.value }, o.label);
+          if (o.value === filters[key]) op.selected = true;
+          s.append(op);
+        }
+        s.addEventListener("change", () => {
+          filters[key] = s.value;
+          draw();
+        });
+        bar.append(s);
+      };
+      select("band", "เลเวล", [...new Set(all.map((s) => levelBand(s.fixedWildLevel)))].map((b) => ({ value: b, label: `Lv ${b}` })));
+      select("element", "ธาตุ", (Object.keys(ELEMENT_TH) as Element[]).map((e) => ({ value: e, label: ELEMENT_TH[e] })));
+      select("role", "บทบาท", [...new Set(all.map((s) => s.archetype))].map((r) => ({ value: r, label: ROLE_TH[r] ?? r })));
+      select("map", "พื้นที่", [...maps.values()].filter((m) => m.kind !== "town").map((m) => ({ value: m.id, label: m.name.th })));
+      body.append(bar);
+      const list = el("ul", { class: "pm-list", "data-section": "species" });
+      const shown = all.filter(
+        (s) =>
+          (filters.band === "" || levelBand(s.fixedWildLevel) === filters.band) &&
+          (filters.element === "" || s.allowedElements.includes(filters.element as Element)) &&
+          (filters.role === "" || s.archetype === filters.role) &&
+          (filters.map === "" || (speciesMaps.get(s.id) ?? []).includes(filters.map)),
+      );
+      for (const s of shown) {
+        const r: JournalSpecies | undefined = records.get(s.id);
+        const metIt = (r?.seenElements.length ?? 0) > 0;
+        const li = el("li", { class: "pm-skill-pet", "data-species": s.id });
+        li.append(el("div", {}, `${metIt ? s.name.th : `${s.name.th} (ยังไม่พบ)`} · Lv${s.fixedWildLevel} · ${ROLE_TH[s.archetype] ?? s.archetype}${s.rank === "BOSS" ? " · บอส" : ""}`));
+        li.append(
+          el(
+            "span",
+            { class: "pm-affix" },
+            `ธาตุที่มีได้ ${s.allowedElements.map((e) => ELEMENT_TH[e]).join("/")} · เครื่องจับ ${itemDefs.get(s.captureItemId)?.name.th ?? "-"} · พื้นที่ ${(speciesMaps.get(s.id) ?? []).map((m) => maps.get(m)?.name.th ?? m).join(", ") || "-"}`,
+          ),
+        );
+        if (r !== undefined) {
+          li.append(
+            el(
+              "span",
+              { class: "pm-affix" },
+              `พบในธาตุ ${r.seenElements.map((e) => ELEMENT_TH[e]).join("/") || "-"} · ชนะ ${r.defeated} · จับเอง ${r.capturedPersonally} (ธาตุ ${r.capturedElements.map((e) => ELEMENT_TH[e]).join("/") || "-"}) · มีอยู่ ${r.ownedNow}`,
+            ),
+          );
+          if (r.ownedNow > 0) {
+            li.append(el("span", { class: "pm-affix" }, `เลี้ยงสูงสุด Lv${r.raisedLevel} · จุติ ${r.rebirthStage} · Bond ${BOND_TIER_NAMES[r.bondTier] ?? r.bondTier}`));
+          }
+        }
+        list.append(li);
+      }
+      if (shown.length === 0) list.append(el("li", {}, "ไม่มีชนิดที่ตรงกับตัวกรอง"));
+      body.append(list);
+      body.append(el("h3", {}, "แผนที่"));
+      body.append(el("div", { class: "pm-note" }, [...maps.values()].map((m) => `${j.maps.includes(m.id) ? "✓" : "·"} ${m.name.th}`).join("  ")));
+      body.append(el("h3", {}, "ตรา Sigil"));
+      body.append(
+        el(
+          "div",
+          { class: "pm-note" },
+          [...sigilDefs.values()].map((sg) => `${sg.name.th}: ได้ ${j.sigilsReceived[sg.id] ?? 0}${j.sigilsWorn.includes(sg.id) ? " · ใส่อยู่" : ""}`).join("  ·  "),
+        ),
+      );
+      body.append(el("div", { class: "pm-note" }, "นับการชนะ/จับตั้งแต่เปิดระบบบันทึก · ฉายาเป็นตัวอย่าง (P12)"));
+    };
+    api
+      .journal()
+      .then((j) => {
+        data = j;
+        draw();
+      })
+      .catch((e) => (error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e)));
+  });
+}
+
+/** Display name of a title id. */
+export const titleName = (id: string | null | undefined) => (id == null ? null : (JOURNAL_TITLES.find((t) => t.id === id)?.name.th ?? null));
 
 const STAT_NAMES: Record<keyof PrimaryStats, string> = {
   STR: "STR พลังกาย",
