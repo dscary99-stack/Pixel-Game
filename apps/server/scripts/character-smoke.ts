@@ -84,7 +84,8 @@ out.captured = captured;
 
 // 4. Team: saved with a version check; a stale write is refused.
 if (captured !== null) {
-  const saved = await http("PUT", "/character/team", { expectedVersion: 1, companionIds: [captured] });
+  // The player picks where it stands (back row, last cell) instead of the default.
+  const saved = await http("PUT", "/character/team", { expectedVersion: 1, companionIds: [captured], formation: [{ instanceId: captured, row: "back", slot: 2 }] });
   out.teamSaved = { status: saved.status, team: saved.body.character?.team };
   out.staleTeam = (await http("PUT", "/character/team", { expectedVersion: 1, companionIds: [] })).body.error;
   out.nickname = (await http("PUT", "/character/companion/nickname", { companionId: captured, nickname: "เจ้าตัวเล็ก" })).body.nickname;
@@ -94,7 +95,8 @@ if (captured !== null) {
   const spawn = lastPacks(A).find((p) => p.spawnId === "south_snails") ? "south_snails" : lastPacks(A)[0].spawnId;
   const r = await fightAt(A, spawn, async (battleId) => {
     const view = await battleCall(account, battleId)("GET", "");
-    out.companionInFight = view.state.units.find((u: Msg) => u.instanceId === captured)?.name ?? false;
+    const unit = view.state.units.find((u: Msg) => u.instanceId === captured);
+    out.companionInFight = unit === undefined ? false : `${unit.name} @ ${unit.row}:${unit.slot}`;
     out.teamDuringFight = (await http("PUT", "/character/team", { expectedVersion: 2, companionIds: [] })).body.error;
   });
   out.withCompanion = r.view.state.status;

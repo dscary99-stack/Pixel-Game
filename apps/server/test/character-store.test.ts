@@ -110,6 +110,25 @@ describe("setTeam", () => {
     ]);
   });
 
+  it("keeps a formation the player picked, and refuses a shared, missing or player cell", async () => {
+    const formation = [
+      { instanceId: "mon:snail", row: "front" as const, slot: 0 },
+      { instanceId: "mon:crab", row: "back" as const, slot: 2 },
+    ];
+    const r = await store.setTeam(A, { expectedVersion: 1, companionIds: ["mon:snail", "mon:crab"], formation });
+    expect(r.status === "saved" && r.character.team.map((t) => [t.instanceId, t.row, t.slot])).toEqual([
+      ["mon:snail", "front", 0],
+      ["mon:crab", "back", 2],
+    ]);
+    const bad = async (f: { instanceId: string; row: "front" | "back"; slot: number }[]) =>
+      (await store.setTeam(A, { expectedVersion: 2, companionIds: ["mon:snail", "mon:crab"], formation: f })) as { reason?: string };
+    expect((await bad([formation[0]!, { ...formation[1]!, row: "front", slot: 0 }])).reason).toBe("FORMATION_INVALID");
+    expect((await bad([formation[0]!])).reason).toBe("FORMATION_INVALID");
+    expect((await bad([formation[0]!, { ...formation[1]!, row: "front", slot: 1 }])).reason).toBe("FORMATION_INVALID");
+    expect((await bad([formation[0]!, { ...formation[1]!, slot: 3 }])).reason).toBe("FORMATION_INVALID");
+    expect((await store.get(A))!.version).toBe(2);
+  });
+
   it("refuses a duplicate species even with another element (C04)", async () => {
     expect(await store.setTeam(A, { expectedVersion: 1, companionIds: ["mon:crab", "mon:crab2"] })).toMatchObject({ status: "rejected", reason: "DUPLICATE_SPECIES" });
   });

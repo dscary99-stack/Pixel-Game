@@ -27,6 +27,7 @@ import {
   type SigilDefinition,
   SetTeamRequestSchema,
   teamFormation,
+  formationIssues,
   validateTeam,
   type CharacterView,
   type MonsterInstance,
@@ -125,7 +126,7 @@ export type CreateResult =
 
 export type SetTeamResult =
   | { status: "saved"; character: CharacterView }
-  | { status: "rejected"; reason: "INVALID_REQUEST" | "NO_CHARACTER" | "STALE_VERSION" | "IN_BATTLE" | "NOT_OWNER" | "TEAM_TOO_LARGE" | "DUPLICATE_SPECIES"; message: string };
+  | { status: "rejected"; reason: "INVALID_REQUEST" | "NO_CHARACTER" | "STALE_VERSION" | "IN_BATTLE" | "NOT_OWNER" | "TEAM_TOO_LARGE" | "DUPLICATE_SPECIES" | "FORMATION_INVALID"; message: string };
 
 const OPEN_BATTLE = `EXISTS (SELECT 1 FROM battle_reservations WHERE account_id = ? AND status IN ('reserved', 'active'))`;
 
@@ -279,7 +280,7 @@ export class CharacterStore {
   async setTeam(accountId: string, raw: unknown): Promise<SetTeamResult> {
     const parsed = SetTeamRequestSchema.safeParse(raw);
     if (!parsed.success) return { status: "rejected", reason: "INVALID_REQUEST", message: parsed.error.issues.map((i) => i.message).join("; ") };
-    const { expectedVersion, companionIds } = parsed.data;
+    const { expectedVersion, companionIds, formation } = parsed.data;
     const row = await this.row(accountId);
     if (row === null) return { status: "rejected", reason: "NO_CHARACTER", message: "create a character first" };
     if (new Set(companionIds).size !== companionIds.length) return { status: "rejected", reason: "INVALID_REQUEST", message: "a companion is listed twice" };
@@ -290,7 +291,15 @@ export class CharacterStore {
     const team = members.map((m) => ({ instanceId: m!.id, speciesId: m!.speciesId }));
     const issues = validateTeam(this.rules, team);
     if (issues.length > 0) return { status: "rejected", reason: issues[0]!.code as "TEAM_TOO_LARGE" | "DUPLICATE_SPECIES", message: issues.map((i) => i.message).join("; ") };
-    const slots = teamFormation(this.rules, team, this.content.species);
+    if (formation !== undefined) {
+      const bad = formationIssues(this.rules, companionIds, formation);
+      if (bad.length > 0) return { status: "rejected", reason: "FORMATION_INVALID", message: bad.join("; ") };
+    }
+    const cellOf = new Map((formation ?? []).map((f) => [f.instanceId, f]));
+    const slots =
+      formation === undefined
+        ? teamFormation(this.rules, team, this.content.species)
+        : team.map((t) => ({ ...t, row: cellOf.get(t.instanceId)!.row, slot: cellOf.get(t.instanceId)!.slot }));
 
     const teamHash = await hashJson({ expectedVersion, slots });
     const n = slots.length;

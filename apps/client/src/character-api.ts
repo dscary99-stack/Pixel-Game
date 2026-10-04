@@ -51,8 +51,9 @@ export class CharacterApi {
     return this.call<{ character: CharacterView }>("POST", "/character", { ...req, operationId });
   }
 
-  setTeam(expectedVersion: number, companionIds: string[]) {
-    return this.call<{ character: CharacterView }>("PUT", "/character/team", { expectedVersion, companionIds });
+  /** Save the team; `formation` places each companion (omitted: the server's default formation). */
+  setTeam(expectedVersion: number, companionIds: string[], formation?: { instanceId: string; row: "front" | "back"; slot: number }[]) {
+    return this.call<{ character: CharacterView }>("PUT", "/character/team", { expectedVersion, companionIds, ...(formation === undefined ? {} : { formation }) });
   }
 
   /** Put a piece in a slot, or empty it with null. */

@@ -89,6 +89,14 @@ export const SetTeamRequestSchema = z
     /** The character version the client last saw; a stale write is refused (chapter 11 §4). */
     expectedVersion: z.number().int().min(1),
     companionIds: z.array(z.string().min(1).max(80)).max(10),
+    /**
+     * Where each companion stands (the player keeps front-centre). Omitted: the default
+     * `teamFormation`. Given: one cell per companion, checked by `formationIssues`.
+     */
+    formation: z
+      .array(z.object({ instanceId: z.string().min(1).max(80), row: z.enum(["front", "back"]), slot: z.number().int().min(0).max(9) }).strict())
+      .max(10)
+      .optional(),
   })
   .strict();
 export type SetTeamRequest = z.infer<typeof SetTeamRequestSchema>;
@@ -146,6 +154,40 @@ export function teamFormation(
     if (slot === undefined) throw new Error("team larger than the formation");
     return { instanceId: m.instanceId, speciesId: m.speciesId, row, slot };
   });
+}
+
+/** Cells a companion may take: every formation cell except the player's (front-centre). */
+export function formationCells(rules: RulesConfig): { row: "front" | "back"; slot: number }[] {
+  const front = Array.from({ length: rules.provisional.formationFrontSlots.value }, (_, i) => i).filter((s) => s !== PLAYER_POSITION.slot);
+  const back = Array.from({ length: rules.provisional.formationBackSlots.value }, (_, i) => i);
+  return [...front.map((slot) => ({ row: "front" as const, slot })), ...back.map((slot) => ({ row: "back" as const, slot }))];
+}
+
+/**
+ * A player-chosen formation: exactly the team's companions, each once, each in a real cell that is
+ * not the player's and not shared. Returns what is wrong (empty when fine).
+ */
+export function formationIssues(
+  rules: RulesConfig,
+  companionIds: readonly string[],
+  formation: readonly { instanceId: string; row: "front" | "back"; slot: number }[],
+): string[] {
+  const out: string[] = [];
+  const cells = new Set(formationCells(rules).map((c) => `${c.row}:${c.slot}`));
+  const ids = new Set(companionIds);
+  const placed = new Set<string>();
+  const taken = new Set<string>();
+  for (const f of formation) {
+    const cell = `${f.row}:${f.slot}`;
+    if (!ids.has(f.instanceId)) out.push(`${f.instanceId} is not in the team`);
+    if (placed.has(f.instanceId)) out.push(`${f.instanceId} is placed twice`);
+    if (!cells.has(cell)) out.push(`${cell} is not a free formation cell`);
+    else if (taken.has(cell)) out.push(`${cell} is used twice`);
+    placed.add(f.instanceId);
+    taken.add(cell);
+  }
+  for (const id of companionIds) if (!placed.has(id)) out.push(`${id} has no cell`);
+  return out;
 }
 
 /** The battle's player unit, built from a stored character and what it wears. */

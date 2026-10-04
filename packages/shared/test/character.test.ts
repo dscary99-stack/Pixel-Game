@@ -11,6 +11,8 @@ import {
   exampleContentMaps,
   playerSetup,
   teamFormation,
+  formationCells,
+  formationIssues,
   type CharacterView,
   type MonsterInstance,
   type SpeciesDefinition,
@@ -94,6 +96,14 @@ describe("teamFormation (P15: 3 front, 3 back, player front-centre)", () => {
     // Two tanks take the free front cells; the third front-liner spills to the back row.
     expect(slots.slice(0, 2).map((s) => s.row)).toEqual(["front", "front"]);
     expect(slots[2]!.row).toBe("back");
+  });
+
+  it("a picked formation uses the 5 cells around the player, each once", () => {
+    expect(formationCells(rules).map((c) => `${c.row}:${c.slot}`)).toEqual(["front:0", "front:2", "back:0", "back:1", "back:2"]);
+    expect(formationIssues(rules, ["a", "b"], [{ instanceId: "a", row: "back", slot: 0 }, { instanceId: "b", row: "front", slot: 2 }])).toEqual([]);
+    expect(formationIssues(rules, ["a", "b"], [{ instanceId: "a", row: "back", slot: 0 }, { instanceId: "b", row: "back", slot: 0 }])).toEqual(["back:0 is used twice"]);
+    expect(formationIssues(rules, ["a"], [{ instanceId: "a", row: "front", slot: 1 }])).toEqual(["front:1 is not a free formation cell"]);
+    expect(formationIssues(rules, ["a"], [{ instanceId: "x", row: "back", slot: 1 }])).toHaveLength(2);
   });
 
   it("a stored character and team make a battle the kernel accepts, with stored HP", () => {

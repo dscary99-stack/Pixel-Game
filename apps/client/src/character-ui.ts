@@ -61,6 +61,7 @@ import {
   sigilRemovalCost,
   affixRerollCost,
   disposeQuote,
+  formationCells,
   NICKNAME_MAX,
   wornGear,
   PRODUCTION_RULES,
@@ -586,15 +587,40 @@ export function teamPanel(api: CharacterApi, start: CharacterBundle): Promise<Ch
     let bundle = start;
     let busy = false;
     const picked = new Set(bundle.character.team.map((t) => t.instanceId));
+    // Where each picked companion stands, as "row:slot" (the player keeps front-centre).
+    const CELLS = formationCells(RULES).map((c) => `${c.row}:${c.slot}`);
+    const cellOf = new Map(bundle.character.team.map((t) => [t.instanceId, `${t.row}:${t.slot}`]));
+    const cellName = (cell: string) => `${cell.startsWith("front") ? "หน้า" : "หลัง"} ช่อง ${Number(cell.split(":")[1]) + 1}`;
+    /** A free cell for a newly picked companion: front first for tank/physical, back first otherwise. */
+    const freeCell = (speciesId: string) => {
+      const used = new Set([...picked].map((id) => cellOf.get(id)));
+      const a = species.get(speciesId)?.archetype;
+      const front = a === "tank" || a === "physical";
+      return [...CELLS].sort((x, y) => (x.startsWith("front") === front ? 0 : 1) - (y.startsWith("front") === front ? 0 : 1)).find((c) => !used.has(c));
+    };
     panel.append(el("h2", {}, "ทีมคู่ใจ"));
     const count = el("div", { class: "pm-note" });
-    panel.append(count);
+    const grid = el("div", { class: "pm-stats", "data-formation": "" });
+    panel.append(count, grid);
     const list = el("ul", { class: "pm-list" });
     panel.append(list);
     const error = el("div", { class: "pm-error", role: "alert" });
 
+    const shortName = (id: string) => {
+      const c = bundle.companions.find((x) => x.id === id);
+      return c === undefined ? "?" : (c.nickname ?? species.get(c.speciesId)?.name.th ?? c.speciesId);
+    };
     const refresh = () => {
-      count.textContent = `เลือกแล้ว ${picked.size}/${max} ตัว · ชนิดเดียวกันลงทีมได้ตัวเดียวแม้ต่างธาตุ`;
+      count.textContent = `เลือกแล้ว ${picked.size}/${max} ตัว · ชนิดเดียวกันลงทีมได้ตัวเดียวแม้ต่างธาตุ · แถวหน้าใกล้ศัตรู โดนตีระยะประชิดก่อน`;
+      const who = new Map([...picked].map((id) => [cellOf.get(id), shortName(id)]));
+      const line = (row: "front" | "back") =>
+        [0, 1, 2].map((slot) => (row === "front" && slot === 1 ? "[ผู้เล่น]" : `[${who.get(`${row}:${slot}`) ?? "ว่าง"}]`)).join(" ");
+      grid.textContent = `แถวหน้า ${line("front")} · แถวหลัง ${line("back")}`;
+      for (const sel of list.querySelectorAll<HTMLSelectElement>("select[data-cell]")) {
+        const id = sel.dataset.cell!;
+        sel.disabled = !picked.has(id);
+        sel.value = picked.has(id) ? (cellOf.get(id) ?? "") : "";
+      }
       const speciesPicked = new Map<string, string>();
       for (const c of bundle.companions) if (picked.has(c.id)) speciesPicked.set(c.speciesId, c.id);
       for (const box of list.querySelectorAll<HTMLInputElement>("input[type=checkbox]")) {
@@ -636,8 +662,22 @@ export function teamPanel(api: CharacterApi, start: CharacterBundle): Promise<Ch
         const box = el("input", { type: "checkbox", value: c.id, id: `pm-${c.id}` });
         box.checked = picked.has(c.id);
         box.addEventListener("change", () => {
-          if (box.checked) picked.add(c.id);
-          else picked.delete(c.id);
+          if (box.checked) {
+            const cell = cellOf.get(c.id);
+            const taken = [...picked].some((id) => cellOf.get(id) === cell);
+            if (cell === undefined || taken) cellOf.set(c.id, freeCell(c.speciesId) ?? "");
+            picked.add(c.id);
+          } else picked.delete(c.id);
+          refresh();
+        });
+        // Pick a cell; taking one another companion holds swaps the two.
+        const cellSel = el("select", { "data-cell": c.id, "aria-label": "ตำแหน่ง" });
+        cellSel.append(el("option", { value: "" }, "—"), ...CELLS.map((cell) => el("option", { value: cell }, cellName(cell))));
+        cellSel.addEventListener("change", () => {
+          const mine = cellOf.get(c.id);
+          const other = [...picked].find((id) => id !== c.id && cellOf.get(id) === cellSel.value);
+          if (other !== undefined && mine !== undefined) cellOf.set(other, mine);
+          cellOf.set(c.id, cellSel.value);
           refresh();
         });
         const dot = el("span", { class: "pm-dot" });
@@ -665,7 +705,7 @@ export function teamPanel(api: CharacterApi, start: CharacterBundle): Promise<Ch
           if (!window.confirm(msg)) return;
           void service(() => api.releaseCompanion(c.id));
         });
-        li.append(box, dot, label, rename, lock, release);
+        li.append(box, dot, label, cellSel, rename, lock, release);
         list.append(li);
       }
       refresh();
@@ -689,7 +729,11 @@ export function teamPanel(api: CharacterApi, start: CharacterBundle): Promise<Ch
       try {
         // Keep the order the companions were listed in, so the formation is predictable.
         const ids = bundle.companions.filter((c) => picked.has(c.id)).map((c) => c.id);
-        const r = await api.setTeam(bundle.character.version, ids);
+        const formation = ids.map((id) => {
+          const [row, slot] = (cellOf.get(id) ?? "").split(":");
+          return { instanceId: id, row: row as "front" | "back", slot: Number(slot) };
+        });
+        const r = await api.setTeam(bundle.character.version, ids, formation);
         close();
         resolve(r.character);
       } catch (e) {
