@@ -121,6 +121,93 @@ export const StatusEffectSchema = z
   })
   .strict();
 
+// ---------------------------------------------------------------- passives (catalog §4)
+
+/** Who a passive's effect lands on: the owner, the other unit of the event, or the owner's side. */
+export const PassiveTargetSchema = z.enum(["self", "other", "allies", "lowest_ally"]);
+export type PassiveTarget = z.infer<typeof PassiveTargetSchema>;
+
+export const PassiveActionSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("status"), target: PassiveTargetSchema, statuses: z.array(StatusApplicationSchema).min(1).max(3) }).strict(),
+  /** Heals this % of the target's max HP. */
+  z.object({ kind: z.literal("heal"), target: PassiveTargetSchema, pctMaxHp: z.number().int().min(1).max(50) }).strict(),
+  z.object({ kind: z.literal("restore_mp"), target: PassiveTargetSchema, amount: z.number().int().min(1).max(200) }).strict(),
+]);
+export type PassiveAction = z.infer<typeof PassiveActionSchema>;
+
+/**
+ * When a passive fires (catalog §4 triggers). "other" is the unit on the other end of the event: the
+ * target hit, the attacker, the unit knocked out, the ally fallen or protected, the skill's target.
+ */
+export const PASSIVE_EVENTS = [
+  "battle_start",
+  "turn_start",
+  "turn_end",
+  "dealt_damage",
+  "took_damage",
+  "kill",
+  "ally_down",
+  "hp_below",
+  "protected_ally",
+  "used_skill",
+] as const;
+export type PassiveEvent = (typeof PASSIVE_EVENTS)[number];
+
+export const PassiveTriggerSchema = z
+  .object({
+    on: z.enum(PASSIVE_EVENTS),
+    /** dealt_damage / took_damage / kill: only from basic attacks, or only from skills. */
+    action: z.enum(["attack", "skill"]).optional(),
+    /** The other unit had this status at the moment of the event (e.g. a kill on a marked target). */
+    otherHas: z.enum(STATUS_IDS).optional(),
+    /** used_skill: only skills that apply this status (e.g. cleanse). */
+    skillApplies: z.enum(STATUS_IDS).optional(),
+    /** hp_below: fires when the owner's HP drops under this % of max. */
+    hpBelowPct: z.number().int().min(1).max(99).optional(),
+    chancePct: z.number().int().min(1).max(100).default(100),
+    oncePerBattle: z.boolean().default(false),
+    then: z.array(PassiveActionSchema).min(1).max(3),
+  })
+  .strict()
+  .superRefine((t, ctx) => {
+    if ((t.on === "hp_below") !== (t.hpBelowPct !== undefined)) ctx.addIssue({ code: "custom", message: "hpBelowPct goes with hp_below only" });
+    if (t.skillApplies !== undefined && t.on !== "used_skill") ctx.addIssue({ code: "custom", message: "skillApplies goes with used_skill only" });
+    const noOther = t.on === "battle_start" || t.on === "turn_start" || t.on === "turn_end" || t.on === "hp_below";
+    if (noOther && t.otherHas !== undefined) ctx.addIssue({ code: "custom", message: `${t.on} has no other unit` });
+    // Harmful statuses only on an enemy "other"; helpful ones, heals and MP only on the owner's side.
+    // used_skill's other can be either side: the kernel checks that one when it fires.
+    const enemyOther = t.on === "dealt_damage" || t.on === "took_damage" || t.on === "kill";
+    const mayBeEnemy = enemyOther || t.on === "used_skill";
+    for (const a of t.then) {
+      if (noOther && a.target === "other") ctx.addIssue({ code: "custom", message: `${t.on} has no other unit to target` });
+      const harmfulList = a.kind === "status" ? a.statuses.map((x) => STATUS_DEFINITIONS[x.statusId].harmful) : [false];
+      if (harmfulList.some((h) => h) && harmfulList.some((h) => !h)) ctx.addIssue({ code: "custom", message: "one action cannot mix harmful and helpful statuses" });
+      if (harmfulList[0] === true && !(a.target === "other" && mayBeEnemy)) ctx.addIssue({ code: "custom", message: "harmful statuses only go on the enemy of the event" });
+      if (harmfulList[0] === false && a.target === "other" && enemyOther) ctx.addIssue({ code: "custom", message: "helpful effects never go on an enemy" });
+      if (a.kind === "status") {
+        for (const x of a.statuses) if ((x.stacks ?? 1) > STATUS_DEFINITIONS[x.statusId].maxStacks) ctx.addIssue({ code: "custom", message: `${x.statusId} stacks above its cap` });
+      }
+    }
+  });
+export type PassiveTrigger = z.infer<typeof PassiveTriggerSchema>;
+
+/** Always-on changes while the passive's owner fights. */
+export const PassiveModifierSchema = z.discriminatedUnion("kind", [
+  /** More damage against a target with this status (e.g. the fox Sigil idea: burned targets). */
+  z.object({ kind: z.literal("damage_vs_status"), statusId: z.enum(STATUS_IDS), bonusPct: z.number().int().min(1).max(100) }).strict(),
+  /** Heals more on a target below this HP share (the snail Sigil idea). */
+  z.object({ kind: z.literal("heal_low_hp"), belowHpPct: z.number().int().min(1).max(99), bonusPct: z.number().int().min(1).max(100) }).strict(),
+]);
+export type PassiveModifier = z.infer<typeof PassiveModifierSchema>;
+
+export const PassiveSchema = z
+  .object({
+    triggers: z.array(PassiveTriggerSchema).max(3).default([]),
+    modifiers: z.array(PassiveModifierSchema).max(3).default([]),
+  })
+  .strict();
+export type Passive = z.infer<typeof PassiveSchema>;
+
 /**
  * What one skill level adds (chapter 04 §5; Nut 2026-10-03: "หลากหลาย ขึ้นอยู่กับ skill ของแต่ละตัว").
  * power: +% on the coefficient; mp_cost / cooldown: change (negative = cheaper / faster);
@@ -154,9 +241,12 @@ export const SkillDefinitionSchema = z
     levelSteps: z.array(SkillLevelStepSchema).optional(),
     /** A Rebirth variant of this base skill (chapter 04 §7): same role, played differently. */
     variantOf: SkillId.optional(),
+    /** What a passive or innate does (catalog §4); absent = not built yet (waits for shield etc.). */
+    passive: PassiveSchema.optional(),
   })
   .strict()
   .superRefine((s, ctx) => {
+    if (s.passive !== undefined && s.kind !== "passive") ctx.addIssue({ code: "custom", message: "only passive skills carry passive effects" });
     if (s.levelSteps !== undefined) {
       const levels = s.levelSteps.map((x) => x.atLevel).sort((a, b) => a - b);
       if (levels.join(",") !== "2,3,4,5,6,7,8,9,10") ctx.addIssue({ code: "custom", message: "levelSteps needs exactly one step for each level 2–10" });

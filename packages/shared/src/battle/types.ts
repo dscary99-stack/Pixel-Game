@@ -2,7 +2,7 @@ import type { PartyBonus } from "../party";
 import type { OriginMode, LootLine } from "../loot";
 import type { Rank } from "../rules";
 import type { RngState } from "../rng";
-import type { Element, MonsterInstance, PrimaryStats } from "../schemas";
+import type { Element, MonsterInstance, PassiveEvent, PrimaryStats } from "../schemas";
 import type { DamageBreakdown } from "../damage";
 import type { DerivedStats, GearBonuses } from "../stats";
 import type { ErrorCode } from "../validators";
@@ -48,6 +48,10 @@ export interface BattleUnit {
   statuses?: ActiveStatus[];
   /** The last skill this unit used in this fight (skill lock takes it). */
   lastSkillId?: string;
+  /** Passive skills with effects this unit fights with (the companion's innate, a wild monster's innate). */
+  passiveIds?: string[];
+  /** Once-per-battle passives already used ("skillId#trigger index"). */
+  passivesUsed?: string[];
   ko: boolean;
   /** Captured enemies leave the fight without kill loot. */
   retired: boolean;
@@ -163,7 +167,7 @@ export type BattleEventBody =
   | { type: "ItemConsumed"; itemId: string; remaining: number }
   | { type: "UnitKnockedOut"; unitId: string }
   /** A side effect of an action on its user or target (lifesteal, recoil, MP restore). */
-  | { type: "ResourceChanged"; unitId: string; source: "lifesteal" | "recoil" | "restore_mp" | "leech" | "mana_burn" | "mp_regen"; hp: number; mp: number; hpAfter: number; mpAfter: number }
+  | { type: "ResourceChanged"; unitId: string; source: "lifesteal" | "recoil" | "restore_mp" | "leech" | "mana_burn" | "mp_regen" | "passive"; hp: number; mp: number; hpAfter: number; mpAfter: number }
   /** A status landed, was refreshed, missed its roll, met immunity, ran out or was ended early. */
   | {
       type: "StatusChanged";
@@ -180,6 +184,8 @@ export type BattleEventBody =
   | { type: "StatusTick"; unitId: string; statusId: StatusId; hp: number; hpAfter: number }
   /** Confuse or charm sent an attack to the actor's own side. */
   | { type: "ActionRedirected"; actorId: string; statusId: StatusId; fromId: string; toId: string }
+  /** A passive or innate of this unit fired (catalog §4); its effects follow as their own events. */
+  | { type: "PassiveTriggered"; unitId: string; skillId: string; on: PassiveEvent }
   /** The unit loses this turn to a control status. */
   | { type: "TurnSkipped"; unitId: string; statusId: StatusId }
   | { type: "EnemyDefeated"; unitId: string; speciesId: string }

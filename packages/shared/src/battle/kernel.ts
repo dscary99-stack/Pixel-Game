@@ -14,7 +14,7 @@ import { rollLoot } from "../loot";
 import { companionExp, killExp } from "../progression";
 import { Rng, seedRng } from "../rng";
 import type { RulesConfig } from "../rules";
-import type { DamageEffect, ItemDefinition, LootTable, SkillDefinition, SpeciesDefinition, StatusApplication } from "../schemas";
+import type { DamageEffect, ItemDefinition, LootTable, PassiveAction, PassiveEvent, PassiveModifier, SkillDefinition, SpeciesDefinition, StatusApplication } from "../schemas";
 import { deriveStats, type DerivedStats } from "../stats";
 import {
   INVERT_PAIRS,
@@ -72,6 +72,8 @@ const reject = (code: ErrorCode, message: string): never => {
 class Ctx {
   readonly events: BattleEvent[] = [];
   readonly rng: Rng;
+  /** Set while a passive's effects resolve, so passives never set off more passives. */
+  inPassive = false;
   constructor(
     readonly s: BattleState,
     readonly rules: RulesConfig,
@@ -187,6 +189,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
       mp: clampResource(c.mp, stats.maxMp),
       skillIds: kit.map((k) => k.skillId).filter((id) => content.skills.get(id)?.kind === "active"),
       skillLevels,
+      passiveIds: kit.map((k) => k.skillId).filter((id) => content.skills.get(id)?.passive !== undefined),
       bondPercent,
       ...(inst.rebirthStage >= 3 && sp.rebirthCosmetic !== undefined
         ? { cosmetic: { effect: sp.rebirthCosmetic.effect, color: sp.rebirthCosmetic.color } }
@@ -214,6 +217,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
     for (const id of sp.skillIds) if (!content.skills.has(id)) reject("MISSING_REFERENCE", `skill ${id}`);
     const wildSkillIds = sp.skillIds.filter((id) => content.skills.get(id)?.kind === "active");
     const wildSkillLevel = skillLevelCap(rules, sp.fixedWildLevel);
+    const innate = content.skills.get(sp.innatePassiveId);
     units.push({
       unitId: e.unitId,
       side: "enemy",
@@ -231,6 +235,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
       mp: stats.maxMp,
       skillIds: wildSkillIds,
       skillLevels: Object.fromEntries(wildSkillIds.map((id) => [id, wildSkillLevel])),
+      passiveIds: innate?.passive !== undefined ? [innate.id] : [],
       basicAttackRange: sp.basicAttackRange,
       primaryStats: { ...sp.wildPrimaryStats },
       statuses: [],
@@ -268,6 +273,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
   };
   const ctx = new Ctx(state, rules, content, null);
   ctx.emit({ type: "BattleStarted", originMode: state.originMode, rulesVersion: state.rulesVersion, unitIds: units.map((u) => u.unitId) });
+  for (const u of units) if (active(u)) firePassives(ctx, u, "battle_start");
   startRound(ctx);
   advanceToAllyInput(ctx);
   return ctx.finish();
@@ -381,9 +387,11 @@ function removeStatus(ctx: Ctx, u: BattleUnit, id: StatusId, change: "removed" |
 function statusDamage(ctx: Ctx, u: BattleUnit, statusId: StatusId, amount: number): number {
   const loss = Math.min(Math.max(0, amount), u.hp);
   if (loss <= 0 || !active(u)) return 0;
+  const before = u.hp;
   u.hp -= loss;
   ctx.emit({ type: "StatusTick", unitId: u.unitId, statusId, hp: -loss, hpAfter: u.hp });
   if (u.hp === 0) knockOut(ctx, u);
+  else firePassives(ctx, u, "hp_below", { hpBefore: before });
   return loss;
 }
 
@@ -410,6 +418,7 @@ function receiveHeal(ctx: Ctx, u: BattleUnit, amount: number): number {
  * control. Returns false when the unit cannot act this turn.
  */
 function statusTurnStart(ctx: Ctx, u: BattleUnit): boolean {
+  firePassives(ctx, u, "turn_start");
   for (const st of [...(u.statuses ?? [])]) {
     const d = STATUS_DEFINITIONS[st.statusId];
     if (d.overTime === undefined || !active(u)) continue;
@@ -456,6 +465,8 @@ function afterAction(ctx: Ctx, u: BattleUnit, cmd: BattleCommand["type"]): void 
 
 /** End of a unit's turn: its statuses count down, except ones put on during this very turn. Doom kills at 0. */
 function endTurn(ctx: Ctx, u: BattleUnit): void {
+  if (!active(u)) return;
+  firePassives(ctx, u, "turn_end");
   if (u.statuses === undefined || !active(u)) return;
   const kept: ActiveStatus[] = [];
   const expired: ActiveStatus[] = [];
@@ -526,6 +537,90 @@ function applyStatus(ctx: Ctx, source: BattleUnit, target: BattleUnit, a: Status
   if (a.statusId === "frostbite" && st.stacks >= tuning(ctx).frostbiteFreezeStacks) {
     removeStatus(ctx, target, "frostbite");
     applyStatus(ctx, source, target, { statusId: "freeze", chancePct: 100, turns: 1 }, true);
+  }
+}
+
+// ================================================================ passives (catalog §4)
+
+interface PassiveInfo {
+  other?: BattleUnit;
+  action?: "attack" | "skill";
+  otherStatuses?: readonly ActiveStatus[];
+  skill?: SkillDefinition;
+  hpBefore?: number;
+}
+
+/** The passives a unit can use now: none while sealed (catalog §3.5). */
+function livePassives(ctx: Ctx, u: BattleUnit): SkillDefinition[] {
+  if ((u.passiveIds ?? []).length === 0 || statusBlocks(u.statuses, "passives") !== undefined) return [];
+  return u.passiveIds!.flatMap((id) => {
+    const sk = ctx.content.skills.get(id);
+    return sk?.passive === undefined ? [] : [sk];
+  });
+}
+
+function passiveModifiers(ctx: Ctx, u: BattleUnit): PassiveModifier[] {
+  return livePassives(ctx, u).flatMap((sk) => sk.passive!.modifiers);
+}
+
+/**
+ * Fires `u`'s passives for one event: conditions, once-per-battle, then the passive's chance, then its
+ * effects in order. Effects of a passive never set off another passive (no chains, chapter 05 §5).
+ */
+function firePassives(ctx: Ctx, u: BattleUnit, on: PassiveEvent, info: PassiveInfo = {}): void {
+  if (ctx.inPassive || !active(u)) return;
+  for (const sk of livePassives(ctx, u)) {
+    sk.passive!.triggers.forEach((tr, i) => {
+      if (tr.on !== on || !active(u) || ctx.s.status !== "active") return;
+      if (tr.action !== undefined && tr.action !== info.action) return;
+      const otherStatuses = info.otherStatuses ?? info.other?.statuses ?? [];
+      if (tr.otherHas !== undefined && !otherStatuses.some((x) => x.statusId === tr.otherHas)) return;
+      if (tr.skillApplies !== undefined && !(info.skill?.effectSequence ?? []).some((e) => (e.statuses ?? []).some((a) => a.statusId === tr.skillApplies))) return;
+      if (tr.hpBelowPct !== undefined) {
+        const line = tr.hpBelowPct * u.stats.maxHp;
+        if (info.hpBefore === undefined || info.hpBefore * 100 < line || u.hp * 100 >= line) return;
+      }
+      const key = `${sk.id}#${i}`;
+      if (tr.oncePerBattle && (u.passivesUsed ?? []).includes(key)) return;
+      if (tr.chancePct < 100 && !ctx.rng.chanceBp(tr.chancePct * 100)) return;
+      if (tr.oncePerBattle) (u.passivesUsed ??= []).push(key);
+      ctx.emit({ type: "PassiveTriggered", unitId: u.unitId, skillId: sk.id, on });
+      ctx.inPassive = true;
+      try {
+        for (const a of tr.then) passiveAction(ctx, u, a, info.other);
+      } finally {
+        ctx.inPassive = false;
+      }
+    });
+  }
+}
+
+function passiveAction(ctx: Ctx, owner: BattleUnit, a: PassiveAction, other: BattleUnit | undefined): void {
+  const side = ctx.s.units.filter((x) => x.side === owner.side && active(x));
+  const targets =
+    a.target === "self"
+      ? [owner]
+      : a.target === "other"
+        ? other !== undefined && active(other) ? [other] : []
+        : a.target === "allies"
+          ? side
+          : side.sort((x, y) => x.hp / x.stats.maxHp - y.hp / y.stats.maxHp || (x.unitId < y.unitId ? -1 : 1)).slice(0, 1);
+  for (const t of targets) {
+    if (!active(t)) continue;
+    // Harmful only on the other side, helpful only on the owner's (the schema cannot tell for used_skill).
+    const harmful = a.kind === "status" && STATUS_DEFINITIONS[a.statuses[0]!.statusId].harmful;
+    if (harmful !== (t.side !== owner.side)) continue;
+    if (a.kind === "status") for (const x of a.statuses) applyStatus(ctx, owner, t, x);
+    else if (a.kind === "heal") {
+      const gain = receiveHeal(ctx, t, Math.max(1, Math.floor((t.stats.maxHp * a.pctMaxHp) / 100)));
+      if (gain !== 0) ctx.emit({ type: "ResourceChanged", unitId: t.unitId, source: "passive", hp: gain, mp: 0, hpAfter: t.hp, mpAfter: t.mp });
+    } else {
+      const mp = Math.min(a.amount, t.stats.maxMp - t.mp);
+      if (mp > 0) {
+        t.mp += mp;
+        ctx.emit({ type: "ResourceChanged", unitId: t.unitId, source: "passive", hp: 0, mp, hpAfter: t.hp, mpAfter: t.mp });
+      }
+    }
   }
 }
 
@@ -882,7 +977,11 @@ function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUni
       actionEvent(ctx, actor, "skill", t, { skillId });
       for (const a of effect.statuses) applyStatus(ctx, actor, t, a);
     } else {
-      const gained = receiveHeal(ctx, t, computeHeal(actor.stats.support, coefficient, effect.flat));
+      let amount = computeHeal(actor.stats.support, coefficient, effect.flat);
+      for (const m of passiveModifiers(ctx, actor)) {
+        if (m.kind === "heal_low_hp" && t.hp * 100 < m.belowHpPct * t.stats.maxHp) amount = Math.floor((amount * (100 + m.bonusPct)) / 100);
+      }
+      const gained = receiveHeal(ctx, t, amount);
       actionEvent(ctx, actor, "skill", t, gained >= 0 ? { skillId, heal: gained, targetHpAfter: t.hp } : { skillId, hit: true, damage: -gained, targetHpAfter: t.hp });
       if (!active(t)) continue;
       const mp = Math.min(effect.restoreMp ?? 0, t.stats.maxMp - t.mp);
@@ -893,6 +992,7 @@ function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUni
       for (const a of effect.statuses ?? []) applyStatus(ctx, actor, t, a);
     }
   }
+  if (active(actor)) firePassives(ctx, actor, "used_skill", { other: target, skill });
 }
 
 type StrikeEffect = { damageType: "physical" | "magic"; coefficient: number; flat: number; element: BattleUnit["element"] } & Partial<
@@ -904,6 +1004,7 @@ function strike(ctx: Ctx, actor: BattleUnit, chosen: BattleUnit, action: "attack
   const t = tuning(ctx);
   // A protector steps in front of the unit it protects (catalog §3.4).
   const target = protectorFor(ctx, actor, chosen);
+  if (target !== chosen) firePassives(ctx, target, "protected_ally", { other: chosen });
   // Statuses change the numbers of both sides (status.ts); max HP never changes.
   const a = statsWithStatuses(rules, actor.stats, actor.statuses);
   const d = statsWithStatuses(rules, target.stats, target.statuses);
@@ -928,6 +1029,9 @@ function strike(ctx: Ctx, actor: BattleUnit, chosen: BattleUnit, action: "attack
     if (vs.consume) removeStatus(ctx, target, vs.statusId);
   }
   if (eff.element === "FIRE" && statusOf(target, "oil") !== undefined) outgoing *= (100 + t.oilFireBonusPct) / 100;
+  for (const m of passiveModifiers(ctx, actor)) {
+    if (m.kind === "damage_vs_status" && statusOf(target, m.statusId) !== undefined) outgoing *= (100 + m.bonusPct) / 100;
+  }
   const breakdown = computeDamage(rules, {
     ...(eff.penetrationPct === undefined ? {} : { defenseModifiers: { penetrationPct: eff.penetrationPct } }),
     ...(outgoing !== 1 ? { outgoingMultiplier: outgoing } : {}),
@@ -977,6 +1081,8 @@ function strike(ctx: Ctx, actor: BattleUnit, chosen: BattleUnit, action: "attack
       if (u !== target && u.side === target.side && statusOf(u, "link") !== undefined) statusDamage(ctx, u, "link", Math.max(1, Math.floor((dealt * t.linkSharePct) / 100)));
     }
   }
+  // Passives see the target's statuses as they were when the hit landed (a kill clears them).
+  const hitInfo = { other: target, action, otherStatuses: [...(target.statuses ?? [])] };
   if (target.hp === 0) knockOut(ctx, target);
   else if (dealt > 0) {
     breakStatusesOnHit(ctx, target, eff.element);
@@ -985,6 +1091,14 @@ function strike(ctx: Ctx, actor: BattleUnit, chosen: BattleUnit, action: "attack
     if (rage !== undefined) rage.stacks = Math.min(STATUS_DEFINITIONS.rage.maxStacks, rage.stacks + 1);
   }
   if (active(target)) for (const x of eff.statuses ?? []) applyStatus(ctx, actor, target, x);
+  if (dealt > 0) {
+    firePassives(ctx, actor, "dealt_damage", hitInfo);
+    if (target.ko) firePassives(ctx, actor, "kill", hitInfo);
+    else {
+      firePassives(ctx, target, "took_damage", { other: actor, action, otherStatuses: [...(actor.statuses ?? [])] });
+      firePassives(ctx, target, "hp_below", { hpBefore });
+    }
+  }
   // Counter: a basic attack back, once; a counter never starts another (chapter 03 §6).
   if (!isCounter && active(target) && active(actor) && statusOf(target, "counter") !== undefined && statusBlocks(target.statuses, "attack") === undefined) {
     if (validTargets(ctx.s, actor.side, target.basicAttackRange).some((u) => u.unitId === actor.unitId)) {
@@ -1000,6 +1114,7 @@ function knockOut(ctx: Ctx, u: BattleUnit): void {
   u.statuses = [];
   if (u.kind === "companion") u.fell = true;
   ctx.emit({ type: "UnitKnockedOut", unitId: u.unitId });
+  for (const x of ctx.s.units) if (x !== u && x.side === u.side && active(x)) firePassives(ctx, x, "ally_down", { other: u });
   if (u.side !== "enemy") return;
   if (ctx.s.resolutions[u.unitId] !== undefined) throw new Error(`enemy ${u.unitId} resolved twice`);
   ctx.s.resolutions[u.unitId] = "defeated";

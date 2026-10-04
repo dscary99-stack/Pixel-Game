@@ -4,7 +4,9 @@
  * not an approved monster catalog, and their loot tables intentionally fail the 50–100
  * candidate validator: we do not invent 50 placeholder items to pass it (chapter 13 §2).
  */
+import type { z } from "zod";
 import { EXAMPLE_EQUIPMENT } from "./equipment";
+import { PassiveSchema, type PassiveTriggerSchema } from "../schemas";
 import type {
   Element,
   ItemDefinition,
@@ -24,7 +26,7 @@ export const EXAMPLE_SKILLS: SkillDefinition[] = [
   support("skill:crab_take_hit", "รับแทน", 5, { statusId: "protect", chancePct: 100, turns: 2 }),
   skill("skill:crab_self_shield", "โล่ตน", "passive"),
   dmg("skill:crab_shield_bash", "ใช้โล่บางส่วนโจมตี", "physical", 1.3, 0, "EARTH", "melee", 6, 0, { statuses: [{ statusId: "stun", chancePct: 20, turns: 1 }] }),
-  skill("skill:crab_innate_mp_refund", "รับแทนสำเร็จลดMPครั้งหน้า", "passive"),
+  innate("skill:crab_innate_mp_refund", "รับแทนสำเร็จคืนMP", [{ on: "protected_ally", then: [{ kind: "restore_mp", target: "self", amount: 3 }] }]),
   // Ember fox (จิ้งจอกสะเก็ด)
   dmg("skill:fox_mark_bite", "กัดติดmark", "physical", 1.2, 0, "FIRE", "melee", 4, 0, { statuses: [{ statusId: "mark", chancePct: 80, turns: 2 }, { statusId: "bleed", chancePct: 35, turns: 3 }] }),
   // EXAMPLE level tables (each skill grows its own way, chapter 04 §5): the volley spreads to more targets.
@@ -34,7 +36,7 @@ export const EXAMPLE_SKILLS: SkillDefinition[] = [
   steps(dmg("skill:fox_consume_mark", "กินmarkโจมตีหนัก", "physical", 1.6, 0, "FIRE", "melee", 10, 2, { bonusVsStatus: { statusId: "mark", bonusPct: 50, consume: true } }), [
     ["power", 6], ["power", 6], ["mp_cost", -2], ["power", 6], ["power", 6], ["cooldown", -1], ["power", 6], ["power", 6], ["power", 10],
   ]),
-  skill("skill:fox_innate_kill_heal", "กำจัดเป้าหมายmarkแล้วฮีลเล็ก", "passive"),
+  innate("skill:fox_innate_kill_heal", "กำจัดเป้าหมายmarkแล้วฮีลเล็ก", [{ on: "kill", otherHas: "mark", then: [{ kind: "heal", target: "self", pctMaxHp: 8 }] }]),
   // Lantern snail (หอยตะเกียง)
   steps(heal("skill:snail_single_heal", "ฮีลเดี่ยว", 1.2, 20, 8), [
     ["power", 5], ["power", 5], ["mp_cost", -2], ["power", 5], ["power", 5], ["power", 5], ["extra_targets", 1], ["power", 5], ["mp_cost", -2],
@@ -46,23 +48,23 @@ export const EXAMPLE_SKILLS: SkillDefinition[] = [
   heal("skill:mole_light_heal", "ฮีลเบา", 0.8, 10, 6),
   skill("skill:mole_cost_cut", "ลดต้นทุนสกิลถัดไปเพื่อน", "passive"),
   dmg("skill:mole_weakening_hit", "โจมตีลดATK", "physical", 1.1, 0, "EARTH", "melee", 4, 0, { statuses: [{ statusId: "atk_down", chancePct: 60, turns: 2 }] }),
-  skill("skill:mole_innate_mp_refund", "basicสำเร็จคืนMPเล็ก", "passive"),
+  innate("skill:mole_innate_mp_refund", "basicสำเร็จคืนMPเล็ก", [{ on: "dealt_damage", action: "attack", then: [{ kind: "restore_mp", target: "self", amount: 1 }] }]),
   // Bell bird (นกกระดิ่ง), chapter 04 §2 kit; Lv3
   support("skill:bird_haste", "เร่งเพื่อน", 4, { statusId: "spd_up", chancePct: 100, turns: 2 }),
   support("skill:bird_cleanse", "ล้างสถานะ1ชนิด", 5, { statusId: "cleanse", chancePct: 100, turns: 1 }),
   dmg("skill:bird_back_peck", "โจมตีหลัง", "physical", 1.0, 0, "WIND", "ranged", 4, 0),
-  skill("skill:bird_innate_resist", "cleanseครั้งแรกให้resist", "passive"),
+  innate("skill:bird_innate_resist", "cleanseครั้งแรกให้ต้านสถานะ", [{ on: "used_skill", skillApplies: "cleanse", oncePerBattle: true, then: [{ kind: "status", target: "other", statuses: [{ statusId: "res_up", chancePct: 100, turns: 2 }] }] }]),
   // Rebirth variants (chapter 04 §7, EXAMPLE): same role, played differently. Crab follows chapter 04's example.
   variant(skill("skill:crab_shield_thick", "โล่หนา (โล่มาก ใช้MPสูง)", "passive"), "skill:crab_self_shield"),
   variant(skill("skill:crab_shield_shared", "โล่บางแชร์ (โล่บางให้เพื่อนด้วย)", "passive"), "skill:crab_self_shield"),
-  variant(skill("skill:crab_innate_mp_surge", "รับแทนสำเร็จคืนMPมากขึ้น", "passive"), "skill:crab_innate_mp_refund"),
-  variant(skill("skill:crab_innate_small_heal", "รับแทนสำเร็จฮีลเล็กแทน", "passive"), "skill:crab_innate_mp_refund"),
+  variant(innate("skill:crab_innate_mp_surge", "รับแทนสำเร็จคืนMPมากขึ้น", [{ on: "protected_ally", then: [{ kind: "restore_mp", target: "self", amount: 6 }] }]), "skill:crab_innate_mp_refund"),
+  variant(innate("skill:crab_innate_small_heal", "รับแทนสำเร็จฮีลเล็กแทน", [{ on: "protected_ally", then: [{ kind: "heal", target: "self", pctMaxHp: 4 }] }]), "skill:crab_innate_mp_refund"),
   variant(dmg("skill:crab_pierce_bash", "กระแทกเจาะเกราะ", "physical", 1.3, 0, "EARTH", "melee", 6, 0, { penetrationPct: 30 }), "skill:crab_shield_bash"),
   variant(dmg("skill:crab_light_bash", "กระแทกประหยัดโล่", "physical", 1.15, 0, "EARTH", "melee", 3, 0), "skill:crab_shield_bash"),
   variant(dmg("skill:fox_blood_bite", "กัดดูดเลือด", "physical", 1.1, 0, "FIRE", "melee", 4, 0, { lifestealPct: 30 }), "skill:fox_mark_bite"),
   variant(dmg("skill:fox_keen_bite", "กัดแม่นคม", "physical", 1.15, 0, "FIRE", "melee", 4, 0, { accuracyBonusPct: 15, critBonusPct: 15 }), "skill:fox_mark_bite"),
-  variant(skill("skill:fox_innate_kill_haste", "กำจัดเป้าหมายmarkแล้วเร็วขึ้น", "passive"), "skill:fox_innate_kill_heal"),
-  variant(skill("skill:fox_innate_kill_mp", "กำจัดเป้าหมายmarkแล้วคืนMP", "passive"), "skill:fox_innate_kill_heal"),
+  variant(innate("skill:fox_innate_kill_haste", "กำจัดเป้าหมายmarkแล้วเร็วขึ้น", [{ on: "kill", otherHas: "mark", then: [{ kind: "status", target: "self", statuses: [{ statusId: "spd_up", chancePct: 100, turns: 2 }] }] }]), "skill:fox_innate_kill_heal"),
+  variant(innate("skill:fox_innate_kill_mp", "กำจัดเป้าหมายmarkแล้วคืนMP", [{ on: "kill", otherHas: "mark", then: [{ kind: "restore_mp", target: "self", amount: 8 }] }]), "skill:fox_innate_kill_heal"),
   variant(dmg("skill:fox_final_blaze", "ปิดฉากเพลิง", "physical", 1.5, 0, "FIRE", "melee", 10, 2, { execute: { belowHpPct: 35, bonusPct: 60 } }), "skill:fox_consume_mark"),
   variant(dmg("skill:fox_reckless_dash", "พุ่งเสี่ยงตาย", "physical", 2.2, 0, "FIRE", "melee", 10, 2, { recoilPct: 20 }), "skill:fox_consume_mark"),
   // Player prototype skill
@@ -185,6 +187,11 @@ export const EXAMPLE_LOOT_TABLES: LootTable[] = EXAMPLE_SPECIES.map((s) => {
 /** Level 2–10 steps in order, one per level. */
 function steps(s: SkillDefinition, list: [SkillLevelStep["kind"], number][]): SkillDefinition {
   return { ...s, levelSteps: list.map(([kind, value], i) => ({ atLevel: i + 2, kind, value })) };
+}
+
+/** A passive with effects (catalog §4, EXAMPLE numbers). Defaults filled by the schema. */
+function innate(id: string, th: string, triggers: z.input<typeof PassiveTriggerSchema>[]): SkillDefinition {
+  return { ...skill(id, th, "passive"), passive: PassiveSchema.parse({ triggers }) };
 }
 
 function skill(id: string, th: string, kind: "passive"): SkillDefinition {

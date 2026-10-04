@@ -280,10 +280,13 @@ export class BattleScene extends Phaser.Scene {
       case "ActionRedirected":
         return this.pushLog(`${this.name(e.actorId)} ${STATUS_DEFINITIONS[e.statusId].th} หันไปทำใส่ ${this.name(e.toId)} แทน ${this.name(e.fromId)}`);
       case "ResourceChanged": {
-        const label = { lifesteal: "ดูดเลือด", recoil: "สะท้อนกลับตัวเอง", restore_mp: "ฟื้น MP", leech: "ถูกดูดพลัง", mana_burn: "เผามานา", mp_regen: "ฟื้น MP" }[e.source];
+        const label = { lifesteal: "ดูดเลือด", recoil: "สะท้อนกลับตัวเอง", restore_mp: "ฟื้น MP", leech: "ถูกดูดพลัง", mana_burn: "เผามานา", mp_regen: "ฟื้น MP", passive: "ได้จากความสามารถติดตัว" }[e.source];
         const parts = [e.hp !== 0 ? `HP ${e.hp > 0 ? "+" : ""}${e.hp}` : "", e.mp !== 0 ? `MP ${e.mp > 0 ? "+" : ""}${e.mp}` : ""].filter(Boolean).join(" ");
         return parts === "" ? undefined : this.pushLog(`${this.name(e.unitId)} ${label} ${parts}`);
       }
+      case "PassiveTriggered":
+        this.popup(e.unitId, CONTENT.skills.get(e.skillId)?.name.th ?? e.skillId, "#ffe08a");
+        return this.pushLog(`${this.name(e.unitId)} ความสามารถติดตัว [${CONTENT.skills.get(e.skillId)?.name.th ?? e.skillId}] ทำงาน`);
       case "TurnSkipped":
         return this.pushLog(`${this.name(e.unitId)} ${STATUS_DEFINITIONS[e.statusId].th} ข้ามเทิร์น`);
       case "BattleEnded":
