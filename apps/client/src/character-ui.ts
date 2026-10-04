@@ -4,6 +4,14 @@
  * comes with the art pass (chapter 10 §4).
  */
 import {
+  EXAMPLE_RECIPES,
+  PROFESSIONS,
+  PROFESSION_NAME_TH,
+  RARITIES,
+  craftQuote,
+  masteryAfter,
+  type Profession,
+  type Recipe,
   EXAMPLE_SHOPS,
   exampleMapRegistry,
   EFFECT_HIT_NAME_TH,
@@ -703,6 +711,125 @@ export function shopPanel(api: CharacterApi, start: CharacterBundle): Promise<Ch
       body.append(list);
       body.append(el("div", { class: "pm-note" }, "\"เหรียญ\" เป็นชื่อชั่วคราว · ราคาเป็นค่าทดลอง (P12) · ขายได้ในเมืองเท่านั้น"));
       sellAll.disabled = !rows.some((r) => r.def.kind === "material");
+    };
+    draw();
+  });
+}
+
+/**
+ * Crafting (chapter 05 §6, chapter 09): recipes per profession, what they take and what the player
+ * has, the coins, the mastery it gives, and for gear the rarity odds and possible affixes, all
+ * before confirming. The server checks everything again and rolls the gear.
+ */
+export function craftPanel(api: CharacterApi, start: CharacterBundle): Promise<CharacterBundle> {
+  return new Promise((resolve) => {
+    const { panel, close } = overlay();
+    let bundle = start;
+    let busy = false;
+    let prof: Profession = "armorsmith";
+    let times = 1;
+    const body = el("div");
+    const note = el("div", { class: "pm-note", "data-craft-note": "" });
+    const error = el("div", { class: "pm-error", role: "alert" });
+    const actions = el("div", { class: "pm-actions" });
+    const done = el("button", { type: "button", class: "primary" }, "ปิด");
+    actions.append(done);
+    panel.append(el("h2", {}, "สร้างของ"), body, note, error, actions);
+    done.addEventListener("click", () => {
+      close();
+      resolve(bundle);
+    });
+
+    const weights = RULES.provisional.gearRarityWeights.value;
+    const weightSum = RARITIES.reduce((s, r) => s + weights[r], 0);
+    const odds = RARITIES.filter((r) => weights[r] > 0)
+      .map((r) => `${RARITY_NAME_TH[r]} ${Math.round((weights[r] / weightSum) * 1000) / 10}%`)
+      .join(" · ");
+
+    const make = async (r: Recipe, n: number) => {
+      if (busy) return;
+      busy = true;
+      error.textContent = "";
+      try {
+        const res = await api.craft(r.id, n, craftQuote(r, n).coins);
+        const made = [
+          ...res.result.items.map((i) => `${itemDefs.get(i.itemId)?.name.th ?? i.itemId} ×${i.quantity}`),
+          ...res.result.equipment.map((e) => `${RARITY_NAME_TH[e.rarity]} ${equipmentDefs.get(e.definitionId)?.name.th ?? e.definitionId}${e.affixes.length > 0 ? ` (${e.affixes.map((a) => `${STAT_TH[a.stat] ?? a.stat} +${a.value}`).join(" · ")})` : ""}`),
+        ];
+        note.textContent = `ได้ ${made.join(", ")} · ความชำนาญ ${res.result.mastery.before} → ${res.result.mastery.after}`;
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+      } finally {
+        bundle = (await api.get().catch(() => null)) ?? bundle;
+        busy = false;
+        draw();
+      }
+    };
+
+    const draw = () => {
+      body.replaceChildren();
+      const mastery = bundle.craftMastery ?? { weaponsmith: 0, armorsmith: 0, jeweler: 0, alchemist: 0, tamer: 0, tailor: 0 };
+      body.append(el("div", { class: "pm-stats" }, `เหรียญ ${bundle.coins.toLocaleString()} · ${PROFESSION_NAME_TH[prof]} ความชำนาญ ${mastery[prof]}`));
+      const tabs = el("div", { class: "pm-choices", role: "group" });
+      for (const p of PROFESSIONS) {
+        const count = EXAMPLE_RECIPES.filter((r) => r.profession === p).length;
+        const b = el("button", { type: "button", "aria-pressed": String(p === prof), "data-prof": p }, `${PROFESSION_NAME_TH[p]} (${mastery[p]})`);
+        b.disabled = count === 0;
+        b.addEventListener("click", () => {
+          prof = p;
+          draw();
+        });
+        tabs.append(b);
+      }
+      const timesRow = el("div", { class: "pm-choices", role: "group" });
+      for (const n of [1, 5, 10]) {
+        const b = el("button", { type: "button", "aria-pressed": String(n === times), "data-times": String(n) }, `ทำ ×${n}`);
+        b.addEventListener("click", () => {
+          times = n;
+          draw();
+        });
+        timesRow.append(b);
+      }
+      body.append(tabs, el("label", {}, "จำนวนครั้ง"), timesRow);
+      const list = el("ul", { class: "pm-list" });
+      const recipes = EXAMPLE_RECIPES.filter((r) => r.profession === prof);
+      if (recipes.length === 0) list.append(el("li", {}, "อาชีพนี้ยังไม่มีสูตร (ยังไม่มีชุดแฟชั่น/ของคู่ใจ)"));
+      for (const r of recipes) {
+        const q = craftQuote(r, times);
+        const li = el("li", { class: "pm-skill-pet", "data-recipe": r.id });
+        li.append(el("div", {}, r.name.th));
+        const need = q.inputs.map((i) => `${itemDefs.get(i.itemId)?.name.th ?? i.itemId} ${bundle.bag[i.itemId] ?? 0}/${i.quantity}`).join(" · ");
+        li.append(el("span", { class: "pm-affix" }, `ใช้ ${need} · ${q.coins} เหรียญ`));
+        const after = masteryAfter(r, mastery[prof], times);
+        li.append(
+          el(
+            "span",
+            { class: "pm-affix" },
+            mastery[prof] < r.requiredMastery
+              ? `ต้องมีความชำนาญ ${r.requiredMastery}`
+              : after > mastery[prof]
+                ? `ความชำนาญ +${after - mastery[prof]} (ได้ถึง ${r.masteryCap})`
+                : `ความชำนาญถึงเพดานสูตรนี้แล้ว (${r.masteryCap}) ยังทำได้ไม่จำกัด`,
+          ),
+        );
+        if (r.output.kind === "equipment") {
+          const def = equipmentDefs.get(r.output.definitionId);
+          const pool = def === undefined ? undefined : affixPools.get(def.affixPoolId);
+          if (def !== undefined) {
+            li.append(el("span", { class: "pm-affix" }, `ได้ ${def.name.th} ×${times} · ช่อง Sigil ${sigilCapacity(RULES, def)} · โอกาสระดับ: ${odds}`));
+            if (pool !== undefined) li.append(el("span", { class: "pm-affix" }, `ออปชันที่อาจได้: ${pool.entries.map((e) => STAT_TH[e.stat] ?? e.stat).join(", ")}`));
+          }
+        } else {
+          li.append(el("span", { class: "pm-affix" }, `ได้ ${itemDefs.get(r.output.itemId)?.name.th ?? r.output.itemId} ×${r.output.quantity * times}`));
+        }
+        const b = el("button", { type: "button", "data-make": r.id }, `สร้าง ×${times} (−${q.coins})`);
+        b.disabled =
+          bundle.coins < q.coins || mastery[prof] < r.requiredMastery || q.inputs.some((i) => (bundle.bag[i.itemId] ?? 0) < i.quantity);
+        b.addEventListener("click", () => void make(r, times));
+        li.append(b);
+        list.append(li);
+      }
+      body.append(list, el("div", { class: "pm-note" }, "สร้างได้ในเมืองเท่านั้น · สร้างสำเร็จทุกครั้งถ้าวัตถุดิบครบ · สูตร/ตัวเลขเป็นตัวอย่าง (P12)"));
     };
     draw();
   });

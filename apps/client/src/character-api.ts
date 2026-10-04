@@ -2,7 +2,7 @@
  * Character and team requests (server mode). The server decides everything; the client shows
  * what it gets back. Identity uses the dev header until O11 picks auth.
  */
-import type { CharacterView, CreateCharacterRequest, EquipSlot, EquipmentView, MonsterInstance, PartyView, PrimaryStats, RolledAffix } from "@pmrpg/shared";
+import type { CharacterView, CreateCharacterRequest, EquipSlot, EquipmentView, MonsterInstance, PartyView, PrimaryStats, Profession, Rarity, RolledAffix } from "@pmrpg/shared";
 
 export type StoredCompanion = MonsterInstance & { hp: number | null; mp: number | null };
 
@@ -11,6 +11,8 @@ export interface CharacterBundle {
   companions: StoredCompanion[];
   equipment: EquipmentView[];
   coins: number;
+  /** Crafting mastery per profession (0..1000). */
+  craftMastery: Record<Profession, number>;
   /** Item balances (materials, potions, capture items, Sigils). */
   bag: Record<string, number>;
 }
@@ -74,6 +76,14 @@ export class CharacterApi {
 
   chooseAffix(equipmentId: string, rerollOperationId: string, keep: "old" | "new") {
     return this.call<{ coins: number }>("POST", "/character/equipment/affix/choose", { operationId: opId("affix"), equipmentId, rerollOperationId, keep });
+  }
+
+  /** Make a recipe 1–10 times at the coins shown. */
+  craft(recipeId: string, times: number, expectedCoins: number) {
+    return this.call<{
+      coins: number;
+      result: { items: { itemId: string; quantity: number }[]; equipment: { id: string; definitionId: string; rarity: Rarity; affixes: RolledAffix[] }[]; mastery: { before: number; after: number } };
+    }>("POST", "/town/craft", { operationId: opId("craft"), recipeId, times, expectedCoins });
   }
 
   sell(lines: { itemId: string; quantity: number }[]) {

@@ -14,6 +14,7 @@
  *   GET  /party, POST /party, POST /party/join {partyId}, POST /party/leave   party (P02)
  *   POST /town/affix/reroll        roll one gear affix again for coins + material (operationId, equipmentId, slot, expectedAffixes, expectedCost)
  *   POST /character/equipment/affix/choose  keep the old or the new affix (operationId, equipmentId, rerollOperationId, keep)
+ *   POST /town/craft               make a recipe 1–10 times (operationId, recipeId, times, expectedCoins)
  *   POST /town/buy                 buy from a town shop at the shown total (operationId, shopId, lines, expectedTotal)
  *   POST /town/rebirth             companion Rebirth at the town NPC (operationId, companionId, expectedStage)
  *   POST /town/rebirth/branch      switch a reached Rebirth stage's variant branch for coins (operationId, companionId, stage, expectedBranch, branch, expectedCost)
@@ -38,6 +39,7 @@ import {
   devPlayer,
   exampleContentMaps,
   exampleShopRegistry,
+  exampleRecipeRegistry,
   exampleMapRegistry,
   RaritySchema,
   RolledAffixSchema,
@@ -63,7 +65,7 @@ const RESERVATION_STALE_MS = 2 * 60_000;
 
 const rulesFor = (env: Env) => (env.ENVIRONMENT === "dev" ? DEV_FIXTURE_RULES : PRODUCTION_RULES);
 const economyFor = (env: Env) => new Economy(env.DB, rulesFor(env));
-const CONTENT = { ...exampleContentMaps(), shops: exampleShopRegistry() };
+const CONTENT = { ...exampleContentMaps(), shops: exampleShopRegistry(), recipes: exampleRecipeRegistry() };
 const charactersFor = (env: Env) => new CharacterStore(env.DB, rulesFor(env), CONTENT);
 const TOWNS = [...exampleMapRegistry().values()].filter((m) => m.kind === "town").map((m) => m.id);
 const townFor = (env: Env) => new TownServices(env.DB, rulesFor(env), CONTENT, TOWNS);
@@ -191,6 +193,7 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
       companions: await store.companions(accountId),
       equipment: await store.equipment(accountId),
       coins: await townFor(env).coins(accountId),
+      craftMastery: await townFor(env).craftMastery(accountId),
       bag: await economyFor(env).balances(accountId),
     });
   }
@@ -210,6 +213,7 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
   if (request.method === "POST" && url.pathname === "/character/equipment/sigil/remove") return serviceReply(env, accountId, await townFor(env).removeSigil(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/affix/reroll") return serviceReply(env, accountId, await townFor(env).rerollAffix(accountId, body));
   if (request.method === "POST" && url.pathname === "/character/equipment/affix/choose") return serviceReply(env, accountId, await townFor(env).chooseAffix(accountId, body));
+  if (request.method === "POST" && url.pathname === "/town/craft") return serviceReply(env, accountId, await townFor(env).craft(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/buy") return serviceReply(env, accountId, await townFor(env).buy(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/sell") return serviceReply(env, accountId, await townFor(env).sell(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/rebirth") return serviceReply(env, accountId, await townFor(env).rebirth(accountId, body));

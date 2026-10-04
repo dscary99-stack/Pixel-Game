@@ -7,6 +7,14 @@
  * retry with the same id returns the stored result; the same id with another payload is refused.
  */
 import {
+  CRAFT_MASTERY_MAX,
+  CraftRequestSchema,
+  craftQuote,
+  masteryAfter,
+  rollGear,
+  type Profession,
+  type Rarity,
+  type Recipe,
   AffixChooseRequestSchema,
   AffixRerollRequestSchema,
   Rng,
@@ -53,11 +61,13 @@ export interface TownContent {
   lootTables: ReadonlyMap<string, LootTable>;
   /** Needed for buying (POST /town/buy). */
   shops?: ReadonlyMap<string, ShopDefinition>;
-  /** Needed for affix rerolls. */
+  /** Needed for affix rerolls and crafted gear. */
   affixPools?: ReadonlyMap<string, AffixPool>;
+  /** Needed for crafting (POST /town/craft). */
+  recipes?: ReadonlyMap<string, Recipe>;
 }
 
-type Kind = "npc_buy" | "npc_sell" | "sigil_install" | "sigil_remove" | "companion_rebirth" | "skill_train" | "rebirth_branch" | "affix_reroll" | "affix_choose";
+type Kind = "npc_buy" | "npc_sell" | "sigil_install" | "sigil_remove" | "companion_rebirth" | "skill_train" | "rebirth_branch" | "affix_reroll" | "affix_choose" | "craft";
 
 export type ServiceRejection =
   | "INVALID_REQUEST"
@@ -88,6 +98,7 @@ export type ServiceRejection =
   | "NO_SUCH_AFFIX"
   | "CHOICE_PENDING"
   | "NO_PENDING_REROLL"
+  | "NO_SUCH_RECIPE"
   | "CHANGED";
 
 export type ServiceResult<T> = { status: "done"; replayed: boolean; result: T } | { status: "rejected"; reason: ServiceRejection; message: string };
@@ -131,6 +142,17 @@ export interface AffixChooseResult {
   equipmentId: string;
   kept: "old" | "new";
   affixes: RolledAffix[];
+}
+export interface CraftResult {
+  recipeId: string;
+  times: number;
+  paid: { coins: number; inputs: { itemId: string; quantity: number }[] };
+  /** Items made (item recipes). */
+  items: { itemId: string; quantity: number }[];
+  /** Pieces made (gear recipes), each with the rarity and affixes the server rolled. */
+  equipment: { id: string; definitionId: string; rarity: Rarity; affixes: RolledAffix[] }[];
+  profession: Profession;
+  mastery: { before: number; after: number };
 }
 export interface SigilResult {
   equipmentId: string;
@@ -761,6 +783,111 @@ export class TownServices {
       if (now.lock_state !== "free") return reject("ASSET_LOCKED", "a fight holds that piece; choose after it ends");
       if (now.affix_pending_json === null) return reject("NO_PENDING_REROLL", "no roll is waiting for a choice");
       return reject("CHANGED", "the piece changed; reload and try again");
+    });
+  }
+
+  // ------------------------------------------------------------------ crafting (chapter 05 §6)
+
+  /** Mastery per profession for one character (missing professions are 0). */
+  async craftMastery(accountId: string): Promise<Record<Profession, number>> {
+    const rows = await this.db.prepare(`SELECT profession, mastery FROM craft_mastery WHERE account_id = ?`).bind(accountId).all<{ profession: Profession; mastery: number }>();
+    const out: Record<Profession, number> = { weaponsmith: 0, armorsmith: 0, jeweler: 0, alchemist: 0, tamer: 0, tailor: 0 };
+    for (const r of rows.results) out[r.profession] = r.mastery;
+    return out;
+  }
+
+  /**
+   * Make a recipe `times` times: in town, outside fights, with the coins the player was shown, the
+   * materials and the mastery. Inputs are spent, the output and the mastery written in one batch.
+   * Gear is rolled on the server (rarity + affixes like a drop) and stored in the result, so a retry
+   * replays the same pieces. Mastery is written only if it still holds the value read, so two
+   * crafts of one profession at once cannot lose a gain (the second is refused as CHANGED).
+   */
+  async craft(accountId: string, raw: unknown): Promise<ServiceResult<CraftResult>> {
+    const parsed = CraftRequestSchema.safeParse(raw);
+    if (!parsed.success) return reject("INVALID_REQUEST", issues(parsed.error));
+    const { operationId, recipeId, times, expectedCoins } = parsed.data;
+    const hash = await hashJson({ kind: "craft", recipeId, times, expectedCoins });
+    const prior = await this.prior<CraftResult>(accountId, operationId, hash);
+    if (prior !== null) return prior;
+
+    const recipe = this.content.recipes?.get(recipeId);
+    if (recipe === undefined) return reject("NO_SUCH_RECIPE", `no recipe ${recipeId}`);
+    const quote = craftQuote(recipe, times);
+    if (quote.coins !== expectedCoins) return reject("COST_CHANGED", `this now costs ${quote.coins} coins`);
+    const before = (await this.craftMastery(accountId))[recipe.profession];
+    if (before < recipe.requiredMastery) return reject("MASTERY_TOO_LOW", `needs ${recipe.requiredMastery} ${recipe.profession} mastery`);
+    const after = Math.min(CRAFT_MASTERY_MAX, masteryAfter(recipe, before, times));
+
+    const ledgerId = `svc:${accountId}:${operationId}`;
+    const o = recipe.output;
+    const items = o.kind === "item" ? [{ itemId: o.itemId, quantity: o.quantity * times }] : [];
+    const equipment: CraftResult["equipment"] = [];
+    if (o.kind === "equipment") {
+      // Piece ids are global: derive them from (account, operation) so a retry lands on the same rows.
+      const pieceKey = (await hashJson({ craft: accountId, operationId })).slice(0, 32);
+      const def = this.content.equipment.get(o.definitionId);
+      if (def === undefined) return reject("NO_SUCH_RECIPE", `unknown output ${o.definitionId}`);
+      for (let n = 0; n < times; n++) {
+        const rolled = rollGear(this.rules, def, this.content.affixPools?.get(def.affixPoolId), new Rng(seedRng(crypto.randomUUID())));
+        equipment.push({ id: `eq:craft:${pieceKey}:${n}`, definitionId: def.id, rarity: rolled.rarity, affixes: rolled.affixes });
+      }
+    }
+    const result: CraftResult = { recipeId, times, paid: quote, items, equipment, profession: recipe.profession, mastery: { before, after } };
+
+    const masteryNow = `COALESCE((SELECT mastery FROM craft_mastery WHERE account_id = ? AND profession = ?), 0)`;
+    const guards = [this.inTown(), `NOT ${OPEN_BATTLE}`, `${masteryNow} = ?`, `(SELECT COALESCE(SUM(delta), 0) FROM coin_ledger WHERE account_id = ?) >= ?`];
+    const args: unknown[] = [accountId, ...this.townMapIds, accountId, accountId, recipe.profession, before, accountId, quote.coins];
+    for (const i of quote.inputs) {
+      guards.push(`(SELECT COALESCE(SUM(delta), 0) FROM item_ledger WHERE account_id = ? AND item_id = ?) >= ?`);
+      args.push(accountId, i.itemId, i.quantity);
+    }
+    const at = this.now();
+    const ours = this.ours(accountId, operationId, hash);
+    const itemLine = (lineNo: number, itemId: string, delta: number) =>
+      this.db
+        .prepare(
+          `INSERT INTO item_ledger (operation_id, line_no, account_id, item_id, delta, reason, created_at)
+           SELECT ?, ?, ?, ?, ?, 'craft', ? WHERE ${ours.sql} ON CONFLICT DO NOTHING`,
+        )
+        .bind(ledgerId, lineNo, accountId, itemId, delta, at, ...ours.args);
+    const stmts: SqlBound[] = [
+      this.anchor(accountId, operationId, "craft", hash, result, guards, args),
+      ...quote.inputs.map((i, n) => itemLine(n, i.itemId, -i.quantity)),
+      ...items.map((i, n) => itemLine(quote.inputs.length + n, i.itemId, i.quantity)),
+      ...equipment.map((e) =>
+        this.db
+          .prepare(
+            `INSERT INTO equipment_instances (id, definition_id, owner_id, rarity, affixes_json, created_operation_id, created_at)
+             SELECT ?, ?, ?, ?, ?, ?, ? WHERE ${ours.sql} ON CONFLICT DO NOTHING`,
+          )
+          .bind(e.id, e.definitionId, accountId, e.rarity, JSON.stringify(e.affixes), e.id, at, ...ours.args),
+      ),
+      this.db
+        .prepare(
+          `INSERT INTO craft_mastery (account_id, profession, mastery) SELECT ?, ?, ? WHERE ${ours.sql}
+           ON CONFLICT (account_id, profession) DO UPDATE SET mastery = excluded.mastery WHERE craft_mastery.mastery = ?`,
+        )
+        .bind(accountId, recipe.profession, after, ...ours.args, before),
+    ];
+    if (quote.coins > 0) {
+      stmts.push(
+        this.db
+          .prepare(
+            `INSERT INTO coin_ledger (operation_id, line_no, account_id, delta, reason, created_at)
+             SELECT ?, 0, ?, ?, 'craft', ? WHERE ${ours.sql} ON CONFLICT DO NOTHING`,
+          )
+          .bind(ledgerId, accountId, -quote.coins, at, ...ours.args),
+      );
+    }
+    await this.db.batch(stmts);
+    return this.outcome(accountId, operationId, hash, async () => {
+      const why = await this.whereAndFight(accountId);
+      if (why !== null) return why;
+      if ((await this.craftMastery(accountId))[recipe.profession] !== before) return reject("CHANGED", "your mastery changed; reload and try again");
+      if ((await this.coins(accountId)) < quote.coins) return reject("INSUFFICIENT_COINS", `needs ${quote.coins} coins`);
+      for (const i of quote.inputs) if ((await this.itemBalance(accountId, i.itemId)) < i.quantity) return reject("INSUFFICIENT_ITEMS", `needs ${i.quantity} ${i.itemId}`);
+      return reject("CHANGED", "something changed; reload and try again");
     });
   }
 

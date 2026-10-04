@@ -1,5 +1,5 @@
 // End-to-end town services against `wrangler dev`: install a Sigil, remove it for coins in town,
-// sell to the NPC, and the same requests refused in the field.
+// sell to and buy from the NPC, reroll an affix, craft gear, and the same requests refused in the field.
 // Run `npm run db:migrate:local` and `npm run dev:server` first, then `npm run smoke:town`.
 import { api, connect, run, sleep, toField, type Msg } from "./smoke-lib";
 
@@ -60,6 +60,18 @@ out.rerollWhilePending = (await http("POST", "/town/affix/reroll", { ...rerollRe
 const chosen = await http("POST", "/character/equipment/affix/choose", { operationId: `ch_${run}`, equipmentId: dagger.id, rerollOperationId: rerollReq.operationId, keep: "new" });
 out.kept = chosen.body.result?.affixes;
 if (JSON.stringify(chosen.body.result?.affixes?.[1]) !== JSON.stringify(rr.body.result?.rolled)) throw new Error("keep new did not apply the roll");
+// Crafting (chapter 05 §6): materials + coins → a rolled buckler and armorsmith mastery; retry replays.
+await http("POST", "/dev/grant", { operationId: `devc_${run}`, coins: 240, items: { "item:crab_shell": 12, "item:river_pebble": 8 } });
+const craftReq = { operationId: `cr_${run}`, recipeId: "recipe:crab_buckler", times: 2, expectedCoins: 240 };
+const crafted = await http("POST", "/town/craft", craftReq);
+if (crafted.status !== 200 || crafted.body.result?.equipment?.length !== 2) throw new Error(`craft failed: ${JSON.stringify(crafted.body)}`);
+const craftRetry = await http("POST", "/town/craft", craftReq);
+if (JSON.stringify(craftRetry.body.result) !== JSON.stringify(crafted.body.result)) throw new Error("craft retry did not replay");
+bundle = (await http("GET", "/character")).body;
+const madeIds = crafted.body.result.equipment.map((e: Msg) => e.id);
+if (madeIds.some((id: string) => !bundle.equipment.some((e: Msg) => e.id === id))) throw new Error("crafted pieces missing");
+out.craft = { made: crafted.body.result.equipment.map((e: Msg) => e.rarity), mastery: bundle.craftMastery.armorsmith, shells: bundle.bag["item:crab_shell"] ?? 0, retry: craftRetry.body.replayed };
+out.craftShort = (await http("POST", "/town/craft", { ...craftReq, operationId: `cr2_${run}` })).body.error;
 T.sock.close();
 await sleep(300);
 
@@ -69,6 +81,7 @@ await F.wait((m) => m.t === "packs");
 out.buyInField = (await http("POST", "/town/buy", { ...buyReq, operationId: `buy4_${run}` })).body.error;
 out.sellInField = (await http("POST", "/town/sell", { operationId: `sell3_${run}`, lines: [{ itemId: "item:small_potion", quantity: 1 }] })).body.error;
 out.installInField = (await http("POST", "/character/equipment/sigil", { ...install, operationId: `inst4_${run}` })).status;
+out.craftInField = (await http("POST", "/town/craft", { ...craftReq, operationId: `cr3_${run}`, times: 1, expectedCoins: 120 })).body.error;
 out.rerollInField = (await http("POST", "/town/affix/reroll", { ...rerollReq, operationId: `rr3_${run}`, expectedAffixes: chosen.body.result?.affixes })).body.error;
 out.removeInField = (await http("POST", "/character/equipment/sigil/remove", { operationId: `rm2_${run}`, equipmentId: sword, socket: 0, expectedCost: 300 })).body.error;
 F.sock.close();

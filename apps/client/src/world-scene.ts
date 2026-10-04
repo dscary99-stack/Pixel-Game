@@ -28,7 +28,7 @@ import {
 } from "@pmrpg/shared";
 import { ELEMENT_COLOR, type BattleScene } from "./battle-scene";
 import type { CharacterApi, CharacterBundle } from "./character-api";
-import { autoHuntPanel, equipmentPanel, partyPanel, rebirthPanel, shopPanel, skillPanel, statsPanel, teamPanel, vitals } from "./character-ui";
+import { autoHuntPanel, craftPanel, equipmentPanel, partyPanel, rebirthPanel, shopPanel, skillPanel, statsPanel, teamPanel, vitals } from "./character-ui";
 import type { WorldTransport } from "./world-transport";
 
 const W = 960;
@@ -149,6 +149,7 @@ export class WorldScene extends Phaser.Scene {
     kb.on("keydown-T", () => void this.openTeam());
     kb.on("keydown-E", () => void this.openEquipment());
     kb.on("keydown-B", () => void this.openShop());
+    kb.on("keydown-F", () => void this.openCraft());
     kb.on("keydown-C", () => void this.openStats());
     kb.on("keydown-H", () => void this.toggleAutoHunt());
     kb.on("keydown-R", () => void this.openRebirth());
@@ -169,7 +170,8 @@ export class WorldScene extends Phaser.Scene {
       const team = button(8, "ทีมคู่ใจ (T)", () => this.openTeam());
       const gear = button(team.x + team.width + 8, "อุปกรณ์ (E)", () => this.openEquipment());
       const shop = button(gear.x + gear.width + 8, "ร้าน (B)", () => this.openShop());
-      const stats = button(shop.x + shop.width + 8, "สเตตัส (C)", () => this.openStats());
+      const craft = button(shop.x + shop.width + 8, "สร้างของ (F)", () => this.openCraft());
+      const stats = button(craft.x + craft.width + 8, "สเตตัส (C)", () => this.openStats());
       const hunt = button(stats.x + stats.width + 8, "ล่าอัตโนมัติ (H)", () => this.toggleAutoHunt());
       const reborn = button(hunt.x + hunt.width + 8, "จุติ (R)", () => this.openRebirth());
       const party = button(reborn.x + reborn.width + 8, "ปาร์ตี้ (P)", () => this.openParty());
@@ -503,6 +505,14 @@ export class WorldScene extends Phaser.Scene {
     if (this.map !== null && this.map.kind !== "town") return this.flash("ร้านอยู่ในเมือง");
     return this.withPanel("ขายของได้นอกไฟต์เท่านั้น", async (api, bundle) => {
       await shopPanel(api, bundle);
+    });
+  }
+
+  /** Crafting; only in town (the server checks the stored position too). */
+  private async openCraft() {
+    if (this.map !== null && this.map.kind !== "town") return this.flash("สร้างของได้ในเมือง");
+    return this.withPanel("สร้างของได้นอกไฟต์เท่านั้น", async (api, bundle) => {
+      await craftPanel(api, bundle);
     });
   }
 
