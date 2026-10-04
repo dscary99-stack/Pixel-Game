@@ -12,6 +12,8 @@
  *   GET  /character                the caller's character, team and owned companions (404 NO_CHARACTER)
  *   POST /character                create the character (idempotent on operationId; one per account)
  *   GET  /party, POST /party, POST /party/join {partyId}, POST /party/leave   party (P02)
+ *   POST /town/affix/reroll        roll one gear affix again for coins + material (operationId, equipmentId, slot, expectedAffixes, expectedCost)
+ *   POST /character/equipment/affix/choose  keep the old or the new affix (operationId, equipmentId, rerollOperationId, keep)
  *   POST /town/buy                 buy from a town shop at the shown total (operationId, shopId, lines, expectedTotal)
  *   POST /town/rebirth             companion Rebirth at the town NPC (operationId, companionId, expectedStage)
  *   POST /town/rebirth/branch      switch a reached Rebirth stage's variant branch for coins (operationId, companionId, stage, expectedBranch, branch, expectedCost)
@@ -37,8 +39,11 @@ import {
   exampleContentMaps,
   exampleShopRegistry,
   exampleMapRegistry,
+  RaritySchema,
+  RolledAffixSchema,
   type BattleSetup,
 } from "@pmrpg/shared";
+import { z } from "zod";
 import { resolveAccount } from "./auth";
 import type { Env, RoomOp, RoomReply } from "./battle-do";
 import { CharacterStore } from "./character-store";
@@ -203,6 +208,8 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
   }
   if (request.method === "POST" && url.pathname === "/character/equipment/sigil") return serviceReply(env, accountId, await townFor(env).installSigil(accountId, body));
   if (request.method === "POST" && url.pathname === "/character/equipment/sigil/remove") return serviceReply(env, accountId, await townFor(env).removeSigil(accountId, body));
+  if (request.method === "POST" && url.pathname === "/town/affix/reroll") return serviceReply(env, accountId, await townFor(env).rerollAffix(accountId, body));
+  if (request.method === "POST" && url.pathname === "/character/equipment/affix/choose") return serviceReply(env, accountId, await townFor(env).chooseAffix(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/buy") return serviceReply(env, accountId, await townFor(env).buy(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/sell") return serviceReply(env, accountId, await townFor(env).sell(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/rebirth") return serviceReply(env, accountId, await townFor(env).rebirth(accountId, body));
@@ -242,8 +249,28 @@ async function devRoute(request: Request, env: Env, url: URL): Promise<Response>
     return json(200, { balances, reservation });
   }
   if (request.method === "POST" && url.pathname === "/dev/reconcile") return json(200, await reconcile(env, 0));
+  // DEV ONLY: a piece with set affixes, plus coins and items, so smokes can test rerolls.
+  if (request.method === "POST" && url.pathname === "/dev/grant") {
+    const parsed = DevGrantSchema.safeParse(await readJson(request));
+    if (!parsed.success) return json(400, { error: "INVALID_REQUEST" });
+    const g = parsed.data;
+    if (g.piece !== undefined && !CONTENT.equipment.has(g.piece.definitionId)) return json(400, { error: "UNKNOWN_EQUIPMENT" });
+    if (Object.keys(g.items).length > 0) await economyFor(env).devGrant(`${g.operationId}:items`, accountId, g.items);
+    if (g.coins > 0) await townFor(env).devGrantCoins(`${g.operationId}:coins`, accountId, g.coins);
+    if (g.piece !== undefined) await charactersFor(env).devGrantPiece(`${g.operationId}:piece`, accountId, g.piece);
+    return json(200, { ok: true });
+  }
   return json(404, { error: "NOT_FOUND" });
 }
+
+const DevGrantSchema = z
+  .object({
+    operationId: z.string().min(8).max(120),
+    coins: z.number().int().min(0).max(1_000_000).default(0),
+    items: z.record(z.string(), z.number().int().min(1).max(10_000)).default({}),
+    piece: z.object({ definitionId: z.string(), rarity: RaritySchema, affixes: z.array(RolledAffixSchema).max(3) }).strict().optional(),
+  })
+  .strict();
 
 async function readJson(request: Request): Promise<unknown | undefined> {
   const text = await request.text();

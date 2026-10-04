@@ -113,6 +113,7 @@ interface EquipmentRow {
   sigil_sockets_json: string;
   rarity: EquipmentView["rarity"];
   affixes_json: string;
+  affix_pending_json: string | null;
 }
 
 export type CreateResult =
@@ -364,14 +365,17 @@ export class CharacterStore {
   async equipment(accountId: string): Promise<EquipmentView[]> {
     const { results } = await this.db
       .prepare(
-        `SELECT e.id, e.definition_id, e.refine_level, e.lock_state, e.sigil_sockets_json, e.rarity, e.affixes_json, ce.slot
+        `SELECT e.id, e.definition_id, e.refine_level, e.lock_state, e.sigil_sockets_json, e.rarity, e.affixes_json, e.affix_pending_json, ce.slot
          FROM equipment_instances e
          LEFT JOIN character_equipment ce ON ce.equipment_instance_id = e.id
          WHERE e.owner_id = ? ORDER BY e.definition_id, e.id`,
       )
       .bind(accountId)
       .all<EquipmentRow>();
-    return results.map((r) => ({ id: r.id, definitionId: r.definition_id, refineLevel: r.refine_level, lockState: r.lock_state, slot: r.slot, sigils: JSON.parse(r.sigil_sockets_json) as string[], rarity: r.rarity, affixes: JSON.parse(r.affixes_json) as EquipmentView["affixes"] }));
+    return results.map((r) => ({ id: r.id, definitionId: r.definition_id, refineLevel: r.refine_level, lockState: r.lock_state, slot: r.slot, sigils: JSON.parse(r.sigil_sockets_json) as string[], rarity: r.rarity,
+      affixes: JSON.parse(r.affixes_json) as EquipmentView["affixes"],
+      ...(r.affix_pending_json === null ? {} : { pendingAffix: JSON.parse(r.affix_pending_json) as NonNullable<EquipmentView["pendingAffix"]> }),
+    }));
   }
 
   async equip(accountId: string, raw: unknown): Promise<EquipResult> {
@@ -438,6 +442,17 @@ export class CharacterStore {
           .bind(`eq:${operationId}:${i}`, d, accountId, `${operationId}:${i}`, at),
       ),
     );
+  }
+
+  /** DEV ONLY: one piece with a set rarity and affixes, once per operation id. */
+  async devGrantPiece(operationId: string, accountId: string, piece: { definitionId: string; rarity: EquipmentView["rarity"]; affixes: EquipmentView["affixes"] }): Promise<void> {
+    await this.db
+      .prepare(
+        `INSERT INTO equipment_instances (id, definition_id, owner_id, rarity, affixes_json, created_operation_id, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`,
+      )
+      .bind(`eq:${operationId}`, piece.definitionId, accountId, piece.rarity, JSON.stringify(piece.affixes), operationId, this.now())
+      .run();
   }
 
   private row(accountId: string): Promise<CharacterRow | null> {

@@ -7,6 +7,9 @@ import {
   Rng,
   deriveStats,
   gearBonuses,
+  affixRerollCost,
+  exampleContentMaps,
+  rerollAffix,
   rollGear,
   scaleAffix,
   seedRng,
@@ -20,7 +23,8 @@ const base = { STR: 10, VIT: 10, INT: 10, DEX: 10, AGI: 10, SPI: 10 };
 
 describe("gear rarity and affixes (chapter 05 §2–§3)", () => {
   it("example pools pass and every example piece names one by its type", () => {
-    expect(validateAffixPools(R, EXAMPLE_AFFIX_POOLS, EXAMPLE_EQUIPMENT)).toEqual([]);
+    expect(validateAffixPools(R, EXAMPLE_AFFIX_POOLS, EXAMPLE_EQUIPMENT, exampleContentMaps().items)).toEqual([]);
+    expect(validateAffixPools(R, [{ ...pool, rerollItemId: "item:nope" }], [], exampleContentMaps().items)[0]?.message).toContain("missing item");
     expect(dagger.affixPoolId).toBe("affix:weapon_physical");
     expect(EXAMPLE_EQUIPMENT.find((d) => d.id === "equip:apprentice_staff")!.affixPoolId).toBe("affix:weapon_magic");
     expect(EXAMPLE_EQUIPMENT.find((d) => d.id === "equip:crab_buckler")!.affixPoolId).toBe("affix:defense");
@@ -66,5 +70,20 @@ describe("gear rarity and affixes (chapter 05 §2–§3)", () => {
     const plain = deriveStats(5, base, gearBonuses([dagger]));
     const boosted = deriveStats(5, base, g);
     expect(boosted.patk - plain.patk).toBe(3 + 3 * 2);
+  });
+
+  it("a reroll replaces one slot with a stat not on the others, and costs by item level", () => {
+    const current = [
+      { stat: "PATK", value: 4 },
+      { stat: "STR", value: 2 },
+      { stat: "DEX", value: 1 },
+    ];
+    for (let i = 0; i < 500; i++) {
+      const a = rerollAffix(R, dagger, pool, current, 1, new Rng(seedRng(`re:${i}`)))!;
+      expect(["PATK", "DEX"]).not.toContain(a.stat);
+    }
+    expect(rerollAffix(R, dagger, pool, current, 3, new Rng(seedRng("x")))).toBeNull();
+    expect(affixRerollCost(R, dagger, pool)).toEqual({ coins: 300 + 60 * 5, itemId: "item:river_pebble", quantity: 2 });
+    expect(affixRerollCost(R, { ...dagger, requiredLevel: 120 }, pool)).toEqual({ coins: 300 + 60 * 120, itemId: "item:river_pebble", quantity: 2 + 12 });
   });
 });

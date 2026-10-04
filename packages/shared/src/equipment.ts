@@ -146,6 +146,8 @@ export interface EquipmentView {
   sigils: string[];
   rarity: Rarity;
   affixes: RolledAffix[];
+  /** A rerolled affix waiting for keep old / keep new (chapter 05 §3), if any. */
+  pendingAffix?: { operationId: string; slot: number; affix: RolledAffix };
 }
 
 /** The worn pieces' definitions and the main-hand weapon, for `playerSetup` and the HUD. */

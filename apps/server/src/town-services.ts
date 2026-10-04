@@ -7,6 +7,15 @@
  * retry with the same id returns the stored result; the same id with another payload is refused.
  */
 import {
+  AffixChooseRequestSchema,
+  AffixRerollRequestSchema,
+  Rng,
+  affixRerollCost,
+  rerollAffix,
+  seedRng,
+  type AffixPool,
+  type PendingAffix,
+  type RolledAffix,
   COMPANION_GROWTH_VERSION,
   InstallSigilRequestSchema,
   RebirthBranchRequestSchema,
@@ -44,9 +53,11 @@ export interface TownContent {
   lootTables: ReadonlyMap<string, LootTable>;
   /** Needed for buying (POST /town/buy). */
   shops?: ReadonlyMap<string, ShopDefinition>;
+  /** Needed for affix rerolls. */
+  affixPools?: ReadonlyMap<string, AffixPool>;
 }
 
-type Kind = "npc_buy" | "npc_sell" | "sigil_install" | "sigil_remove" | "companion_rebirth" | "skill_train" | "rebirth_branch";
+type Kind = "npc_buy" | "npc_sell" | "sigil_install" | "sigil_remove" | "companion_rebirth" | "skill_train" | "rebirth_branch" | "affix_reroll" | "affix_choose";
 
 export type ServiceRejection =
   | "INVALID_REQUEST"
@@ -74,6 +85,9 @@ export type ServiceRejection =
   | "BRANCH_REQUIRED"
   | "NO_VARIANT"
   | "SAME_BRANCH"
+  | "NO_SUCH_AFFIX"
+  | "CHOICE_PENDING"
+  | "NO_PENDING_REROLL"
   | "CHANGED";
 
 export type ServiceResult<T> = { status: "done"; replayed: boolean; result: T } | { status: "rejected"; reason: ServiceRejection; message: string };
@@ -104,6 +118,19 @@ export interface SkillTrainResult {
   skillId: string;
   level: number;
   paid: { mastery: number; coins: number; itemId: string; quantity: number };
+}
+export interface AffixRerollResult {
+  equipmentId: string;
+  slot: number;
+  old: RolledAffix;
+  /** The new roll, waiting for keep old / keep new. */
+  rolled: RolledAffix;
+  paid: { coins: number; itemId: string; quantity: number };
+}
+export interface AffixChooseResult {
+  equipmentId: string;
+  kept: "old" | "new";
+  affixes: RolledAffix[];
 }
 export interface SigilResult {
   equipmentId: string;
@@ -625,7 +652,134 @@ export class TownServices {
     });
   }
 
+  // ------------------------------------------------------------------ affix reroll (chapter 05 §3)
+
+  /**
+   * Pay to roll one affix again: in town, outside fights, on a free piece whose affixes are still
+   * the ones the player saw and that has no roll waiting. The new roll is drawn on the server from an
+   * unguessable seed and stored on the piece (pending); coins and material are spent now, whatever
+   * the player keeps. One batch; a retry replays the same roll.
+   */
+  async rerollAffix(accountId: string, raw: unknown): Promise<ServiceResult<AffixRerollResult>> {
+    const parsed = AffixRerollRequestSchema.safeParse(raw);
+    if (!parsed.success) return reject("INVALID_REQUEST", issues(parsed.error));
+    const { operationId, equipmentId, slot, expectedAffixes, expectedCost } = parsed.data;
+    const hash = await hashJson({ kind: "affix_reroll", equipmentId, slot, expectedAffixes, expectedCost });
+    const prior = await this.prior<AffixRerollResult>(accountId, operationId, hash);
+    if (prior !== null) return prior;
+
+    const piece = await this.affixPiece(accountId, equipmentId);
+    const def = piece === null ? undefined : this.content.equipment.get(piece.definition_id);
+    const pool = def === undefined ? undefined : this.content.affixPools?.get(def.affixPoolId);
+    if (piece === null || def === undefined) return reject("NOT_OWNER", "that equipment is not yours");
+    if (pool === undefined) return reject("NO_SUCH_AFFIX", "this piece has no affix pool");
+    if (piece.affixes_json !== JSON.stringify(expectedAffixes)) return reject("CHANGED", "the piece changed; reload and try again");
+    if (piece.affix_pending_json !== null) return reject("CHOICE_PENDING", "keep the old or the new affix from the last roll first");
+    const current = JSON.parse(piece.affixes_json) as RolledAffix[];
+    const rolled = rerollAffix(this.rules, def, pool, current, slot, new Rng(seedRng(crypto.randomUUID())));
+    if (rolled === null) return reject("NO_SUCH_AFFIX", "that piece has no affix there");
+    const cost = affixRerollCost(this.rules, def, pool);
+    if (cost.coins !== expectedCost.coins || cost.itemId !== expectedCost.itemId || cost.quantity !== expectedCost.quantity) {
+      return reject("COST_CHANGED", `a reroll now costs ${cost.coins} coins and ${cost.quantity} ${cost.itemId}`);
+    }
+
+    const result: AffixRerollResult = { equipmentId, slot, old: current[slot]!, rolled, paid: cost };
+    const pending: PendingAffix = { operationId, slot, affix: rolled };
+    const guards = [
+      this.inTown(),
+      `NOT ${OPEN_BATTLE}`,
+      `EXISTS (SELECT 1 FROM equipment_instances WHERE id = ? AND owner_id = ? AND lock_state = 'free' AND affixes_json = ? AND affix_pending_json IS NULL)`,
+      `(SELECT COALESCE(SUM(delta), 0) FROM coin_ledger WHERE account_id = ?) >= ?`,
+      `(SELECT COALESCE(SUM(delta), 0) FROM item_ledger WHERE account_id = ? AND item_id = ?) >= ?`,
+    ];
+    const args = [accountId, ...this.townMapIds, accountId, equipmentId, accountId, piece.affixes_json, accountId, cost.coins, accountId, cost.itemId, cost.quantity];
+    const ledgerId = `svc:${accountId}:${operationId}`;
+    const at = this.now();
+    const ours = this.ours(accountId, operationId, hash);
+    await this.db.batch([
+      this.anchor(accountId, operationId, "affix_reroll", hash, result, guards, args),
+      this.db
+        .prepare(
+          `INSERT INTO coin_ledger (operation_id, line_no, account_id, delta, reason, created_at)
+           SELECT ?, 0, ?, ?, 'affix_reroll', ? WHERE ${ours.sql} ON CONFLICT DO NOTHING`,
+        )
+        .bind(ledgerId, accountId, -cost.coins, at, ...ours.args),
+      this.db
+        .prepare(
+          `INSERT INTO item_ledger (operation_id, line_no, account_id, item_id, delta, reason, created_at)
+           SELECT ?, 0, ?, ?, ?, 'affix_reroll', ? WHERE ${ours.sql} ON CONFLICT DO NOTHING`,
+        )
+        .bind(ledgerId, accountId, cost.itemId, -cost.quantity, at, ...ours.args),
+      this.db
+        .prepare(`UPDATE equipment_instances SET affix_pending_json = ? WHERE id = ? AND affix_pending_json IS NULL AND ${ours.sql}`)
+        .bind(JSON.stringify(pending), equipmentId, ...ours.args),
+    ]);
+    return this.outcome(accountId, operationId, hash, async () => {
+      const why = await this.whereAndFight(accountId);
+      if (why !== null) return why;
+      if ((await this.coins(accountId)) < cost.coins) return reject("INSUFFICIENT_COINS", `a reroll costs ${cost.coins} coins`);
+      if ((await this.itemBalance(accountId, cost.itemId)) < cost.quantity) return reject("NO_MATERIAL", `a reroll needs ${cost.quantity} ${cost.itemId}`);
+      const now = await this.affixPiece(accountId, equipmentId);
+      if (now === null) return reject("NOT_OWNER", "that equipment is not yours");
+      if (now.lock_state !== "free") return reject("ASSET_LOCKED", "that piece is locked");
+      if (now.affix_pending_json !== null) return reject("CHOICE_PENDING", "keep the old or the new affix from the last roll first");
+      return reject("CHANGED", "the piece changed; reload and try again");
+    });
+  }
+
+  /**
+   * Keep the old or the new affix from a reroll. Costs nothing and works anywhere, but not while a
+   * fight holds the piece. Clears the waiting roll; a retry replays.
+   */
+  async chooseAffix(accountId: string, raw: unknown): Promise<ServiceResult<AffixChooseResult>> {
+    const parsed = AffixChooseRequestSchema.safeParse(raw);
+    if (!parsed.success) return reject("INVALID_REQUEST", issues(parsed.error));
+    const { operationId, equipmentId, rerollOperationId, keep } = parsed.data;
+    const hash = await hashJson({ kind: "affix_choose", equipmentId, rerollOperationId, keep });
+    const prior = await this.prior<AffixChooseResult>(accountId, operationId, hash);
+    if (prior !== null) return prior;
+
+    const piece = await this.affixPiece(accountId, equipmentId);
+    if (piece === null) return reject("NOT_OWNER", "that equipment is not yours");
+    const pending = piece.affix_pending_json === null ? null : (JSON.parse(piece.affix_pending_json) as PendingAffix);
+    if (pending === null || pending.operationId !== rerollOperationId) return reject("NO_PENDING_REROLL", "no roll is waiting for a choice");
+    const affixes = JSON.parse(piece.affixes_json) as RolledAffix[];
+    const next = keep === "new" ? affixes.map((a, i) => (i === pending.slot ? pending.affix : a)) : affixes;
+    const result: AffixChooseResult = { equipmentId, kept: keep, affixes: next };
+    const guards = [`EXISTS (SELECT 1 FROM equipment_instances WHERE id = ? AND owner_id = ? AND lock_state = 'free' AND affixes_json = ? AND affix_pending_json = ?)`];
+    const args = [equipmentId, accountId, piece.affixes_json, piece.affix_pending_json];
+    const ours = this.ours(accountId, operationId, hash);
+    await this.db.batch([
+      this.anchor(accountId, operationId, "affix_choose", hash, result, guards, args),
+      this.db
+        .prepare(`UPDATE equipment_instances SET affixes_json = ?, affix_pending_json = NULL WHERE id = ? AND ${ours.sql}`)
+        .bind(JSON.stringify(next), equipmentId, ...ours.args),
+    ]);
+    return this.outcome(accountId, operationId, hash, async () => {
+      const now = await this.affixPiece(accountId, equipmentId);
+      if (now === null) return reject("NOT_OWNER", "that equipment is not yours");
+      if (now.lock_state !== "free") return reject("ASSET_LOCKED", "a fight holds that piece; choose after it ends");
+      if (now.affix_pending_json === null) return reject("NO_PENDING_REROLL", "no roll is waiting for a choice");
+      return reject("CHANGED", "the piece changed; reload and try again");
+    });
+  }
+
   // ------------------------------------------------------------------ helpers
+
+  private affixPiece(accountId: string, equipmentId: string) {
+    return this.db
+      .prepare(`SELECT id, definition_id, lock_state, affixes_json, affix_pending_json FROM equipment_instances WHERE id = ? AND owner_id = ?`)
+      .bind(equipmentId, accountId)
+      .first<{ id: string; definition_id: string; lock_state: string; affixes_json: string; affix_pending_json: string | null }>();
+  }
+
+  private async itemBalance(accountId: string, itemId: string): Promise<number> {
+    const r = await this.db
+      .prepare(`SELECT COALESCE(SUM(delta), 0) AS q FROM item_ledger WHERE account_id = ? AND item_id = ?`)
+      .bind(accountId, itemId)
+      .first<{ q: number }>();
+    return r?.q ?? 0;
+  }
 
   private inTown(): string {
     return this.townMapIds.length === 0

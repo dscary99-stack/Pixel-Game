@@ -607,6 +607,8 @@ export const AffixPoolSchema = z
   .object({
     id: z.string().regex(/^affix:[a-z0-9_]+$/),
     ...contentMeta,
+    /** The material a paid reroll of this type of gear uses (chapter 05 §3). */
+    rerollItemId: ItemId,
     entries: z
       .array(z.object({ stat: z.string().min(1), weight: z.number().int().positive(), min: z.number().int().min(1), max: z.number().int().min(1) }).strict())
       .min(1),

@@ -31,7 +31,7 @@ npm run smoke:world    # end-to-end การเดิน 2 ผู้เล่�
 npm run smoke:encounter # end-to-end เดินเข้าทุ่ง → สู้ฝูง → กลับที่เดิม (ไฟต์ส่วนตัว O05) กับ wrangler dev
 npm run smoke:character # end-to-end สร้างตัวละคร → จับคู่ใจ → จัดทีม → HP ติดตัว → แพ้กลับเมืองพัก กับ wrangler dev
 npm run smoke:equipment # end-to-end ของเริ่มต้น (ธรรมดา ไม่มีออปชัน) → ใส่/ถอด → stat ในไฟต์ → ล็อกระหว่างไฟต์ กับ wrangler dev
-npm run smoke:town     # end-to-end ใส่/ถอด Sigil (เสียเหรียญ ในเมือง) → ขาย/ซื้อของกับ NPC → ในทุ่งถูกปฏิเสธ กับ wrangler dev
+npm run smoke:town     # end-to-end ใส่/ถอด Sigil (เสียเหรียญ ในเมือง) → ขาย/ซื้อของกับ NPC → สุ่มออปชันใหม่แล้วเลือก → ในทุ่งถูกปฏิเสธ กับ wrangler dev
 npm run smoke:progression # end-to-end ไฟต์ได้ EXP (ตัวละคร+คู่ใจ) → เลเวลอัป → ลงแต้มสเตตัส กับ wrangler dev
 npm run smoke:auto        # end-to-end ล่าอัตโนมัติ: server เดินหาฝูง → สู้เอง (auto_hunt) → ไฟต์ถัดไป → หยุดแล้วได้สรุป → หลุดแล้วหยุด กับ wrangler dev
 npm run smoke:party       # end-to-end ปาร์ตี้: ตั้ง/เข้าด้วยรหัส → เพื่อนในแผนที่เดียวกันที่เพิ่งสู้ให้โบนัส EXP/วัสดุตอนเริ่มไฟต์ → คนนอกปาร์ตี้ไม่ได้ กับ wrangler dev

@@ -43,6 +43,23 @@ const bought = await http("POST", "/town/buy", buyReq);
 out.bought = { total: bought.body.result?.total, coins: bought.body.coins, retry: (await http("POST", "/town/buy", buyReq)).body.replayed };
 out.buyWrongTotal = (await http("POST", "/town/buy", { ...buyReq, operationId: `buy2_${run}`, expectedTotal: 1 })).body.error;
 out.buyNotListed = (await http("POST", "/town/buy", { ...buyReq, operationId: `buy3_${run}`, lines: [{ itemId: "item:crab_shell", quantity: 1 }], expectedTotal: 0 })).body.error;
+// Affix reroll (chapter 05 §3): a dev piece with two affixes, pay, see the new roll, keep it.
+await http("POST", "/dev/grant", {
+  operationId: `devg_${run}`,
+  coins: 1000,
+  items: { "item:river_pebble": 4 },
+  piece: { definitionId: "equip:ember_fang_dagger", rarity: "RARE", affixes: [{ stat: "PATK", value: 4 }, { stat: "STR", value: 2 }] },
+});
+bundle = (await http("GET", "/character")).body;
+const dagger = bundle.equipment.find((e: Msg) => e.affixes.length === 2);
+const rerollCost = { coins: 600, itemId: "item:river_pebble", quantity: 2 };
+const rerollReq = { operationId: `rr_${run}`, equipmentId: dagger.id, slot: 1, expectedAffixes: dagger.affixes, expectedCost: rerollCost };
+const rr = await http("POST", "/town/affix/reroll", rerollReq);
+out.reroll = { old: rr.body.result?.old, rolled: rr.body.result?.rolled, coins: rr.body.coins, retry: (await http("POST", "/town/affix/reroll", rerollReq)).body.replayed };
+out.rerollWhilePending = (await http("POST", "/town/affix/reroll", { ...rerollReq, operationId: `rr2_${run}` })).body.error;
+const chosen = await http("POST", "/character/equipment/affix/choose", { operationId: `ch_${run}`, equipmentId: dagger.id, rerollOperationId: rerollReq.operationId, keep: "new" });
+out.kept = chosen.body.result?.affixes;
+if (JSON.stringify(chosen.body.result?.affixes?.[1]) !== JSON.stringify(rr.body.result?.rolled)) throw new Error("keep new did not apply the roll");
 T.sock.close();
 await sleep(300);
 
@@ -52,6 +69,7 @@ await F.wait((m) => m.t === "packs");
 out.buyInField = (await http("POST", "/town/buy", { ...buyReq, operationId: `buy4_${run}` })).body.error;
 out.sellInField = (await http("POST", "/town/sell", { operationId: `sell3_${run}`, lines: [{ itemId: "item:small_potion", quantity: 1 }] })).body.error;
 out.installInField = (await http("POST", "/character/equipment/sigil", { ...install, operationId: `inst4_${run}` })).status;
+out.rerollInField = (await http("POST", "/town/affix/reroll", { ...rerollReq, operationId: `rr3_${run}`, expectedAffixes: chosen.body.result?.affixes })).body.error;
 out.removeInField = (await http("POST", "/character/equipment/sigil/remove", { operationId: `rm2_${run}`, equipmentId: sword, socket: 0, expectedCost: 300 })).body.error;
 F.sock.close();
 

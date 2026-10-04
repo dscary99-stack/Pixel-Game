@@ -2,7 +2,7 @@
  * Character and team requests (server mode). The server decides everything; the client shows
  * what it gets back. Identity uses the dev header until O11 picks auth.
  */
-import type { CharacterView, CreateCharacterRequest, EquipSlot, EquipmentView, MonsterInstance, PartyView, PrimaryStats } from "@pmrpg/shared";
+import type { CharacterView, CreateCharacterRequest, EquipSlot, EquipmentView, MonsterInstance, PartyView, PrimaryStats, RolledAffix } from "@pmrpg/shared";
 
 export type StoredCompanion = MonsterInstance & { hp: number | null; mp: number | null };
 
@@ -66,6 +66,14 @@ export class CharacterApi {
 
   removeSigil(equipmentId: string, socket: number, expectedCost: number) {
     return this.call<{ coins: number }>("POST", "/character/equipment/sigil/remove", { operationId: opId("unsigil"), equipmentId, socket, expectedCost });
+  }
+
+  rerollAffix(equipmentId: string, slot: number, expectedAffixes: RolledAffix[], expectedCost: { coins: number; itemId: string; quantity: number }) {
+    return this.call<{ coins: number }>("POST", "/town/affix/reroll", { operationId: opId("reroll"), equipmentId, slot, expectedAffixes, expectedCost });
+  }
+
+  chooseAffix(equipmentId: string, rerollOperationId: string, keep: "old" | "new") {
+    return this.call<{ coins: number }>("POST", "/character/equipment/affix/choose", { operationId: opId("affix"), equipmentId, rerollOperationId, keep });
   }
 
   sell(lines: { itemId: string; quantity: number }[]) {

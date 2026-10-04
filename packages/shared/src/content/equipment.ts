@@ -23,8 +23,9 @@ export const EXAMPLE_AFFIX_POOLS: AffixPool[] = [
   pool("affix:trinket", [["STR", 1, 1, 2], ["INT", 1, 1, 2], ["SPI", 1, 1, 2], ["DEX", 1, 1, 2], ["CRIT_PCT", 2, 1, 2], ["MP", 2, 5, 10], ["EFFECT_RES_PCT", 2, 1, 3]]),
 ];
 
+/** Every example pool rerolls with the field's common stone (a region material). */
 function pool(id: AffixPool["id"], entries: [string, number, number, number][]): AffixPool {
-  return { id, ...meta, entries: entries.map(([stat, weight, min, max]) => ({ stat, weight, min, max })) };
+  return { id, ...meta, rerollItemId: "item:river_pebble", entries: entries.map(([stat, weight, min, max]) => ({ stat, weight, min, max })) };
 }
 
 /** The pool for a piece by its type (weapon kind, defense, light, trinket). */

@@ -45,6 +45,7 @@ import {
   equipmentDisplayName,
   sigilFits,
   sigilRemovalCost,
+  affixRerollCost,
   wornGear,
   PRODUCTION_RULES,
   type CharacterView,
@@ -62,7 +63,7 @@ import {
 import { ApiError, type CharacterApi, type CharacterBundle } from "./character-api";
 
 const maps = exampleMapRegistry();
-const { species, equipment: equipmentDefs, items: itemDefs, sigils: sigilDefs, skills: skillDefs } = exampleContentMaps();
+const { species, equipment: equipmentDefs, items: itemDefs, sigils: sigilDefs, skills: skillDefs, affixPools } = exampleContentMaps();
 /** Display only: the client shows socket counts and prices, the server applies its own rules. */
 const RULES = PRODUCTION_RULES;
 
@@ -466,9 +467,54 @@ export function equipmentPanel(api: CharacterApi, start: CharacterBundle): Promi
         el(
           "div",
           { class: "pm-note" },
-          "ผลของ Sigil ยังไม่ทำงาน (ยังไม่มีระบบ effect) ใส่แล้วตัวเลขยังไม่เปลี่ยน · ใส่ซ้ำชื่อเดิมได้ · ถอดเสียเหรียญตามระดับของอุปกรณ์ ทำได้ในเมือง",
+          "Sigil ในอุปกรณ์ที่ใส่อยู่มีผลในไฟต์ · ใส่ซ้ำชื่อเดิมได้ · ถอดเสียเหรียญตามระดับของอุปกรณ์ ทำได้ในเมือง",
         ),
       );
+      drawAffixes();
+    };
+
+    /** Reroll one affix (chapter 05 §3): cost shown first, then keep old or new. */
+    const drawAffixes = () => {
+      body.append(el("label", {}, "สุ่มออปชันใหม่"));
+      const list = el("ul", { class: "pm-list", "data-section": "affixes" });
+      for (const p of bundle.equipment) {
+        const def = equipmentDefs.get(p.definitionId);
+        const pool = def === undefined ? undefined : affixPools.get(def.affixPoolId);
+        if (def === undefined || pool === undefined || p.affixes.length === 0) continue;
+        const li = el("li", { "data-affixes": p.id });
+        const label = el("span", { class: "pm-grow" });
+        label.append(gearName(def, p), el("small", { class: "pm-affix" }, affixLine(p)));
+        li.append(label);
+        const pending = p.pendingAffix;
+        if (pending !== undefined) {
+          const old = p.affixes[pending.slot]!;
+          const say = (a: { stat: string; value: number }) => `${STAT_TH[a.stat] ?? a.stat} +${a.value}`;
+          li.append(el("span", { class: "pm-note" }, `ช่อง ${pending.slot + 1}: เดิม ${say(old)} → ใหม่ ${say(pending.affix)}`));
+          const keepOld = el("button", { type: "button" }, "เก็บของเดิม");
+          keepOld.addEventListener("click", () => void service(() => api.chooseAffix(p.id, pending.operationId, "old")));
+          const keepNew = el("button", { type: "button" }, "ใช้ค่าใหม่");
+          keepNew.addEventListener("click", () => void service(() => api.chooseAffix(p.id, pending.operationId, "new")));
+          li.append(keepOld, keepNew);
+        } else {
+          const cost = affixRerollCost(RULES, def, pool);
+          const have = bundle.bag[cost.itemId] ?? 0;
+          const mat = itemDefs.get(cost.itemId)?.name.th ?? cost.itemId;
+          p.affixes.forEach((a, i) => {
+            const b = el("button", { type: "button" }, `สุ่มช่อง ${i + 1} (${cost.coins} เหรียญ + ${mat} ×${cost.quantity})`);
+            b.disabled = bundle.coins < cost.coins || have < cost.quantity || p.lockState !== "free";
+            if (b.disabled) b.title = `ต้องมี ${cost.coins} เหรียญ และ${mat} ${cost.quantity} ชิ้น`;
+            b.addEventListener("click", () => {
+              const msg = `สุ่มออปชันช่อง ${i + 1} ของ${pieceName(p)} ใหม่ (ตอนนี้ ${STAT_TH[a.stat] ?? a.stat} +${a.value})\nค่าสุ่ม ${cost.coins} เหรียญ + ${mat} ${cost.quantity} ชิ้น (มี ${bundle.coins} เหรียญ, ${have} ชิ้น)\nเสียทันทีแม้สุดท้ายเลือกเก็บของเดิม · ทำได้ในเมืองเท่านั้น`;
+              if (!window.confirm(msg)) return;
+              void service(() => api.rerollAffix(p.id, i, p.affixes, cost));
+            });
+            li.append(b);
+          });
+        }
+        list.append(li);
+      }
+      if (list.childElementCount === 0) list.append(el("li", {}, "ยังไม่มีอุปกรณ์ที่มีออปชัน (ของระดับ ดี ขึ้นไปจากการดรอป)"));
+      body.append(list);
     };
     draw();
   });

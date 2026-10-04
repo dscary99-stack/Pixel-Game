@@ -140,6 +140,11 @@ export const RULES = {
      */
     gearRarityWeights: provisional({ COMMON: 600, UNCOMMON: 280, RARE: 100, EPIC: 20, LEGENDARY: 0 } as const, "P09", "Claude's first pass"),
     affixCountByRarity: provisional({ COMMON: 0, UNCOMMON: 1, RARE: 2, EPIC: 3, LEGENDARY: 3 } as const, "P09", "chapter 05 §3: random affixes <= 3 by rarity"),
+    /**
+     * Paid reroll of one affix (chapter 05 §3): coins and the pool's material, both by item level.
+     * Values are P12 economy assumptions (Claude's first pass); resources are spent on the roll.
+     */
+    affixRerollCost: provisional({ coinsBase: 300, coinsPerLevel: 60, materialBase: 2, materialPerTenLevels: 1 } as const, "P12", "coins = 300 + 60 × item level; material = 2 + 1 per 10 item levels"),
     affixLevelScalePct: provisional(2, "P09", "affix value × (1 + 2% per item level above 1); Claude's first pass"),
     bossActions: provisional({ maxPerRound: 3 } as const, "P15", "bosses act up to 3 times a round; statuses count once per round"),
     /**
