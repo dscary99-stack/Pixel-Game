@@ -183,7 +183,7 @@ export interface HuntSummary {
   coins: number;
   /** What an NPC would pay for the drops (vendorPrice × quantity); an estimate, nothing is sold. */
   npcValue: number;
-  /** Rare drops worth calling out (Sigil items), in the order they dropped. */
+  /** Rare drops (drop chance under 1%, Nut 2026-10-04), in the order they dropped. */
   rare: string[];
   /** The last fight counted, so the same fight is never counted twice. */
   lastBattleId: string | null;
@@ -198,14 +198,18 @@ export interface SummaryFight {
   battleId: string;
   status: string;
   consumed: Record<string, number>;
-  entitlements: readonly { kind: string; exp?: number | undefined; companionExp?: Record<string, number> | undefined; items?: readonly { itemId: string; quantity: number }[] | undefined }[];
+  entitlements: readonly { kind: string; speciesId?: string; exp?: number | undefined; companionExp?: Record<string, number> | undefined; items?: readonly { itemId: string; quantity: number }[] | undefined }[];
 }
 
-/** Add one finished fight. Returns the same summary unchanged for an active or already-counted fight. */
+/**
+ * Add one finished fight. Returns the same summary unchanged for an active or already-counted fight.
+ * `isRare(speciesId, itemId)` says whether that species' drop is rare (see `isRareDrop`).
+ */
 export function addFightToSummary(
   sum: HuntSummary,
   fight: SummaryFight,
-  items: ReadonlyMap<string, { kind: string; vendorPrice: number }>,
+  items: ReadonlyMap<string, { vendorPrice: number }>,
+  isRare: (speciesId: string, itemId: string) => boolean,
 ): HuntSummary {
   if (fight.status === "active" || fight.battleId === sum.lastBattleId) return sum;
   const next: HuntSummary = { ...sum, items: { ...sum.items }, consumed: { ...sum.consumed }, rare: [...sum.rare], lastBattleId: fight.battleId };
@@ -219,7 +223,7 @@ export function addFightToSummary(
       next.items[line.itemId] = (next.items[line.itemId] ?? 0) + line.quantity;
       const def = items.get(line.itemId);
       next.npcValue += (def?.vendorPrice ?? 0) * line.quantity;
-      if (def?.kind === "sigil") next.rare.push(line.itemId);
+      if (e.speciesId !== undefined && isRare(e.speciesId, line.itemId)) next.rare.push(line.itemId);
     }
   }
   for (const [id, n] of Object.entries(fight.consumed)) if (n > 0) next.consumed[id] = (next.consumed[id] ?? 0) + n;

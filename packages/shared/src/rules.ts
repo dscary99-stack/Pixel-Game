@@ -84,6 +84,7 @@ export const RULES = {
     statusLandsByChance: confirmed(true, "O15", "Nut 2026-10-04: every status has a chance to land, not 100%, unless a skill sets 100%"),
     controlImmunityAfterControl: confirmed(false, "O15", "Nut 2026-10-04: no immunity turn after stun/sleep/freeze"),
     sigilDuplicatesStackPercentOnPercent: confirmed(true, "O09", "Nut 2026-10-04: duplicate Sigils with weapon-type % effects stack % on % (multiplied)"),
+    rareDropBelowChance: confirmed(0.01, "chapter08", "Nut 2026-10-04: a rare drop is one whose drop chance is under 1% (mostly upgrade/crafting materials, equipment, fashion)"),
     sigilPrefixOnEquipment: confirmed(true, "C24", "Nut 2026-10-04: an installed Sigil puts a prefix before the equipment's name"),
     shieldAfterDamageReduction: confirmed(true, "O15", "Nut 2026-10-04: a shield soaks damage after damage reduction"),
     statsOffsetStatusChance: confirmed(true, "O15", "Nut 2026-10-04: some high stats offset the chance of a status landing"),

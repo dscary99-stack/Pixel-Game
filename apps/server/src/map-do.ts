@@ -46,6 +46,7 @@ import {
   bossAttemptId,
   newHuntSummary,
   addFightToSummary,
+  isRareDrop,
   type HuntSummary,
   type PackMember,
   type AutoHuntSettings,
@@ -493,7 +494,12 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     const r = (await this.battle(battleId).handle(account, { kind: "view" })) as RoomReply;
     if (!r.ok) return;
     const state = (r.body as { state: PublicBattleState }).state;
-    const next = addFightToSummary(sum, state, this.content.items);
+    const tables = this.content.lootTables;
+    const isRare = (speciesId: string, itemId: string) => {
+      const table = tables.get(this.content.species.get(speciesId)?.lootTableId ?? "");
+      return isRareDrop(this.rules, table, itemId);
+    };
+    const next = addFightToSummary(sum, state, this.content.items, isRare);
     if (next !== sum) await this.ctx.storage.put(key, next);
   }
 

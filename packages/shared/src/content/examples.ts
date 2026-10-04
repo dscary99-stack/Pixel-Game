@@ -234,12 +234,13 @@ export const EXAMPLE_LOOT_TABLES: LootTable[] = EXAMPLE_SPECIES.map((s) => {
     ...meta,
     speciesId: s.id,
     sigilRoll: { sigilId: sg.id, itemId: `item:${sg.id.slice("sigil:".length)}_sigil`, probability: sg.baseDropProbability },
-    emptySlotWeight: 60,
+    emptySlotWeight: 600,
     pools: [
-      { id: "species", weight: 25, entries: [{ itemId: own, weight: 1, minQty: 1, maxQty: 2 }] },
-      { id: "region", weight: 15, entries: [{ itemId: "item:river_pebble", weight: 1, minQty: 1, maxQty: 3 }] },
-      // Each species drops one piece of EXAMPLE equipment, rarely (chapter 06 numbers are not set).
-      { id: "gear", weight: 4, entries: [{ itemId: SPECIES_GEAR[s.id as keyof typeof SPECIES_GEAR], weight: 1, minQty: 1, maxQty: 1 }] },
+      { id: "species", weight: 250, entries: [{ itemId: own, weight: 1, minQty: 1, maxQty: 2 }] },
+      { id: "region", weight: 150, entries: [{ itemId: "item:river_pebble", weight: 1, minQty: 1, maxQty: 3 }] },
+      // Each species drops one piece of EXAMPLE equipment, rarely: about 0.5% a kill, under Nut's
+      // 1% rare line (2026-10-04). Chapter 06 numbers are not set.
+      { id: "gear", weight: 1, entries: [{ itemId: SPECIES_GEAR[s.id as keyof typeof SPECIES_GEAR], weight: 1, minQty: 1, maxQty: 1 }] },
     ],
     maxTypesPerEnemy: 5,
   };

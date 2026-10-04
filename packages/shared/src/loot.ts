@@ -70,3 +70,29 @@ export function rollLoot(rules: RulesConfig, table: LootTable, origin: OriginMod
   for (const line of kept) merged.set(line.itemId, (merged.get(line.itemId) ?? 0) + line.quantity);
   return [...merged].map(([itemId, quantity]) => ({ itemId, quantity }));
 }
+
+/**
+ * The chance that one defeated enemy drops at least one of `itemId` from this table, before the
+ * Auto Hunt / manual-start keep filter (the item's own rarity, not the run's luck).
+ */
+export function dropChance(rules: RulesConfig, table: LootTable, itemId: string): number {
+  const n = rules.confirmed.maxLootTypesPerEnemy.value;
+  const totalPool = table.pools.reduce((sum, p) => sum + p.weight, 0);
+  const filled = totalPool / (table.emptySlotWeight + totalPool);
+  let perSlot = 0;
+  for (const pool of table.pools) {
+    const totalEntries = pool.entries.reduce((sum, e) => sum + e.weight, 0);
+    for (const e of pool.entries) if (e.itemId === itemId) perSlot += filled * (pool.weight / totalPool) * (e.weight / totalEntries);
+  }
+  const p = table.sigilRoll.probability;
+  const missSlot = 1 - perSlot;
+  const noneIfSigil = table.sigilRoll.itemId === itemId ? 0 : missSlot ** (n - 1);
+  return 1 - (p * noneIfSigil + (1 - p) * missSlot ** n);
+}
+
+/** Whether a drop is rare (Nut: drop chance under 1%). Unknown items are not called rare. */
+export function isRareDrop(rules: RulesConfig, table: LootTable | undefined, itemId: string): boolean {
+  if (table === undefined) return false;
+  const c = dropChance(rules, table, itemId);
+  return c > 0 && c < rules.confirmed.rareDropBelowChance.value;
+}
