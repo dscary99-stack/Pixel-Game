@@ -62,7 +62,13 @@ out.secondFight = enc2.battleId !== enc.battleId;
 // Stop mid-fight: the fight stays, the player plays it from here.
 from = A.inbox.length;
 A.send({ t: "autoStop" });
-out.stop = (await A.wait((m) => m.t === "auto", 4000, from)).reason;
+const stopMsg = await A.wait((m) => m.t === "auto", 4000, from);
+out.stop = stopMsg.reason;
+// The run's summary: the first fight is counted, the one still going is not (chapter 08).
+const sum = stopMsg.summary;
+out.summary = sum && { fights: sum.fights, wins: sum.wins, exp: sum.exp, companionExp: sum.companionExp, items: sum.items, consumed: sum.consumed, npcValue: sum.npcValue, secs: Math.round((sum.endedAt - sum.startedAt) / 1000) };
+if (!sum || sum.fights !== 1 || sum.lastBattleId !== enc.battleId || (out.fight1 as { status: string }).status === "victory" && sum.exp <= 0) throw new Error(`bad summary ${JSON.stringify(sum)}`);
+if ((sum.consumed["item:small_potion"] ?? 0) !== out.potionsUsedByAuto) throw new Error("summary potions differ from the fight's");
 await sleep(2500);
 const v2 = await battleCall(account, enc2.battleId)("GET", "");
 out.afterStop = { status: v2.state.status, autopilot: v2.autopilot };

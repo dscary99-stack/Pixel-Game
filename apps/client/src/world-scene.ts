@@ -17,6 +17,7 @@ import {
   stepCostMs,
   tryStep,
   type AutoStopReason,
+  type HuntSummary,
   type Direction,
   type MapDefinition,
   type PublicPlayer,
@@ -102,6 +103,9 @@ export class WorldScene extends Phaser.Scene {
   private stopped = false;
   private hud!: Phaser.GameObjects.Text;
   private notice!: Phaser.GameObjects.Text;
+  /** The last Auto Hunt run's totals (chapter 08); tap to close. */
+  private huntBox!: Phaser.GameObjects.Text;
+  private readonly itemDefs = exampleContentMaps().items;
   private keys!: Record<"up" | "down" | "left" | "right" | "w" | "a" | "s" | "d", Phaser.Input.Keyboard.Key>;
 
   constructor() {
@@ -120,6 +124,17 @@ export class WorldScene extends Phaser.Scene {
     this.add.text(8, 8, this.transport.label, { ...style, color: "#f2c94c" }).setScrollFactor(0).setDepth(100);
     this.hud = this.add.text(8, 40, "", style).setScrollFactor(0).setDepth(100);
     this.notice = this.add.text(W / 2, H - 90, "", { ...style, fontSize: "15px" }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
+    this.huntBox = this.add
+      .text(W / 2, H / 2, "", { ...style, fontSize: "14px", backgroundColor: "#1d1a2bee", padding: { x: 14, y: 12 } })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(110)
+      .setVisible(false)
+      .setInteractive()
+      .on("pointerdown", (_p: Pointer, _x: number, _y: number, e: Phaser.Types.Input.EventData) => {
+        e.stopPropagation();
+        this.huntBox.setVisible(false);
+      });
     this.add
       .text(W - 8, 8, `ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · C สเตตัส · T ทีม · E อุปกรณ์ · B ร้าน / R จุติคู่ใจ (ในเมือง) · K สกิล/Bond · H ล่าอัตโนมัติ · P ปาร์ตี้" : ""}`, style)
       .setOrigin(1, 0)
@@ -208,8 +223,11 @@ export class WorldScene extends Phaser.Scene {
         this.autoOn = m.on;
         this.path = [];
         this.pendingEngage = null;
-        if (m.on) this.flash("เริ่มล่าอัตโนมัติ (กด H หรือเดินเองเพื่อหยุด)");
-        else {
+        if (m.on) {
+          this.huntBox.setVisible(false);
+          this.flash("เริ่มล่าอัตโนมัติ (กด H หรือเดินเองเพื่อหยุด)");
+        } else {
+          if (m.summary !== undefined) this.showHuntSummary(m.summary);
           const found = m.reason === "FOUND_SPECIES" && m.detail ? ` (${this.species.get(m.detail)?.name.th ?? m.detail})` : "";
           const extra = m.reason === "REFUSED" && m.detail ? ` (${m.detail})` : (m.reason === "LOW_HP" || m.reason === "COMPANION_LOW_HP") && m.detail ? ` (HP ${m.detail})` : m.reason === "LOW_MP" && m.detail ? ` (MP ${m.detail})` : "";
           this.flash(`${AUTO_STOP_TEXT[m.reason ?? "PLAYER_STOPPED"]}${found}${extra}`);
@@ -536,6 +554,26 @@ export class WorldScene extends Phaser.Scene {
       this.input.keyboard!.resetKeys();
       this.panelOpen = false;
     }
+  }
+
+  private showHuntSummary(sum: HuntSummary) {
+    const name = (id: string) => this.itemDefs.get(id)?.name.th ?? id;
+    const list = (r: Record<string, number>) => Object.entries(r).map(([id, n]) => `${name(id)} ×${n}`).join(", ") || "-";
+    const secs = Math.max(0, Math.round(((sum.endedAt ?? Date.now()) - sum.startedAt) / 1000));
+    this.huntBox
+      .setText(
+        [
+          "สรุปการล่าอัตโนมัติ",
+          `เวลา ${Math.floor(secs / 60)} นาที ${secs % 60} วินาที · ${sum.fights} ไฟต์ (ชนะ ${sum.wins}${sum.defeats > 0 ? `, แพ้ ${sum.defeats}` : ""})`,
+          `EXP ${sum.exp} · EXP คู่ใจ ${sum.companionExp}`,
+          `เหรียญที่ได้จริง ${sum.coins} · มูลค่าขาย NPC (ประมาณ) ${sum.npcValue}`,
+          `ของที่ได้: ${list(sum.items)}`,
+          `ของที่ใช้ไป: ${list(sum.consumed)}`,
+          ...(sum.rare.length > 0 ? [`ของหายาก: ${sum.rare.map(name).join(", ")}`] : []),
+          "(แตะเพื่อปิด)",
+        ].join("\n"),
+      )
+      .setVisible(true);
   }
 
   private flash(text: string) {

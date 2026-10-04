@@ -157,3 +157,71 @@ export function autoHuntReadiness(
   }
   return null;
 }
+
+// ---------------------------------------------------------------- hunt summary (chapter 08)
+
+/**
+ * What one Auto Hunt run earned and spent, shown when it stops (chapter 08 "Hunt summary":
+ * time, EXP, actual coins, NPC value estimate, consumption, rare loot). A market estimate is kept
+ * apart by design and is not here yet (no market). Counted from each finished fight's settled
+ * entitlements, so it reports what was granted, not what was rolled.
+ */
+export interface HuntSummary {
+  startedAt: number;
+  endedAt: number | null;
+  fights: number;
+  wins: number;
+  /** Fights lost (team wiped); Auto Hunt stops after one. */
+  defeats: number;
+  exp: number;
+  companionExp: number;
+  /** Item drops: itemId -> quantity. */
+  items: Record<string, number>;
+  /** Items used in fights: itemId -> quantity. */
+  consumed: Record<string, number>;
+  /** Coins actually received (no fight drops coins yet). */
+  coins: number;
+  /** What an NPC would pay for the drops (vendorPrice × quantity); an estimate, nothing is sold. */
+  npcValue: number;
+  /** Rare drops worth calling out (Sigil items), in the order they dropped. */
+  rare: string[];
+  /** The last fight counted, so the same fight is never counted twice. */
+  lastBattleId: string | null;
+}
+
+export function newHuntSummary(now: number): HuntSummary {
+  return { startedAt: now, endedAt: null, fights: 0, wins: 0, defeats: 0, exp: 0, companionExp: 0, items: {}, consumed: {}, coins: 0, npcValue: 0, rare: [], lastBattleId: null };
+}
+
+/** The parts of a finished fight the summary reads (a PublicBattleState fits). */
+export interface SummaryFight {
+  battleId: string;
+  status: string;
+  consumed: Record<string, number>;
+  entitlements: readonly { kind: string; exp?: number | undefined; companionExp?: Record<string, number> | undefined; items?: readonly { itemId: string; quantity: number }[] | undefined }[];
+}
+
+/** Add one finished fight. Returns the same summary unchanged for an active or already-counted fight. */
+export function addFightToSummary(
+  sum: HuntSummary,
+  fight: SummaryFight,
+  items: ReadonlyMap<string, { kind: string; vendorPrice: number }>,
+): HuntSummary {
+  if (fight.status === "active" || fight.battleId === sum.lastBattleId) return sum;
+  const next: HuntSummary = { ...sum, items: { ...sum.items }, consumed: { ...sum.consumed }, rare: [...sum.rare], lastBattleId: fight.battleId };
+  next.fights += 1;
+  if (fight.status === "victory") next.wins += 1;
+  if (fight.status === "defeat") next.defeats += 1;
+  for (const e of fight.entitlements) {
+    next.exp += e.exp ?? 0;
+    for (const v of Object.values(e.companionExp ?? {})) next.companionExp += v;
+    for (const line of e.items ?? []) {
+      next.items[line.itemId] = (next.items[line.itemId] ?? 0) + line.quantity;
+      const def = items.get(line.itemId);
+      next.npcValue += (def?.vendorPrice ?? 0) * line.quantity;
+      if (def?.kind === "sigil") next.rare.push(line.itemId);
+    }
+  }
+  for (const [id, n] of Object.entries(fight.consumed)) if (n > 0) next.consumed[id] = (next.consumed[id] ?? 0) + n;
+  return next;
+}

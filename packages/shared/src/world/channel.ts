@@ -11,7 +11,7 @@ import type { RulesConfig } from "../rules";
 import { portalAt, type MapDefinition, type Portal, type TilePos } from "./map";
 import { DIRECTIONS, artFacing, tryStep, type Direction, type StepRejection } from "./movement";
 import type { VisiblePack } from "./encounter";
-import { AutoHuntSettingsSchema, type AutoStopReason } from "./auto-hunt";
+import { AutoHuntSettingsSchema, type AutoStopReason, type HuntSummary } from "./auto-hunt";
 
 // ---------------------------------------------------------------- wire protocol
 
@@ -58,7 +58,8 @@ export type WorldServerMessage =
   | { t: "error"; code: WorldErrorCode; message: string }
   | { t: "pong"; serverTime: number }
   /** Auto Hunt turned on or off; when off, why (and the pack/species for FOUND_SPECIES). */
-  | { t: "auto"; on: boolean; reason?: AutoStopReason; detail?: string; packId?: string }
+  /** `summary`: the run's totals, sent when a run that started ends (chapter 08). */
+  | { t: "auto"; on: boolean; reason?: AutoStopReason; detail?: string; packId?: string; summary?: HuntSummary }
   /** The server moved this player (Auto Hunt). */
   | { t: "autoMoved"; x: number; y: number; facing: Facing };
 

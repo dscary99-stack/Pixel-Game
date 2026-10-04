@@ -44,6 +44,9 @@ import {
   visibleBoss,
   bossLairId,
   bossAttemptId,
+  newHuntSummary,
+  addFightToSummary,
+  type HuntSummary,
   type PackMember,
   type AutoHuntSettings,
   type AutoStopReason,
@@ -87,6 +90,7 @@ interface AutoState {
 }
 
 const MAX_MESSAGE_BYTES = 256;
+const huntKey = (accountId: string) => `hunt:${accountId}`;
 export const mapObjectName = (mapId: string, channel: number) => `${mapId}#${channel}`;
 
 export class MapChannelDurableObject extends DurableObject<Env> {
@@ -461,6 +465,8 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     if ((await this.characters.loadout(a.presence.accountId)) === null) return refuse("NO_CHARACTER");
     this.routes.delete(a.presence.accountId);
     this.setAuto(ws, { settings, checked: false, endedAt: null, piloting: null });
+    // The run's totals live in storage, not the attachment (attachments are small).
+    await this.ctx.storage.put(huntKey(a.presence.accountId), newHuntSummary(Date.now()));
     safeSend(ws, { t: "auto", on: true });
     await this.ctx.storage.setAlarm(Date.now());
   }
@@ -471,9 +477,24 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     if (a === null || !a.auto) return;
     this.setAuto(ws, null);
     this.routes.delete(a.presence.accountId);
-    safeSend(ws, { t: "auto", on: false, reason, ...extra });
+    const key = huntKey(a.presence.accountId);
+    const summary = await this.ctx.storage.get<HuntSummary>(key);
+    await this.ctx.storage.delete(key);
+    safeSend(ws, { t: "auto", on: false, reason, ...extra, ...(summary === undefined ? {} : { summary: { ...summary, endedAt: Date.now() } }) });
     const battleId = this.ensureChannel(a.mapId, a.channel).get(a.presence.accountId)?.battleId ?? null;
     if (battleId !== null) await this.battle(battleId).handle(a.presence.accountId, { kind: "autopilot", on: false }).catch(() => undefined);
+  }
+
+  /** Add a finished fight to this run's summary (chapter 08); a fight already counted is skipped. */
+  private async countHuntFight(account: string, battleId: string): Promise<void> {
+    const key = huntKey(account);
+    const sum = await this.ctx.storage.get<HuntSummary>(key);
+    if (sum === undefined) return;
+    const r = (await this.battle(battleId).handle(account, { kind: "view" })) as RoomReply;
+    if (!r.ok) return;
+    const state = (r.body as { state: PublicBattleState }).state;
+    const next = addFightToSummary(sum, state, this.content.items);
+    if (next !== sum) await this.ctx.storage.put(key, next);
   }
 
   /** One Auto Hunt step for one connected player: watch the fight, check the team, walk, engage. */
@@ -498,7 +519,10 @@ export class MapChannelDurableObject extends DurableObject<Env> {
         return;
       }
       // Over: leave the result on screen briefly, then walk on (the same checks as a manual resume).
-      if (auto.endedAt === null) return this.setAuto(ws, { ...auto, endedAt: now });
+      if (auto.endedAt === null) {
+        this.setAuto(ws, { ...auto, endedAt: now });
+        return this.countHuntFight(account, presence.battleId);
+      }
       if (now - auto.endedAt < this.rules.provisional.autoHuntResultPauseMs.value) return;
       const r = await this.resume(ws, a);
       if (r === "done") this.setAuto(ws, { ...auto, endedAt: null, checked: false, piloting: null });
