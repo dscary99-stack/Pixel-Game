@@ -18,6 +18,8 @@
  * - Bosses are immune to hard control; immunity is checked before the chance.
  * - Silence blocks skills that cost MP only; passives and basic attacks still work.
  * - Every status ends with the fight.
+ * Side effects (Nut 2026-10-04): poison takes the most HP; burn and bleed take less but lower stats
+ * (burn: ATK and MATK, bleed: DEF per stack); paralyze puts SPD at 0 and may cost the turn.
  */
 import type { RulesConfig } from "./rules";
 import type { PrimaryStats } from "./schemas";
@@ -86,6 +88,8 @@ export interface StatusDefinition {
   overTime?: "poison" | "burn" | "bleed" | "regen";
   /** Per stack: sign × statusTuning.statModPct on these stats. */
   scaled?: Partial<Record<ScaledStat, 1 | -1 | 0.5 | -0.5>>;
+  /** These stats become 0 while it lasts (after every other change). */
+  zeroes?: ScaledStat[];
   /** Per stack: tuning key for the points added (+) or removed (−). */
   points?: Partial<Record<PointStat, "blind" | "evasionUp" | "resShift">>;
   pointSign?: 1 | -1;
@@ -98,11 +102,11 @@ export const STATUS_DEFINITIONS: Readonly<Record<StatusId, StatusDefinition>> = 
   stun: def({ id: "stun", th: "มึน", harmful: true, category: "control", resistStat: "VIT", hardControl: true, skipsTurn: "always" }),
   sleep: def({ id: "sleep", th: "หลับ", harmful: true, category: "control", resistStat: "INT", hardControl: true, skipsTurn: "always", endsOnDamage: true }),
   freeze: def({ id: "freeze", th: "แช่แข็ง", harmful: true, category: "control", resistStat: "VIT", hardControl: true, skipsTurn: "always", endsOnElement: "FIRE" }),
-  paralyze: def({ id: "paralyze", th: "ชา", harmful: true, category: "control", resistStat: "AGI", skipsTurn: "chance", scaled: { spd: -0.5 } }),
+  paralyze: def({ id: "paralyze", th: "ชา", harmful: true, category: "control", resistStat: "AGI", skipsTurn: "chance", zeroes: ["spd"] }),
   silence: def({ id: "silence", th: "ใบ้", harmful: true, category: "control", resistStat: "INT", blocksMpSkills: true }),
   poison: def({ id: "poison", th: "พิษ", harmful: true, category: "dot", resistStat: "VIT", overTime: "poison" }),
-  burn: def({ id: "burn", th: "เผาไหม้", harmful: true, category: "dot", resistStat: "VIT", overTime: "burn", scaled: { patk: -0.5 } }),
-  bleed: def({ id: "bleed", th: "เลือดออก", harmful: true, category: "dot", resistStat: "VIT", overTime: "bleed", maxStacks: 5 }),
+  burn: def({ id: "burn", th: "เผาไหม้", harmful: true, category: "dot", resistStat: "VIT", overTime: "burn", scaled: { patk: -0.5, matk: -0.5 } }),
+  bleed: def({ id: "bleed", th: "เลือดออก", harmful: true, category: "dot", resistStat: "VIT", overTime: "bleed", scaled: { pdef: -0.5 }, maxStacks: 3 }),
   blind: def({ id: "blind", th: "ตาบอด", harmful: true, category: "stat", resistStat: "DEX", points: { accuracyPct: "blind" }, pointSign: -1 }),
   atk_down: def({ id: "atk_down", th: "ATK ลด", harmful: true, category: "stat", resistStat: null, scaled: { patk: -1 } }),
   matk_down: def({ id: "matk_down", th: "MATK ลด", harmful: true, category: "stat", resistStat: null, scaled: { matk: -1 } }),
@@ -177,6 +181,7 @@ export function statsWithStatuses(rules: RulesConfig, base: DerivedStats, status
     out[k] = Math.max(0, Math.floor((base[k] * (100 + p)) / 100));
   }
   for (const k of Object.keys(pts) as PointStat[]) out[k] = Math.max(0, base[k] + pts[k]);
+  for (const s of statuses) for (const k of STATUS_DEFINITIONS[s.statusId].zeroes ?? []) out[k] = 0;
   return out;
 }
 

@@ -220,12 +220,14 @@ export const RULES = {
         evasionUpPct: 15,
         resShiftPct: 20,
         poisonPctMaxHp: 5,
-        burnPctMaxHp: 4,
-        bleedPctMaxHpPerStack: 2,
+        /** Nut 2026-10-04: poison takes the most HP; burn and bleed less, with stat downs instead. */
+        burnPctMaxHp: 3,
+        /** Up to 3 stacks, so at most 3%, still below poison. */
+        bleedPctMaxHpPerStack: 1,
         regenPctMaxHp: 6,
         /** A boss never loses more than this % of max HP to one status tick. */
         bossDotMaxHpPctPerTick: 1,
-        /** A paralyzed unit loses its turn on this roll. */
+        /** A paralyzed unit (SPD 0, Nut 2026-10-04) loses its turn on this roll. */
         paralyzeSkipChancePct: 25,
       } as const,
       "P04",

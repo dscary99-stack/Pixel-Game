@@ -5,6 +5,7 @@ import {
   createBattle,
   currentActor,
   deriveStats,
+  overTimeAmount,
   SkillDefinitionSchema,
   STATUS_DEFINITIONS,
   statsWithStatuses,
@@ -91,6 +92,19 @@ describe("status chance (Nut 2026-10-04)", () => {
     expect(statsWithStatuses(rules, base, [st("atk_down", 4)]).patk).toBe(Math.floor((base.patk * 50) / 100));
     expect(statsWithStatuses(rules, base, [st("blind")]).accuracyPct).toBe(base.accuracyPct - 30);
     expect(statsWithStatuses(rules, base, [st("res_up")]).effectResPct).toBe(20);
+  });
+
+  it("side effects (Nut 2026-10-04): poison takes the most HP, burn and bleed lower stats, paralyze zeroes SPD", () => {
+    const base = deriveStats(10, { STR: 30, VIT: 30, INT: 30, DEX: 10, AGI: 30, SPI: 10 });
+    const st = (statusId: ActiveStatus["statusId"], stacks = 1): ActiveStatus => ({ statusId, sourceId: null, turnsLeft: 2, stacks, fresh: false });
+    const hp = (id: ActiveStatus["statusId"], stacks = 1) => overTimeAmount(rules, STATUS_DEFINITIONS[id], stacks, 1000, false);
+    expect(hp("poison")).toBeGreaterThan(hp("burn"));
+    expect(hp("poison")).toBeGreaterThan(hp("bleed", STATUS_DEFINITIONS.bleed.maxStacks));
+    const burned = statsWithStatuses(rules, base, [st("burn")]);
+    expect([burned.patk, burned.matk]).toEqual([Math.floor((base.patk * 90) / 100), Math.floor((base.matk * 90) / 100)]);
+    expect(statsWithStatuses(rules, base, [st("bleed", 3)]).pdef).toBe(Math.floor((base.pdef * 70) / 100));
+    // SPD 0 even with a speed buff on top.
+    expect(statsWithStatuses(rules, base, [st("spd_up"), st("paralyze")]).spd).toBe(0);
   });
 
   it("skill data cannot put a harmful status on an ally or a buff on an enemy", () => {
