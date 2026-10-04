@@ -52,6 +52,8 @@ export interface BattleUnit {
   passiveIds?: string[];
   /** Sigils the player wears: id → installed copies (their effects, chapter 05 §4–§5). */
   sigils?: Record<string, number>;
+  /** Wild bosses with more than one action per round (chapter 03); absent means 1. */
+  actionsPerRound?: number;
   /** Once-per-battle passives already used ("skillId#trigger index"). */
   passivesUsed?: string[];
   ko: boolean;
@@ -152,7 +154,8 @@ interface EventBase {
 export type BattleEventBody =
   | { type: "BattleStarted"; originMode: OriginMode; rulesVersion: string; unitIds: string[] }
   | { type: "RoundStarted"; round: number; order: string[] }
-  | { type: "TurnStarted"; unitId: string; guardEnded: boolean }
+  /** `action`/`actionsThisRound` only for a unit with more than one action this round (bosses). */
+  | { type: "TurnStarted"; unitId: string; guardEnded: boolean; action?: number; actionsThisRound?: number }
   | {
       type: "ActionResolved";
       actorId: string;

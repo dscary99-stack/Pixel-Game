@@ -266,6 +266,10 @@ export class BattleScene extends Phaser.Scene {
     switch (e.type) {
       case "RoundStarted":
         return this.pushLog(`— รอบ ${e.round} —`);
+      case "TurnStarted":
+        // Bosses with several actions a round say which one this is (chapter 03 timeline).
+        if (e.action !== undefined) return this.pushLog(`${this.name(e.unitId)} ลงมือครั้งที่ ${e.action}/${e.actionsThisRound}`);
+        return;
       case "ActionResolved": {
         const via = e.skillId === null ? "" : ` [${CONTENT.skills.get(e.skillId)?.name.th ?? e.skillId}]`;
         if (e.damage !== null && e.targetId) {

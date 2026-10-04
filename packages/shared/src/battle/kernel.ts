@@ -255,6 +255,9 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
       movedThisRound: false,
       captureWindowOpen: e.captureWindowOpen ?? sp.rank !== "BOSS",
       lootTableId: sp.lootTableId,
+      ...(sp.rank === "BOSS" && (sp.bossActionsPerRound ?? 1) > 1
+        ? { actionsPerRound: Math.min(sp.bossActionsPerRound!, rules.provisional.bossActions.value.maxPerRound) }
+        : {}),
     });
   }
 
@@ -352,19 +355,41 @@ function startRound(ctx: Ctx): void {
   s.round += 1;
   s.turnIndex = 0;
   for (const u of s.units) u.movedThisRound = false;
-  const ready = s.units.filter(active).map((u) => ({ id: u.unitId, spd: eff(ctx, u).spd, tie: ctx.rng.nextUint32() }));
+  // A boss with N actions gets N slots, action k at SPD×(N−k)/N, so its actions spread across the round.
+  const ready = s.units.filter(active).flatMap((u) => {
+    const spd = eff(ctx, u).spd;
+    const n = u.actionsPerRound ?? 1;
+    return Array.from({ length: n }, (_, k) => ({ id: u.unitId, spd: (spd * (n - k)) / n, tie: ctx.rng.nextUint32() }));
+  });
   ready.sort((a, b) => b.spd - a.spd || a.tie - b.tie);
   s.turnOrder = ready.map((r) => r.id);
   ctx.emit({ type: "RoundStarted", round: s.round, order: [...s.turnOrder] });
 }
 
+/**
+ * Which of its actions this round the current slot is, for a unit with several (bosses, P15 bossActions).
+ * Everyone else is always action 1 of 1.
+ */
+function roundAction(s: BattleState, u: BattleUnit): { n: number; of: number; first: boolean; last: boolean } {
+  if ((u.actionsPerRound ?? 1) <= 1) return { n: 1, of: 1, first: true, last: true };
+  let before = 0;
+  let after = 0;
+  s.turnOrder.forEach((id, i) => {
+    if (id !== u.unitId || i === s.turnIndex) return;
+    if (i < s.turnIndex) before += 1;
+    else after += 1;
+  });
+  return { n: before + 1, of: before + 1 + after, first: before === 0, last: after === 0 };
+}
+
 function beginTurn(ctx: Ctx, u: BattleUnit): void {
   const guardEnded = u.guarding;
   u.guarding = false;
-  if (ctx.rules.unresolved.cooldownTick.value === "owner_turn_start") {
+  const ra = roundAction(ctx.s, u);
+  if (ra.first && ctx.rules.unresolved.cooldownTick.value === "owner_turn_start") {
     for (const k of Object.keys(u.cooldowns)) u.cooldowns[k] = Math.max(0, (u.cooldowns[k] ?? 0) - 1);
   }
-  ctx.emit({ type: "TurnStarted", unitId: u.unitId, guardEnded });
+  ctx.emit({ type: "TurnStarted", unitId: u.unitId, guardEnded, ...(ra.of > 1 ? { action: ra.n, actionsThisRound: ra.of } : {}) });
 }
 
 // ================================================================ statuses (status.ts)
@@ -427,6 +452,22 @@ function receiveHeal(ctx: Ctx, u: BattleUnit, amount: number): number {
  * control. Returns false when the unit cannot act this turn.
  */
 function statusTurnStart(ctx: Ctx, u: BattleUnit): boolean {
+  // A boss's later actions in a round skip straight to the control rolls (P15 bossActions).
+  if (roundAction(ctx.s, u).first) statusTicks(ctx, u);
+  if (!active(u)) return false;
+  for (const st of u.statuses ?? []) {
+    const d = STATUS_DEFINITIONS[st.statusId];
+    const skip = d.skipsTurn === "always" || (d.skipsTurn !== undefined && ctx.rng.chanceBp(tuning(ctx)[d.skipsTurn] * 100));
+    if (skip) {
+      ctx.emit({ type: "TurnSkipped", unitId: u.unitId, statusId: st.statusId });
+      return false;
+    }
+  }
+  return true;
+}
+
+/** turn_start passives and over-time loss and gain, once per unit per round. */
+function statusTicks(ctx: Ctx, u: BattleUnit): void {
   firePassives(ctx, u, "turn_start");
   for (const st of [...(u.statuses ?? [])]) {
     const d = STATUS_DEFINITIONS[st.statusId];
@@ -453,16 +494,6 @@ function statusTurnStart(ctx: Ctx, u: BattleUnit): boolean {
     }
     if (d.growsEachTick === true && active(u)) st.stacks = Math.min(d.maxStacks, st.stacks + 1);
   }
-  if (!active(u)) return false;
-  for (const st of u.statuses ?? []) {
-    const d = STATUS_DEFINITIONS[st.statusId];
-    const skip = d.skipsTurn === "always" || (d.skipsTurn !== undefined && ctx.rng.chanceBp(tuning(ctx)[d.skipsTurn] * 100));
-    if (skip) {
-      ctx.emit({ type: "TurnSkipped", unitId: u.unitId, statusId: st.statusId });
-      return false;
-    }
-  }
-  return true;
 }
 
 /** After a unit acted: shock hurts it, and acting breaks stealth. */
@@ -475,6 +506,8 @@ function afterAction(ctx: Ctx, u: BattleUnit, cmd: BattleCommand["type"]): void 
 /** End of a unit's turn: its statuses count down, except ones put on during this very turn. Doom kills at 0. */
 function endTurn(ctx: Ctx, u: BattleUnit): void {
   if (!active(u)) return;
+  // A boss counts its statuses down once a round, after its last action (P15 bossActions).
+  if (!roundAction(ctx.s, u).last) return;
   firePassives(ctx, u, "turn_end");
   if (u.statuses === undefined || !active(u)) return;
   const kept: ActiveStatus[] = [];
@@ -674,7 +707,8 @@ function passiveAction(ctx: Ctx, owner: BattleUnit, a: PassiveAction, other: Bat
 /** What an instant status does the moment it lands (catalog §3.1, §3.7). */
 function instantStatus(ctx: Ctx, source: BattleUnit, target: BattleUnit, what: InstantEffect): void {
   const s = ctx.s;
-  const pos = s.turnOrder.indexOf(target.unitId);
+  // The target's next slot not yet taken this round (a boss may have several).
+  const pos = s.turnOrder.findIndex((id, i) => id === target.unitId && i > s.turnIndex);
   const buffs = () => (target.statuses ?? []).filter((x) => !STATUS_DEFINITIONS[x.statusId].harmful);
   switch (what) {
     case "knockback":
@@ -694,12 +728,12 @@ function instantStatus(ctx: Ctx, source: BattleUnit, target: BattleUnit, what: I
     }
     case "delay":
       // Not acted yet this round: goes to the end of the round's order.
-      if (pos > s.turnIndex) s.turnOrder = [...s.turnOrder.filter((id) => id !== target.unitId), target.unitId];
+      if (pos > s.turnIndex) s.turnOrder = [...s.turnOrder.filter((_, i) => i !== pos), target.unitId];
       return;
     case "advance":
       // Acts right after the current unit, if it has not acted yet this round.
       if (pos > s.turnIndex + 1) {
-        const order = s.turnOrder.filter((id) => id !== target.unitId);
+        const order = s.turnOrder.filter((_, i) => i !== pos);
         order.splice(s.turnIndex + 1, 0, target.unitId);
         s.turnOrder = order;
       }

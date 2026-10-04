@@ -349,8 +349,15 @@ export const SpeciesDefinitionSchema = z
     /** Rebirth variants, one entry per stage that has them (validator checks the kit rules). */
     rebirthVariants: z.array(RebirthVariantSchema).max(3).optional(),
     rebirthCosmetic: RebirthCosmeticSchema.optional(),
+    /** Wild bosses only: actions per round (chapter 03 exception). Never used for companions. */
+    bossActionsPerRound: z.number().int().min(2).max(RULES.provisional.bossActions.value.maxPerRound).optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((s, ctx) => {
+    if (s.bossActionsPerRound !== undefined && s.rank !== "BOSS") {
+      ctx.addIssue({ code: "custom", path: ["bossActionsPerRound"], message: "only BOSS species act more than once a round" });
+    }
+  });
 export type SpeciesDefinition = z.infer<typeof SpeciesDefinitionSchema>;
 
 /** A map spawn entry. `.strict()` rejects any wildLevel override (C29, chapter 12 validator 6). */

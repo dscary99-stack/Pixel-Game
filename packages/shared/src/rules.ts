@@ -123,6 +123,16 @@ export const RULES = {
     formationBackSlots: provisional(3, "P15"),
     actionsPerRound: provisional(1, "P15"),
     /**
+     * Bosses may act 2–3 times a round, a disclosed exception shown in the round's timeline (chapter 03).
+     * Each action is its own slot in the order, spread out by SPD (action k of N at SPD×(N−k)/N), so the
+     * player sees when each comes. Per action: hard control still never lands on a boss, a turn-skip roll
+     * (paralysis and the like) costs only that action, and a KO ends the rest. Over-time ticks and
+     * turn_start passives happen on the boss's first action of the round; status countdown and turn_end
+     * passives on its last, so a 3-action boss does not burn statuses 3× as fast. Never carried over to
+     * companions: a captured boss acts once like any companion. Claude's first pass.
+     */
+    bossActions: provisional({ maxPerRound: 3 } as const, "P15", "bosses act up to 3 times a round; statuses count once per round"),
+    /**
      * Wild enemy AI (chapter 08 rule engine, same validator as manual): each turn a usable skill is
      * picked with this chance, else a basic attack. Heals only when an ally is under the HP line, and
      * a status-only skill only when the target lacks that status. Wild skills work at the level cap
