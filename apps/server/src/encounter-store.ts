@@ -55,6 +55,30 @@ export class EncounterStore {
     return new Set(results.map((r) => r.pack_instance_id));
   }
 
+  /**
+   * Which try at a boss lair the next engage belongs to (P17: retry with no quota). The latest try is
+   * reused while its fight has not started or is still open (a crash retry continues the same fight);
+   * once it is settled or released, the next engage is a new try with a new fight.
+   */
+  async bossAttempt(accountId: string, lairId: string): Promise<number> {
+    const prefix = `${lairId}:`;
+    const { results } = await this.db
+      .prepare(
+        `SELECT c.pack_instance_id, r.status FROM encounter_claims c
+         LEFT JOIN battle_reservations r ON r.battle_id = c.battle_id
+         WHERE c.account_id = ? AND substr(c.pack_instance_id, 1, ?) = ?`,
+      )
+      .bind(accountId, prefix.length, prefix)
+      .all<{ pack_instance_id: string; status: string | null }>();
+    let latest: { n: number; status: string | null } | null = null;
+    for (const r of results) {
+      const n = Number(r.pack_instance_id.slice(prefix.length));
+      if (Number.isInteger(n) && (latest === null || n > latest.n)) latest = { n, status: r.status };
+    }
+    if (latest === null) return 1;
+    return latest.status === null || latest.status === "reserved" || latest.status === "active" ? latest.n : latest.n + 1;
+  }
+
   /** The battle holding this account's open reservation, if any (one at a time, migration 0001). */
   async openBattle(accountId: string): Promise<string | null> {
     const row = await this.db

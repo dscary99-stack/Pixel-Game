@@ -266,6 +266,21 @@ export class BattleScene extends Phaser.Scene {
     switch (e.type) {
       case "RoundStarted":
         return this.pushLog(`— รอบ ${e.round} —`);
+      case "BossPhaseChanged": {
+        const ph = this.bossPhase(e.phase);
+        return this.pushLog(`${this.name(e.unitId)} เข้าช่วง ${e.phase + 1}${ph ? `: ${ph.name.th}` : ""}`);
+      }
+      case "BossTelegraph": {
+        const sk = CONTENT.skills.get(e.skillId)?.name.th ?? e.skillId;
+        if (e.change === "announced") {
+          this.popup(e.unitId, `เตรียม ${sk}!`, "#ff6b6b");
+          return this.pushLog(`⚠ ${this.name(e.unitId)} เตรียมใช้ ${sk} ในรอบ ${e.firesRound}`);
+        }
+        return this.pushLog(e.change === "fired" ? `${this.name(e.unitId)} ใช้ ${sk}!` : `${sk} ของ ${this.name(e.unitId)} ถูกยกเลิก`);
+      }
+      case "CaptureWindowOpened":
+        this.popup(e.unitId, "จับได้แล้ว!", "#7dff9b");
+        return this.pushLog(`${this.name(e.unitId)} อ่อนแรง: ใช้เครื่องจับได้แล้ว`);
       case "TurnStarted":
         // Bosses with several actions a round say which one this is (chapter 03 timeline).
         if (e.action !== undefined) return this.pushLog(`${this.name(e.unitId)} ลงมือครั้งที่ ${e.action}/${e.actionsThisRound}`);
@@ -351,6 +366,11 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
+  private bossPhase(index: number) {
+    const b = this.snap.state.boss;
+    return b === undefined ? undefined : CONTENT.bosses.get(b.bossId)?.phases[index];
+  }
+
   private render(state: PublicBattleState) {
     for (const u of state.units) {
       const { x, y } = this.position(u);
@@ -379,9 +399,19 @@ export class BattleScene extends Phaser.Scene {
       v.label.setPosition(x, y - 37).setText(`${u.name} Lv${u.level}${u.retired ? " (จับแล้ว)" : ""}${tags ? `\n${tags}` : ""}`);
     }
     const actor = this.snap.actor ? this.unit(this.snap.actor) : undefined;
+    // Boss fights: the phase, and a warned move with what answers it (chapter 07 §5, readable without colour).
+    let bossLine = "";
+    if (state.boss !== undefined && state.status === "active") {
+      const ph = this.bossPhase(state.boss.phase);
+      bossLine = `\nบอส ช่วง ${state.boss.phase + 1}${ph ? ` ${ph.name.th}` : ""}`;
+      if (state.boss.telegraph !== null) {
+        const sk = CONTENT.skills.get(state.boss.telegraph.skillId)?.name.th ?? state.boss.telegraph.skillId;
+        bossLine += ` · ⚠ ${sk} รอบ ${state.boss.telegraph.firesRound}${ph?.telegraph ? `: ${ph.telegraph.hint.th}` : ""}`;
+      }
+    }
     const party = state.partyBonus ? ` · ปาร์ตี้ ${state.partyBonus.partners} คน: EXP +${state.partyBonus.expPercent}% วัสดุ +${state.partyBonus.materialDropPercent}%` : "";
     this.turnText.setText(
-      (state.status === "active" ? `รอบ ${state.round} · ตาของ ${actor?.name ?? "-"} · แตะศัตรูเพื่อเลือกเป้า` : `จบไฟต์: ${state.status}`) + party,
+      (state.status === "active" ? `รอบ ${state.round} · ตาของ ${actor?.name ?? "-"} · แตะศัตรูเพื่อเลือกเป้า` : `จบไฟต์: ${state.status}`) + party + bossLine,
     );
     if (state.status !== "active" && this.onExit !== null && this.exitButton === null && !this.watching) {
       const exit = this.onExit;

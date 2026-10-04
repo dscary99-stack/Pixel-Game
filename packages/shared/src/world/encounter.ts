@@ -10,7 +10,7 @@
  */
 import type { RulesConfig } from "../rules";
 import type { Rng } from "../rng";
-import type { Element, SpeciesDefinition } from "../schemas";
+import type { BossDefinition, Element, SpeciesDefinition } from "../schemas";
 import type { BattleSetup } from "../battle/types";
 import type { MapDefinition, SpawnPoint, TilePos } from "./map";
 
@@ -36,9 +36,33 @@ export interface VisiblePack {
   spawnId: string;
   x: number;
   y: number;
-  rank: SpawnPoint["rank"];
+  rank: SpawnPoint["rank"] | "BOSS";
   sizeRange: [number, number];
   leader: { speciesId: string; element: Element; level: number };
+  /** Boss lairs only: which boss waits there (chapter 07 §5). */
+  bossId?: string;
+}
+
+/** The engage id of a map's boss lair. Each try gets its own fight (`bossAttemptId`). */
+export const bossLairId = (mapId: string) => `${mapId}#boss`;
+export const bossAttemptId = (mapId: string, attempt: number) => `${bossLairId(mapId)}:${attempt}`;
+
+/** A map's boss as players see it: the boss is the leader; the size counts its adds. */
+export function visibleBoss(map: MapDefinition, bosses: ReadonlyMap<string, BossDefinition>, species: ReadonlyMap<string, SpeciesDefinition>): VisiblePack | null {
+  const lair = map.bossLair;
+  const def = lair === undefined ? undefined : bosses.get(lair.bossId);
+  if (lair === undefined || def === undefined) return null;
+  const size = 1 + def.adds.length;
+  return {
+    packId: bossLairId(map.id),
+    spawnId: "boss",
+    x: lair.at.x,
+    y: lair.at.y,
+    rank: "BOSS",
+    sizeRange: [size, size],
+    leader: { speciesId: def.speciesId, element: def.element, level: species.get(def.speciesId)?.fixedWildLevel ?? 0 },
+    bossId: def.id,
+  };
 }
 
 export const packCycle = (rules: RulesConfig, now: number) => Math.floor(now / rules.provisional.packRespawnMs.value);

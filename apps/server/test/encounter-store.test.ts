@@ -2,7 +2,7 @@
  * Private encounter claims on the D1 migrations (node:sqlite stand-in), O05.
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { PRODUCTION_RULES } from "@pmrpg/shared";
+import { PRODUCTION_RULES, bossAttemptId, bossLairId } from "@pmrpg/shared";
 import { Economy } from "../src/economy";
 import { EncounterStore } from "../src/encounter-store";
 import { SqliteD1, freshDb, type Db } from "./sqlite-d1";
@@ -71,5 +71,32 @@ describe("EncounterStore", () => {
     expect(await enc.openBattle(A)).toBeNull();
     expect((await enc.fought(A, [PACK])).has(PACK)).toBe(true);
     expect((await eco.reservedBag(`res:${battleId}`))?.status).toBe("released");
+  });
+
+  it("boss tries: reused until the fight is over, then a new try (no quota, P17), per player", async () => {
+    const lair = bossLairId("map:dawn_field");
+    expect(await enc.bossAttempt(A, lair)).toBe(1);
+    const first = await enc.claim(A, bossAttemptId("map:dawn_field", 1), roster);
+    // Claimed but not started (a crash before the reservation): the same try again.
+    expect(await enc.bossAttempt(A, lair)).toBe(1);
+    await reserveFor(A, first.battleId);
+    expect(await enc.bossAttempt(A, lair)).toBe(1);
+    await eco.activate(`res:${first.battleId}`);
+    expect(await enc.bossAttempt(A, lair)).toBe(1);
+    expect(await enc.bossAttempt(B, lair)).toBe(1);
+    // The fight ended (settled stands in for the outbox's settlement here).
+    db.prepare("UPDATE battle_reservations SET status = 'settled' WHERE reservation_id = ?").run(`res:${first.battleId}`);
+    expect(await enc.bossAttempt(A, lair)).toBe(2);
+    const second = await enc.claim(A, bossAttemptId("map:dawn_field", 2), roster);
+    expect(second.battleId).not.toBe(first.battleId);
+    // Tries 10+ sort by number, not text.
+    for (const n of [3, 4, 5, 6, 7, 8, 9, 10]) {
+      const c = await enc.claim(A, bossAttemptId("map:dawn_field", n), roster);
+      await reserveFor(A, c.battleId);
+      await eco.release(`res:${c.battleId}`);
+    }
+    expect(await enc.bossAttempt(A, lair)).toBe(11);
+    // Another map's lair is its own count.
+    expect(await enc.bossAttempt(A, bossLairId("map:other"))).toBe(1);
   });
 });

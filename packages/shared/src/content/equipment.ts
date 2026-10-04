@@ -33,6 +33,7 @@ export const EXAMPLE_EQUIPMENT: EquipmentDefinition[] = [
   equip("equip:bell_feather_cap", "หมวกขนนกกระดิ่ง", "HEAD_TOP", 2, { MDEF: 3, EVASION_PCT: 1 }, 1),
   equip("equip:crab_buckler", "โล่กระดองปู", "OFFHAND", 4, { PDEF: 6, HP: 40 }, 1, { offhandKind: "shield" }),
   equip("equip:glow_charm", "เครื่องรางเรืองแสง", "ACCESSORY", 3, { SUPPORT: 5, MP: 15 }, 1),
+  equip("equip:crystal_shell_plate", "เกราะกระดองผลึก", "ARMOR", 6, { PDEF: 10, HP: 60 }, 1),
   equip("equip:ember_fang_dagger", "มีดเขี้ยวสะเก็ด", "WEAPON", 5, { PATK: 14, CRIT_PCT: 3 }, 2, { weaponKind: "physical_melee", handedness: "one_hand" }),
 ];
 

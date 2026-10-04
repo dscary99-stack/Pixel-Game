@@ -8,6 +8,7 @@ import type { z } from "zod";
 import { EXAMPLE_EQUIPMENT } from "./equipment";
 import { PassiveSchema, type PassiveTriggerSchema } from "../schemas";
 import type {
+  BossDefinition,
   Element,
   ItemDefinition,
   LootTable,
@@ -67,6 +68,12 @@ export const EXAMPLE_SKILLS: SkillDefinition[] = [
   variant(innate("skill:fox_innate_kill_mp", "กำจัดเป้าหมายmarkแล้วคืนMP", [{ on: "kill", otherHas: "mark", then: [{ kind: "restore_mp", target: "self", amount: 8 }] }]), "skill:fox_innate_kill_heal"),
   variant(dmg("skill:fox_final_blaze", "ปิดฉากเพลิง", "physical", 1.5, 0, "FIRE", "melee", 10, 2, { execute: { belowHpPct: 35, bonusPct: 60 } }), "skill:fox_consume_mark"),
   variant(dmg("skill:fox_reckless_dash", "พุ่งเสี่ยงตาย", "physical", 2.2, 0, "FIRE", "melee", 10, 2, { recoilPct: 20 }), "skill:fox_consume_mark"),
+  // Crystal crab lord (เจ้ากระดองผลึก), the field boss of chapter 07 §5's example
+  dmg("skill:lord_crystal_claw", "ก้ามผลึก", "physical", 1.4, 0, "WATER", "melee", 6, 0, { statuses: [{ statusId: "def_down", chancePct: 40, turns: 2 }] }),
+  // Its telegraphed move: hits every unit, so the answer is guard, shields or breaking the shell first.
+  { ...dmg("skill:lord_shockwave", "คลื่นกระแทก", "physical", 1.5, 0, "WATER", "ranged", 12, 0), targetRule: "all_enemies" },
+  support("skill:lord_crystal_shell", "เกราะผลึก", 10, { statusId: "shield", chancePct: 100, turns: 2, shieldPct: 15 }, "self"),
+  innate("skill:lord_innate_last_stand", "กระดองสุดท้าย", [{ on: "hp_below", hpBelowPct: 50, oncePerBattle: true, then: [{ kind: "status", target: "self", statuses: [{ statusId: "def_up", chancePct: 100, turns: 2 }] }] }]),
   // Player prototype skill
   dmg("skill:player_power_strike", "ฟันแรง", "physical", 1.6, 0, "NEUTRAL", "melee", 8, 0),
   // Area example (Nut 2026-10-04): hits the whole row of the chosen enemy, each with its own roll.
@@ -114,6 +121,55 @@ export const EXAMPLE_SPECIES: SpeciesDefinition[] = [
     "skill:bird_cleanse",
     "skill:bird_back_peck",
   ], "skill:bird_innate_resist", 0.3, { STR: 8, VIT: 7, INT: 8, DEX: 10, AGI: 12, SPI: 8 }, "ranged"),
+  // Field boss (chapter 07 §5 example). Two actions a round while wild; a captured one acts once.
+  species("species:crystal_crab_lord", "เจ้ากระดองผลึก", 8, "tank", ["WATER", "EARTH"], [
+    "skill:lord_crystal_claw",
+    "skill:lord_shockwave",
+    "skill:lord_crystal_shell",
+  ], "skill:lord_innate_last_stand", 0.1, { STR: 18, VIT: 24, INT: 8, DEX: 12, AGI: 10, SPI: 12 }, "melee", { rank: "BOSS", bossActionsPerRound: 2 }),
+];
+
+/**
+ * EXAMPLE boss (chapter 07 §5): the crystal crab lord with two lantern snails that re-shield it.
+ * Phase 1 teaches the pattern (a crystal shell, a shockwave warned a round ahead); breaking the shell
+ * or getting it under half HP starts phase 2, where it takes more damage, hits harder, warns more
+ * often and can be captured below 30% HP. Numbers are Claude's first pass.
+ */
+export const EXAMPLE_BOSSES: BossDefinition[] = [
+  {
+    id: "boss:crystal_crab_lord",
+    ...meta,
+    name: { th: "เจ้ากระดองผลึก" },
+    speciesId: "species:crystal_crab_lord",
+    element: "WATER",
+    hpMultiplier: 4,
+    adds: [
+      { speciesId: "species:lantern_snail", element: "WATER", row: "back", lootEligible: true },
+      { speciesId: "species:lantern_snail", element: "LIGHT", row: "back", lootEligible: true },
+    ],
+    phases: [
+      {
+        id: "shell",
+        name: { th: "กระดองผลึก" },
+        enterWhen: [],
+        onEnter: [{ statusId: "shield", chancePct: 100, turns: 10, shieldPct: 30 }],
+        removeStatuses: [],
+        telegraph: { skillId: "skill:lord_shockwave", everyRounds: 3, hint: { th: "ป้องกันหรือใส่โล่ไว้ก่อนรอบหน้า หรือทุบกระดองให้แตกเพื่อยกเลิก" } },
+      },
+      {
+        id: "broken",
+        name: { th: "กระดองแตก" },
+        enterWhen: [{ kind: "shield_broken" }, { kind: "hp_below", pct: 50 }],
+        onEnter: [
+          { statusId: "vulnerable", chancePct: 100, turns: 10 },
+          { statusId: "atk_up", chancePct: 100, turns: 10 },
+        ],
+        removeStatuses: ["shield"],
+        telegraph: { skillId: "skill:lord_shockwave", everyRounds: 2, hint: { th: "ป้องกันหรือใส่โล่ไว้ก่อนรอบหน้า" } },
+        captureBelowHpPct: 30,
+      },
+    ],
+  },
 ];
 
 // Effects follow chapter 05 §5's ideas (EXAMPLE numbers). Each Sigil also names the piece it is in.
@@ -122,6 +178,7 @@ export const EXAMPLE_SIGILS: SigilDefinition[] = [
   sigil("sigil:ember_fox", "species:ember_fox", ["WEAPON_PHYSICAL"], 0.0002, "เพลิงจิ้งจอก", { modifiers: [{ kind: "damage_vs_status", statusId: "burn", bonusPct: 10 }] }),
   sigil("sigil:lantern_snail", "species:lantern_snail", ["WEAPON_SUPPORT"], 0.0001, "แสงตะเกียง", { modifiers: [{ kind: "heal_low_hp", belowHpPct: 40, bonusPct: 15 }] }),
   sigil("sigil:supply_mole", "species:supply_mole", ["ACCESSORY"], 0.0005, "เสบียง", { triggers: [{ on: "dealt_damage", action: "attack", then: [{ kind: "restore_mp", target: "self", amount: 1 }] }] }),
+  sigil("sigil:crystal_crab_lord", "species:crystal_crab_lord", ["SHIELD"], 0.0005, "ผลึก", { modifiers: [{ kind: "guard_reduction", reductionPct: 15 }] }),
   sigil("sigil:bell_bird", "species:bell_bird", ["BACK"], 0.0005, "กระดิ่งลม", { triggers: [{ on: "battle_start", then: [{ kind: "status", target: "self", statuses: [{ statusId: "spd_up", chancePct: 100, turns: 1 }] }] }] }),
 ];
 
@@ -147,6 +204,7 @@ export const EXAMPLE_ITEMS: ItemDefinition[] = [
   { id: "item:snail_glow_slime", ...meta, name: { th: "เมือกเรืองแสง" }, kind: "material", vendorPrice: 4 },
   { id: "item:mole_fur", ...meta, name: { th: "ขนตุ่น" }, kind: "material", vendorPrice: 2 },
   { id: "item:bell_feather", ...meta, name: { th: "ขนนกกระดิ่ง" }, kind: "material", vendorPrice: 3 },
+  { id: "item:crystal_shard", ...meta, name: { th: "เศษกระดองผลึก" }, kind: "material", vendorPrice: 15 },
   { id: "item:river_pebble", ...meta, name: { th: "กรวดริมน้ำ" }, kind: "material", vendorPrice: 1 },
 ];
 
@@ -156,6 +214,7 @@ const SPECIES_GEAR = {
   "species:lantern_snail": "equip:glow_charm",
   "species:supply_mole": "equip:mole_sandals",
   "species:bell_bird": "equip:bell_feather_cap",
+  "species:crystal_crab_lord": "equip:crystal_shell_plate",
 } as const;
 
 export const EXAMPLE_LOOT_TABLES: LootTable[] = EXAMPLE_SPECIES.map((s) => {
@@ -166,6 +225,7 @@ export const EXAMPLE_LOOT_TABLES: LootTable[] = EXAMPLE_SPECIES.map((s) => {
     "species:lantern_snail": "item:snail_glow_slime",
     "species:supply_mole": "item:mole_fur",
     "species:bell_bird": "item:bell_feather",
+    "species:crystal_crab_lord": "item:crystal_shard",
   }[
     s.id as "species:armor_crab"
   ] as LootTable["pools"][number]["entries"][number]["itemId"];
@@ -272,7 +332,7 @@ function species(
   captureBaseRate: number,
   wildPrimaryStats: SpeciesDefinition["wildPrimaryStats"],
   basicAttackRange: "melee" | "ranged",
-  extra: Pick<SpeciesDefinition, "rebirthVariants" | "rebirthCosmetic"> = {},
+  extra: Partial<Pick<SpeciesDefinition, "rebirthVariants" | "rebirthCosmetic" | "rank" | "bossActionsPerRound">> = {},
 ): SpeciesDefinition {
   const slug = id.slice("species:".length);
   return {
@@ -329,5 +389,6 @@ export function exampleContentMaps() {
     lootTables: new Map(EXAMPLE_LOOT_TABLES.map((s) => [s.id, s])),
     sigils: new Map(EXAMPLE_SIGILS.map((s) => [s.id, s])),
     equipment: new Map(EXAMPLE_EQUIPMENT.map((s) => [s.id, s])),
+    bosses: new Map(EXAMPLE_BOSSES.map((s) => [s.id, s])),
   };
 }

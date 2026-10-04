@@ -106,6 +106,19 @@ export type Entitlement =
       companionExp?: undefined;
     };
 
+export interface BossState {
+  bossId: string;
+  unitId: string;
+  /** Index into the definition's phases. */
+  phase: number;
+  /** Set once a shield on the boss is broken by damage (a `shield_broken` phase trigger). */
+  shieldBroken: boolean;
+  /** An announced heavy move: used on the boss's first action in `firesRound`. */
+  telegraph: { skillId: string; firesRound: number } | null;
+  /** Round of the last announcement, for `everyRounds`. */
+  lastTelegraphRound: number;
+}
+
 export interface BattleState {
   battleId: string;
   rulesVersion: string;
@@ -122,6 +135,8 @@ export interface BattleState {
   consumed: Record<string, number>;
   /** Party bonus locked at fight start (P02). Absent on older states = none. */
   partyBonus?: PartyBonus;
+  /** Boss fights only: phase, telegraph and capture progress (chapter 07 §5). */
+  boss?: BossState;
   /** Private server RNG state. Never sent to the client. */
   rng: RngState;
   eventSeq: number;
@@ -154,6 +169,10 @@ interface EventBase {
 export type BattleEventBody =
   | { type: "BattleStarted"; originMode: OriginMode; rulesVersion: string; unitIds: string[] }
   | { type: "RoundStarted"; round: number; order: string[] }
+  | { type: "BossPhaseChanged"; unitId: string; phase: number; phaseId: string }
+  /** announced at a round's start, fired on the boss's first action of `firesRound`, or cancelled (phase change, silence, KO). */
+  | { type: "BossTelegraph"; unitId: string; skillId: string; change: "announced" | "fired" | "cancelled"; firesRound: number }
+  | { type: "CaptureWindowOpened"; unitId: string }
   /** `action`/`actionsThisRound` only for a unit with more than one action this round (bosses). */
   | { type: "TurnStarted"; unitId: string; guardEnded: boolean; action?: number; actionsThisRound?: number }
   | {
@@ -237,10 +256,12 @@ export interface BattleSetup {
     sigilIds?: string[];
   };
   companions: (Position & { instance: MonsterInstance; hp?: number; mp?: number })[];
-  enemies: (Position & { unitId: string; speciesId: string; element: Element; captureWindowOpen?: boolean })[];
+  enemies: (Position & { unitId: string; speciesId: string; element: Element; captureWindowOpen?: boolean; lootEligible?: boolean })[];
   bag: Record<string, number>;
   /** Counted by the server when the fight starts (P02); never from the client. */
   partyBonus?: PartyBonus;
+  /** A boss fight (chapter 07 §5): the kernel builds the boss and its adds; `enemies` must be empty. */
+  boss?: { bossId: string };
 }
 
 export type KernelResult =

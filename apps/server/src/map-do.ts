@@ -41,6 +41,10 @@ import {
   rollPack,
   seedRng,
   visiblePack,
+  visibleBoss,
+  bossLairId,
+  bossAttemptId,
+  type PackMember,
   type AutoHuntSettings,
   type AutoStopReason,
   type BattleSetup,
@@ -287,6 +291,9 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     const list = await this.currentPacks(map, channel);
     const fought = await this.encounters.fought(accountId, list.map((p) => p.packId));
     const packs = list.filter((p) => !fought.has(p.packId)).map((p) => visiblePack(p, this.content.species));
+    // The map's boss is always there to challenge again (P17: no quota).
+    const boss = visibleBoss(map, this.content.bosses, this.content.species);
+    if (boss !== null) packs.push(boss);
     this.deliver(accountId, [{ to: "self", msg: { t: "packs", packs } }]);
   }
 
@@ -314,12 +321,25 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     // HP/MP carry over; a team that is all knocked out has to rest before the next fight.
     const alive = (hp: number | null) => hp === null || hp > 0;
     if (!alive(character.hp) && ![...instances.values()].some((i) => alive(i.hp))) return fail("NEED_REST", "everyone is knocked out; rest in town");
-    const pack = (await this.currentPacks(map, a.channel)).find((p) => p.packId === packId);
-    if (pack === undefined) return fail("NO_SUCH_PACK", "that pack is gone; a new one appears next cycle");
-    if (!inEngageRange(this.rules, presence.pos, pack.at)) return fail("TOO_FAR", "walk next to the pack first");
-    if ((await this.encounters.fought(account, [packId])).has(packId)) return fail("NO_SUCH_PACK", "you already fought this pack");
+    // A boss lair (chapter 07 §5): started by hand only, every try a new private fight.
+    const lair = packId === bossLairId(map.id) ? visibleBoss(map, this.content.bosses, this.content.species) : null;
+    let pack: PackInstance | undefined;
+    let claimKey = packId;
+    let members: PackMember[];
+    if (lair !== null) {
+      if (origin !== "manual") return fail("NO_SUCH_PACK", "bosses are started by hand (C14)");
+      if (!inEngageRange(this.rules, presence.pos, lair)) return fail("TOO_FAR", "walk next to the boss first");
+      claimKey = bossAttemptId(map.id, await this.encounters.bossAttempt(account, packId));
+      members = [{ speciesId: lair.leader.speciesId, element: lair.leader.element }];
+    } else {
+      pack = (await this.currentPacks(map, a.channel)).find((p) => p.packId === packId);
+      if (pack === undefined) return fail("NO_SUCH_PACK", "that pack is gone; a new one appears next cycle");
+      if (!inEngageRange(this.rules, presence.pos, pack.at)) return fail("TOO_FAR", "walk next to the pack first");
+      if ((await this.encounters.fought(account, [packId])).has(packId)) return fail("NO_SUCH_PACK", "you already fought this pack");
+      members = pack.members;
+    }
 
-    const { battleId, roster } = await this.encounters.claim(account, packId, pack.members);
+    const { battleId, roster } = await this.encounters.claim(account, claimKey, members);
     const reservationId = `res:${battleId}`;
     // A retry after a crash reuses the bag already reserved; otherwise reserve a fresh default bag.
     const prior = await this.economy.reservedBag(reservationId);
@@ -350,7 +370,8 @@ export class MapChannelDurableObject extends DurableObject<Env> {
       seed: crypto.randomUUID(),
       player: playerSetup(account, character, worn),
       companions: companionSetups(character.team, instances),
-      enemies: packEnemies({ ...pack, members: roster }),
+      enemies: pack === undefined ? [] : packEnemies({ ...pack, members: roster }),
+      ...(lair !== null ? { boss: { bossId: lair.bossId! } } : {}),
       bag,
       partyBonus: await this.partyBonusFor(account, a.mapId, a.channel),
     };

@@ -26,6 +26,7 @@ export const ItemId = id("item");
 export const SigilId = id("sigil");
 export const LootTableId = id("loot");
 export const EquipmentDefinitionId = id("equip");
+export const BossId = id("boss");
 
 const LocalizedName = z.object({ th: z.string().min(1), en: z.string().min(1).optional() }).strict();
 
@@ -359,6 +360,69 @@ export const SpeciesDefinitionSchema = z
     }
   });
 export type SpeciesDefinition = z.infer<typeof SpeciesDefinitionSchema>;
+
+// ---------------------------------------------------------------- bosses (chapter 07 §5, P17)
+
+/** What moves a boss into a phase. Any one of a phase's triggers is enough. */
+export const BossPhaseTriggerSchema = z.discriminatedUnion("kind", [
+  /** The boss's HP share drops below this %. */
+  z.object({ kind: z.literal("hp_below"), pct: z.number().int().min(1).max(99) }).strict(),
+  /** A shield on the boss was broken by damage (the crystal shell). */
+  z.object({ kind: z.literal("shield_broken") }).strict(),
+]);
+
+/**
+ * A heavy move the boss warns about at the start of a round and uses on its first action of the next
+ * round, so every unit gets a turn to answer it (chapter 07 §5: never warn and fire before anyone can
+ * respond). `hint` tells the player what answers it.
+ */
+export const BossTelegraphSchema = z
+  .object({ skillId: SkillId, everyRounds: z.number().int().min(2).max(10), hint: LocalizedName })
+  .strict();
+
+export const BossPhaseSchema = z
+  .object({
+    id: z.string().min(1),
+    name: LocalizedName,
+    /** Empty for the first phase (the fight starts in it); later phases need at least one trigger. */
+    enterWhen: z.array(BossPhaseTriggerSchema).max(3),
+    /** Put on the boss when the phase starts; they cannot be resisted. */
+    onEnter: z.array(StatusApplicationSchema).max(4),
+    /** Taken off the boss when the phase starts. */
+    removeStatuses: z.array(z.enum(STATUS_IDS)).max(4),
+    telegraph: BossTelegraphSchema.optional(),
+    /** In this phase the boss can be captured once its HP share is below this %. */
+    captureBelowHpPct: z.number().int().min(1).max(100).optional(),
+  })
+  .strict();
+export type BossPhase = z.infer<typeof BossPhaseSchema>;
+
+export const BossDefinitionSchema = z
+  .object({
+    id: BossId,
+    ...contentMeta,
+    name: LocalizedName,
+    speciesId: SpeciesId,
+    element: ElementSchema,
+    /** Wild only: the boss's max HP is its species' HP times this. A captured boss never has it (chapter 07 §5). */
+    hpMultiplier: z.number().min(1).max(20),
+    /** Monsters that start the fight with it; boss + adds ≤ 10 (C05). Adds without loot give EXP only. */
+    adds: z.array(z.object({ speciesId: SpeciesId, element: ElementSchema, row: z.enum(["front", "back"]), lootEligible: z.boolean() }).strict()).max(9),
+    /** Early phase teaches the pattern, later ones change it (chapter 07 §5: a low boss needs 2 phases). */
+    phases: z.array(BossPhaseSchema).min(1).max(3),
+  })
+  .strict()
+  .superRefine((b, ctx) => {
+    b.phases.forEach((ph, i) => {
+      if ((i === 0) !== (ph.enterWhen.length === 0)) {
+        ctx.addIssue({ code: "custom", path: ["phases", i, "enterWhen"], message: i === 0 ? "the first phase starts the fight and has no trigger" : "a later phase needs a trigger" });
+      }
+    });
+    if (!b.phases.some((ph) => ph.captureBelowHpPct !== undefined)) {
+      ctx.addIssue({ code: "custom", path: ["phases"], message: "every boss has a capture path (C08): some phase needs captureBelowHpPct" });
+    }
+  });
+export type BossDefinition = z.infer<typeof BossDefinitionSchema>;
 
 /** A map spawn entry. `.strict()` rejects any wildLevel override (C29, chapter 12 validator 6). */
 export const SpawnEntrySchema = z

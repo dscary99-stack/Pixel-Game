@@ -14,7 +14,7 @@ import { rollLoot } from "../loot";
 import { companionExp, killExp } from "../progression";
 import { Rng, seedRng } from "../rng";
 import type { RulesConfig } from "../rules";
-import type { DamageEffect, ItemDefinition, LootTable, Passive, PassiveAction, PassiveEvent, PassiveModifier, SigilDefinition, SkillDefinition, SpeciesDefinition, StatusApplication } from "../schemas";
+import type { BossDefinition, DamageEffect, ItemDefinition, LootTable, Passive, PassiveAction, PassiveEvent, PassiveModifier, SigilDefinition, SkillDefinition, SpeciesDefinition, StatusApplication } from "../schemas";
 import { isAreaRule, targetsEnemies } from "../schemas";
 import { deriveStats, type DerivedStats } from "../stats";
 import {
@@ -54,6 +54,25 @@ export interface BattleContent {
   lootTables: ReadonlyMap<string, LootTable>;
   /** Needed when the player wears Sigils (their effects). */
   sigils?: ReadonlyMap<string, SigilDefinition>;
+  /** Needed for boss fights (chapter 07 §5). */
+  bosses?: ReadonlyMap<string, BossDefinition>;
+}
+
+/**
+ * A boss fight's enemies: the boss front-centre, then each add in its row's next free slot
+ * (centre outwards). The boss is always `e1`.
+ */
+export function bossEnemies(def: BossDefinition): BattleSetup["enemies"] {
+  const order = [2, 1, 3, 0, 4];
+  const used = { front: 1, back: 0 };
+  return [
+    { unitId: "e1", speciesId: def.speciesId, element: def.element, row: "front", slot: 2 },
+    ...def.adds.map((a, i) => {
+      const slot = order[used[a.row]++];
+      if (slot === undefined) reject("FORMATION_INVALID", `boss ${def.id}: too many adds in the ${a.row} row`);
+      return { unitId: `e${i + 2}`, speciesId: a.speciesId, element: a.element, row: a.row, slot: slot!, lootEligible: a.lootEligible };
+    }),
+  ];
 }
 
 /** Enemy formation: up to 10 units in two rows of 5. Ally formation: front 3 / back 3 (P15). */
@@ -115,7 +134,17 @@ export function createBattle(rules: RulesConfig, content: BattleContent, setup: 
   }
 }
 
-function createBattleInner(rules: RulesConfig, content: BattleContent, setup: BattleSetup): KernelResult {
+function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: BattleSetup): KernelResult {
+  const bossDef = setup0.boss === undefined ? undefined : (content.bosses?.get(setup0.boss.bossId) ?? reject("MISSING_REFERENCE", `boss ${setup0.boss.bossId}`));
+  if (bossDef !== undefined && setup0.enemies.length > 0) reject("INVALID_COMMAND", "a boss fight builds its own enemies");
+  const setup: BattleSetup = bossDef === undefined ? setup0 : { ...setup0, enemies: bossEnemies(bossDef) };
+  if (bossDef !== undefined) {
+    const sp = content.species.get(bossDef.speciesId);
+    if (sp?.rank !== "BOSS") reject("INVALID_COMMAND", `boss ${bossDef.id} needs a BOSS species`);
+    for (const ph of bossDef.phases) {
+      if (ph.telegraph !== undefined && !sp!.skillIds.includes(ph.telegraph.skillId)) reject("MISSING_REFERENCE", `telegraph ${ph.telegraph.skillId} is not the boss's skill`);
+    }
+  }
   const teamIssues = [
     ...validateTeam(
       rules,
@@ -221,7 +250,10 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
     if (!sp.allowedElements.includes(e.element)) reject("INVALID_COMMAND", `${e.unitId} element not allowed for species`);
     if (!content.lootTables.has(sp.lootTableId)) reject("MISSING_REFERENCE", `loot table ${sp.lootTableId}`);
     // Wild level is the species' fixed level everywhere (C29). There is no override input.
-    const stats = deriveStats(sp.fixedWildLevel, sp.wildPrimaryStats);
+    const base = deriveStats(sp.fixedWildLevel, sp.wildPrimaryStats);
+    // A wild boss has more HP than its species (chapter 07 §5); a captured one never keeps it.
+    const isBoss = bossDef !== undefined && e.unitId === "e1";
+    const stats = isBoss ? { ...base, maxHp: Math.floor(base.maxHp * bossDef!.hpMultiplier) } : base;
     // Wild monsters fight with their species' active skills, at the cap their wild level allows.
     for (const id of sp.skillIds) if (!content.skills.has(id)) reject("MISSING_REFERENCE", `skill ${id}`);
     const wildSkillIds = sp.skillIds.filter((id) => content.skills.get(id)?.kind === "active");
@@ -254,7 +286,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
       cooldowns: {},
       movedThisRound: false,
       captureWindowOpen: e.captureWindowOpen ?? sp.rank !== "BOSS",
-      lootTableId: sp.lootTableId,
+      lootTableId: e.lootEligible === false ? null : sp.lootTableId,
       ...(sp.rank === "BOSS" && (sp.bossActionsPerRound ?? 1) > 1
         ? { actionsPerRound: Math.min(sp.bossActionsPerRound!, rules.provisional.bossActions.value.maxPerRound) }
         : {}),
@@ -282,9 +314,13 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
     status: "active",
     resolutions: {},
     entitlements: [],
+    ...(bossDef !== undefined
+      ? { boss: { bossId: bossDef.id, unitId: "e1", phase: 0, shieldBroken: false, telegraph: null, lastTelegraphRound: 0 } }
+      : {}),
   };
   const ctx = new Ctx(state, rules, content, null);
   ctx.emit({ type: "BattleStarted", originMode: state.originMode, rulesVersion: state.rulesVersion, unitIds: units.map((u) => u.unitId) });
+  if (bossDef !== undefined) enterBossPhase(ctx, 0);
   for (const u of units) if (active(u)) firePassives(ctx, u, "battle_start");
   startRound(ctx);
   advanceToAllyInput(ctx);
@@ -364,6 +400,7 @@ function startRound(ctx: Ctx): void {
   ready.sort((a, b) => b.spd - a.spd || a.tie - b.tie);
   s.turnOrder = ready.map((r) => r.id);
   ctx.emit({ type: "RoundStarted", round: s.round, order: [...s.turnOrder] });
+  announceTelegraph(ctx);
 }
 
 /**
@@ -1009,10 +1046,14 @@ function skillCost(rules: RulesConfig, actor: BattleUnit, skill: SkillDefinition
   return { mods, mpCost, cooldown: Math.max(0, skill.cooldown + mods.cooldown) };
 }
 
-function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUnit): void {
+/** `free`: a boss's telegraphed move, which costs no MP and sets no cooldown (it was announced instead). */
+function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUnit, free = false): void {
   if (!actor.skillIds.includes(skillId)) reject("INVALID_COMMAND", `${actor.unitId} has no skill ${skillId}`);
   const skill = requireActiveSkill(ctx.content, skillId);
-  const { mods, mpCost, cooldown } = skillCost(ctx.rules, actor, skill);
+  const cost = skillCost(ctx.rules, actor, skill);
+  const { mods } = cost;
+  const mpCost = free ? 0 : cost.mpCost;
+  const cooldown = free ? 0 : cost.cooldown;
   if (cooldown > 0 && ctx.rules.unresolved.cooldownTick.value === null) {
     reject("UNRESOLVED_RULE", "skill cooldown tick point is OPEN (O15)");
   }
@@ -1160,6 +1201,7 @@ function strike(ctx: Ctx, actor: BattleUnit, chosen: BattleUnit, action: "attack
   actionEvent(ctx, actor, action, target, { skillId, hit: true, crit, damage, breakdown, targetHpAfter: target.hp });
   if (absorbed > 0 && shield !== undefined) {
     ctx.emit({ type: "ShieldChanged", unitId: target.unitId, change: shield.shieldHp! > 0 ? "absorbed" : "broken", amount: absorbed, shieldLeft: shield.shieldHp! });
+    if (shield.shieldHp! <= 0 && ctx.s.boss?.unitId === target.unitId) ctx.s.boss.shieldBroken = true;
     if (shield.shieldHp === 0) removeStatus(ctx, target, "shield");
   }
   // Lifesteal and recoil work on the damage that landed, not on overkill.
@@ -1223,17 +1265,21 @@ function knockOut(ctx: Ctx, u: BattleUnit): void {
   if (ctx.s.resolutions[u.unitId] !== undefined) throw new Error(`enemy ${u.unitId} resolved twice`);
   ctx.s.resolutions[u.unitId] = "defeated";
   ctx.emit({ type: "EnemyDefeated", unitId: u.unitId, speciesId: u.speciesId! });
-  const table = ctx.content.lootTables.get(u.lootTableId!)!;
+  // Adds without loot eligibility (boss fights) give EXP only.
+  const table = u.lootTableId === null ? undefined : ctx.content.lootTables.get(u.lootTableId)!;
   const entitlement: Entitlement = {
     entitlementId: `${ctx.s.battleId}:${u.unitId}:defeated`,
     kind: "kill",
     enemyUnitId: u.unitId,
     speciesId: u.speciesId!,
     originMode: ctx.s.originMode,
-    items: rollLoot(ctx.rules, table, ctx.s.originMode, ctx.rng, {
-      percent: ctx.s.partyBonus?.materialDropPercent ?? 0,
-      isMaterial: (id) => ctx.content.items.get(id)?.kind === "material",
-    }),
+    items:
+      table === undefined
+        ? []
+        : rollLoot(ctx.rules, table, ctx.s.originMode, ctx.rng, {
+            percent: ctx.s.partyBonus?.materialDropPercent ?? 0,
+            isMaterial: (id) => ctx.content.items.get(id)?.kind === "material",
+          }),
     ...expAwards(ctx, u.level),
   };
   ctx.s.entitlements.push(entitlement);
@@ -1355,9 +1401,98 @@ function doFlee(ctx: Ctx, actor: BattleUnit): void {
  * attack; disarmed with no skill left, it guards. Every pick passes the same checks as a manual
  * command, so the AI never tries what the validator would refuse.
  */
+// ================================================================ bosses (chapter 07 §5, P17)
+
+function bossDefinition(ctx: Ctx): BossDefinition | undefined {
+  return ctx.s.boss === undefined ? undefined : ctx.content.bosses?.get(ctx.s.boss.bossId);
+}
+
+function telegraphSkills(ctx: Ctx): Set<string> {
+  return new Set((bossDefinition(ctx)?.phases ?? []).flatMap((ph) => (ph.telegraph === undefined ? [] : [ph.telegraph.skillId])));
+}
+
+/** Enters a phase: its statuses go on (unresistable), listed ones come off, a pending warning is called off. */
+function enterBossPhase(ctx: Ctx, index: number): void {
+  const b = ctx.s.boss!;
+  const def = bossDefinition(ctx) ?? reject("MISSING_REFERENCE", `boss ${b.bossId}`);
+  const ph = def.phases[index]!;
+  const boss = ctx.unit(b.unitId);
+  b.phase = index;
+  if (b.telegraph !== null) {
+    ctx.emit({ type: "BossTelegraph", unitId: boss.unitId, skillId: b.telegraph.skillId, change: "cancelled", firesRound: b.telegraph.firesRound });
+    b.telegraph = null;
+  }
+  // A new phase's warning comes no sooner than its own spacing.
+  b.lastTelegraphRound = ctx.s.round;
+  ctx.emit({ type: "BossPhaseChanged", unitId: boss.unitId, phase: index, phaseId: ph.id });
+  for (const id of ph.removeStatuses) if (statusOf(boss, id) !== undefined) removeStatus(ctx, boss, id);
+  for (const a of ph.onEnter) applyStatus(ctx, boss, boss, a, true);
+}
+
+/** After every action: later phases whose trigger is met, and the capture window. */
+function checkBossPhase(ctx: Ctx): void {
+  const b = ctx.s.boss;
+  const def = bossDefinition(ctx);
+  if (b === undefined || def === undefined) return;
+  const boss = ctx.unit(b.unitId);
+  if (!active(boss)) {
+    if (b.telegraph !== null) {
+      ctx.emit({ type: "BossTelegraph", unitId: boss.unitId, skillId: b.telegraph.skillId, change: "cancelled", firesRound: b.telegraph.firesRound });
+      b.telegraph = null;
+    }
+    return;
+  }
+  const hpPct = (boss.hp * 100) / boss.stats.maxHp;
+  for (let next = b.phase + 1; next < def.phases.length; next++) {
+    const met = def.phases[next]!.enterWhen.some((t) => (t.kind === "hp_below" ? hpPct < t.pct : b.shieldBroken));
+    if (!met) break;
+    enterBossPhase(ctx, next);
+  }
+  const capPct = def.phases[b.phase]!.captureBelowHpPct;
+  if (!boss.captureWindowOpen && capPct !== undefined && hpPct < capPct) {
+    boss.captureWindowOpen = true;
+    ctx.emit({ type: "CaptureWindowOpened", unitId: boss.unitId });
+  }
+}
+
+/** Round start: the phase's heavy move is announced for the next round (the answer window is this round). */
+function announceTelegraph(ctx: Ctx): void {
+  const b = ctx.s.boss;
+  const tg = bossDefinition(ctx)?.phases[b?.phase ?? 0]?.telegraph;
+  if (b === undefined || tg === undefined || b.telegraph !== null || !active(ctx.unit(b.unitId))) return;
+  if (ctx.s.round - b.lastTelegraphRound < tg.everyRounds) return;
+  b.telegraph = { skillId: tg.skillId, firesRound: ctx.s.round + 1 };
+  b.lastTelegraphRound = ctx.s.round;
+  ctx.emit({ type: "BossTelegraph", unitId: b.unitId, skillId: tg.skillId, change: "announced", firesRound: ctx.s.round + 1 });
+}
+
+/**
+ * The boss's first action in the warned round uses the announced move. Silence or a skill block on the
+ * boss calls it off (an answer to it); a lost turn only puts it back to the boss's next action.
+ */
+function fireTelegraph(ctx: Ctx, u: BattleUnit): boolean {
+  const b = ctx.s.boss;
+  if (b === undefined || b.unitId !== u.unitId || b.telegraph === null || ctx.s.round < b.telegraph.firesRound) return false;
+  const t = b.telegraph;
+  b.telegraph = null;
+  const skill = ctx.content.skills.get(t.skillId)!;
+  const blocked = statusBlocks(u.statuses, "skills") !== undefined || (skill.mpCost > 0 && statusBlocks(u.statuses, "mp_skills") !== undefined);
+  const foes = targetsEnemies(skill.targetRule) ? validTargets(ctx.s, "ally", skill.range) : [u];
+  if (blocked || foes.length === 0) {
+    ctx.emit({ type: "BossTelegraph", unitId: u.unitId, skillId: t.skillId, change: "cancelled", firesRound: t.firesRound });
+    return false;
+  }
+  ctx.emit({ type: "BossTelegraph", unitId: u.unitId, skillId: t.skillId, change: "fired", firesRound: t.firesRound });
+  doSkill(ctx, u, t.skillId, foes[ctx.rng.nextInt(foes.length)]!, true);
+  return true;
+}
+
 function enemyAct(ctx: Ctx, u: BattleUnit): void {
+  if (fireTelegraph(ctx, u)) return;
   const disarmed = statusBlocks(u.statuses, "attack") !== undefined;
-  const options = skillOptions(ctx.rules, ctx.content, ctx.s, u, ctx.rules.provisional.enemyAi.value.healBelowHpPct);
+  // A boss keeps its telegraphed moves for the warned turn only.
+  const reserved = ctx.s.boss?.unitId === u.unitId ? telegraphSkills(ctx) : undefined;
+  const options = skillOptions(ctx.rules, ctx.content, ctx.s, u, ctx.rules.provisional.enemyAi.value.healBelowHpPct).filter((o) => reserved?.has(o.skill.id) !== true);
   if (options.length > 0 && (disarmed || ctx.rng.chanceBp(ctx.rules.provisional.enemyAi.value.skillChancePct * 100))) {
     const pick = options[ctx.rng.nextInt(options.length)]!;
     const target = pick.pool.length === 1 ? pick.pool[0]! : pick.pool[ctx.rng.nextInt(pick.pool.length)]!;
@@ -1451,6 +1586,7 @@ function skillOptions(rules: RulesConfig, content: Pick<BattleContent, "skills">
 
 function checkEnd(ctx: Ctx): void {
   if (ctx.s.status !== "active") return;
+  checkBossPhase(ctx);
   const enemiesLeft = ctx.s.units.some((u) => u.side === "enemy" && active(u));
   const alliesLeft = ctx.s.units.some((u) => u.side === "ally" && active(u));
   if (!enemiesLeft) endBattle(ctx, "victory");

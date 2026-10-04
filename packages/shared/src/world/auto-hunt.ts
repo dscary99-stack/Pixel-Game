@@ -73,6 +73,8 @@ export type AutoStopReason =
 
 /** Whether a visible pack is one the settings allow fighting. */
 export function packAllowed(settings: AutoHuntSettings, pack: VisiblePack): boolean {
+  // Bosses are started by hand only (C14); Auto Battle can take over inside the fight.
+  if (pack.rank === "BOSS") return false;
   if (pack.rank === "ELITE" && !settings.allowElite) return false;
   if (pack.sizeRange[1] > settings.maxPackSize) return false;
   return settings.targetSpecies.length === 0 || settings.targetSpecies.includes(pack.leader.speciesId);

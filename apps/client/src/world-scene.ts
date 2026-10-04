@@ -368,12 +368,17 @@ export class WorldScene extends Phaser.Scene {
     for (const p of packs) {
       const [px, py] = center(p);
       const color = ELEMENT_COLOR[p.leader.element];
-      const body = this.add.rectangle(px, py, 24, 20, color).setStrokeStyle(2, p.rank === "ELITE" ? 0xffd84a : 0x1b1830).setDepth(9);
+      // Bosses stand out (bigger, red outline); they never leave the map (P17: try again any time).
+      const boss = p.rank === "BOSS";
+      const body = this.add
+        .rectangle(px, py, boss ? 34 : 24, boss ? 30 : 20, color)
+        .setStrokeStyle(boss ? 3 : 2, boss ? 0xff4a4a : p.rank === "ELITE" ? 0xffd84a : 0x1b1830)
+        .setDepth(9);
       const shadow = this.add.ellipse(px, py + 12, 26, 8, 0x000000, 0.35).setDepth(8);
       const [min, max] = p.sizeRange;
       const name = this.species.get(p.leader.speciesId)?.name.th ?? p.leader.speciesId;
       const label = this.add
-        .text(px, py - 14, `${name} Lv${p.leader.level} · ${min === max ? min : `${min}–${max}`} ตัว`, {
+        .text(px, py - (boss ? 19 : 14), `${boss ? "บอส " : ""}${name} Lv${p.leader.level} · ${min === max ? min : `${min}–${max}`} ตัว`, {
           fontFamily: "sans-serif",
           fontSize: "11px",
           color: "#ffd0c0",

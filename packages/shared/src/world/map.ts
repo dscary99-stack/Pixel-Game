@@ -7,7 +7,7 @@
  */
 import { z } from "zod";
 import { RULES } from "../rules";
-import { SpawnEntrySchema, type SpeciesDefinition } from "../schemas";
+import { SpawnEntrySchema, type BossDefinition, type SpeciesDefinition } from "../schemas";
 
 export const MapId = z.string().regex(/^map:[a-z0-9_]+$/, 'expected id like "map:snake_case"');
 
@@ -72,6 +72,11 @@ export const MapDefinitionSchema = z
     spawn: TilePosSchema,
     portals: z.array(PortalSchema),
     spawns: z.array(SpawnPointSchema),
+    /**
+     * Where the map's boss waits (C30: every hunting map has one). Players start it by hand and can
+     * try again with no quota (P17); it is never an Auto Hunt target (C14).
+     */
+    bossLair: z.object({ bossId: z.string().regex(/^boss:[a-z0-9_]+$/), at: TilePosSchema }).strict().optional(),
   })
   .strict();
 export type MapDefinition = z.infer<typeof MapDefinitionSchema>;
@@ -105,7 +110,11 @@ export interface MapIssue {
  * pack spawns are checked too: towns have none, packs fit the enemy cap (C05), species exist and
  * elements are ones the species can have (C07).
  */
-export function validateMaps(maps: readonly MapDefinition[], species?: ReadonlyMap<string, SpeciesDefinition>): MapIssue[] {
+export function validateMaps(
+  maps: readonly MapDefinition[],
+  species?: ReadonlyMap<string, SpeciesDefinition>,
+  bosses?: ReadonlyMap<string, BossDefinition>,
+): MapIssue[] {
   const issues: MapIssue[] = [];
   const byId = new Map(maps.map((m) => [m.id, m]));
   if (byId.size !== maps.length) issues.push({ mapId: "*", message: "duplicate map id" });
@@ -135,6 +144,13 @@ export function validateMaps(maps: readonly MapDefinition[], species?: ReadonlyM
       if (portalAt(target, p.to.x, p.to.y) !== null) issues.push({ mapId: m.id, message: `portal lands on another portal in ${p.to.mapId}` });
     }
     if (m.kind === "town" && m.spawns.length > 0) issues.push({ mapId: m.id, message: "towns have no hunting spawns" });
+    if (m.kind === "town" && m.bossLair !== undefined) issues.push({ mapId: m.id, message: "towns have no boss (P17: a trial arena instead)" });
+    if (m.kind !== "town" && m.bossLair === undefined) issues.push({ mapId: m.id, message: "every hunting map has a boss (C30)" });
+    if (m.bossLair !== undefined) {
+      const at = m.bossLair.at;
+      if (!isWalkable(m, at.x, at.y) || portalAt(m, at.x, at.y) !== null) issues.push({ mapId: m.id, message: "boss lair is not on open ground" });
+      if (bosses !== undefined && !bosses.has(m.bossLair.bossId)) issues.push({ mapId: m.id, message: `boss lair uses unknown boss ${m.bossLair.bossId}` });
+    }
     const spawnIds = new Set<string>();
     for (const sp of m.spawns) {
       const where = `spawn ${sp.id}`;

@@ -31,7 +31,7 @@ const spawn = field.spawns.find((s) => s.id === "pond_crabs")!;
 
 describe("pack spawns", () => {
   it("example spawns validate against the species registry", () => {
-    expect(validateMaps(EXAMPLE_MAPS, content.species)).toEqual([]);
+    expect(validateMaps(EXAMPLE_MAPS, content.species, content.bosses)).toEqual([]);
   });
 
   it("catches spawns that break chapter 07 / C05 / C07", () => {
