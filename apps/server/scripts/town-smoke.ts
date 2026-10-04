@@ -1,5 +1,5 @@
 // End-to-end town services against `wrangler dev`: install a Sigil, remove it for coins in town,
-// sell to and buy from the NPC, reroll an affix, craft gear, and the same requests refused in the field.
+// sell to and buy from the NPC, reroll an affix, craft gear, fill an NPC order, and the same requests refused in the field.
 // Run `npm run db:migrate:local` and `npm run dev:server` first, then `npm run smoke:town`.
 import { api, connect, run, sleep, toField, type Msg } from "./smoke-lib";
 
@@ -72,6 +72,15 @@ const madeIds = crafted.body.result.equipment.map((e: Msg) => e.id);
 if (madeIds.some((id: string) => !bundle.equipment.some((e: Msg) => e.id === id))) throw new Error("crafted pieces missing");
 out.craft = { made: crafted.body.result.equipment.map((e: Msg) => e.rarity), mastery: bundle.craftMastery.armorsmith, shells: bundle.bag["item:crab_shell"] ?? 0, retry: craftRetry.body.replayed };
 out.craftShort = (await http("POST", "/town/craft", { ...craftReq, operationId: `cr2_${run}` })).body.error;
+// NPC order (chapter 09): hand in crab shells once, retry replays, the week's count goes down.
+await http("POST", "/dev/grant", { operationId: `devo_${run}`, coins: 0, items: { "item:crab_shell": 8 } });
+const orderReq = { operationId: `ord_${run}`, orderId: "order:shell_roof" };
+const filled = await http("POST", "/town/order", orderReq);
+const refill = await http("POST", "/town/order", orderReq);
+const orderView = (await http("GET", "/town/orders")).body;
+out.order = { status: filled.status, reward: filled.body.result?.reward, replayed: refill.body.replayed, left: orderView.orders.find((o: Msg) => o.order.id === "order:shell_roof")?.left };
+if (filled.status !== 200 || refill.body.replayed !== true) throw new Error(`order fill failed: ${JSON.stringify(filled.body)}`);
+out.orderNoItems = (await http("POST", "/town/order", { ...orderReq, operationId: `ord2_${run}` })).body.error;
 T.sock.close();
 await sleep(300);
 
@@ -82,6 +91,7 @@ out.buyInField = (await http("POST", "/town/buy", { ...buyReq, operationId: `buy
 out.sellInField = (await http("POST", "/town/sell", { operationId: `sell3_${run}`, lines: [{ itemId: "item:small_potion", quantity: 1 }] })).body.error;
 out.installInField = (await http("POST", "/character/equipment/sigil", { ...install, operationId: `inst4_${run}` })).status;
 out.craftInField = (await http("POST", "/town/craft", { ...craftReq, operationId: `cr3_${run}`, times: 1, expectedCoins: 120 })).body.error;
+out.orderInField = (await http("POST", "/town/order", { ...orderReq, operationId: `ord3_${run}` })).body.error;
 out.rerollInField = (await http("POST", "/town/affix/reroll", { ...rerollReq, operationId: `rr3_${run}`, expectedAffixes: chosen.body.result?.affixes })).body.error;
 out.removeInField = (await http("POST", "/character/equipment/sigil/remove", { operationId: `rm2_${run}`, equipmentId: sword, socket: 0, expectedCost: 300 })).body.error;
 F.sock.close();

@@ -1081,6 +1081,66 @@ export function journalPanel(api: CharacterApi): Promise<void> {
 /** Display name of a title id. */
 export const titleName = (id: string | null | undefined) => (id == null ? null : (JOURNAL_TITLES.find((t) => t.id === id)?.name.th ?? null));
 
+/**
+ * NPC Orders (chapter 09): what each villager wants, the reward announced up front, and fills left
+ * this week. Filling hands the materials over (asked first); the server checks town, bag and limit.
+ */
+export function ordersPanel(api: CharacterApi): Promise<void> {
+  return new Promise((resolve) => {
+    const { panel, close } = overlay();
+    let busy = false;
+    const body = el("div");
+    const note = el("div", { class: "pm-note", "data-order-note": "" });
+    const error = el("div", { class: "pm-error", role: "alert" });
+    const actions = el("div", { class: "pm-actions" });
+    const done = el("button", { type: "button", class: "primary" }, "ปิด");
+    actions.append(done);
+    panel.append(el("h2", {}, "งานสั่งจากชาวบ้าน"), body, note, error, actions);
+    done.addEventListener("click", () => {
+      close();
+      resolve();
+    });
+    const name = (id: string) => itemDefs.get(id)?.name.th ?? id;
+    const load = async () => {
+      try {
+        const [v, bundle] = await Promise.all([api.orders(), api.get()]);
+        const bag = bundle?.bag ?? {};
+        body.replaceChildren();
+        body.append(el("div", { class: "pm-stats" }, `รีเซ็ต ${new Date(v.endsAt).toLocaleString("th-TH", { weekday: "short", hour: "2-digit", minute: "2-digit" })} · เหรียญ ${(bundle?.coins ?? 0).toLocaleString()}`));
+        const list = el("ul", { class: "pm-list" });
+        for (const { order, left } of v.orders) {
+          const li = el("li", { class: "pm-skill-pet", "data-order": order.id });
+          li.append(el("div", {}, `${order.npc.th}: ${order.note.th}`));
+          li.append(el("span", { class: "pm-affix" }, `ต้องการ ${order.wants.map((w) => `${name(w.itemId)} ${bag[w.itemId] ?? 0}/${w.quantity}`).join(" · ")}`));
+          li.append(el("span", { class: "pm-affix" }, `ให้ ${[`${order.reward.coins} เหรียญ`, ...order.reward.items.map((r) => `${name(r.itemId)} ×${r.quantity}`)].join(" · ")} · สัปดาห์นี้เหลือ ${left}/${order.weeklyLimit}`));
+          const b = el("button", { type: "button", "data-fill": order.id }, "ส่งของ");
+          b.disabled = left === 0 || order.wants.some((w) => (bag[w.itemId] ?? 0) < w.quantity);
+          b.addEventListener("click", async () => {
+            if (busy || !window.confirm(`ส่ง ${order.wants.map((w) => `${name(w.itemId)} ×${w.quantity}`).join(", ")} ให้${order.npc.th}?`)) return;
+            busy = true;
+            error.textContent = "";
+            try {
+              const r = await api.fillOrder(order.id);
+              note.textContent = `ได้ ${[`${r.result.reward.coins} เหรียญ`, ...r.result.reward.items.map((x) => `${name(x.itemId)} ×${x.quantity}`)].join(" · ")}`;
+            } catch (e) {
+              error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+            } finally {
+              busy = false;
+              await load();
+            }
+          });
+          li.append(b);
+          list.append(li);
+        }
+        body.append(list, el("div", { class: "pm-note" }, "จำนวนต่อสัปดาห์มีจำกัด · ร้านปกติยังรับซื้อเหมือนเดิม · งานตัวอย่าง (P12)"));
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+      }
+    };
+    void load();
+  });
+}
+
 const STAT_NAMES: Record<keyof PrimaryStats, string> = {
   STR: "STR พลังกาย",
   VIT: "VIT ความทนทาน",

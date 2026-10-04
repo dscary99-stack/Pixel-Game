@@ -2,7 +2,7 @@
  * Character and team requests (server mode). The server decides everything; the client shows
  * what it gets back. Identity uses the dev header until O11 picks auth.
  */
-import type { CharacterView, CreateCharacterRequest, EquipSlot, EquipmentView, MonsterInstance, JournalSummary, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RolledAffix } from "@pmrpg/shared";
+import type { CharacterView, CreateCharacterRequest, EquipSlot, EquipmentView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RolledAffix } from "@pmrpg/shared";
 
 export type StoredCompanion = MonsterInstance & { hp: number | null; mp: number | null };
 
@@ -94,6 +94,14 @@ export class CharacterApi {
 
   buy(shopId: string, lines: { itemId: string; quantity: number }[], expectedTotal: number) {
     return this.call<{ coins: number; result: { total: number } }>("POST", "/town/buy", { operationId: opId("buy"), shopId, lines, expectedTotal });
+  }
+
+  orders() {
+    return this.call<{ periodId: string; endsAt: string; orders: { order: NpcOrder; filled: number; left: number }[] }>("GET", "/town/orders");
+  }
+
+  fillOrder(orderId: string) {
+    return this.call<{ coins: number; result: { reward: NpcOrder["reward"] } }>("POST", "/town/order", { operationId: opId("order"), orderId });
   }
 
   journal() {

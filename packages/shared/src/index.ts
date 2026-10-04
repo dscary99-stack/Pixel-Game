@@ -33,3 +33,4 @@ export * from "./affix";
 export * from "./craft";
 export * from "./quest";
 export * from "./journal";
+export * from "./npc-order";

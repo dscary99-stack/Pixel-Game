@@ -16,6 +16,8 @@
  *   POST /character/equipment/affix/choose  keep the old or the new affix (operationId, equipmentId, rerollOperationId, keep)
  *   GET  /journal                  collection journal: species records, maps, Sigils, earned titles (chapter 09)
  *   PUT  /character/title          show an earned title or none ({ titleId })
+ *   GET  /town/orders              this week's NPC orders with fills left (chapter 09)
+ *   POST /town/order               fill an NPC order once (operationId, orderId)
  *   GET  /quests                   today's and this week's quest boards with progress (chapter 09)
  *   POST /quests/claim             claim a daily reward or the weekly main reward (periodId, slot)
  *   POST /town/craft               make a recipe 1–10 times (operationId, recipeId, times, expectedCoins)
@@ -44,6 +46,7 @@ import {
   exampleContentMaps,
   exampleShopRegistry,
   exampleRecipeRegistry,
+  exampleNpcOrderRegistry,
   exampleMapRegistry,
   RaritySchema,
   RolledAffixSchema,
@@ -61,6 +64,7 @@ import { TownServices, type ServiceResult } from "./town-services";
 import { PartyStore, type PartyResult } from "./party-store";
 import { QuestStore } from "./quest-store";
 import { JournalStore } from "./journal-store";
+import { NpcOrderStore } from "./npc-order-store";
 
 export { BattleDurableObject } from "./battle-do";
 export { MapChannelDurableObject } from "./map-do";
@@ -76,6 +80,7 @@ const charactersFor = (env: Env) => new CharacterStore(env.DB, rulesFor(env), CO
 const TOWNS = [...exampleMapRegistry().values()].filter((m) => m.kind === "town").map((m) => m.id);
 const townFor = (env: Env) => new TownServices(env.DB, rulesFor(env), CONTENT, TOWNS);
 const journalFor = (env: Env) => new JournalStore(env.DB, rulesFor(env), CONTENT);
+const ordersFor = (env: Env) => new NpcOrderStore(env.DB, rulesFor(env), exampleNpcOrderRegistry());
 const questsFor = (env: Env) => new QuestStore(env.DB, rulesFor(env), { ...CONTENT, maps: exampleMapRegistry() }, TOWNS);
 
 /** DEV ONLY: dev accounts appear on first use with a starter bag and starter gear; real account creation waits for O11. */
@@ -210,12 +215,18 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
     const view = await journalFor(env).view(accountId);
     return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
   }
+  if (request.method === "GET" && url.pathname === "/town/orders") return json(200, await ordersFor(env).view(accountId));
   if (request.method === "GET" && url.pathname === "/quests") {
     const view = await questsFor(env).view(accountId);
     return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
   }
   const body = await readJson(request);
   if (body === undefined) return json(400, { error: "INVALID_REQUEST" });
+  if (request.method === "POST" && url.pathname === "/town/order") {
+    const r = await ordersFor(env).fill(accountId, body);
+    if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
+    return json(200, { ...r, coins: await townFor(env).coins(accountId) });
+  }
   if (request.method === "PUT" && url.pathname === "/character/title") {
     const r = await journalFor(env).setTitle(accountId, body);
     if (!r.ok) return json(r.code === "INVALID_REQUEST" ? 400 : r.code === "NO_CHARACTER" ? 404 : 409, { error: r.code, message: r.message });

@@ -28,7 +28,7 @@ import {
 } from "@pmrpg/shared";
 import { ELEMENT_COLOR, type BattleScene } from "./battle-scene";
 import type { CharacterApi, CharacterBundle } from "./character-api";
-import { autoHuntPanel, craftPanel, journalPanel, questPanel, titleName, equipmentPanel, partyPanel, rebirthPanel, shopPanel, skillPanel, statsPanel, teamPanel, vitals } from "./character-ui";
+import { autoHuntPanel, craftPanel, journalPanel, ordersPanel, questPanel, titleName, equipmentPanel, partyPanel, rebirthPanel, shopPanel, skillPanel, statsPanel, teamPanel, vitals } from "./character-ui";
 import type { WorldTransport } from "./world-transport";
 
 const W = 960;
@@ -136,7 +136,7 @@ export class WorldScene extends Phaser.Scene {
         this.huntBox.setVisible(false);
       });
     this.add
-      .text(W - 8, 8, `ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · C สเตตัส · T ทีม · E อุปกรณ์ · B ร้าน / F สร้างของ / R จุติคู่ใจ (ในเมือง) · K สกิล/Bond · H ล่าอัตโนมัติ · P ปาร์ตี้ · Q เควส · J สมุด" : ""}`, style)
+      .text(W - 8, 8, `ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · C สเตตัส · T ทีม · E อุปกรณ์ · B ร้าน / F สร้างของ / O งานสั่ง / R จุติคู่ใจ (ในเมือง) · K สกิล/Bond · H ล่าอัตโนมัติ · P ปาร์ตี้ · Q เควส · J สมุด" : ""}`, style)
       .setOrigin(1, 0)
       .setScrollFactor(0)
       .setDepth(100);
@@ -157,6 +157,7 @@ export class WorldScene extends Phaser.Scene {
     kb.on("keydown-K", () => void this.openSkills());
     kb.on("keydown-Q", () => void this.openQuests());
     kb.on("keydown-J", () => void this.openJournal());
+    kb.on("keydown-O", () => void this.openOrders());
     if (this.api !== null) {
       const button = (x: number, label: string, open: () => Promise<void>) =>
         this.add
@@ -175,6 +176,7 @@ export class WorldScene extends Phaser.Scene {
         ["อุปกรณ์ (E)", () => this.openEquipment()],
         ["ร้าน (B)", () => this.openShop()],
         ["สร้างของ (F)", () => this.openCraft()],
+        ["งานสั่ง (O)", () => this.openOrders()],
         ["สเตตัส (C)", () => this.openStats()],
         ["ล่าอัตโนมัติ (H)", () => this.toggleAutoHunt()],
         ["จุติ (R)", () => this.openRebirth()],
@@ -524,6 +526,14 @@ export class WorldScene extends Phaser.Scene {
     if (this.map !== null && this.map.kind !== "town") return this.flash("ร้านอยู่ในเมือง");
     return this.withPanel("ขายของได้นอกไฟต์เท่านั้น", async (api, bundle) => {
       await shopPanel(api, bundle);
+    });
+  }
+
+  /** NPC orders; only in town (the server checks the stored position too). */
+  private async openOrders() {
+    if (this.map !== null && this.map.kind !== "town") return this.flash("งานสั่งอยู่ในเมือง");
+    return this.withPanel("ส่งของได้นอกไฟต์เท่านั้น", async (api) => {
+      await ordersPanel(api);
     });
   }
 
