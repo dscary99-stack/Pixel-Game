@@ -37,12 +37,19 @@ out.removed = { paid: rm.body.result?.paid, coins: rm.body.coins };
 const sold = await http("POST", "/town/sell", { operationId: `sell_${run}`, lines: [{ itemId: "item:small_potion", quantity: 1 }] });
 out.sold = { total: sold.body.result?.total, coins: sold.body.coins };
 out.notSellable = (await http("POST", "/town/sell", { operationId: `sell2_${run}`, lines: [{ itemId: "item:ember_fox_sigil", quantity: 1 }] })).body.error;
+// Buying at the village shop (chapter 06): the shown total goes with the request.
+const buyReq = { operationId: `buy_${run}`, shopId: "shop:dawn_general", lines: [{ itemId: "item:small_potion", quantity: 2 }], expectedTotal: 60 };
+const bought = await http("POST", "/town/buy", buyReq);
+out.bought = { total: bought.body.result?.total, coins: bought.body.coins, retry: (await http("POST", "/town/buy", buyReq)).body.replayed };
+out.buyWrongTotal = (await http("POST", "/town/buy", { ...buyReq, operationId: `buy2_${run}`, expectedTotal: 1 })).body.error;
+out.buyNotListed = (await http("POST", "/town/buy", { ...buyReq, operationId: `buy3_${run}`, lines: [{ itemId: "item:crab_shell", quantity: 1 }], expectedTotal: 0 })).body.error;
 T.sock.close();
 await sleep(300);
 
 // 4. In the field the shop and removal are closed; installing still works outside fights.
 const F = await toField(account);
 await F.wait((m) => m.t === "packs");
+out.buyInField = (await http("POST", "/town/buy", { ...buyReq, operationId: `buy4_${run}` })).body.error;
 out.sellInField = (await http("POST", "/town/sell", { operationId: `sell3_${run}`, lines: [{ itemId: "item:small_potion", quantity: 1 }] })).body.error;
 out.installInField = (await http("POST", "/character/equipment/sigil", { ...install, operationId: `inst4_${run}` })).status;
 out.removeInField = (await http("POST", "/character/equipment/sigil/remove", { operationId: `rm2_${run}`, equipmentId: sword, socket: 0, expectedCost: 300 })).body.error;

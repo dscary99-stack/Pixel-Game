@@ -17,6 +17,9 @@ import {
   rebirthCost,
   RemoveSigilRequestSchema,
   SellRequestSchema,
+  BuyRequestSchema,
+  buyQuote,
+  type ShopDefinition,
   SkillTrainRequestSchema,
   planSigilInstall,
   skillTrainCost,
@@ -39,14 +42,17 @@ export interface TownContent {
   sigils: ReadonlyMap<string, SigilDefinition>;
   species: ReadonlyMap<string, SpeciesDefinition>;
   lootTables: ReadonlyMap<string, LootTable>;
+  /** Needed for buying (POST /town/buy). */
+  shops?: ReadonlyMap<string, ShopDefinition>;
 }
 
-type Kind = "npc_sell" | "sigil_install" | "sigil_remove" | "companion_rebirth" | "skill_train" | "rebirth_branch";
+type Kind = "npc_buy" | "npc_sell" | "sigil_install" | "sigil_remove" | "companion_rebirth" | "skill_train" | "rebirth_branch";
 
 export type ServiceRejection =
   | "INVALID_REQUEST"
   | "PAYLOAD_MISMATCH"
   | "NOT_SELLABLE"
+  | "NOT_SOLD_HERE"
   | "NOT_IN_TOWN"
   | "IN_BATTLE"
   | "INSUFFICIENT_ITEMS"
@@ -72,6 +78,10 @@ export type ServiceRejection =
 
 export type ServiceResult<T> = { status: "done"; replayed: boolean; result: T } | { status: "rejected"; reason: ServiceRejection; message: string };
 
+export interface BuyResult {
+  bought: { itemId: string; quantity: number; coins: number }[];
+  total: number;
+}
 export interface SellResult {
   sold: { itemId: string; quantity: number; coins: number }[];
   total: number;
@@ -180,6 +190,59 @@ export class TownServices {
       const why = await this.whereAndFight(accountId);
       if (why !== null) return why;
       return reject("INSUFFICIENT_ITEMS", "you do not have that many");
+    });
+  }
+
+  // ------------------------------------------------------------------ NPC shop (coin sink)
+
+  /** Buy listed goods at the shown prices, standing in the shop's town, outside fights. */
+  async buy(accountId: string, raw: unknown): Promise<ServiceResult<BuyResult>> {
+    const parsed = BuyRequestSchema.safeParse(raw);
+    if (!parsed.success) return reject("INVALID_REQUEST", issues(parsed.error));
+    const { operationId, shopId, lines, expectedTotal } = parsed.data;
+    const shop = this.content.shops?.get(shopId);
+    if (shop === undefined) return reject("NOT_SOLD_HERE", `no shop ${shopId}`);
+    const quote = buyQuote(shop, lines);
+    if (!quote.ok) return reject(quote.code, quote.message);
+    const sorted = [...quote.lines].sort((a, b) => (a.itemId < b.itemId ? -1 : 1));
+    const hash = await hashJson({ kind: "npc_buy", shopId, lines: sorted.map(({ itemId, quantity }) => ({ itemId, quantity })), expectedTotal });
+    const prior = await this.prior<BuyResult>(accountId, operationId, hash);
+    if (prior !== null) return prior;
+    if (quote.total !== expectedTotal) return reject("COST_CHANGED", `the total is now ${quote.total}`);
+
+    const guards = [
+      `EXISTS (SELECT 1 FROM player_positions WHERE account_id = ? AND map_id = ?)`,
+      `NOT ${OPEN_BATTLE}`,
+      `(SELECT COALESCE(SUM(delta), 0) FROM coin_ledger WHERE account_id = ?) >= ?`,
+    ];
+    const args: unknown[] = [accountId, shop.mapId, accountId, accountId, quote.total];
+    const result: BuyResult = { bought: sorted, total: quote.total };
+    const ledgerId = `svc:${accountId}:${operationId}`;
+    const at = this.now();
+    const ours = this.ours(accountId, operationId, hash);
+    await this.db.batch([
+      this.anchor(accountId, operationId, "npc_buy", hash, result, guards, args),
+      ...sorted.map((l, i) =>
+        this.db
+          .prepare(
+            `INSERT INTO item_ledger (operation_id, line_no, account_id, item_id, delta, reason, created_at)
+             SELECT ?, ?, ?, ?, ?, 'npc_buy', ? WHERE ${ours.sql} ON CONFLICT DO NOTHING`,
+          )
+          .bind(ledgerId, i, accountId, l.itemId, l.quantity, at, ...ours.args),
+      ),
+      this.db
+        .prepare(
+          `INSERT INTO coin_ledger (operation_id, line_no, account_id, delta, reason, created_at)
+           SELECT ?, 0, ?, ?, 'npc_buy', ? WHERE ${ours.sql} ON CONFLICT DO NOTHING`,
+        )
+        .bind(ledgerId, accountId, -quote.total, at, ...ours.args),
+    ]);
+    return this.outcome(accountId, operationId, hash, async () => {
+      const pos = await this.db.prepare(`SELECT map_id FROM player_positions WHERE account_id = ?`).bind(accountId).first<{ map_id: string }>();
+      if (pos?.map_id !== shop.mapId) return reject("NOT_IN_TOWN", `go to ${shop.name.th} first`);
+      const fight = await this.fighting(accountId);
+      if (fight !== null) return fight;
+      return reject("INSUFFICIENT_COINS", `needs ${quote.total} coins`);
     });
   }
 

@@ -2,7 +2,7 @@
  * Companion skill training at the town NPC (chapter 04 §5) on the D1 migrations (node:sqlite stand-in).
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { PRODUCTION_RULES as R, exampleContentMaps, expForLevel } from "@pmrpg/shared";
+import { PRODUCTION_RULES as R, exampleContentMaps, expForLevel, STARTER_KIT } from "@pmrpg/shared";
 import { CharacterStore } from "../src/character-store";
 import { Economy } from "../src/economy";
 import { TownServices } from "../src/town-services";
@@ -58,7 +58,7 @@ describe("skill training (chapter 04 §5)", () => {
     await Promise.all([town.trainSkill(A, req("train_0001")), town.trainSkill(A, req("train_0001"))]);
     expect(levels()).toEqual({ [BASH]: 2 });
     expect(pet().m).toBe(30);
-    expect(await town.coins(A)).toBe(900);
+    expect(await town.coins(A)).toBe(900 + STARTER_KIT.coins);
     expect(await eco.balance(A, "item:crab_shell")).toBe(9);
     expect(await town.trainSkill(A, req("train_0001", 2))).toMatchObject({ reason: "PAYLOAD_MISMATCH" });
     // The next step, then the gate: skill Lv4 needs the companion at Lv35.
@@ -75,7 +75,7 @@ describe("skill training (chapter 04 §5)", () => {
     expect(r.map((x) => x.status).sort()).toEqual(["done", "rejected"]);
     expect(levels()).toEqual({ [BASH]: 2 });
     expect(pet().m).toBe(30);
-    expect(await town.coins(A)).toBe(900);
+    expect(await town.coins(A)).toBe(900 + STARTER_KIT.coins);
   });
 
   it("needs town, no fight, mastery, coins, material and its own species' skill, and writes nothing otherwise", async () => {

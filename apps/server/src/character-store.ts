@@ -11,6 +11,7 @@
  */
 import {
   COMPANION_GROWTH_VERSION,
+  STARTER_KIT,
   companionPrimaryStats,
   AllocateStatsRequestSchema,
   CreateCharacterRequestSchema,
@@ -142,6 +143,11 @@ export class CharacterStore {
     const start = this.rules.provisional.primaryStatStart.value;
     const stats: PrimaryStats = { STR: start, VIT: start, INT: start, DEX: start, AGI: start, SPI: start };
     const at = this.now();
+    // The starter kit lands in the same batch, only if this request's character row is the one
+    // stored, keyed on the character id: once per character however often the create is retried.
+    const mine = `EXISTS (SELECT 1 FROM characters WHERE id = ? AND account_id = ? AND created_operation_id = ?)`;
+    const mineArgs = [id, accountId, req.operationId];
+    const kit = `starter:${id}`;
     await this.db.batch([
       this.db.prepare(`INSERT INTO accounts (id, created_at) VALUES (?, ?) ON CONFLICT DO NOTHING`).bind(accountId, at),
       this.db
@@ -150,6 +156,28 @@ export class CharacterStore {
            VALUES (?, ?, ?, ?, ?, ?, 1, 0, ?, ?, ?) ON CONFLICT DO NOTHING`,
         )
         .bind(id, accountId, req.name, req.classId, req.raceId, req.element, JSON.stringify(stats), req.operationId, at),
+      ...Object.entries(STARTER_KIT.items).map(([itemId, qty], i) =>
+        this.db
+          .prepare(
+            `INSERT INTO item_ledger (operation_id, line_no, account_id, item_id, delta, reason, created_at)
+             SELECT ?, ?, ?, ?, ?, 'starter_kit', ? WHERE ${mine} ON CONFLICT DO NOTHING`,
+          )
+          .bind(kit, i, accountId, itemId, qty, at, ...mineArgs),
+      ),
+      this.db
+        .prepare(
+          `INSERT INTO coin_ledger (operation_id, line_no, account_id, delta, reason, created_at)
+           SELECT ?, 0, ?, ?, 'starter_kit', ? WHERE ${mine} ON CONFLICT DO NOTHING`,
+        )
+        .bind(kit, accountId, STARTER_KIT.coins, at, ...mineArgs),
+      ...STARTER_KIT.equipment.map((d, i) =>
+        this.db
+          .prepare(
+            `INSERT INTO equipment_instances (id, definition_id, owner_id, created_operation_id, created_at)
+             SELECT ?, ?, ?, ?, ? WHERE ${mine} ON CONFLICT DO NOTHING`,
+          )
+          .bind(`eq:${kit}:${i}`, d, accountId, `${kit}:${i}`, at, ...mineArgs),
+      ),
     ]);
     const row = await this.row(accountId);
     if (row === null) throw new Error("character insert vanished");

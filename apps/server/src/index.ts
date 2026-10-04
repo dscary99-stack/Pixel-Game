@@ -12,6 +12,7 @@
  *   GET  /character                the caller's character, team and owned companions (404 NO_CHARACTER)
  *   POST /character                create the character (idempotent on operationId; one per account)
  *   GET  /party, POST /party, POST /party/join {partyId}, POST /party/leave   party (P02)
+ *   POST /town/buy                 buy from a town shop at the shown total (operationId, shopId, lines, expectedTotal)
  *   POST /town/rebirth             companion Rebirth at the town NPC (operationId, companionId, expectedStage)
  *   POST /town/rebirth/branch      switch a reached Rebirth stage's variant branch for coins (operationId, companionId, stage, expectedBranch, branch, expectedCost)
  *   POST /town/skill               train one companion skill a level (operationId, companionId, skillId, expectedLevel)
@@ -34,6 +35,7 @@ import {
   PRODUCTION_RULES,
   devPlayer,
   exampleContentMaps,
+  exampleShopRegistry,
   exampleMapRegistry,
   type BattleSetup,
 } from "@pmrpg/shared";
@@ -56,7 +58,7 @@ const RESERVATION_STALE_MS = 2 * 60_000;
 
 const rulesFor = (env: Env) => (env.ENVIRONMENT === "dev" ? DEV_FIXTURE_RULES : PRODUCTION_RULES);
 const economyFor = (env: Env) => new Economy(env.DB, rulesFor(env));
-const CONTENT = exampleContentMaps();
+const CONTENT = { ...exampleContentMaps(), shops: exampleShopRegistry() };
 const charactersFor = (env: Env) => new CharacterStore(env.DB, rulesFor(env), CONTENT);
 const TOWNS = [...exampleMapRegistry().values()].filter((m) => m.kind === "town").map((m) => m.id);
 const townFor = (env: Env) => new TownServices(env.DB, rulesFor(env), CONTENT, TOWNS);
@@ -201,6 +203,7 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
   }
   if (request.method === "POST" && url.pathname === "/character/equipment/sigil") return serviceReply(env, accountId, await townFor(env).installSigil(accountId, body));
   if (request.method === "POST" && url.pathname === "/character/equipment/sigil/remove") return serviceReply(env, accountId, await townFor(env).removeSigil(accountId, body));
+  if (request.method === "POST" && url.pathname === "/town/buy") return serviceReply(env, accountId, await townFor(env).buy(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/sell") return serviceReply(env, accountId, await townFor(env).sell(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/rebirth") return serviceReply(env, accountId, await townFor(env).rebirth(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/rebirth/branch") return serviceReply(env, accountId, await townFor(env).changeRebirthBranch(accountId, body));

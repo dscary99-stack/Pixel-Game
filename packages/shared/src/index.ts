@@ -28,3 +28,4 @@ export * from "./world/channel";
 export * from "./world/encounter";
 export * from "./world/auto-hunt";
 export * from "./content/maps";
+export * from "./shop";

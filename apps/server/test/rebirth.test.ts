@@ -2,7 +2,7 @@
  * Companion Rebirth at the town NPC (chapter 04 §7) on the D1 migrations (node:sqlite stand-in).
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { PRODUCTION_RULES as R, companionPrimaryStats, exampleContentMaps, expForLevel } from "@pmrpg/shared";
+import { PRODUCTION_RULES as R, companionPrimaryStats, exampleContentMaps, expForLevel, STARTER_KIT } from "@pmrpg/shared";
 import { CharacterStore } from "../src/character-store";
 import { Economy } from "../src/economy";
 import { TownServices } from "../src/town-services";
@@ -67,7 +67,7 @@ describe("companion Rebirth (chapter 04 §7)", () => {
     });
     expect(await town.rebirth(A, req("rebirth_0001"))).toMatchObject({ status: "done", replayed: true });
     await Promise.all([town.rebirth(A, req("rebirth_0001")), town.rebirth(A, req("rebirth_0001"))]);
-    expect(await town.coins(A)).toBe(50_000);
+    expect(await town.coins(A)).toBe(50_000 + STARTER_KIT.coins);
     expect(await eco.balance(A, "item:crab_shell")).toBe(70);
     const p = pet();
     expect(p).toMatchObject({ rebirth_stage: 1, current_level: 1, xp: 0, bond: 321, element: "EARTH", growth_seed: "g1" });
@@ -79,7 +79,7 @@ describe("companion Rebirth (chapter 04 §7)", () => {
   it("two different requests for the same stage: one lands, the other finds it changed", async () => {
     const r = await Promise.all([town.rebirth(A, req("rebirth_race1")), town.rebirth(A, req("rebirth_race2"))]);
     expect(r.map((x) => x.status).sort()).toEqual(["done", "rejected"]);
-    expect(await town.coins(A)).toBe(50_000);
+    expect(await town.coins(A)).toBe(50_000 + STARTER_KIT.coins);
     expect(pet().rebirth_stage).toBe(1);
   });
 
@@ -135,10 +135,10 @@ describe("Rebirth variants (chapter 04 §7; Nut 2026-10-03)", () => {
     const r = await Promise.all([town.changeRebirthBranch(A, branchReq("branch_1", "B", "A")), town.changeRebirthBranch(A, branchReq("branch_1", "B", "A"))]);
     expect(r.map((x) => x.status)).toEqual(["done", "done"]);
     expect(choices()).toEqual({ "1": "A" });
-    expect(await town.coins(A)).toBe(100_000 - 50_000 - 50_000);
+    expect(await town.coins(A)).toBe(100_000 - 50_000 - 50_000 + STARTER_KIT.coins);
     // The old branch is gone, so a stale second switch is refused and charges nothing.
     expect(await town.changeRebirthBranch(A, branchReq("branch_2", "B", "A"))).toMatchObject({ reason: "CHANGED" });
-    expect(await town.coins(A)).toBe(0);
+    expect(await town.coins(A)).toBe(STARTER_KIT.coins);
     // A stage not reached yet cannot be switched.
     expect(await town.changeRebirthBranch(A, { ...branchReq("branch_3", "A", "B", 150_000), stage: 2 })).toMatchObject({ reason: "CHANGED" });
   });

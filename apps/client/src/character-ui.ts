@@ -4,6 +4,7 @@
  * comes with the art pass (chapter 10 §4).
  */
 import {
+  EXAMPLE_SHOPS,
   exampleMapRegistry,
   EFFECT_HIT_NAME_TH,
   EFFECT_RES_NAME_TH,
@@ -533,6 +534,8 @@ export function teamPanel(api: CharacterApi, bundle: CharacterBundle): Promise<C
  * Town shop: sell items to the NPC for coins (chapter 06: the coin source). Prices come from the
  * item's vendorPrice; the server checks the bag, the location and the price again.
  */
+const SHOP = EXAMPLE_SHOPS[0]!;
+
 export function shopPanel(api: CharacterApi, start: CharacterBundle): Promise<CharacterBundle> {
   return new Promise((resolve) => {
     const { panel, close } = overlay();
@@ -544,7 +547,7 @@ export function shopPanel(api: CharacterApi, start: CharacterBundle): Promise<Ch
     const sellAll = el("button", { type: "button" }, "ขายวัสดุทั้งหมด");
     const done = el("button", { type: "button", class: "primary" }, "ปิด");
     actions.append(sellAll, done);
-    panel.append(el("h2", {}, "ร้านรับซื้อของ"), body, error, actions);
+    panel.append(el("h2", {}, "ร้านค้า: ซื้อ / ขาย"), body, error, actions);
     done.addEventListener("click", () => {
       close();
       resolve(bundle);
@@ -575,10 +578,42 @@ export function shopPanel(api: CharacterApi, start: CharacterBundle): Promise<Ch
       void sell(sellable().filter((s) => s.def.kind === "material").map((s) => ({ itemId: s.def.id, quantity: s.quantity }))),
     );
 
+    // Buying (chapter 06): fixed prices shown before buying; the total goes with the request.
+    const buy = async (itemId: string, quantity: number, total: number) => {
+      if (busy) return;
+      busy = true;
+      error.textContent = "";
+      try {
+        await api.buy(SHOP.id, [{ itemId, quantity }], total);
+        note.textContent = `ซื้อ ${itemDefs.get(itemId)?.name.th ?? itemId} ×${quantity} (−${total} เหรียญ)`;
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+      } finally {
+        bundle = (await api.get().catch(() => null)) ?? bundle;
+        busy = false;
+        draw();
+      }
+    };
+
     const note = el("div", { class: "pm-note" });
     const draw = () => {
       body.replaceChildren();
       body.append(el("div", { class: "pm-stats" }, `เหรียญ ${bundle.coins.toLocaleString()}`), note);
+      body.append(el("h3", {}, SHOP.name.th));
+      const shelf = el("ul", { class: "pm-list" });
+      for (const l of SHOP.listings) {
+        const def = itemDefs.get(l.itemId);
+        const li = el("li", { "data-buy": l.itemId });
+        li.append(el("span", { class: "pm-grow" }, `${def?.name.th ?? l.itemId} · ${l.price} เหรียญ · มี ${bundle.bag[l.itemId] ?? 0}`));
+        for (const q of [1, 5]) {
+          const b = el("button", { type: "button" }, `ซื้อ ${q} (−${l.price * q})`);
+          b.disabled = bundle.coins < l.price * q;
+          b.addEventListener("click", () => void buy(l.itemId, q, l.price * q));
+          li.append(b);
+        }
+        shelf.append(li);
+      }
+      body.append(shelf, el("h3", {}, "ขายของ"));
       const list = el("ul", { class: "pm-list" });
       const rows = sellable();
       if (rows.length === 0) list.append(el("li", {}, "ไม่มีของที่ร้านรับซื้อ (เครื่องจับและตรา Sigil ร้านไม่รับ)"));

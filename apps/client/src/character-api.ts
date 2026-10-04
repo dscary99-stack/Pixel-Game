@@ -72,6 +72,10 @@ export class CharacterApi {
     return this.call<{ coins: number; result: { total: number } }>("POST", "/town/sell", { operationId: opId("sell"), lines });
   }
 
+  buy(shopId: string, lines: { itemId: string; quantity: number }[], expectedTotal: number) {
+    return this.call<{ coins: number; result: { total: number } }>("POST", "/town/buy", { operationId: opId("buy"), shopId, lines, expectedTotal });
+  }
+
   party() {
     return this.call<{ party: PartyView | null }>("GET", "/party");
   }

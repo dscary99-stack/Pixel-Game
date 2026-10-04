@@ -3,7 +3,7 @@
  * with version checks, no changes during a fight, and gear locked for the fight then freed.
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { DEV_STARTER_EQUIPMENT, PRODUCTION_RULES, exampleContentMaps, type Entitlement } from "@pmrpg/shared";
+import { DEV_STARTER_EQUIPMENT, PRODUCTION_RULES, exampleContentMaps, type Entitlement, STARTER_KIT } from "@pmrpg/shared";
 import { CharacterStore } from "../src/character-store";
 import { Economy } from "../src/economy";
 import { SqliteD1, freshDb, type Db } from "./sqlite-d1";
@@ -60,7 +60,8 @@ describe("equipment grants", () => {
 
   it("dev starter gear is granted once", async () => {
     await store.devGrantEquipment("devgear:a", A, DEV_STARTER_EQUIPMENT);
-    expect(pieces(A)).toHaveLength(DEV_STARTER_EQUIPMENT.length);
+    // The character also came with the starter kit (shop.ts).
+    expect(pieces(A)).toHaveLength(DEV_STARTER_EQUIPMENT.length + STARTER_KIT.equipment.length);
   });
 });
 
