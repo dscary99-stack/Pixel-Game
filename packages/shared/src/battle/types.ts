@@ -6,6 +6,7 @@ import type { Element, MonsterInstance, PrimaryStats } from "../schemas";
 import type { DamageBreakdown } from "../damage";
 import type { DerivedStats, GearBonuses } from "../stats";
 import type { ErrorCode } from "../validators";
+import type { ActiveStatus, StatusId } from "../status";
 
 export type Side = "ally" | "enemy";
 export type Row = "front" | "back";
@@ -41,6 +42,10 @@ export interface BattleUnit {
   /** Companions only: knocked out at some point in this fight (Bond goes down, Nut 2026-10-03). */
   fell?: boolean;
   basicAttackRange: Range;
+  /** The primary stats behind `stats`; some resist statuses (O15, Nut 2026-10-04). Absent on older states. */
+  primaryStats?: PrimaryStats;
+  /** Statuses on this unit now (status.ts). Absent on older states = none. */
+  statuses?: ActiveStatus[];
   ko: boolean;
   /** Captured enemies leave the fight without kill loot. */
   retired: boolean;
@@ -157,6 +162,22 @@ export type BattleEventBody =
   | { type: "UnitKnockedOut"; unitId: string }
   /** A side effect of an action on its user or target (lifesteal, recoil, MP restore). */
   | { type: "ResourceChanged"; unitId: string; source: "lifesteal" | "recoil" | "restore_mp"; hp: number; mp: number; hpAfter: number; mpAfter: number }
+  /** A status landed, was refreshed, missed its roll, met immunity, ran out or was ended early. */
+  | {
+      type: "StatusChanged";
+      unitId: string;
+      statusId: StatusId;
+      sourceId: string | null;
+      change: "applied" | "refreshed" | "resisted" | "immune" | "expired" | "removed";
+      turnsLeft: number;
+      stacks: number;
+      /** The final chance (0–100) for a roll; null when nothing was rolled. */
+      chancePct: number | null;
+    }
+  /** Damage (+) or healing (−) over time at the start of the unit's turn. */
+  | { type: "StatusTick"; unitId: string; statusId: StatusId; hp: number; hpAfter: number }
+  /** The unit loses this turn to a control status. */
+  | { type: "TurnSkipped"; unitId: string; statusId: StatusId }
   | { type: "EnemyDefeated"; unitId: string; speciesId: string }
   | { type: "CaptureResolved"; targetId: string; speciesId: string; success: boolean; probability: number }
   | { type: "RewardEntitled"; entitlement: Entitlement }

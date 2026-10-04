@@ -4,7 +4,7 @@
  * it never computes damage, loot, capture or ownership itself (chapter 11 §1).
  */
 import Phaser from "phaser";
-import { DEV_FIXTURE_RULES, exampleContentMaps, type BattleCommand, type BattleEvent, type BattleUnit, type Element, type PublicBattleState } from "@pmrpg/shared";
+import { DEV_FIXTURE_RULES, STATUS_DEFINITIONS, exampleContentMaps, type BattleCommand, type BattleEvent, type BattleUnit, type Element, type PublicBattleState } from "@pmrpg/shared";
 import type { BattleTransport, Snapshot } from "./transport";
 import { savedAutoPolicy } from "./character-ui";
 
@@ -253,6 +253,23 @@ export class BattleScene extends Phaser.Scene {
         });
         return this.pushLog(`คู่ใจ: ${parts.join(", ")}`);
       }
+      case "StatusChanged": {
+        const th = STATUS_DEFINITIONS[e.statusId].th;
+        const chance = e.chancePct === null ? "" : ` (โอกาส ${Math.round(e.chancePct)}%)`;
+        const who = this.name(e.unitId);
+        if (e.change === "applied" || e.change === "refreshed") {
+          this.popup(e.unitId, th, STATUS_DEFINITIONS[e.statusId].harmful ? "#ff9b6b" : "#7dd3ff");
+          return this.pushLog(`${who} ติด${th} ${e.turnsLeft} เทิร์น${e.stacks > 1 ? ` ×${e.stacks}` : ""}${chance}`);
+        }
+        if (e.change === "resisted") return this.pushLog(`${who} ต้าน${th}ได้${chance}`);
+        if (e.change === "immune") return this.pushLog(`${who} ไม่ติด${th} (บอสกันการควบคุม)`);
+        return this.pushLog(`${who} หาย${th}`);
+      }
+      case "StatusTick":
+        this.popup(e.unitId, e.hp < 0 ? `${-e.hp}` : `+${e.hp}`, e.hp < 0 ? "#c58cff" : "#7dff9b");
+        return this.pushLog(`${this.name(e.unitId)} ${STATUS_DEFINITIONS[e.statusId].th} ${e.hp < 0 ? e.hp : `+${e.hp}`}`);
+      case "TurnSkipped":
+        return this.pushLog(`${this.name(e.unitId)} ${STATUS_DEFINITIONS[e.statusId].th} ข้ามเทิร์น`);
       case "BattleEnded":
         return this.pushLog(`จบไฟต์: ${e.outcome}`);
       default:
@@ -274,7 +291,8 @@ export class BattleScene extends Phaser.Scene {
         const ring = this.add.rectangle(x, y, 60, 68).setStrokeStyle(2, 0xffffff).setVisible(false);
         this.add.rectangle(x, y + 36, 52, 6, 0x0b0a12);
         const hpBar = this.add.rectangle(x - 25, y + 36, 50, 4, 0x6be36b).setOrigin(0, 0.5);
-        const label = this.add.text(x, y - 44, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#ffffff" }).setOrigin(0.5);
+        // Bottom-anchored so a second line (statuses) grows upwards.
+        const label = this.add.text(x, y - 37, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#ffffff", align: "center" }).setOrigin(0.5, 1);
         v = { body, hpBar, label, ring };
         this.views.set(u.unitId, v);
       }
@@ -282,7 +300,8 @@ export class BattleScene extends Phaser.Scene {
       v.ring.setPosition(x, y).setVisible(u.unitId === this.snap.actor || u.unitId === this.selectedTarget);
       v.ring.setStrokeStyle(2, u.unitId === this.snap.actor ? 0x7dff9b : 0xff6b6b);
       v.hpBar.setPosition(x - 25, y + 36).setSize(Math.max(0, 50 * (u.hp / u.stats.maxHp)), 4);
-      v.label.setPosition(x, y - 44).setText(`${u.name} Lv${u.level}${u.retired ? " (จับแล้ว)" : ""}`);
+      const tags = (u.statuses ?? []).map((st) => `${STATUS_DEFINITIONS[st.statusId].th}${st.turnsLeft}`).join(" ");
+      v.label.setPosition(x, y - 37).setText(`${u.name} Lv${u.level}${u.retired ? " (จับแล้ว)" : ""}${tags ? `\n${tags}` : ""}`);
     }
     const actor = this.snap.actor ? this.unit(this.snap.actor) : undefined;
     const party = state.partyBonus ? ` · ปาร์ตี้ ${state.partyBonus.partners} คน: EXP +${state.partyBonus.expPercent}% วัสดุ +${state.partyBonus.materialDropPercent}%` : "";

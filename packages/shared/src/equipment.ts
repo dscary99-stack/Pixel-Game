@@ -26,6 +26,8 @@ export const GEAR_STAT_KEYS = [
   "EVASION_PCT",
   "CRIT_PCT",
   "CRIT_DAMAGE",
+  "EFFECT_HIT_PCT",
+  "EFFECT_RES_PCT",
 ] as const satisfies readonly (keyof GearBonuses)[];
 
 export const EQUIP_SLOTS = EquipSlotSchema.options;

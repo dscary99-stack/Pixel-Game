@@ -19,6 +19,8 @@ export interface GearBonuses {
   EVASION_PCT?: number;
   CRIT_PCT?: number;
   CRIT_DAMAGE?: number;
+  EFFECT_HIT_PCT?: number;
+  EFFECT_RES_PCT?: number;
 }
 
 export interface DerivedStats {
@@ -35,6 +37,10 @@ export interface DerivedStats {
   evasionPct: number;
   critPct: number;
   critDamageBonus: number;
+  /** Offsets a target's status resistance (O15, Nut 2026-10-04). From gear and statuses; no stat gives it. */
+  effectHitPct: number;
+  /** Lowers the chance of harmful statuses; the resisting primary stat adds more per status (status.ts). */
+  effectResPct: number;
 }
 
 export function deriveStats(level: number, p: PrimaryStats, gear: GearBonuses = {}): DerivedStats {
@@ -52,6 +58,8 @@ export function deriveStats(level: number, p: PrimaryStats, gear: GearBonuses = 
     evasionPct: 0.15 * p.AGI + (gear.EVASION_PCT ?? 0),
     critPct: 5 + 0.1 * p.DEX + (gear.CRIT_PCT ?? 0),
     critDamageBonus: gear.CRIT_DAMAGE ?? 0,
+    effectHitPct: gear.EFFECT_HIT_PCT ?? 0,
+    effectResPct: gear.EFFECT_RES_PCT ?? 0,
   };
 }
 

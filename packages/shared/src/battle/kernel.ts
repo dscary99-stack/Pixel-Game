@@ -14,8 +14,16 @@ import { rollLoot } from "../loot";
 import { companionExp, killExp } from "../progression";
 import { Rng, seedRng } from "../rng";
 import type { RulesConfig } from "../rules";
-import type { DamageEffect, ItemDefinition, LootTable, SkillDefinition, SpeciesDefinition } from "../schemas";
-import { deriveStats } from "../stats";
+import type { DamageEffect, ItemDefinition, LootTable, SkillDefinition, SpeciesDefinition, StatusApplication } from "../schemas";
+import { deriveStats, type DerivedStats } from "../stats";
+import {
+  STATUS_DEFINITIONS,
+  overTimeAmount,
+  statsWithStatuses,
+  statusChancePct,
+  statusResistancePct,
+  type ActiveStatus,
+} from "../status";
 import { validateEnemyCount, validateTeam, type ErrorCode } from "../validators";
 import type {
   BattleCommand,
@@ -82,6 +90,9 @@ class Ctx {
 
 const active = (u: BattleUnit) => !u.ko && !u.retired;
 
+/** A unit's stats with its statuses applied (status.ts). Base `stats` never change mid-fight. */
+const eff = (ctx: Ctx, u: BattleUnit): DerivedStats => statsWithStatuses(ctx.rules, u.stats, u.statuses);
+
 // ================================================================ setup
 
 export function createBattle(rules: RulesConfig, content: BattleContent, setup: BattleSetup): KernelResult {
@@ -126,6 +137,8 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
     mp: clampResource(p.mp, pStats.maxMp),
     skillIds: [...p.skillIds],
     basicAttackRange: p.basicAttackRange,
+    primaryStats: { ...p.primaryStats },
+    statuses: [],
     ko: (p.hp ?? pStats.maxHp) <= 0,
     retired: false,
     guarding: false,
@@ -173,6 +186,8 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
         ? { cosmetic: { effect: sp.rebirthCosmetic.effect, color: sp.rebirthCosmetic.color } }
         : {}),
       basicAttackRange: sp.basicAttackRange,
+      primaryStats: { ...primaryStats },
+      statuses: [],
       ko: (c.hp ?? stats.maxHp) <= 0,
       retired: false,
       guarding: false,
@@ -206,6 +221,8 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup: Ba
       mp: stats.maxMp,
       skillIds: [],
       basicAttackRange: sp.basicAttackRange,
+      primaryStats: { ...sp.wildPrimaryStats },
+      statuses: [],
       ko: false,
       retired: false,
       guarding: false,
@@ -309,7 +326,7 @@ function startRound(ctx: Ctx): void {
   s.round += 1;
   s.turnIndex = 0;
   for (const u of s.units) u.movedThisRound = false;
-  const ready = s.units.filter(active).map((u) => ({ id: u.unitId, spd: u.stats.spd, tie: ctx.rng.nextUint32() }));
+  const ready = s.units.filter(active).map((u) => ({ id: u.unitId, spd: eff(ctx, u).spd, tie: ctx.rng.nextUint32() }));
   ready.sort((a, b) => b.spd - a.spd || a.tie - b.tie);
   s.turnOrder = ready.map((r) => r.id);
   ctx.emit({ type: "RoundStarted", round: s.round, order: [...s.turnOrder] });
@@ -324,6 +341,103 @@ function beginTurn(ctx: Ctx, u: BattleUnit): void {
   ctx.emit({ type: "TurnStarted", unitId: u.unitId, guardEnded });
 }
 
+/**
+ * Status effects at the start of a unit's turn (O15 timing, status.ts): over-time damage and healing,
+ * then control. Returns false when the unit cannot act this turn.
+ */
+function statusTurnStart(ctx: Ctx, u: BattleUnit): boolean {
+  for (const st of [...(u.statuses ?? [])]) {
+    const d = STATUS_DEFINITIONS[st.statusId];
+    if (d.overTime === undefined || !active(u)) continue;
+    const amount = overTimeAmount(ctx.rules, d, st.stacks, u.stats.maxHp, u.rank === "BOSS");
+    const change = amount > 0 ? Math.min(amount, u.hp) : -Math.min(-amount, u.stats.maxHp - u.hp);
+    if (change === 0) continue;
+    u.hp -= change;
+    ctx.emit({ type: "StatusTick", unitId: u.unitId, statusId: st.statusId, hp: -change, hpAfter: u.hp });
+    if (u.hp === 0) knockOut(ctx, u);
+  }
+  if (!active(u)) return false;
+  for (const st of u.statuses ?? []) {
+    const d = STATUS_DEFINITIONS[st.statusId];
+    const skip =
+      d.skipsTurn === "always" ||
+      (d.skipsTurn === "chance" && ctx.rng.chanceBp(ctx.rules.provisional.statusTuning.value.paralyzeSkipChancePct * 100));
+    if (skip) {
+      ctx.emit({ type: "TurnSkipped", unitId: u.unitId, statusId: st.statusId });
+      return false;
+    }
+  }
+  return true;
+}
+
+/** End of a unit's turn: its statuses count down, except ones put on during this very turn. */
+function endTurn(ctx: Ctx, u: BattleUnit): void {
+  if (u.statuses === undefined) return;
+  const kept: ActiveStatus[] = [];
+  for (const st of u.statuses) {
+    if (st.fresh) {
+      st.fresh = false;
+      kept.push(st);
+      continue;
+    }
+    st.turnsLeft -= 1;
+    if (st.turnsLeft > 0) kept.push(st);
+    else ctx.emit({ type: "StatusChanged", unitId: u.unitId, statusId: st.statusId, sourceId: st.sourceId, change: "expired", turnsLeft: 0, stacks: st.stacks, chancePct: null });
+  }
+  u.statuses = kept;
+}
+
+/**
+ * Tries to put a status on a unit. Bosses are immune to hard control (checked first); harmful statuses
+ * roll the skill's chance offset by resistance and effect hit, never above the skill's chance; helpful
+ * ones roll the skill's chance as is. The same status again refreshes it or adds stacks.
+ */
+function applyStatus(ctx: Ctx, source: BattleUnit, target: BattleUnit, a: StatusApplication): void {
+  if (!active(target)) return;
+  const d = STATUS_DEFINITIONS[a.statusId];
+  const statuses = (target.statuses ??= []);
+  const existing = statuses.find((x) => x.statusId === a.statusId);
+  const event = (change: Extract<BattleEventBody, { type: "StatusChanged" }>["change"], chancePct: number | null, st?: ActiveStatus) =>
+    ctx.emit({
+      type: "StatusChanged",
+      unitId: target.unitId,
+      statusId: a.statusId,
+      sourceId: source.unitId,
+      change,
+      turnsLeft: st?.turnsLeft ?? 0,
+      stacks: st?.stacks ?? 0,
+      chancePct,
+    });
+  if (d.harmful && d.hardControl === true && target.rank === "BOSS") return event("immune", null, existing);
+  const chance = d.harmful
+    ? statusChancePct(a.chancePct, eff(ctx, source).effectHitPct, statusResistancePct(ctx.rules, d, eff(ctx, target), target.primaryStats))
+    : a.chancePct;
+  const rolled = chance < 100;
+  if (rolled && !ctx.rng.chanceBp(Math.round(chance * 100))) return event("resisted", chance, existing);
+  const ownTurn = currentActor(ctx.s)?.unitId === target.unitId;
+  if (existing !== undefined) {
+    existing.turnsLeft = Math.max(existing.turnsLeft, a.turns);
+    existing.stacks = Math.min(d.maxStacks, existing.stacks + (d.maxStacks > 1 ? (a.stacks ?? 1) : 0));
+    existing.sourceId = source.unitId;
+    existing.fresh = existing.fresh || ownTurn;
+    return event("refreshed", rolled ? chance : null, existing);
+  }
+  const st: ActiveStatus = { statusId: a.statusId, sourceId: source.unitId, turnsLeft: a.turns, stacks: Math.min(d.maxStacks, a.stacks ?? 1), fresh: ownTurn };
+  statuses.push(st);
+  event("applied", rolled ? chance : null, st);
+}
+
+/** Ends statuses that a hit breaks: sleep on any damage, freeze on fire. */
+function breakStatusesOnHit(ctx: Ctx, target: BattleUnit, element: BattleUnit["element"]): void {
+  if (target.statuses === undefined) return;
+  target.statuses = target.statuses.filter((st) => {
+    const d = STATUS_DEFINITIONS[st.statusId];
+    const ends = d.endsOnDamage === true || (d.endsOnElement !== undefined && d.endsOnElement === element);
+    if (ends) ctx.emit({ type: "StatusChanged", unitId: target.unitId, statusId: st.statusId, sourceId: null, change: "removed", turnsLeft: 0, stacks: st.stacks, chancePct: null });
+    return !ends;
+  });
+}
+
 /** Moves to the next unit able to act. Enemy turns are resolved by the server AI. */
 function advanceToAllyInput(ctx: Ctx): void {
   const s = ctx.s;
@@ -336,8 +450,17 @@ function advanceToAllyInput(ctx: Ctx): void {
       continue;
     }
     beginTurn(ctx, u);
+    // Statuses first: over-time ticks can knock the unit out, control can take the turn (O15).
+    const canAct = statusTurnStart(ctx, u);
+    if (!canAct) {
+      if (active(u)) endTurn(ctx, u);
+      s.turnIndex += 1;
+      checkEnd(ctx);
+      continue;
+    }
     if (u.side === "ally") return;
     enemyAct(ctx, u);
+    endTurn(ctx, u);
     s.turnIndex += 1;
     checkEnd(ctx);
   }
@@ -372,6 +495,7 @@ export function applyCommand(
       reject("NOT_YOUR_TURN", `it is ${actor?.unitId ?? "nobody"}'s turn`);
     }
     resolveCommand(ctx, actor!, cmd, opts.source);
+    if (ctx.s.status === "active") endTurn(ctx, actor!);
     ctx.s.turnIndex += 1;
     checkEnd(ctx);
     advanceToAllyInput(ctx);
@@ -460,30 +584,34 @@ function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUni
   }
   if ((actor.cooldowns[skillId] ?? 0) > 0) reject("ON_COOLDOWN", `${skillId} ready in ${actor.cooldowns[skillId]} turns`);
   if (actor.mp < mpCost) reject("INSUFFICIENT_RESOURCE", `needs ${mpCost} MP`);
+  if (mpCost > 0 && actor.statuses?.some((st) => STATUS_DEFINITIONS[st.statusId].blocksMpSkills === true)) {
+    reject("SILENCED", `${actor.unitId} is silenced and cannot use MP skills`);
+  }
   const effect = skill.effectSequence[0]!;
   if (skill.effectSequence.length !== 1) reject("UNRESOLVED_RULE", "multi-effect skills wait for O15 (multi-hit, chains)");
 
-  if (effect.kind === "damage") {
+  const onEnemy = effect.kind === "damage" || (effect.kind === "status" && skill.targetRule === "single_enemy");
+  if (onEnemy) {
     if (skill.targetRule !== "single_enemy") reject("INVALID_COMMAND", "damage skill must target a single enemy in Phase A");
     requireEnemyTarget(ctx, actor, target, skill.range);
   } else {
     const allowed = skill.targetRule === "self" ? target.unitId === actor.unitId : skill.targetRule === "single_ally";
-    if (!allowed || target.side !== actor.side) reject("INVALID_TARGET", "heal needs an ally target");
+    if (!allowed || target.side !== actor.side) reject("INVALID_TARGET", "this skill needs an ally target");
     if (!active(target)) reject("INVALID_TARGET", "heals do not revive (chapter 03 §6)");
   }
 
   actor.mp -= mpCost;
   if (cooldown > 0) actor.cooldowns[skillId] = cooldown;
 
-  const coefficient = (effect.coefficient * (100 + mods.powerPercent)) / 100;
+  const coefficient = effect.kind === "status" ? 0 : (effect.coefficient * (100 + mods.powerPercent)) / 100;
   // Extra targets from the skill's level: the chosen target first, then more of the same side, each
   // resolved on its own (its own hit and crit). Picked by the server, never by the client: enemies in
   // formation order (front row first), allies by lowest HP share. Self-only skills never spread.
   const extra =
     mods.extraTargets <= 0 || skill.targetRule === "self"
       ? []
-      : effect.kind === "damage"
-        ? validTargets(ctx.s, "enemy", skill.range)
+      : onEnemy
+        ? validTargets(ctx.s, actor.side === "ally" ? "enemy" : "ally", skill.range)
             .filter((u) => u.unitId !== target.unitId)
             .sort((a, b) => (a.row === b.row ? a.slot - b.slot : a.row === "front" ? -1 : 1))
         : ctx.s.units
@@ -493,6 +621,10 @@ function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUni
     if (!active(t)) continue;
     if (effect.kind === "damage") {
       strike(ctx, actor, t, "skill", skillId, { ...effect, coefficient });
+    } else if (effect.kind === "status") {
+      // No damage and no hit roll: each status rolls its own chance (O15, Nut 2026-10-04).
+      actionEvent(ctx, actor, "skill", t, { skillId });
+      for (const a of effect.statuses) applyStatus(ctx, actor, t, a);
     } else {
       const amount = computeHeal(actor.stats.support, coefficient, effect.flat);
       const applied = Math.min(amount, t.stats.maxHp - t.hp); // overheal discarded
@@ -503,6 +635,7 @@ function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUni
         t.mp += mp;
         ctx.emit({ type: "ResourceChanged", unitId: t.unitId, source: "restore_mp", hp: 0, mp, hpAfter: t.hp, mpAfter: t.mp });
       }
+      for (const a of effect.statuses ?? []) applyStatus(ctx, actor, t, a);
     }
   }
 }
@@ -514,30 +647,33 @@ function strike(
   action: "attack" | "skill",
   skillId: string | null,
   eff: { damageType: "physical" | "magic"; coefficient: number; flat: number; element: BattleUnit["element"] } & Partial<
-    Pick<DamageEffect, "penetrationPct" | "accuracyBonusPct" | "critBonusPct" | "execute" | "lifestealPct" | "recoilPct">
+    Pick<DamageEffect, "penetrationPct" | "accuracyBonusPct" | "critBonusPct" | "execute" | "lifestealPct" | "recoilPct" | "statuses">
   >,
 ): void {
   const rules = ctx.rules;
-  const hit = ctx.rng.chanceBp(hitChanceBp(rules, actor.stats.accuracyPct, target.stats.evasionPct, eff.accuracyBonusPct ?? 0));
+  // Statuses change the numbers of both sides (status.ts); max HP never changes.
+  const a = statsWithStatuses(rules, actor.stats, actor.statuses);
+  const d = statsWithStatuses(rules, target.stats, target.statuses);
+  const hit = ctx.rng.chanceBp(hitChanceBp(rules, a.accuracyPct, d.evasionPct, eff.accuracyBonusPct ?? 0));
   if (!hit) {
     actionEvent(ctx, actor, action, target, { skillId, hit: false, crit: false, damage: 0 });
     return;
   }
-  const crit = ctx.rng.chanceBp(critChanceBp(rules, actor.stats.critPct + (eff.critBonusPct ?? 0)));
+  const crit = ctx.rng.chanceBp(critChanceBp(rules, a.critPct + (eff.critBonusPct ?? 0)));
   const physical = eff.damageType === "physical";
   const hpBefore = target.hp;
   const executing = eff.execute !== undefined && hpBefore * 100 < eff.execute.belowHpPct * target.stats.maxHp;
   const breakdown = computeDamage(rules, {
     ...(eff.penetrationPct === undefined ? {} : { defenseModifiers: { penetrationPct: eff.penetrationPct } }),
     ...(executing ? { outgoingMultiplier: (100 + eff.execute!.bonusPct) / 100 } : {}),
-    attackPower: physical ? actor.stats.patk : actor.stats.matk,
+    attackPower: physical ? a.patk : a.matk,
     skillCoefficient: eff.coefficient,
     skillFlat: eff.flat,
-    defense: physical ? target.stats.pdef : target.stats.mdef,
+    defense: physical ? d.pdef : d.mdef,
     attackElement: eff.element,
     defenderElement: target.element,
     crit,
-    critDamageBonus: actor.stats.critDamageBonus,
+    critDamageBonus: a.critDamageBonus,
     guarding: target.guarding,
   });
   target.hp = Math.max(0, target.hp - breakdown.final);
@@ -559,11 +695,16 @@ function strike(
     }
   }
   if (target.hp === 0) knockOut(ctx, target);
+  else {
+    if (dealt > 0) breakStatusesOnHit(ctx, target, eff.element);
+    for (const x of eff.statuses ?? []) applyStatus(ctx, actor, target, x);
+  }
 }
 
 function knockOut(ctx: Ctx, u: BattleUnit): void {
   u.ko = true;
   u.guarding = false;
+  u.statuses = [];
   if (u.kind === "companion") u.fell = true;
   ctx.emit({ type: "UnitKnockedOut", unitId: u.unitId });
   if (u.side !== "enemy") return;
@@ -720,6 +861,7 @@ function endBattle(ctx: Ctx, outcome: "victory" | "defeat" | "fled"): void {
   for (const u of s.units) {
     u.guarding = false;
     u.cooldowns = {};
+    u.statuses = [];
   }
   ctx.emit({
     type: "BattleEnded",

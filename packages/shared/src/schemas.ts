@@ -4,6 +4,7 @@
  * Display names are never primary keys.
  */
 import { z } from "zod";
+import { STATUS_DEFINITIONS, STATUS_IDS } from "./status";
 import { RULES } from "./rules";
 
 const C = RULES.confirmed;
@@ -49,6 +50,22 @@ const contentMeta = {
 
 // ---------------------------------------------------------------- skills
 
+/**
+ * A status a skill effect tries to put on its target (status.ts). Harmful statuses go with enemy-target
+ * effects and roll against resistance; helpful ones go with ally effects and use `chancePct` as is.
+ */
+export const StatusApplicationSchema = z
+  .object({
+    statusId: z.enum(STATUS_IDS),
+    /** The skill's own chance (Nut 2026-10-04: a status is not 100% unless the skill says so). */
+    chancePct: z.number().int().min(1).max(100),
+    /** The affected unit's own turns. */
+    turns: z.number().int().min(1).max(10),
+    stacks: z.number().int().min(1).max(5).optional(),
+  })
+  .strict();
+export type StatusApplication = z.infer<typeof StatusApplicationSchema>;
+
 export const DamageEffectSchema = z
   .object({
     kind: z.literal("damage"),
@@ -69,6 +86,8 @@ export const DamageEffectSchema = z
     lifestealPct: z.number().int().min(1).max(100).optional(),
     /** The user loses this % of the damage dealt, never below 1 HP. */
     recoilPct: z.number().int().min(1).max(100).optional(),
+    /** Tried on the target after a hit that lands. */
+    statuses: z.array(StatusApplicationSchema).max(3).optional(),
   })
   .strict();
 
@@ -81,6 +100,15 @@ export const HealEffectSchema = z
     flat: z.number().min(0),
     /** Also restores this much MP to each healed target. */
     restoreMp: z.number().int().min(1).optional(),
+    statuses: z.array(StatusApplicationSchema).max(3).optional(),
+  })
+  .strict();
+
+/** A skill whose whole effect is statuses: debuffs on an enemy (no hit roll) or buffs on an ally/self. */
+export const StatusEffectSchema = z
+  .object({
+    kind: z.literal("status"),
+    statuses: z.array(StatusApplicationSchema).min(1).max(3),
   })
   .strict();
 
@@ -111,7 +139,7 @@ export const SkillDefinitionSchema = z
     mpCost: z.number().int().min(0),
     /** Owner turns before reuse. Tick point is O15. */
     cooldown: z.number().int().min(0),
-    effectSequence: z.array(z.discriminatedUnion("kind", [DamageEffectSchema, HealEffectSchema])),
+    effectSequence: z.array(z.discriminatedUnion("kind", [DamageEffectSchema, HealEffectSchema, StatusEffectSchema])),
     tags: z.array(z.string()),
     /** One step per level 2–10 when present; absent = the default power step (rules). */
     levelSteps: z.array(SkillLevelStepSchema).optional(),
@@ -134,6 +162,15 @@ export const SkillDefinitionSchema = z
     }
     if (s.kind === "passive" && (s.effectSequence.length > 0 || s.mpCost > 0)) {
       ctx.addIssue({ code: "custom", message: "passive skills have no direct effect sequence or MP cost in Phase A" });
+    }
+    for (const e of s.effectSequence) {
+      const onEnemy = e.kind === "damage" || (e.kind === "status" && s.targetRule === "single_enemy");
+      for (const a of e.statuses ?? []) {
+        if (STATUS_DEFINITIONS[a.statusId].harmful !== onEnemy) {
+          ctx.addIssue({ code: "custom", message: `${a.statusId} is ${onEnemy ? "helpful" : "harmful"} and cannot go on ${onEnemy ? "an enemy" : "an ally"}` });
+        }
+        if ((a.stacks ?? 1) > STATUS_DEFINITIONS[a.statusId].maxStacks) ctx.addIssue({ code: "custom", message: `${a.statusId} stacks above its cap` });
+      }
     }
     if (s.kind === "active" && s.effectSequence.length === 0) {
       ctx.addIssue({ code: "custom", message: "active skill needs at least one effect" });

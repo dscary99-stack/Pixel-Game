@@ -80,6 +80,15 @@ export const RULES = {
       "C14",
       "user decision 2026-10-03: an Auto Hunt fight is a real fight with Auto on, at the same action cadence as Auto Battle",
     ),
+    // Status effects (chapter 03 §6, O15 parts decided by Nut 2026-10-04; see status.ts).
+    statusLandsByChance: confirmed(true, "O15", "Nut 2026-10-04: every status has a chance to land, not 100%, unless a skill sets 100%"),
+    controlImmunityAfterControl: confirmed(false, "O15", "Nut 2026-10-04: no immunity turn after stun/sleep/freeze"),
+    statsOffsetStatusChance: confirmed(true, "O15", "Nut 2026-10-04: some high stats offset the chance of a status landing"),
+    effectHitCappedAtSkillChance: confirmed(
+      true,
+      "O15",
+      "Nut 2026-10-04: effect hit offsets effect resistance, never above the skill's chance: chance = skill × (1 − max(0, res − hit)/100)",
+    ),
   },
   provisional: {
     autoHuntLootRetention: provisional(0.7, "P01", "multiplier, applied once per candidate; not 0.70%"),
@@ -197,6 +206,30 @@ export const RULES = {
       [50_000, 150_000, 400_000] as const,
       "P05",
       "coins to switch the branch of stage 1/2/3 at the town NPC (Nut: a coin sink, burn more); the same as that stage's Rebirth price",
+    ),
+    // Status numbers (O15 timing accepted from Claude's list 2026-10-04; numbers are Claude's proposal).
+    statusTuning: provisional(
+      {
+        /** Each matching primary stat point adds this % resistance (VIT 50 = 10%). */
+        resistPerStatPointPct: 0.2,
+        /** Per stack, on patk/matk/pdef/mdef/spd; half for the side effects of burn and paralyze. */
+        statModPct: 20,
+        /** Total up/down on one stat stays within ±this %. */
+        statModCapPct: 50,
+        blindAccuracyPct: 30,
+        evasionUpPct: 15,
+        resShiftPct: 20,
+        poisonPctMaxHp: 5,
+        burnPctMaxHp: 4,
+        bleedPctMaxHpPerStack: 2,
+        regenPctMaxHp: 6,
+        /** A boss never loses more than this % of max HP to one status tick. */
+        bossDotMaxHpPctPerTick: 1,
+        /** A paralyzed unit loses its turn on this roll. */
+        paralyzeSkipChancePct: 25,
+      } as const,
+      "P04",
+      "O15 parts: PROVISIONAL numbers; timing (own-turn durations, ticks at turn start, refresh, boss hard-control immunity) is the list Nut reviewed 2026-10-04",
     ),
     // Party (chapter 08 "Party", P02): bonus while partners hunt on the same map and channel.
     partyMaxMembers: provisional(4, "P02"),

@@ -22,12 +22,12 @@ export const EXAMPLE_SKILLS: SkillDefinition[] = [
   // Armor crab (ปูเกราะ)
   skill("skill:crab_take_hit", "รับแทน1ครั้ง", "passive"),
   skill("skill:crab_self_shield", "โล่ตน", "passive"),
-  dmg("skill:crab_shield_bash", "ใช้โล่บางส่วนโจมตี", "physical", 1.3, 0, "EARTH", "melee", 6, 0),
+  dmg("skill:crab_shield_bash", "ใช้โล่บางส่วนโจมตี", "physical", 1.3, 0, "EARTH", "melee", 6, 0, { statuses: [{ statusId: "stun", chancePct: 20, turns: 1 }] }),
   skill("skill:crab_innate_mp_refund", "รับแทนสำเร็จลดMPครั้งหน้า", "passive"),
   // Ember fox (จิ้งจอกสะเก็ด)
-  dmg("skill:fox_mark_bite", "กัดติดmark", "physical", 1.2, 0, "FIRE", "melee", 4, 0),
+  dmg("skill:fox_mark_bite", "กัดติดmark", "physical", 1.2, 0, "FIRE", "melee", 4, 0, { statuses: [{ statusId: "bleed", chancePct: 35, turns: 3 }] }),
   // EXAMPLE level tables (each skill grows its own way, chapter 04 §5): the volley spreads to more targets.
-  steps(dmg("skill:fox_light_volley", "หมู่เบา", "physical", 0.9, 5, "FIRE", "ranged", 5, 0), [
+  steps(dmg("skill:fox_light_volley", "หมู่เบา", "physical", 0.9, 5, "FIRE", "ranged", 5, 0, { statuses: [{ statusId: "burn", chancePct: 30, turns: 2 }] }), [
     ["power", 5], ["power", 5], ["power", 5], ["extra_targets", 1], ["power", 5], ["power", 5], ["mp_cost", -1], ["extra_targets", 1], ["power", 10],
   ]),
   steps(dmg("skill:fox_consume_mark", "กินmarkโจมตีหนัก", "physical", 1.6, 0, "FIRE", "melee", 10, 2), [
@@ -38,13 +38,13 @@ export const EXAMPLE_SKILLS: SkillDefinition[] = [
   steps(heal("skill:snail_single_heal", "ฮีลเดี่ยว", 1.2, 20, 8), [
     ["power", 5], ["power", 5], ["mp_cost", -2], ["power", 5], ["power", 5], ["power", 5], ["extra_targets", 1], ["power", 5], ["mp_cost", -2],
   ]),
-  dmg("skill:snail_glare", "ส่องลดหลบ", "magic", 0.8, 0, "WATER", "ranged", 5, 0),
+  dmg("skill:snail_glare", "ส่องลดหลบ", "magic", 0.8, 0, "WATER", "ranged", 5, 0, { statuses: [{ statusId: "evasion_down", chancePct: 70, turns: 2 }] }),
   skill("skill:snail_ally_shield", "โล่เพื่อน", "passive"),
   skill("skill:snail_innate_mp_return", "โล่หมดอายุคืนMP", "passive"),
   // Supply mole (ตุ่นเสบียง), chapter 04 §2 kit; Lv2 near the town gate
   heal("skill:mole_light_heal", "ฮีลเบา", 0.8, 10, 6),
   skill("skill:mole_cost_cut", "ลดต้นทุนสกิลถัดไปเพื่อน", "passive"),
-  dmg("skill:mole_weakening_hit", "โจมตีลดATK", "physical", 1.1, 0, "EARTH", "melee", 4, 0),
+  dmg("skill:mole_weakening_hit", "โจมตีลดATK", "physical", 1.1, 0, "EARTH", "melee", 4, 0, { statuses: [{ statusId: "atk_down", chancePct: 60, turns: 2 }] }),
   skill("skill:mole_innate_mp_refund", "basicสำเร็จคืนMPเล็ก", "passive"),
   // Bell bird (นกกระดิ่ง), chapter 04 §2 kit; Lv3
   skill("skill:bird_haste", "SPDรอบหน้า", "passive"),

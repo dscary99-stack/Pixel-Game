@@ -5,6 +5,8 @@
  */
 import {
   exampleMapRegistry,
+  EFFECT_HIT_NAME_TH,
+  EFFECT_RES_NAME_TH,
   type PartyView,
   rebirthCost,
   rebirthBranchChangeCost,
@@ -241,6 +243,8 @@ const STAT_TH: Record<string, string> = {
   EVASION_PCT: "หลบ%",
   CRIT_PCT: "คริ%",
   CRIT_DAMAGE: "แรงคริ",
+  EFFECT_HIT_PCT: `${EFFECT_HIT_NAME_TH}%`,
+  EFFECT_RES_PCT: `${EFFECT_RES_NAME_TH}%`,
 };
 
 const GROUP_TH: Record<SigilGroup, string> = {

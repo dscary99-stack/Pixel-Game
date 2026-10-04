@@ -21,6 +21,7 @@ export * from "./rebirth";
 export * from "./party";
 export * from "./skill-training";
 export * from "./bond";
+export * from "./status";
 export * from "./world/map";
 export * from "./world/movement";
 export * from "./world/channel";

@@ -146,7 +146,7 @@
 | O12 | Client packaging | desktop OSขั้นต่ำ, Android wrapper, payment provider และ distribution ยังไม่เลือก |
 | O13 | เกมเงินจริง/Slot | ผู้ใช้ยกslotเป็นmoney sink; ยังไม่มีแบบที่ยืนยัน ห้ามเพิ่ม paid lootbox/convertible premium; เสนอเกมเงินในเกมแฟชั่นภายหลัง |
 | O14 | ขอบเขตเปิดจริง | prototypeไม่ใช่commercial launch; ชื่อเกม ภาษาเปิดตัว จำนวนเนื้อหาและตารางเปิดทดสอบยังไม่ล็อก |
-| O15 | Combat edge cases | สูตรหนี, silenceขอบเขต, debuff tick/expiry, reviveตามเทิร์น, stalemate resolution และ multi-hit ต้องระบุก่อน engine v1 |
+| O15 | Combat edge cases | สูตรหนี, silenceขอบเขต, debuff tick/expiry, reviveตามเทิร์น, stalemate resolution และ multi-hit ต้องระบุก่อน engine v1; **4 ต.ค. 2026 นัทตัดสินส่วนสถานะ:** ทุกสถานะมีโอกาสติด (ไม่ 100% ยกเว้นสกิลที่ระบุ 100%), ไม่มีภูมิคุ้มกันหลังโดนควบคุม, สเตตัสบางค่าที่สูงหักล้างโอกาสติด, ผลเข้าเป้าหักล้างต้านทานแต่ไม่เกินโอกาสของสกิล; ข้อเสนอเวลา/การซ้อน/บอส/ใบ้ ใน `docs/design/SKILL_PRIMITIVES_CATALOG.md` §3.8 นัทดูแล้วตัดแค่ข้อภูมิคุ้มกัน (ใช้เป็น PROVISIONAL); หนี/revive/stalemate/multi-hit/AoE/shield ยัง OPEN |
 
 ## กติกาที่ไม่ใช้ — SUPERSEDED และทางเลือกที่ตัดออก
 
@@ -394,6 +394,7 @@ FinalDamage = BaseDamage * ArmorMultiplier * ElementMultiplier
 Heal = (Support*SkillCoefficient+Flat) * HealingPowerMultiplier * HealingReceivedMultiplier
 EffectChance = clamp(BaseEffectChance*(1+EffectHit-EffectResistance),0,1)
 ```
+**4 ต.ค. 2026 นัทแก้:** โอกาสติด = โอกาสของสกิล × (1 − max(0, ต้านทาน − ผลเข้าเป้า)) จึงไม่เกินโอกาสของสกิล; ต้านทานรวมค่าต้านทานผลกับสเตตัสหลักที่ต้านสถานะนั้น; ไม่มีภูมิคุ้มกันหลังโดนควบคุม (แทนบรรทัด hard CC ด้านล่าง)
 EffectHit/Resistanceใช้decimalและมาจากgear/skillsเป็นหลัก ไม่ใส่Statเดียวให้ครบทุกอย่าง
 base60%, hit20%, resist30% ->54%; ต้องhitก่อนถ้าskillระบุ; immunityตรวจแยกและชนะสูตร
 healไม่ชุบ ไม่มีcritในต้นแบบ; overhealทิ้งเว้นspecific conversion; grouphealใช้งบรวมต่างจากsingle

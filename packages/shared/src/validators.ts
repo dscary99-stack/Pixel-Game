@@ -40,6 +40,8 @@ export type ErrorCode =
   | "BATTLE_OVER"
   | "INSUFFICIENT_RESOURCE"
   | "ON_COOLDOWN"
+  /** A silenced unit cannot use skills that cost MP. */
+  | "SILENCED"
   | "AUTO_CAPTURE_FORBIDDEN"
   /** Auto Battle asked again before the server's action cadence allows. */
   | "TOO_FAST"
