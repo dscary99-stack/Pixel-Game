@@ -146,6 +146,22 @@ export const RULES = {
      */
     affixRerollCost: provisional({ coinsBase: 300, coinsPerLevel: 60, materialBase: 2, materialPerTenLevels: 1 } as const, "P12", "coins = 300 + 60 × item level; material = 2 + 1 per 10 item levels"),
     /**
+     * Selling and salvaging gear (chapter 09 sinks, disposal.ts). Sell: (base + perLevel × item level)
+     * × rarity %. Salvage: the pool's reroll material, by rarity, + more per 10 item levels. P12
+     * assumptions (Claude's first pass); a validator keeps craft → sell / salvage below the recipe cost.
+     */
+    gearDisposal: provisional(
+      {
+        sellBase: 4,
+        sellPerLevel: 4,
+        sellRarityPct: { COMMON: 100, UNCOMMON: 150, RARE: 250, EPIC: 400, LEGENDARY: 600 },
+        salvageBase: { COMMON: 1, UNCOMMON: 2, RARE: 3, EPIC: 5, LEGENDARY: 8 },
+        salvagePerTenLevels: 1,
+      } as const,
+      "P12",
+      "sell = (4 + 4 × item level) × rarity %; salvage = reroll material 1/2/3/5 + 1 per 10 item levels",
+    ),
+    /**
      * Daily / Weekly quests (chapter 09, P13). Periods reset at a server-defined UTC hour (21:00 UTC =
      * 04:00 Bangkok), weekly on Monday at that hour. Daily: 8 choices, rewards for up to 4. Weekly:
      * several choices, the main reward once enough are done. Counts and rewards are Claude's first

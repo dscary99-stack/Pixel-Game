@@ -1,5 +1,6 @@
 // End-to-end Phase D check against `wrangler dev`: make a character, rest in town, capture a
-// companion, put it in the team, fight with it, see HP carry over, lose and wake up in town.
+// companion, put it in the team, name it, fight with it, see HP carry over, lose and wake up in town,
+// then take it out of the team and release it.
 // Run `npm run db:migrate:local` and `npm run dev:server` first, then `npm run smoke:character`.
 import { approach, api, autoToEnd, battleCall, connect, lastPacks, run, sleep, toField, type Client, type Msg, AUTO_GAP_MS } from "./smoke-lib";
 
@@ -86,12 +87,14 @@ if (captured !== null) {
   const saved = await http("PUT", "/character/team", { expectedVersion: 1, companionIds: [captured] });
   out.teamSaved = { status: saved.status, team: saved.body.character?.team };
   out.staleTeam = (await http("PUT", "/character/team", { expectedVersion: 1, companionIds: [] })).body.error;
+  out.nickname = (await http("PUT", "/character/companion/nickname", { companionId: captured, nickname: "เจ้าตัวเล็ก" })).body.nickname;
+  out.releaseInTeam = (await http("POST", "/character/companion/release", { operationId: `rel0_${run}`, companionId: captured })).body.error;
 
   // 5. The companion fights next to the character; the team is frozen during the fight (P15).
   const spawn = lastPacks(A).find((p) => p.spawnId === "south_snails") ? "south_snails" : lastPacks(A)[0].spawnId;
   const r = await fightAt(A, spawn, async (battleId) => {
     const view = await battleCall(account, battleId)("GET", "");
-    out.companionInFight = view.state.units.some((u: Msg) => u.instanceId === captured);
+    out.companionInFight = view.state.units.find((u: Msg) => u.instanceId === captured)?.name ?? false;
     out.teamDuringFight = (await http("PUT", "/character/team", { expectedVersion: 2, companionIds: [] })).body.error;
   });
   out.withCompanion = r.view.state.status;
@@ -122,6 +125,16 @@ for (const spawnId of ["meadow_foxes", "pond_crabs"]) {
     back.sock.close();
     break;
   }
+}
+// 7. Out of the team, the companion can be released (nothing back); a retry replays.
+if (captured !== null) {
+  const now = (await http("GET", "/character")).body;
+  await http("PUT", "/character/team", { expectedVersion: now.character.version, companionIds: [] });
+  const rel = { operationId: `rel1_${run}`, companionId: captured };
+  const released = await http("POST", "/character/companion/release", rel);
+  out.released = { status: released.status, replayed: (await http("POST", "/character/companion/release", rel)).body.replayed };
+  out.companionsAfterRelease = (await http("GET", "/character")).body.companions.length;
+  if (released.status !== 200) throw new Error(`release failed: ${JSON.stringify(released.body)}`);
 }
 A.sock.close();
 console.log(JSON.stringify(out, null, 1));

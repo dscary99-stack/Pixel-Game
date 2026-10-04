@@ -1,6 +1,8 @@
 // End-to-end town services against `wrangler dev`: install a Sigil, remove it for coins in town,
-// sell to and buy from the NPC, reroll an affix, craft gear, fill an NPC order, and the same requests refused in the field.
+// sell to and buy from the NPC, reroll an affix, craft gear, fill an NPC order, sell / salvage gear (a locked piece refused),
+// name a companion and try to release a team member, and the same requests refused in the field.
 // Run `npm run db:migrate:local` and `npm run dev:server` first, then `npm run smoke:town`.
+import { PRODUCTION_RULES, disposeQuote, exampleContentMaps } from "@pmrpg/shared";
 import { api, connect, run, sleep, toField, type Msg } from "./smoke-lib";
 
 const account = `acct:t${run}`;
@@ -81,6 +83,32 @@ const orderView = (await http("GET", "/town/orders")).body;
 out.order = { status: filled.status, reward: filled.body.result?.reward, replayed: refill.body.replayed, left: orderView.orders.find((o: Msg) => o.order.id === "order:shell_roof")?.left };
 if (filled.status !== 200 || refill.body.replayed !== true) throw new Error(`order fill failed: ${JSON.stringify(filled.body)}`);
 out.orderNoItems = (await http("POST", "/town/order", { ...orderReq, operationId: `ord2_${run}` })).body.error;
+// Selling / salvaging gear (chapter 09 sinks): a locked piece is refused, then one buckler sells once and the other is salvaged.
+const content = exampleContentMaps();
+const quoteFor = (mode: "sell" | "salvage", ids: string[]) =>
+  disposeQuote(
+    PRODUCTION_RULES,
+    mode,
+    ids.map((id) => {
+      const p = bundle.equipment.find((e: Msg) => e.id === id);
+      const def = content.equipment.get(p.definitionId)!;
+      return { def, pool: content.affixPools.get(def.affixPoolId)!, rarity: p.rarity };
+    }),
+  );
+const sellQ = quoteFor("sell", [madeIds[0]]);
+await http("PUT", "/character/protect", { kind: "equipment", id: madeIds[0], protected: true });
+out.sellLocked = (await http("POST", "/town/gear/dispose", { operationId: `gs0_${run}`, mode: "sell", equipmentIds: [madeIds[0]], expected: sellQ })).body.error;
+await http("PUT", "/character/protect", { kind: "equipment", id: madeIds[0], protected: false });
+const gearSale = { operationId: `gs1_${run}`, mode: "sell", equipmentIds: [madeIds[0]], expected: sellQ };
+const gs = await http("POST", "/town/gear/dispose", gearSale);
+out.gearSold = { paid: gs.body.result?.paid, replayed: (await http("POST", "/town/gear/dispose", gearSale)).body.replayed };
+if (gs.status !== 200) throw new Error(`gear sale failed: ${JSON.stringify(gs.body)}`);
+const salvQ = quoteFor("salvage", [madeIds[1]]);
+const sv = await http("POST", "/town/gear/dispose", { operationId: `gv1_${run}`, mode: "salvage", equipmentIds: [madeIds[1]], expected: salvQ });
+out.salvaged = sv.body.result?.paid;
+if (sv.status !== 200) throw new Error(`salvage failed: ${JSON.stringify(sv.body)}`);
+bundle = (await http("GET", "/character")).body;
+if (bundle.equipment.some((e: Msg) => madeIds.includes(e.id))) throw new Error("disposed pieces still owned");
 T.sock.close();
 await sleep(300);
 
@@ -93,6 +121,7 @@ out.installInField = (await http("POST", "/character/equipment/sigil", { ...inst
 out.craftInField = (await http("POST", "/town/craft", { ...craftReq, operationId: `cr3_${run}`, times: 1, expectedCoins: 120 })).body.error;
 out.orderInField = (await http("POST", "/town/order", { ...orderReq, operationId: `ord3_${run}` })).body.error;
 out.rerollInField = (await http("POST", "/town/affix/reroll", { ...rerollReq, operationId: `rr3_${run}`, expectedAffixes: chosen.body.result?.affixes })).body.error;
+out.disposeInField = (await http("POST", "/town/gear/dispose", { operationId: `gs2_${run}`, mode: "sell", equipmentIds: [sword], expected: { coins: 8, items: [] } })).body.error;
 out.removeInField = (await http("POST", "/character/equipment/sigil/remove", { operationId: `rm2_${run}`, equipmentId: sword, socket: 0, expectedCost: 300 })).body.error;
 F.sock.close();
 

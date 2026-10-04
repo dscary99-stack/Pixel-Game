@@ -18,6 +18,10 @@
  *   PUT  /character/title          show an earned title or none ({ titleId })
  *   GET  /town/orders              this week's NPC orders with fills left (chapter 09)
  *   POST /town/order               fill an NPC order once (operationId, orderId)
+ *   POST /town/gear/dispose        sell or salvage free, unworn, Sigil-free, unprotected pieces in town (operationId, mode, equipmentIds, expected)
+ *   POST /character/companion/release  release a companion for nothing back (operationId, companionId; not in team, not protected)
+ *   PUT  /character/protect        set or clear the protect flag ({ kind: equipment|companion, id, protected })
+ *   PUT  /character/companion/nickname  name a companion or clear it ({ companionId, nickname|null })
  *   GET  /quests                   today's and this week's quest boards with progress (chapter 09)
  *   POST /quests/claim             claim a daily reward or the weekly main reward (periodId, slot)
  *   POST /town/craft               make a recipe 1–10 times (operationId, recipeId, times, expectedCoins)
@@ -65,6 +69,7 @@ import { PartyStore, type PartyResult } from "./party-store";
 import { QuestStore } from "./quest-store";
 import { JournalStore } from "./journal-store";
 import { NpcOrderStore } from "./npc-order-store";
+import { DisposalStore } from "./disposal-store";
 
 export { BattleDurableObject } from "./battle-do";
 export { MapChannelDurableObject } from "./map-do";
@@ -81,6 +86,7 @@ const TOWNS = [...exampleMapRegistry().values()].filter((m) => m.kind === "town"
 const townFor = (env: Env) => new TownServices(env.DB, rulesFor(env), CONTENT, TOWNS);
 const journalFor = (env: Env) => new JournalStore(env.DB, rulesFor(env), CONTENT);
 const ordersFor = (env: Env) => new NpcOrderStore(env.DB, rulesFor(env), exampleNpcOrderRegistry());
+const disposalFor = (env: Env) => new DisposalStore(env.DB, rulesFor(env), { equipment: CONTENT.equipment, affixPools: CONTENT.affixPools }, TOWNS);
 const questsFor = (env: Env) => new QuestStore(env.DB, rulesFor(env), { ...CONTENT, maps: exampleMapRegistry() }, TOWNS);
 
 /** DEV ONLY: dev accounts appear on first use with a starter bag and starter gear; real account creation waits for O11. */
@@ -226,6 +232,26 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
     const r = await ordersFor(env).fill(accountId, body);
     if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
     return json(200, { ...r, coins: await townFor(env).coins(accountId) });
+  }
+  if (request.method === "POST" && url.pathname === "/town/gear/dispose") {
+    const r = await disposalFor(env).disposeGear(accountId, body);
+    if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
+    return json(200, { ...r, coins: await townFor(env).coins(accountId) });
+  }
+  if (request.method === "POST" && url.pathname === "/character/companion/release") {
+    const r = await disposalFor(env).release(accountId, body);
+    if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
+    return json(200, r);
+  }
+  if (request.method === "PUT" && url.pathname === "/character/protect") {
+    const r = await disposalFor(env).protect(accountId, body);
+    if (!r.ok) return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
+    return json(200, r);
+  }
+  if (request.method === "PUT" && url.pathname === "/character/companion/nickname") {
+    const r = await disposalFor(env).nickname(accountId, body);
+    if (!r.ok) return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
+    return json(200, r);
   }
   if (request.method === "PUT" && url.pathname === "/character/title") {
     const r = await journalFor(env).setTitle(accountId, body);

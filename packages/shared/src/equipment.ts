@@ -148,6 +148,8 @@ export interface EquipmentView {
   affixes: RolledAffix[];
   /** A rerolled affix waiting for keep old / keep new (chapter 05 §3), if any. */
   pendingAffix?: { operationId: string; slot: number; affix: RolledAffix };
+  /** Owner-set guard: no sell or salvage touches it. */
+  protected?: boolean;
 }
 
 /** The worn pieces' definitions and the main-hand weapon, for `playerSetup` and the HUD. */

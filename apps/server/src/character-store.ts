@@ -73,6 +73,8 @@ interface InstanceRow {
   lock_state: MonsterInstance["lockState"];
   hp: number | null;
   mp: number | null;
+  nickname?: string | null;
+  protected?: number;
 }
 
 export type StoredInstance = MonsterInstance & { hp: number | null; mp: number | null };
@@ -114,6 +116,7 @@ interface EquipmentRow {
   rarity: EquipmentView["rarity"];
   affixes_json: string;
   affix_pending_json: string | null;
+  protected: number;
 }
 
 export type CreateResult =
@@ -365,7 +368,7 @@ export class CharacterStore {
   async equipment(accountId: string): Promise<EquipmentView[]> {
     const { results } = await this.db
       .prepare(
-        `SELECT e.id, e.definition_id, e.refine_level, e.lock_state, e.sigil_sockets_json, e.rarity, e.affixes_json, e.affix_pending_json, ce.slot
+        `SELECT e.id, e.definition_id, e.refine_level, e.lock_state, e.sigil_sockets_json, e.rarity, e.affixes_json, e.affix_pending_json, e.protected, ce.slot
          FROM equipment_instances e
          LEFT JOIN character_equipment ce ON ce.equipment_instance_id = e.id
          WHERE e.owner_id = ? ORDER BY e.definition_id, e.id`,
@@ -375,6 +378,7 @@ export class CharacterStore {
     return results.map((r) => ({ id: r.id, definitionId: r.definition_id, refineLevel: r.refine_level, lockState: r.lock_state, slot: r.slot, sigils: JSON.parse(r.sigil_sockets_json) as string[], rarity: r.rarity,
       affixes: JSON.parse(r.affixes_json) as EquipmentView["affixes"],
       ...(r.affix_pending_json === null ? {} : { pendingAffix: JSON.parse(r.affix_pending_json) as NonNullable<EquipmentView["pendingAffix"]> }),
+      ...(r.protected === 1 ? { protected: true } : {}),
     }));
   }
 
@@ -500,6 +504,8 @@ function toInstance(r: InstanceRow): StoredInstance {
     originRecord: JSON.parse(r.origin_json) as MonsterInstance["originRecord"],
     ownershipVersion: r.ownership_version,
     lockState: r.lock_state,
+    ...(r.nickname ? { nickname: r.nickname } : {}),
+    ...(r.protected === 1 ? { protected: true } : {}),
     hp: r.hp,
     mp: r.mp,
   };

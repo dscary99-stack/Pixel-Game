@@ -213,7 +213,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
       unitId: `ally:${inst.id}`,
       side: "ally",
       kind: "companion",
-      name: sp.name.th,
+      name: inst.nickname ?? sp.name.th,
       speciesId: sp.id,
       instanceId: inst.id,
       level,

@@ -2,7 +2,7 @@
  * Character and team requests (server mode). The server decides everything; the client shows
  * what it gets back. Identity uses the dev header until O11 picks auth.
  */
-import type { CharacterView, CreateCharacterRequest, EquipSlot, EquipmentView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RolledAffix } from "@pmrpg/shared";
+import type { CharacterView, CreateCharacterRequest, DisposeQuote, EquipSlot, EquipmentView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RolledAffix } from "@pmrpg/shared";
 
 export type StoredCompanion = MonsterInstance & { hp: number | null; mp: number | null };
 
@@ -94,6 +94,23 @@ export class CharacterApi {
 
   buy(shopId: string, lines: { itemId: string; quantity: number }[], expectedTotal: number) {
     return this.call<{ coins: number; result: { total: number } }>("POST", "/town/buy", { operationId: opId("buy"), shopId, lines, expectedTotal });
+  }
+
+  /** Sell or salvage pieces at the price the confirm screen showed. */
+  disposeGear(mode: "sell" | "salvage", equipmentIds: string[], expected: DisposeQuote) {
+    return this.call<{ coins: number; result: { paid: DisposeQuote } }>("POST", "/town/gear/dispose", { operationId: opId(mode), mode, equipmentIds, expected });
+  }
+
+  releaseCompanion(companionId: string) {
+    return this.call<{ result: { companionId: string } }>("POST", "/character/companion/release", { operationId: opId("release"), companionId });
+  }
+
+  protect(kind: "equipment" | "companion", id: string, isProtected: boolean) {
+    return this.call<{ protected: boolean }>("PUT", "/character/protect", { kind, id, protected: isProtected });
+  }
+
+  nickname(companionId: string, nickname: string | null) {
+    return this.call<{ nickname: string | null }>("PUT", "/character/companion/nickname", { companionId, nickname });
   }
 
   orders() {

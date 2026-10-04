@@ -464,6 +464,10 @@ export const MonsterInstanceSchema = z
       .strict(),
     ownershipVersion: z.number().int().min(1),
     lockState: z.enum(["free", "in_battle", "in_escrow"]),
+    /** Cosmetic name the owner picked (disposal.ts); several companions may share one. */
+    nickname: z.string().min(1).optional(),
+    /** Owner-set guard: no release (or future auto action) touches it. */
+    protected: z.boolean().optional(),
   })
   .strict();
 export type MonsterInstance = z.infer<typeof MonsterInstanceSchema>;

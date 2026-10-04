@@ -60,6 +60,8 @@ import {
   sigilFits,
   sigilRemovalCost,
   affixRerollCost,
+  disposeQuote,
+  NICKNAME_MAX,
   wornGear,
   PRODUCTION_RULES,
   type CharacterView,
@@ -407,6 +409,7 @@ export function equipmentPanel(api: CharacterApi, start: CharacterBundle): Promi
             ` · Lv${def.requiredLevel}${def.handedness === "two_hand" ? " · สองมือ" : ""} · ${statLine(def.baseStats)}`,
             el("small", { class: "pm-affix" }, affixLine(piece)),
           );
+        if (piece.protected) text.prepend("🔒 ");
         li.append(text);
         const targets = def === undefined ? [] : def.handedness === "two_hand" ? (["MAIN_HAND"] as const) : SLOT_FOR_CATEGORY[def.category];
         for (const slot of targets) {
@@ -419,11 +422,48 @@ export function equipmentPanel(api: CharacterApi, start: CharacterBundle): Promi
           b.addEventListener("click", () => void send(slot, piece.id));
           li.append(b);
         }
+        if (def !== undefined) li.append(...disposeButtons(piece, def));
         list.append(li);
       }
       body.append(list);
-      body.append(el("div", { class: "pm-note" }, "อุปกรณ์เป็นของตัวอย่าง (EXAMPLE) · อาวุธสองมือจะถอดของมือรองให้ · เปลี่ยนได้นอกไฟต์เท่านั้น"));
+      body.append(
+        el(
+          "div",
+          { class: "pm-note" },
+          "อุปกรณ์เป็นของตัวอย่าง (EXAMPLE) · อาวุธสองมือจะถอดของมือรองให้ · เปลี่ยนได้นอกไฟต์เท่านั้น · ขาย/ย่อยได้ในเมือง เฉพาะชิ้นที่ไม่ได้ใส่ ไม่มี Sigil และไม่ได้ล็อก 🔒",
+        ),
+      );
       drawSigils();
+    };
+
+    /** Lock toggle, sell and salvage for one bag piece; the price is shown before confirming. */
+    const disposeButtons = (piece: EquipmentView, def: EquipmentDefinition): HTMLElement[] => {
+      const lock = el("button", { type: "button", "data-protect": piece.id }, piece.protected ? "ปลดล็อก" : "ล็อก 🔒");
+      lock.title = "ชิ้นที่ล็อกจะขายหรือย่อยไม่ได้";
+      lock.addEventListener("click", () => void service(() => api.protect("equipment", piece.id, !piece.protected)));
+      const pool = affixPools.get(def.affixPoolId);
+      if (pool === undefined) return [lock];
+      const blocked = piece.protected ? "ล็อกอยู่" : piece.sigils.length > 0 ? "ถอด Sigil ออกก่อน" : piece.pendingAffix ? "เลือกออปชันที่สุ่มค้างไว้ก่อน" : piece.lockState !== "free" ? "อยู่ในไฟต์" : null;
+      const one = [{ def, pool, rarity: piece.rarity }];
+      const sale = disposeQuote(RULES, "sell", one);
+      const salvage = disposeQuote(RULES, "salvage", one);
+      const mat = salvage.items.map((i) => `${itemDefs.get(i.itemId)?.name.th ?? i.itemId} ×${i.quantity}`).join(", ");
+      const sell = el("button", { type: "button", "data-sell": piece.id }, `ขาย (+${sale.coins})`);
+      const salv = el("button", { type: "button", "data-salvage": piece.id }, `ย่อย (${mat})`);
+      for (const b of [sell, salv]) {
+        b.disabled = blocked !== null;
+        if (blocked !== null) b.title = blocked;
+      }
+      const name = `${pieceName(piece)} [${RARITY_NAME_TH[piece.rarity]}]${piece.affixes.length ? " " + affixLine(piece) : ""}`;
+      sell.addEventListener("click", () => {
+        if (!window.confirm(`ขาย ${name}\nได้ ${sale.coins} เหรียญ · ชิ้นนี้จะหายไปถาวร\nทำได้ในเมืองเท่านั้น`)) return;
+        void service(() => api.disposeGear("sell", [piece.id], sale));
+      });
+      salv.addEventListener("click", () => {
+        if (!window.confirm(`ย่อย ${name}\nได้ ${mat} · ชิ้นนี้จะหายไปถาวร\nทำได้ในเมืองเท่านั้น`)) return;
+        void service(() => api.disposeGear("salvage", [piece.id], salvage));
+      });
+      return [lock, sell, salv];
     };
 
     const pieceName = (p: EquipmentView) => {
@@ -539,17 +579,18 @@ export function equipmentPanel(api: CharacterApi, start: CharacterBundle): Promi
  * ownership; the hints here only save a round trip. Resolves with the saved character, or null
  * when closed without saving.
  */
-export function teamPanel(api: CharacterApi, bundle: CharacterBundle): Promise<CharacterView | null> {
+export function teamPanel(api: CharacterApi, start: CharacterBundle): Promise<CharacterView | null> {
   return new Promise((resolve) => {
     const { panel, close } = overlay();
     const max = 5;
+    let bundle = start;
+    let busy = false;
     const picked = new Set(bundle.character.team.map((t) => t.instanceId));
     panel.append(el("h2", {}, "ทีมคู่ใจ"));
     const count = el("div", { class: "pm-note" });
     panel.append(count);
     const list = el("ul", { class: "pm-list" });
     panel.append(list);
-    if (bundle.companions.length === 0) list.append(el("li", {}, "ยังไม่มีคู่ใจ ลองจับมอนสเตอร์ในทุ่งด้วยปุ่ม \"จับ\" ระหว่างสู้"));
     const error = el("div", { class: "pm-error", role: "alert" });
 
     const refresh = () => {
@@ -563,37 +604,80 @@ export function teamPanel(api: CharacterApi, bundle: CharacterBundle): Promise<C
       }
     };
 
-    for (const c of bundle.companions) {
-      const sp = species.get(c.speciesId);
-      // What it fights with: effective level (≤ character Lv + gap) and the growth stats there.
-      const prof = sp === undefined ? { level: c.currentLevel, primaryStats: c.primaryStats } : companionCombatProfile(RULES, sp, c, bundle.character.level);
-      const base = deriveStats(prof.level, prof.primaryStats);
-      const maxHp = sp === undefined ? base.maxHp : applyBond(RULES, sp.archetype, c.bond, base).maxHp;
-      const hp = c.hp ?? maxHp;
-      const li = el("li", hp <= 0 ? { class: "ko" } : {});
-      const box = el("input", { type: "checkbox", value: c.id, id: `pm-${c.id}` });
-      box.checked = picked.has(c.id);
-      box.addEventListener("change", () => {
-        if (box.checked) picked.add(c.id);
-        else picked.delete(c.id);
-        refresh();
-      });
-      const dot = el("span", { class: "pm-dot" });
-      dot.style.background = ELEMENT_CSS[c.element];
-      const bar = expProgress(RULES, "companion", c.xp);
-      const exp = bar.need === null ? "EXP สูงสุด" : `EXP ${bar.into.toLocaleString()}/${bar.need.toLocaleString()}`;
-      const label = el("label", { for: `pm-${c.id}` }, `${sp?.name.th ?? c.speciesId}${c.rebirthStage > 0 ? ` ★R${c.rebirthStage}` : ""} · ${ELEMENT_TH[c.element]} · Lv${c.currentLevel}${prof.level < c.currentLevel ? ` (สู้เป็น Lv${prof.level})` : ""} (${exp}) · HP ${hp}/${maxHp}${hp <= 0 ? " (ล้ม พักในเมือง)" : ""} · Bond ${c.bond} ${BOND_TIER_NAMES[bondTier(RULES, c.bond)]} · ${PRIMARY_KEYS.map((k) => `${k} ${prof.primaryStats[k]}`).join(" ")}`);
-      label.style.margin = "0";
-      li.append(box, dot, label);
-      list.append(li);
-    }
+    /** Name, lock or release, then a fresh copy (the ticks the player made stay). */
+    const service = async (call: () => Promise<unknown>) => {
+      if (busy) return;
+      busy = true;
+      error.textContent = "";
+      try {
+        await call();
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+      } finally {
+        bundle = (await api.get().catch(() => null)) ?? bundle;
+        for (const id of [...picked]) if (!bundle.companions.some((c) => c.id === id)) picked.delete(id);
+        busy = false;
+        draw();
+      }
+    };
+
+    const draw = () => {
+      list.replaceChildren();
+      if (bundle.companions.length === 0) list.append(el("li", {}, "ยังไม่มีคู่ใจ ลองจับมอนสเตอร์ในทุ่งด้วยปุ่ม \"จับ\" ระหว่างสู้"));
+      const inTeam = new Set(bundle.character.team.map((t) => t.instanceId));
+      for (const c of bundle.companions) {
+        const sp = species.get(c.speciesId);
+        // What it fights with: effective level (≤ character Lv + gap) and the growth stats there.
+        const prof = sp === undefined ? { level: c.currentLevel, primaryStats: c.primaryStats } : companionCombatProfile(RULES, sp, c, bundle.character.level);
+        const base = deriveStats(prof.level, prof.primaryStats);
+        const maxHp = sp === undefined ? base.maxHp : applyBond(RULES, sp.archetype, c.bond, base).maxHp;
+        const hp = c.hp ?? maxHp;
+        const li = el("li", hp <= 0 ? { class: "ko", "data-companion": c.id } : { "data-companion": c.id });
+        const box = el("input", { type: "checkbox", value: c.id, id: `pm-${c.id}` });
+        box.checked = picked.has(c.id);
+        box.addEventListener("change", () => {
+          if (box.checked) picked.add(c.id);
+          else picked.delete(c.id);
+          refresh();
+        });
+        const dot = el("span", { class: "pm-dot" });
+        dot.style.background = ELEMENT_CSS[c.element];
+        const bar = expProgress(RULES, "companion", c.xp);
+        const exp = bar.need === null ? "EXP สูงสุด" : `EXP ${bar.into.toLocaleString()}/${bar.need.toLocaleString()}`;
+        const name = c.nickname ? `${c.nickname} (${sp?.name.th ?? c.speciesId})` : (sp?.name.th ?? c.speciesId);
+        const label = el("label", { for: `pm-${c.id}`, class: "pm-grow" }, `${c.protected ? "🔒 " : ""}${name}${c.rebirthStage > 0 ? ` ★R${c.rebirthStage}` : ""} · ${ELEMENT_TH[c.element]} · Lv${c.currentLevel}${prof.level < c.currentLevel ? ` (สู้เป็น Lv${prof.level})` : ""} (${exp}) · HP ${hp}/${maxHp}${hp <= 0 ? " (ล้ม พักในเมือง)" : ""} · Bond ${c.bond} ${BOND_TIER_NAMES[bondTier(RULES, c.bond)]} · ${PRIMARY_KEYS.map((k) => `${k} ${prof.primaryStats[k]}`).join(" ")}`);
+        label.style.margin = "0";
+        const rename = el("button", { type: "button", "data-rename": c.id }, "ตั้งชื่อ");
+        rename.addEventListener("click", () => {
+          const next = window.prompt(`ชื่อเล่นของ${sp?.name.th ?? c.speciesId} (ไม่เกิน ${NICKNAME_MAX} ตัวอักษร · เว้นว่างเพื่อลบชื่อ)`, c.nickname ?? "");
+          if (next === null) return;
+          void service(() => api.nickname(c.id, next.trim() === "" ? null : next));
+        });
+        const lock = el("button", { type: "button", "data-protect": c.id }, c.protected ? "ปลดล็อก" : "ล็อก 🔒");
+        lock.title = "คู่ใจที่ล็อกจะปล่อยไม่ได้";
+        lock.addEventListener("click", () => void service(() => api.protect("companion", c.id, !c.protected)));
+        const release = el("button", { type: "button", "data-release": c.id }, "ปล่อย");
+        const why = c.protected ? "ล็อกอยู่" : inTeam.has(c.id) ? "เอาออกจากทีมแล้วบันทึกก่อน" : c.lockState !== "free" ? "อยู่ในไฟต์" : null;
+        release.disabled = why !== null;
+        if (why !== null) release.title = why;
+        release.addEventListener("click", () => {
+          const msg = `ปล่อย ${name} Lv${c.currentLevel} ${ELEMENT_TH[c.element]}${c.rebirthStage > 0 ? ` ★R${c.rebirthStage}` : ""} · Bond ${c.bond}\nคู่ใจตัวนี้จะจากไปถาวร ไม่ได้อะไรคืน\nบันทึกในสมุดสะสม (เคยจับ/เคยชนะ) ยังอยู่`;
+          if (!window.confirm(msg)) return;
+          void service(() => api.releaseCompanion(c.id));
+        });
+        li.append(box, dot, label, rename, lock, release);
+        list.append(li);
+      }
+      refresh();
+    };
     panel.append(error);
+    panel.append(el("div", { class: "pm-note" }, "ชื่อเล่นซ้ำกันได้ · ปล่อยได้เฉพาะตัวที่ไม่อยู่ในทีม ไม่ได้ล็อก และไม่ได้อยู่ในไฟต์"));
     const actions = el("div", { class: "pm-actions" });
     const cancel = el("button", { type: "button" }, "ปิด");
     const save = el("button", { type: "button", class: "primary" }, "บันทึกทีม");
     actions.append(cancel, save);
     panel.append(actions);
-    refresh();
+    draw();
 
     cancel.addEventListener("click", () => {
       close();
