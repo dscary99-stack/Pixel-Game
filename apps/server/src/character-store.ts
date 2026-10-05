@@ -2,7 +2,8 @@
  * Characters and teams in D1 (migration 0005). The server owns every value here: the client asks
  * to create a character or set a team, and gets the stored result back.
  *
- * - create: idempotent on operationId; one character per account until O10 is decided.
+ * - create: idempotent on operationId; one character per account until O10 is decided. The secret
+ *   quest set (secret-quest-store.ts) is rolled before the batch and stored in it, insert-if-absent.
  * - setTeam: optimistic version check, ownership and C04 (≤5, no duplicate species) checked inside
  *   the same batch, refused while a fight holds the account's reservation (P15: change outside fights).
  * - rest: town rest restores HP/MP for free (chapter 03 §3), never during a fight.
@@ -37,6 +38,7 @@ import {
   type TeamSlot,
 } from "@pmrpg/shared";
 import { hashJson, type SqlBound, type SqlDb } from "./reward-ledger";
+import type { SecretQuestStore } from "./secret-quest-store";
 
 interface CharacterRow {
   id: string;
@@ -136,6 +138,8 @@ export class CharacterStore {
     private readonly rules: RulesConfig,
     private readonly content: StoreContent,
     private readonly now: () => string = () => new Date().toISOString(),
+    /** Rolls and stores the secret quests at creation. Left out (some tests), they are rolled on first read. */
+    private readonly secretQuests?: SecretQuestStore,
   ) {}
 
   static async idFor(accountId: string, operationId: string): Promise<string> {
@@ -155,6 +159,10 @@ export class CharacterStore {
     const mine = `EXISTS (SELECT 1 FROM characters WHERE id = ? AND account_id = ? AND created_operation_id = ?)`;
     const mineArgs = [id, accountId, req.operationId];
     const kit = `starter:${id}`;
+    // Rolled from this request's name; stored only if this request's character row (with that name)
+    // is the one in the table, and never over an existing set, so a replay or a race cannot reroll.
+    // No server key outside dev throws here: creation fails rather than roll with a default key.
+    const secret = this.secretQuests === undefined ? null : await this.secretQuests.roll(accountId, { name: req.name, element: req.element, raceId: req.raceId });
     await this.db.batch([
       this.db.prepare(`INSERT INTO accounts (id, created_at) VALUES (?, ?) ON CONFLICT DO NOTHING`).bind(accountId, at),
       this.db
@@ -185,6 +193,9 @@ export class CharacterStore {
           )
           .bind(`eq:${kit}:${i}`, d, accountId, `${kit}:${i}`, at, ...mineArgs),
       ),
+      ...(secret === null || this.secretQuests === undefined
+        ? []
+        : [this.secretQuests.insert(id, accountId, secret, { sql: `EXISTS (SELECT 1 FROM characters WHERE id = ? AND account_id = ? AND created_operation_id = ? AND name = ?)`, args: [...mineArgs, req.name] })]),
     ]);
     const row = await this.row(accountId);
     if (row === null) throw new Error("character insert vanished");

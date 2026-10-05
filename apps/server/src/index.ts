@@ -10,6 +10,8 @@
  *   GET  /dev/inventory?battle=ID  (dev only) the caller's D1 item balances and that battle's reservation
  *   POST /dev/reconcile            (dev only) run the reconciler now, ignoring reservation age
  *   GET  /character                the caller's character, team and owned companions (404 NO_CHARACTER)
+ *   GET  /character/secret-quests  { locked: true } until the set is unlocked (no count, no hints)
+ *   POST /dev/secret-quests/reveal (dev only) reveal the caller's secret quests and return them
  *   POST /character                create the character (idempotent on operationId; one per account)
  *   GET  /party, POST /party, POST /party/join {partyId}, POST /party/leave   party (P02)
  *   POST /town/affix/reroll        roll one gear affix again for coins + material (operationId, equipmentId, slot, expectedAffixes, expectedCost)
@@ -52,6 +54,7 @@ import {
   exampleRecipeRegistry,
   exampleNpcOrderRegistry,
   exampleMapRegistry,
+  EXAMPLE_SECRET_QUEST_TEMPLATES,
   RaritySchema,
   RolledAffixSchema,
   type BattleSetup,
@@ -70,6 +73,7 @@ import { QuestStore } from "./quest-store";
 import { JournalStore } from "./journal-store";
 import { NpcOrderStore } from "./npc-order-store";
 import { DisposalStore } from "./disposal-store";
+import { SecretQuestStore, secretQuestKey } from "./secret-quest-store";
 
 export { BattleDurableObject } from "./battle-do";
 export { MapChannelDurableObject } from "./map-do";
@@ -81,7 +85,9 @@ const RESERVATION_STALE_MS = 2 * 60_000;
 const rulesFor = (env: Env) => (env.ENVIRONMENT === "dev" ? DEV_FIXTURE_RULES : PRODUCTION_RULES);
 const economyFor = (env: Env) => new Economy(env.DB, rulesFor(env));
 const CONTENT = { ...exampleContentMaps(), shops: exampleShopRegistry(), recipes: exampleRecipeRegistry() };
-const charactersFor = (env: Env) => new CharacterStore(env.DB, rulesFor(env), CONTENT);
+const secretQuestsFor = (env: Env) =>
+  new SecretQuestStore(env.DB, rulesFor(env), EXAMPLE_SECRET_QUEST_TEMPLATES, { ...CONTENT, maps: exampleMapRegistry() }, secretQuestKey(env));
+const charactersFor = (env: Env) => new CharacterStore(env.DB, rulesFor(env), CONTENT, undefined, secretQuestsFor(env));
 const TOWNS = [...exampleMapRegistry().values()].filter((m) => m.kind === "town").map((m) => m.id);
 const townFor = (env: Env) => new TownServices(env.DB, rulesFor(env), CONTENT, TOWNS);
 const journalFor = (env: Env) => new JournalStore(env.DB, rulesFor(env), CONTENT);
@@ -217,6 +223,10 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
       bag: await economyFor(env).balances(accountId),
     });
   }
+  if (request.method === "GET" && url.pathname === "/character/secret-quests") {
+    const view = await secretQuestsFor(env).view(accountId);
+    return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
+  }
   if (request.method === "GET" && url.pathname === "/journal") {
     const view = await journalFor(env).view(accountId);
     return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
@@ -317,6 +327,11 @@ async function devRoute(request: Request, env: Env, url: URL): Promise<Response>
     return json(200, { balances, reservation });
   }
   if (request.method === "POST" && url.pathname === "/dev/reconcile") return json(200, await reconcile(env, 0));
+  // DEV ONLY: stands in for the Lv200 awakening quest (not built) so the set can be checked.
+  if (request.method === "POST" && url.pathname === "/dev/secret-quests/reveal") {
+    const view = await secretQuestsFor(env).devReveal(accountId);
+    return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
+  }
   // DEV ONLY: a piece with set affixes, plus coins and items, so smokes can test rerolls.
   if (request.method === "POST" && url.pathname === "/dev/grant") {
     const parsed = DevGrantSchema.safeParse(await readJson(request));

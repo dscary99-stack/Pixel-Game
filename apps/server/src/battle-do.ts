@@ -21,6 +21,8 @@ export interface Env {
   ENVIRONMENT: Environment;
   /** "true" only in local dev: lets x-dev-account stand in for auth (O11 auth provider not chosen). */
   DEV_AUTH?: string;
+  /** Worker secret: HMAC key for secret quest seeds. Required outside dev (`wrangler secret put SECRET_QUEST_KEY`). */
+  SECRET_QUEST_KEY?: string;
 }
 
 class DoStorage implements RoomStorage {

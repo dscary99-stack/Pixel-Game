@@ -36,3 +36,5 @@ export * from "./journal";
 export * from "./npc-order";
 export * from "./disposal";
 export * from "./elite";
+export * from "./secret-quests";
+export * from "./content/secret-quests";

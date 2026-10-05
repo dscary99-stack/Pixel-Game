@@ -1,6 +1,6 @@
-// End-to-end Phase D check against `wrangler dev`: make a character, rest in town, capture a
-// companion, put it in the team, name it, fight with it, see HP carry over, lose and wake up in town,
-// then take it out of the team and release it.
+// End-to-end Phase D check against `wrangler dev`: make a character (its secret quests stay locked
+// until the dev reveal), rest in town, capture a companion, put it in the team, name it, fight with
+// it, see HP carry over, lose and wake up in town, then take it out of the team and release it.
 // Run `npm run db:migrate:local` and `npm run dev:server` first, then `npm run smoke:character`.
 import { approach, api, autoToEnd, battleCall, connect, lastPacks, run, sleep, toField, type Client, type Msg, AUTO_GAP_MS } from "./smoke-lib";
 
@@ -21,6 +21,18 @@ const again = await http("POST", "/character", create);
 out.created = { status: made.status, name: made.body.character.name, level: made.body.character.level, stats: made.body.character.primaryStats };
 out.retrySameCharacter = again.body.character.id === made.body.character.id;
 out.secondCharacter = (await http("POST", "/character", { ...create, operationId: `op_${run}_2` })).body.error;
+
+// 1b. Secret quests: rolled at creation, locked with nothing else in the answer; the dev reveal shows the set.
+const locked = await http("GET", "/character/secret-quests");
+if (locked.status !== 200 || JSON.stringify(locked.body) !== JSON.stringify({ locked: true })) throw new Error(`secret quests leak while locked: ${JSON.stringify(locked.body)}`);
+if (/sqt?:/.test(JSON.stringify((await http("GET", "/character")).body))) throw new Error("character bundle carries secret quest data");
+const revealed = await http("POST", "/dev/secret-quests/reveal");
+const kinds = (revealed.body.quests ?? []).map((q: Msg) => q.kind);
+if (revealed.body.locked !== false || kinds[0] !== "element" || kinds[1] !== "race" || !kinds.slice(2).every((k: string) => k === "personal") || kinds.length < 3)
+  throw new Error(`dev reveal: ${JSON.stringify(revealed.body)}`);
+const again2 = await http("POST", "/dev/secret-quests/reveal");
+if (JSON.stringify(again2.body) !== JSON.stringify(revealed.body)) throw new Error("secret quests changed between reads");
+out.secretQuests = { locked: locked.body, revealed: kinds, first: `${revealed.body.quests[0].templateId} ${JSON.stringify(revealed.body.quests[0].params)}` };
 
 // 2. Town is a rest point.
 const T = await connect(account, "map:dawn_town");

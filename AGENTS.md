@@ -29,7 +29,7 @@ npm run dev:server     # wrangler dev :8787; เปิด client ด้วย ?s
 npm run smoke:server   # end-to-end ไฟต์ กับ wrangler dev ที่รันอยู่
 npm run smoke:world    # end-to-end การเดิน 2 ผู้เล่น (WebSocket) กับ wrangler dev ที่รันอยู่
 npm run smoke:encounter # end-to-end เดินเข้าทุ่ง → สู้ฝูง → กลับที่เดิม (ไฟต์ส่วนตัว O05) → ฝูง Elite โชว์ความสามารถตรงกับในไฟต์ → สมุดบันทึกมีแผนที่/ชนิดที่พบ กับ wrangler dev
-npm run smoke:character # end-to-end สร้างตัวละคร → จับคู่ใจ → จัดทีม → ตั้งชื่อเล่น → HP ติดตัว → แพ้กลับเมืองพัก → ปล่อยคู่ใจ กับ wrangler dev
+npm run smoke:character # end-to-end สร้างตัวละคร → เควสลับล็อก (`{locked:true}` ไม่มีข้อมูลอื่น) → dev เปิดดูได้ชุดเควส → จับคู่ใจ → จัดทีม → ตั้งชื่อเล่น → HP ติดตัว → แพ้กลับเมืองพัก → ปล่อยคู่ใจ กับ wrangler dev
 npm run smoke:equipment # end-to-end ของเริ่มต้น (ธรรมดา ไม่มีออปชัน) → ใส่/ถอด → stat ในไฟต์ → ล็อกระหว่างไฟต์ กับ wrangler dev
 npm run smoke:town     # end-to-end ใส่/ถอด Sigil (เสียเหรียญ ในเมือง) → ขาย/ซื้อของกับ NPC → สุ่มออปชันใหม่แล้วเลือก → สร้างโล่จากวัตถุดิบ (ความชำนาญเพิ่ม) → ส่งของงานสั่ง NPC → ล็อก/ขาย/ย่อยอุปกรณ์ → ในทุ่งถูกปฏิเสธ กับ wrangler dev
 npm run smoke:progression # end-to-end ไฟต์ได้ EXP (ตัวละคร+คู่ใจ) → เลเวลอัป → ลงแต้มสเตตัส กับ wrangler dev

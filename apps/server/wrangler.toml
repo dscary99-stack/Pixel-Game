@@ -30,7 +30,8 @@ database_name = "pixel-monster-rpg-dev"
 database_id = "00000000-0000-0000-0000-000000000000"
 migrations_dir = "migrations"
 
-# Staging/production must override ENVIRONMENT and remove DEV_AUTH.
+# Staging/production must override ENVIRONMENT and remove DEV_AUTH, and set the secret quest seed key:
+# `wrangler secret put SECRET_QUEST_KEY` (character creation fails without it; dev uses a fixed key).
 [env.staging.vars]
 ENVIRONMENT = "staging"
 
