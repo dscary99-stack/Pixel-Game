@@ -1,8 +1,8 @@
 /**
  * EXAMPLE equipment (chapter 05). Starter pieces and a few species drops, enough to prove the
  * 12-slot loadout, two-hand rules and gear stats in battle. Names, numbers and slots are drafts,
- * not an item catalog. Each piece names an affix pool by type of gear (chapter 05 §3); there is no
- * refining yet.
+ * not an item catalog. Each piece names an affix pool by type of gear (chapter 05 §3) and the base
+ * stats refining raises.
  */
 import type { AffixPool, EquipmentDefinition } from "../schemas";
 
@@ -37,6 +37,9 @@ function poolFor(category: EquipmentDefinition["category"], extra: Extra): strin
   return "affix:defense";
 }
 
+/** EXAMPLE: base stats refining raises (attack, support, defence, HP); never %, crit or speed. */
+const REFINABLE = new Set(["PATK", "MATK", "SUPPORT", "PDEF", "MDEF", "HP"]);
+
 function equip(
   id: EquipmentDefinition["id"],
   th: string,
@@ -47,7 +50,22 @@ function equip(
   extra: Extra = {},
 ): EquipmentDefinition {
   const slug = id.slice("equip:".length);
-  return { id, ...meta, name: { th }, category, requiredLevel, baseStats, maxSigilSlots, affixPoolId: poolFor(category, extra), visualSetId: `visual:${slug}`, ...extra };
+  // Refining (refine.ts): the cost level is the required level for now; flat power stats refine.
+  const refinableStats = Object.keys(baseStats).filter((k) => REFINABLE.has(k));
+  return {
+    id,
+    ...meta,
+    name: { th },
+    category,
+    requiredLevel,
+    baseStats,
+    maxSigilSlots,
+    affixPoolId: poolFor(category, extra),
+    visualSetId: `visual:${slug}`,
+    upgradeCostLevel: requiredLevel,
+    refinableStats,
+    ...extra,
+  };
 }
 
 export const EXAMPLE_EQUIPMENT: EquipmentDefinition[] = [

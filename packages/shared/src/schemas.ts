@@ -577,9 +577,21 @@ export const EquipmentDefinitionSchema = z
     maxSigilSlots: z.number().int().min(0),
     affixPoolId: z.string().min(1),
     visualSetId: z.string().min(1),
+    /**
+     * Refining (refine.ts): the fixed cost level that prices refining this piece (server data, never
+     * the owner's level or a reduced requirement), and which base stats refining raises. A piece
+     * without refinable stats cannot be refined.
+     */
+    upgradeCostLevel: z.number().int().min(1).max(C.playerMaxLevel.value).optional(),
+    refinableStats: z.array(z.string()).optional(),
   })
   .strict()
   .superRefine((d, ctx) => {
+    if (d.refinableStats !== undefined && d.refinableStats.length > 0) {
+      if (d.upgradeCostLevel === undefined) ctx.addIssue({ code: "custom", message: "refinable gear needs upgradeCostLevel" });
+      for (const k of d.refinableStats) if (!(k in d.baseStats)) ctx.addIssue({ code: "custom", message: `refinable stat ${k} is not a base stat` });
+      if (new Set(d.refinableStats).size !== d.refinableStats.length) ctx.addIssue({ code: "custom", message: "a refinable stat is listed twice" });
+    }
     const isWeapon = d.category === "WEAPON";
     const cap = isWeapon ? C.maxSigilsPerWeapon.value : C.maxSigilsPerNonWeapon.value;
     if (d.maxSigilSlots > cap) {

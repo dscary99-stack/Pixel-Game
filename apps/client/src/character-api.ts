@@ -2,7 +2,7 @@
  * Character and team requests (server mode). The server decides everything; the client shows
  * what it gets back. Identity uses the dev header until O11 picks auth.
  */
-import type { CharacterView, CreateCharacterRequest, DisposeQuote, EquipSlot, EquipmentView, FrontierView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RolledAffix, SecretQuestView } from "@pmrpg/shared";
+import type { CharacterView, CreateCharacterRequest, DisposeQuote, EquipSlot, EquipmentView, FrontierView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RefineResult, RolledAffix, SecretQuestView } from "@pmrpg/shared";
 
 export type StoredCompanion = MonsterInstance & { hp: number | null; mp: number | null };
 
@@ -79,6 +79,18 @@ export class CharacterApi {
 
   chooseAffix(equipmentId: string, rerollOperationId: string, keep: "old" | "new") {
     return this.call<{ coins: number }>("POST", "/character/equipment/affix/choose", { operationId: opId("affix"), equipmentId, rerollOperationId, keep });
+  }
+
+  /** One refine attempt at the level, version and cost shown; `wardItemId` only when the player ticked it. */
+  refine(equipmentId: string, expectedLevel: number, expectedVersion: number, wardItemId: string | null, expectedCost: { coins: number; stoneItemId: string; stones: number }) {
+    return this.call<{ coins: number; result: RefineResult; equipment: EquipmentView[] }>("POST", "/town/refine", {
+      operationId: opId("refine"),
+      equipmentId,
+      expectedLevel,
+      expectedVersion,
+      wardItemId,
+      expectedCost,
+    });
   }
 
   /** Make a recipe 1–10 times at the coins shown. */

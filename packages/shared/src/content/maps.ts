@@ -41,7 +41,7 @@ export const EXAMPLE_MAPS: MapDefinition[] = [
     npcs: [
       { id: "npc:elder_pim", at: { x: 8, y: 9 }, name: { th: "ผู้ใหญ่พิมพ์" }, role: { th: "จุดเกิดและพักฟื้น" }, services: ["talk"], line: { th: "พักให้หายเหนื่อยก่อนนะหลาน สมัยข้ายังผูกตรา กวางรุ่งอรุณเคยมาดื่มน้ำที่บ่อนี้ทุกเช้า" } },
       { id: "npc:aunt_bua", at: { x: 5, y: 9 }, name: { th: "ป้าบัว" }, role: { th: "ร้านของใช้ รับซื้อของ" }, services: ["shop"], line: { th: "ยาสดใหม่จากสายไหมจ้ะ ข่าวจากเมืองไหนก็ถามป้าได้" } },
-      { id: "npc:uncle_lek", at: { x: 10, y: 5 }, name: { th: "ลุงเหล็ก" }, role: { th: "ช่างอาวุธและเกราะ" }, services: ["craft", "equipment"], line: { th: "ผลึกแปลกๆ ที่ข้าเจอเมื่อสิบปีก่อน มันเรืองแสงตอนรอยแยกเปิด" } },
+      { id: "npc:uncle_lek", at: { x: 10, y: 5 }, name: { th: "ลุงเหล็ก" }, role: { th: "ช่างอาวุธและเกราะ ตีบวก" }, services: ["refine", "craft", "equipment"], line: { th: "ผลึกแปลกๆ ที่ข้าเจอเมื่อสิบปีก่อน มันเรืองแสงตอนรอยแยกเปิด" } },
       { id: "npc:pi_kaew", at: { x: 15, y: 5 }, name: { th: "พี่แก้ว" }, role: { th: "ช่างเครื่องประดับ สุ่มออปชัน" }, services: ["equipment", "craft"], line: { th: "สักวันฉันจะไปเรียนที่เฮลิออสให้ได้ อย่าบอกพ่อนะ" } },
       { id: "npc:ta_sai", at: { x: 2, y: 9 }, name: { th: "ตาสาย" }, role: { th: "รับซื้อ แยกชิ้นส่วน" }, services: ["equipment", "shop"], line: { th: "ของทุกชิ้นมีค่าถ้ารู้จักแยก ข้าเรียนรู้เรื่องนี้มาแบบเจ็บตัว" } },
       { id: "npc:nong_min", at: { x: 21, y: 3 }, name: { th: "น้องมินทร์" }, role: { th: "กระดานเควสรายวัน/สัปดาห์" }, services: ["quests"], line: { th: "หอผู้ผูกตราฝากงานมาเพียบเลยค่ะ เลือกเอาที่ชอบได้เลย" } },

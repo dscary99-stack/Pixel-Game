@@ -6,6 +6,7 @@
  */
 import type { z } from "zod";
 import { EXAMPLE_AFFIX_POOLS, EXAMPLE_EQUIPMENT } from "./equipment";
+import { EXAMPLE_REFINE_ITEMS } from "./refine";
 import { PassiveSchema, type PassiveTriggerSchema } from "../schemas";
 import type {
   BossDefinition,
@@ -246,6 +247,8 @@ export const EXAMPLE_ITEMS: ItemDefinition[] = [
   { id: "item:river_pebble", ...meta, name: { th: "กรวดริมน้ำ" }, kind: "material", vendorPrice: 1 },
   // Tower guardians' rare material (frontier.ts, EXAMPLE).
   { id: "item:rift_core", ...meta, name: { th: "แกนรอยแยก" }, kind: "material", vendorPrice: 120 },
+  // Refining: stones, wards and ward materials (content/refine.ts).
+  ...EXAMPLE_REFINE_ITEMS,
 ];
 
 const SPECIES_GEAR = {

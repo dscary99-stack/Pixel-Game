@@ -15,6 +15,7 @@ import { z } from "zod";
 import { OperationIdSchema } from "./character";
 import { ItemId, type EquipmentDefinition, type ItemDefinition, type LootTable, type SpeciesDefinition } from "./schemas";
 import type { ShopDefinition } from "./shop";
+import { EXAMPLE_WARD_RECIPES } from "./content/refine";
 
 const meta = { version: 1, status: "draft", example: true } as const;
 
@@ -44,7 +45,7 @@ export const RecipeSchema = z
     example: z.boolean(),
     name: z.object({ th: z.string().min(1), en: z.string().min(1).optional() }).strict(),
     profession: ProfessionSchema,
-    inputs: z.array(z.object({ itemId: ItemId, quantity: z.number().int().min(1).max(99) }).strict()).min(1).max(6),
+    inputs: z.array(z.object({ itemId: ItemId, quantity: z.number().int().min(1).max(999) }).strict()).min(1).max(6),
     coins: z.number().int().min(0),
     output: z.discriminatedUnion("kind", [
       z.object({ kind: z.literal("item"), itemId: ItemId, quantity: z.number().int().min(1).max(99) }).strict(),
@@ -162,7 +163,8 @@ export const EXAMPLE_RECIPES: Recipe[] = [
   recipe("recipe:bell_feather_cap", "หมวกขนนกกระดิ่ง", "armorsmith", [["item:bell_feather", 6], ["item:river_pebble", 2]], 90, { kind: "equipment", definitionId: "equip:bell_feather_cap" }, 0, 5, 40),
   recipe("recipe:small_potion", "ยาเล็ก ×2", "alchemist", [["item:mole_fur", 2], ["item:bell_feather", 1]], 5, { kind: "item", itemId: "item:small_potion", quantity: 2 }, 0, 2, 30),
   recipe("recipe:armor_crab_capture", "เครื่องจับปูเกราะ", "tamer", [["item:crab_shell", 3], ["item:river_pebble", 2]], 20, { kind: "item", itemId: "item:armor_crab_capture", quantity: 1 }, 0, 3, 40),
-  recipe("recipe:ember_fox_capture", "เครื่องจับจิ้งจอกสะเก็ด", "tamer", [["item:fox_tail_ash", 3], ["item:river_pebble", 2]], 30, { kind: "item", itemId: "item:ember_fox_capture", quantity: 1 }, 10, 3, 60),
+  recipe("recipe:ember_fox_capture", "เครื่องจับจิ้งจอกสะเก็ด", "tamer", [["item:fox_tail_ash", 3], ["item:river_pebble", 2]], 30, { kind: "item", itemId: "item:ember_fox_capture", quantity: 1 }, 10, 3, 60),  // Refine wards (content/refine.ts): coins + monster materials, one per tier and target.
+  ...EXAMPLE_WARD_RECIPES,
 ];
 
 function recipe(

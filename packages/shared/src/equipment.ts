@@ -4,11 +4,11 @@
  * class rules open, so any class may hold two one-hand weapons for now).
  *
  * Gear changes happen outside fights (P15). Gear adds its base stats plus its rolled affixes
- * (`GearBonuses`, affix.ts); refining is later work.
+ * (`GearBonuses`, affix.ts); a refined piece adds more of its refinable base stats (refine.ts).
  */
 import { z } from "zod";
 import { EquipSlotSchema, type EquipSlot, type EquipmentDefinition, type EquipmentInstance, type Rarity, type RolledAffix, type SigilDefinition } from "./schemas";
-import type { RulesConfig } from "./rules";
+import { PRODUCTION_RULES, type RulesConfig } from "./rules";
 import type { GearBonuses } from "./stats";
 import type { Range } from "./battle/types";
 import { SLOT_FOR_CATEGORY, validateLoadout, type ValidationIssue } from "./validators";
@@ -150,6 +150,23 @@ export interface EquipmentView {
   pendingAffix?: { operationId: string; slot: number; affix: RolledAffix };
   /** Owner-set guard: no sell or salvage touches it. */
   protected?: boolean;
+  /** Bumped by every refine attempt; a refine request names the version it saw. */
+  version?: number;
+}
+
+/** Base stats after refining: +pct% of each refinable stat per level, rounded half up, not compounded. */
+export function refinedBaseStats(def: EquipmentDefinition, level: number, rules: RulesConfig = PRODUCTION_RULES): Record<string, number> {
+  if (level <= 0) return def.baseStats;
+  const pct = rules.provisional.refineStatPctPerLevel.value;
+  const refinable = new Set(def.refinableStats ?? []);
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(def.baseStats)) out[k] = refinable.has(k) && v > 0 ? v + Math.floor((v * pct * level + 50) / 100) : v;
+  return out;
+}
+
+/** The definition as a refined piece fights with it. */
+export function refinedDefinition(def: EquipmentDefinition, level: number, rules: RulesConfig = PRODUCTION_RULES): EquipmentDefinition {
+  return level <= 0 ? def : { ...def, baseStats: refinedBaseStats(def, level, rules) };
 }
 
 /** The worn pieces' definitions and the main-hand weapon, for `playerSetup` and the HUD. */
@@ -159,9 +176,14 @@ export function wornGear(
 ): { defs: EquipmentDefinition[]; mainHand?: EquipmentDefinition; sigilIds: string[]; affixes: RolledAffix[] } {
   const worn = owned.filter((e) => e.slot !== null);
   const main = worn.find((e) => e.slot === "MAIN_HAND");
-  const mainHand = main === undefined ? undefined : defs.get(main.definitionId);
+  const mainDef = main === undefined ? undefined : defs.get(main.definitionId);
+  const mainHand = mainDef === undefined ? undefined : refinedDefinition(mainDef, main!.refineLevel);
   return {
-    defs: worn.map((e) => defs.get(e.definitionId)).filter((d): d is EquipmentDefinition => d !== undefined),
+    // Refined pieces fight with their refined base stats.
+    defs: worn.flatMap((e) => {
+      const d = defs.get(e.definitionId);
+      return d === undefined ? [] : [refinedDefinition(d, e.refineLevel)];
+    }),
     // Every Sigil in the worn pieces, one entry per copy: their effects go into fights.
     sigilIds: worn.flatMap((e) => e.sigils),
     affixes: worn.flatMap((e) => e.affixes),

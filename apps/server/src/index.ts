@@ -30,6 +30,8 @@
  *   GET  /quests                   today's and this week's quest boards with progress (chapter 09)
  *   POST /quests/claim             claim a daily reward or the weekly main reward (periodId, slot)
  *   POST /town/craft               make a recipe 1–10 times (operationId, recipeId, times, expectedCoins)
+ *   POST /town/refine              one refine attempt (operationId, equipmentId, expectedLevel, expectedVersion, wardItemId|null, expectedCost)
+ *   GET  /town/refine/receipt?operationId=  the stored receipt of one attempt (roll, outcome, paid)
  *   POST /town/buy                 buy from a town shop at the shown total (operationId, shopId, lines, expectedTotal)
  *   POST /town/rebirth             companion Rebirth at the town NPC (operationId, companionId, expectedStage)
  *   POST /town/rebirth/branch      switch a reached Rebirth stage's variant branch for coins (operationId, companionId, stage, expectedBranch, branch, expectedCost)
@@ -87,6 +89,7 @@ import { DisposalStore } from "./disposal-store";
 import { SecretQuestStore, secretQuestKey } from "./secret-quest-store";
 import { SecretProgressStore } from "./secret-progress-store";
 import { FrontierStore, type FrontierBattlePort } from "./frontier-store";
+import { RefineStore } from "./refine-store";
 
 export { BattleDurableObject } from "./battle-do";
 export { MapChannelDurableObject } from "./map-do";
@@ -106,6 +109,7 @@ const secretProgressFor = (env: Env) =>
 const charactersFor = (env: Env) => new CharacterStore(env.DB, rulesFor(env), CONTENT, undefined, secretQuestsFor(env));
 const TOWNS = [...exampleMapRegistry().values()].filter((m) => m.kind === "town").map((m) => m.id);
 const townFor = (env: Env) => new TownServices(env.DB, rulesFor(env), CONTENT, TOWNS);
+const refineFor = (env: Env) => new RefineStore(env.DB, rulesFor(env), { equipment: CONTENT.equipment, items: CONTENT.items }, TOWNS);
 const journalFor = (env: Env) => new JournalStore(env.DB, rulesFor(env), CONTENT);
 const ordersFor = (env: Env) => new NpcOrderStore(env.DB, rulesFor(env), exampleNpcOrderRegistry());
 const disposalFor = (env: Env) => new DisposalStore(env.DB, rulesFor(env), { equipment: CONTENT.equipment, affixPools: CONTENT.affixPools }, TOWNS);
@@ -284,6 +288,10 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
     return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
   }
   if (request.method === "GET" && url.pathname === "/town/orders") return json(200, await ordersFor(env).view(accountId));
+  if (request.method === "GET" && url.pathname === "/town/refine/receipt") {
+    const r = await refineFor(env).receipt(accountId, url.searchParams.get("operationId") ?? "");
+    return r === null ? json(404, { error: "NOT_FOUND" }) : json(200, r);
+  }
   if (request.method === "GET" && url.pathname === "/quests") {
     const view = await questsFor(env).view(accountId);
     return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
@@ -300,6 +308,11 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
     const r = await ordersFor(env).fill(accountId, body);
     if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
     return json(200, { ...r, coins: await townFor(env).coins(accountId) });
+  }
+  if (request.method === "POST" && url.pathname === "/town/refine") {
+    const r = await refineFor(env).refine(accountId, body);
+    if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
+    return json(200, { ...r, coins: await townFor(env).coins(accountId), equipment: await store.equipment(accountId), bag: await economyFor(env).balances(accountId) });
   }
   if (request.method === "POST" && url.pathname === "/town/gear/dispose") {
     const r = await disposalFor(env).disposeGear(accountId, body);

@@ -31,7 +31,7 @@ import {
 } from "@pmrpg/shared";
 import { ELEMENT_COLOR, type BattleScene } from "./battle-scene";
 import type { CharacterApi, CharacterBundle } from "./character-api";
-import { autoHuntPanel, craftPanel, frontierPanel, journalPanel, ordersPanel, questPanel, titleName, equipmentPanel, partyPanel, rebirthPanel, secretQuestPanel, shopPanel, skillPanel, statsPanel, teamPanel, vitals } from "./character-ui";
+import { autoHuntPanel, craftPanel, refinePanel, frontierPanel, journalPanel, ordersPanel, questPanel, titleName, equipmentPanel, partyPanel, rebirthPanel, secretQuestPanel, shopPanel, skillPanel, statsPanel, teamPanel, vitals } from "./character-ui";
 import type { WorldTransport } from "./world-transport";
 
 const W = 960;
@@ -42,6 +42,7 @@ const TILE = rules.provisional.worldTileSizePx.value;
 const NPC_SERVICE_TH: Record<Exclude<NpcService, "talk">, string> = {
   shop: "ร้าน ซื้อ/ขาย",
   craft: "สร้างของ",
+  refine: "ตีบวก",
   orders: "งานสั่ง",
   frontier: "หอคอยรอยแยก",
   rebirth: "จุติคู่ใจ",
@@ -616,6 +617,13 @@ export class WorldScene extends Phaser.Scene {
   }
 
   /** Crafting; only in town (the server checks the stored position too). */
+  private async openRefine() {
+    if (this.map !== null && this.map.kind !== "town") return this.flash("ตีบวกได้ในเมือง");
+    return this.withPanel("ตีบวกได้นอกไฟต์เท่านั้น", async (api, bundle) => {
+      await refinePanel(api, bundle);
+    });
+  }
+
   private async openCraft() {
     if (this.map !== null && this.map.kind !== "town") return this.flash("สร้างของได้ในเมือง");
     return this.withPanel("สร้างของได้นอกไฟต์เท่านั้น", async (api, bundle) => {
@@ -731,6 +739,7 @@ export class WorldScene extends Phaser.Scene {
     const open: Record<Exclude<NpcService, "talk">, () => Promise<void>> = {
       shop: () => this.openShop(),
       craft: () => this.openCraft(),
+      refine: () => this.openRefine(),
       orders: () => this.openOrders(),
       frontier: () => this.openFrontier(),
       rebirth: () => this.openRebirth(),

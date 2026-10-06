@@ -65,6 +65,9 @@ import {
   sigilFits,
   sigilRemovalCost,
   affixRerollCost,
+  refineQuote,
+  refinedBaseStats,
+  type RefineQuote,
   disposeQuote,
   formationCells,
   NICKNAME_MAX,
@@ -302,7 +305,8 @@ const GROUP_TH: Record<SigilGroup, string> = {
 
 /** A piece's name coloured by rarity (icon-free; the rarity is also in the tooltip and affix line). */
 function gearName(def: EquipmentDefinition, piece: EquipmentView): HTMLElement {
-  return el("span", { class: `pm-r-${piece.rarity}`, title: RARITY_NAME_TH[piece.rarity] }, equipmentDisplayName(def, piece.sigils, sigilDefs));
+  const plus = piece.refineLevel > 0 ? `+${piece.refineLevel} ` : "";
+  return el("span", { class: `pm-r-${piece.rarity}`, title: RARITY_NAME_TH[piece.rarity] }, plus + equipmentDisplayName(def, piece.sigils, sigilDefs));
 }
 
 /** "[หายาก] STR +2 · คริ% +1", or the rarity alone for a piece without affixes. */
@@ -412,7 +416,7 @@ export function equipmentPanel(api: CharacterApi, start: CharacterBundle): Promi
         else
           text.append(
             gearName(def, piece),
-            ` · Lv${def.requiredLevel}${def.handedness === "two_hand" ? " · สองมือ" : ""} · ${statLine(def.baseStats)}`,
+            ` · Lv${def.requiredLevel}${def.handedness === "two_hand" ? " · สองมือ" : ""} · ${statLine(refinedBaseStats(def, piece.refineLevel))}`,
             el("small", { class: "pm-affix" }, affixLine(piece)),
           );
         if (piece.protected) text.prepend("🔒 ");
@@ -860,6 +864,157 @@ export function shopPanel(api: CharacterApi, start: CharacterBundle): Promise<Ch
  * has, the coins, the mastery it gives, and for gear the rarity odds and possible affixes, all
  * before confirming. The server checks everything again and rolls the gear.
  */
+/**
+ * Refining / ตีบวก (REFINEMENT_DESIGN v2.1). Before every attempt the player sees the chance, the
+ * coins, the stones, the ward (never ticked for them) and exactly what a failure does. The server
+ * rolls and answers with the receipt; the panel only shows it.
+ */
+export function refinePanel(api: CharacterApi, start: CharacterBundle): Promise<CharacterBundle> {
+  return new Promise((resolve) => {
+    const { panel, close } = overlay();
+    let bundle = start;
+    let busy = false;
+    let pickedId: string | null = null;
+    let useWard = false;
+    const body = el("div");
+    const result = el("div", { class: "pm-stats", "data-refine-result": "" });
+    const error = el("div", { class: "pm-error", role: "alert" });
+    const actions = el("div", { class: "pm-actions" });
+    const done = el("button", { type: "button", class: "primary" }, "ปิด");
+    actions.append(done);
+    panel.append(el("h2", {}, "ตีบวก"), result, error, body, actions);
+    done.addEventListener("click", () => {
+      close();
+      resolve(bundle);
+    });
+    const itemName = (id: string) => itemDefs.get(id)?.name.th ?? id;
+    const pct = (bp: number) => `${bp / 100}%`;
+
+    const draw = () => {
+      body.replaceChildren();
+      body.append(el("div", { class: "pm-stats" }, `เหรียญ ${bundle.coins.toLocaleString()}`));
+      const list = el("ul", { class: "pm-list", "data-section": "refine" });
+      const pieces = bundle.equipment.filter((p) => (equipmentDefs.get(p.definitionId)?.refinableStats ?? []).length > 0);
+      if (pieces.length === 0) list.append(el("li", {}, "ไม่มีอุปกรณ์ที่ตีบวกได้"));
+      for (const p of pieces) {
+        const def = equipmentDefs.get(p.definitionId)!;
+        const li = el("li", { "data-refine-piece": p.id });
+        const label = el("span", { class: "pm-grow" });
+        label.append(gearName(def, p), ` · ${statLine(refinedBaseStats(def, p.refineLevel))}${p.slot ? " (ใส่อยู่)" : ""}`);
+        li.append(label);
+        const b = el("button", { type: "button" }, p.id === pickedId ? "เลือกอยู่" : "เลือก");
+        b.disabled = p.id === pickedId;
+        b.addEventListener("click", () => {
+          pickedId = p.id;
+          useWard = false;
+          result.textContent = "";
+          draw();
+        });
+        li.append(b);
+        list.append(li);
+      }
+      body.append(list);
+      const piece = bundle.equipment.find((p) => p.id === pickedId);
+      if (piece !== undefined) drawDetail(piece);
+      body.append(
+        el(
+          "div",
+          { class: "pm-note" },
+          "ตั้งแต่ +6 ขึ้นไป พลาดแล้วอุปกรณ์แตกถาวร ถ้าไม่ได้เลือกใช้ตราคุ้มครองการหลอม · ตราคราฟต์ได้ที่ช่างเครื่องประดับ (สร้างของ) · ไม่มีการันตีหรือสะสมโอกาส",
+        ),
+      );
+    };
+
+    const drawDetail = (piece: EquipmentView) => {
+      const def = equipmentDefs.get(piece.definitionId)!;
+      const box = el("div", { class: "pm-item-rule", "data-refine-detail": piece.id });
+      const q = refineQuote(RULES, def, piece.refineLevel);
+      if (!q.ok) {
+        box.append(el("div", {}, q.reason === "MAX_LEVEL" ? `ตีบวกครบ +${piece.refineLevel} แล้ว` : "ชิ้นนี้ตีบวกไม่ได้"));
+        body.append(box);
+        return;
+      }
+      const quote = q.quote;
+      const stones = bundle.bag[quote.stoneItemId] ?? 0;
+      const wards = quote.wardItemId === null ? 0 : (bundle.bag[quote.wardItemId] ?? 0);
+      if (wards === 0) useWard = false;
+      const now = statLine(refinedBaseStats(def, piece.refineLevel));
+      const next = statLine(refinedBaseStats(def, quote.target));
+      const failText = !quote.risky
+        ? "ของอยู่ ค่าบวกคงเดิม"
+        : useWard
+          ? "ของอยู่ ค่าบวกคงเดิม (ตราถูกใช้ไป)"
+          : `อุปกรณ์ชิ้นนี้ถูกทำลายถาวร${piece.slot ? " และถูกถอดออก" : ""}${piece.sigils.length ? ` · Sigil ที่ติดอยู่: ${piece.sigils.map((s) => sigilDefs.get(s)?.name.th ?? s).join(", ")} (ยังไม่ตัดสินว่าจะหายหรือคืน)` : ""}`;
+      const lines = [
+        `+${quote.from} → +${quote.target} · โอกาสสำเร็จ ${pct(quote.successBp)}`,
+        `ค่าตี ${quote.coins.toLocaleString()} เหรียญ (มี ${bundle.coins.toLocaleString()})`,
+        `${itemName(quote.stoneItemId)} ×${quote.stones} (มี ${stones})`,
+        `ค่าพลัง: ${now} → ${next}`,
+      ];
+      for (const t of lines) box.append(el("div", {}, t));
+      if (quote.wardItemId !== null) {
+        const wl = el("label", {});
+        const cb = el("input", { type: "checkbox", "data-refine-ward": quote.wardItemId });
+        cb.checked = useWard;
+        cb.disabled = wards === 0;
+        cb.addEventListener("change", () => {
+          useWard = cb.checked;
+          draw();
+        });
+        wl.append(cb, ` ใช้${itemName(quote.wardItemId)} (มี ${wards}) · ใช้หมดทั้งสำเร็จและพลาด ไม่เพิ่มโอกาส`);
+        box.append(wl);
+      }
+      box.append(el("div", { class: quote.risky && !useWard ? "pm-error" : "pm-note" }, `ถ้าพลาด: ${failText}`));
+      const go = el("button", { type: "button", class: "primary", "data-refine-go": piece.id }, `ตีบวก +${quote.target}`);
+      const short = bundle.coins < quote.coins ? "เหรียญไม่พอ" : stones < quote.stones ? "หินไม่พอ" : piece.lockState !== "free" ? "อยู่ในไฟต์" : null;
+      go.disabled = short !== null || busy;
+      if (short !== null) go.title = short;
+      go.addEventListener("click", () => {
+        const ward = useWard ? quote.wardItemId : null;
+        const msg = [
+          `ตีบวก ${pieceLabel(def, piece)} +${quote.from} → +${quote.target}`,
+          `โอกาสสำเร็จ ${pct(quote.successBp)}`,
+          `จ่าย ${quote.coins.toLocaleString()} เหรียญ + ${itemName(quote.stoneItemId)} ×${quote.stones}${ward ? ` + ${itemName(ward)} ×1` : ""}`,
+          `ถ้าพลาด: ${failText}`,
+        ].join("\n");
+        if (!window.confirm(msg)) return;
+        void attempt(piece, quote, ward);
+      });
+      const actionsRow = el("div", { class: "pm-actions" });
+      actionsRow.append(go);
+      box.append(actionsRow);
+      body.append(box);
+    };
+
+    const pieceLabel = (def: EquipmentDefinition, p: EquipmentView) => equipmentDisplayName(def, p.sigils, sigilDefs);
+
+    const attempt = async (piece: EquipmentView, quote: RefineQuote, ward: string | null) => {
+      if (busy) return;
+      busy = true;
+      error.textContent = "";
+      try {
+        const r = await api.refine(piece.id, piece.refineLevel, piece.version ?? 1, ward, { coins: quote.coins, stoneItemId: quote.stoneItemId, stones: quote.stones });
+        const x = r.result;
+        result.textContent =
+          x.outcome === "success"
+            ? `สำเร็จ! ตอนนี้ +${x.target} (สุ่มได้ ${x.roll} < ${x.successBp})`
+            : x.outcome === "kept"
+              ? `พลาด ค่าบวกคงเดิม +${x.from} (สุ่มได้ ${x.roll}, ต้องต่ำกว่า ${x.successBp})`
+              : `พลาด อุปกรณ์แตกแล้ว (สุ่มได้ ${x.roll}, ต้องต่ำกว่า ${x.successBp})`;
+        result.setAttribute("data-refine-result", x.outcome);
+        if (x.outcome === "destroyed") pickedId = null;
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+      } finally {
+        bundle = (await api.get().catch(() => null)) ?? bundle;
+        busy = false;
+        draw();
+      }
+    };
+    draw();
+  });
+}
+
 export function craftPanel(api: CharacterApi, start: CharacterBundle): Promise<CharacterBundle> {
   return new Promise((resolve) => {
     const { panel, close } = overlay();

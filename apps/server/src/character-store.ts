@@ -120,6 +120,7 @@ interface EquipmentRow {
   affixes_json: string;
   affix_pending_json: string | null;
   protected: number;
+  version: number;
 }
 
 export type CreateResult =
@@ -388,7 +389,7 @@ export class CharacterStore {
   async equipment(accountId: string): Promise<EquipmentView[]> {
     const { results } = await this.db
       .prepare(
-        `SELECT e.id, e.definition_id, e.refine_level, e.lock_state, e.sigil_sockets_json, e.rarity, e.affixes_json, e.affix_pending_json, e.protected, ce.slot
+        `SELECT e.id, e.definition_id, e.refine_level, e.lock_state, e.sigil_sockets_json, e.rarity, e.affixes_json, e.affix_pending_json, e.protected, e.version, ce.slot
          FROM equipment_instances e
          LEFT JOIN character_equipment ce ON ce.equipment_instance_id = e.id
          WHERE e.owner_id = ? ORDER BY e.definition_id, e.id`,
@@ -399,6 +400,7 @@ export class CharacterStore {
       affixes: JSON.parse(r.affixes_json) as EquipmentView["affixes"],
       ...(r.affix_pending_json === null ? {} : { pendingAffix: JSON.parse(r.affix_pending_json) as NonNullable<EquipmentView["pendingAffix"]> }),
       ...(r.protected === 1 ? { protected: true } : {}),
+      version: r.version,
     }));
   }
 

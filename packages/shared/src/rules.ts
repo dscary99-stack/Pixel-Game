@@ -93,6 +93,15 @@ export const RULES = {
       "O15",
       "Nut 2026-10-04: effect hit offsets effect resistance, never above the skill's chance: chance = skill × (1 − max(0, res − hit)/100)",
     ),
+    // Refining / ตีบวก (refine.ts; Nut's REFINEMENT_DESIGN v2.1, 2026-10-07). These parts are CONFIRMED there.
+    refineRiskySuccessBp: confirmed(
+      [6000, 5000, 4000, 2000, 1000] as const,
+      "P07",
+      "Nut v2.1: success for targets +6..+10 in basis points (60/50/40/20/10%), the same with or without a ward",
+    ),
+    refineBreakFromTarget: confirmed(6, "P07", "Nut v2.1: a failed attempt at target +6 or higher destroys the piece unless a ward was used"),
+    refineNoPity: confirmed(true, "P07", "Nut v2.1: no guarantee, no pity counter, no chance that grows with failures"),
+    refineWardExists: confirmed(true, "P07", "Nut v2.1: a ward item, crafted from farmed coins plus monster materials (never Premium)"),
     // Weekly battle tower (chapter 07 §4 "tower", frontier.ts). Nut 2026-10-06 decided these.
     frontierFloorByFloor: confirmed(true, "chapter07", "Nut 2026-10-06: the tower is climbed floor by floor"),
     frontierEntriesPerWeek: confirmed(
@@ -496,6 +505,43 @@ export const RULES = {
       "P08",
       "fixed by item level, never by market price or the player's income; values are P12 assumptions",
     ),
+    // Refining (refine.ts; Nut's REFINEMENT_DESIGN v2.1). PROVISIONAL parts of that document.
+    refineMaxLevel: provisional(10, "P07", "v2.1: the +10 cap is still a trial value"),
+    refineSafeSuccessBp: provisional([9500, 9000, 8500, 8000, 7500] as const, "P07", "v2.1: targets +1..+5; a failure keeps the level"),
+    refineFeeLv200: provisional(
+      [1000, 2000, 4000, 7000, 12000, 20000, 35000, 55000, 85000, 130000] as const,
+      "P07",
+      "v2.1: coins per attempt at upgrade cost level 200, by target +1..+10; other levels scale by refineLevelFactor",
+    ),
+    refineStones: provisional([1, 1, 2, 2, 3, 4, 5, 6, 8, 10] as const, "P07", "v2.1: refine stones per attempt, by target +1..+10"),
+    refineLevelFactor: provisional(
+      { exponent: 1.5, floorPct: 3 } as const,
+      "P07",
+      "v2.1: fee = round10 half up (base × max(3%, (upgradeCostLevel/200)^1.5)); computed in integers (refine.ts)",
+    ),
+    refineStoneTiers: provisional(
+      [
+        [1, 49],
+        [50, 99],
+        [100, 149],
+        [150, 200],
+      ] as const,
+      "P07",
+      "v2.1: stone and ward tiers by upgrade cost level (basic / fused / dense / star)",
+    ),
+    refineStatPctPerLevel: provisional(3, "P07", "v2.1: +3% of each refinable base stat per level, not compounded (+30% at +10)"),
+    refineWardCraft: provisional(
+      [
+        { target: 6, coinsLv200: 50_000, common: 20, rare: 2, core: 0 },
+        { target: 7, coinsLv200: 100_000, common: 35, rare: 4, core: 1 },
+        { target: 8, coinsLv200: 200_000, common: 60, rare: 8, core: 2 },
+        { target: 9, coinsLv200: 400_000, common: 100, rare: 16, core: 4 },
+        { target: 10, coinsLv200: 800_000, common: 160, rare: 32, core: 8 },
+      ] as const,
+      "P07",
+      "v2.1: ward recipe per target; coins use the tier's top level (49/99/149/200) in the fee formula",
+    ),
+    refineWardConsumedOnSuccess: provisional(true, "P07", "v2.1 proposal: a ward is used up whether the attempt succeeds or fails"),
   },
   unresolved: {
     tradeLevelGap: open<number>("O01", "user range 20–40; proposal +30"),
@@ -505,6 +551,8 @@ export const RULES = {
     reviveRules: open<true>("O15", "revive timeline"),
     stalemateResolution: open<true>("O15"),
     /** Chapter 09: what happens to a weekly reward nobody claimed before the week ended. */
+    /** Refining: what happens to Sigils on a piece that breaks (v2.1 §5). Risky refining of a Sigil piece waits for this. */
+    sigilOnRefineBreak: open<"destroyed" | "returned">("O16", "Sigils on a piece destroyed by refining: lost with it, or back to the bag"),
     weeklyExpiredClaim: open<true>("chapter09", "expired unclaimed weekly reward policy; must never let two periods be claimed twice"),
   },
 } as const;
