@@ -59,6 +59,37 @@ describe("map registry", () => {
   });
 });
 
+describe("town NPCs", () => {
+  it("the village has a person for every town service, the tower gatekeeper included", () => {
+    const services = new Set((town.npcs ?? []).flatMap((n) => n.services));
+    for (const s of ["shop", "craft", "orders", "frontier", "rebirth", "skills", "equipment", "quests", "party", "team", "journal"] as const) expect(services.has(s)).toBe(true);
+  });
+
+  it("NPCs are markers: their tiles stay walkable and they never sit on a portal or the spawn", () => {
+    for (const n of town.npcs ?? []) {
+      expect(isWalkable(town, n.at.x, n.at.y)).toBe(true);
+      expect(n.at).not.toEqual(town.spawn);
+    }
+  });
+
+  it("catches misplaced NPCs", () => {
+    const npc = { id: "npc:a", at: { x: 2, y: 1 }, name: { th: "ก" }, role: { th: "ร้าน" }, services: ["shop", "shop"] as const, line: { th: "สวัสดี" } };
+    const bad: MapDefinition = { ...tiny, npcs: [{ ...npc, services: [...npc.services] }, { ...npc, at: { x: 2, y: 1 }, services: ["shop"] }] };
+    const messages = validateMaps([bad]).map((i) => i.message);
+    expect(messages).toEqual(
+      expect.arrayContaining([
+        "only towns have service NPCs",
+        "npc:a is duplicated",
+        "npc:a shares a tile with another NPC",
+        "npc:a is not on open ground",
+        "npc:a lists a service twice",
+      ]),
+    );
+    const onSpawn: MapDefinition = { ...tiny, kind: "town", npcs: [{ ...npc, at: { x: 1, y: 1 }, services: ["shop"] }] };
+    expect(validateMaps([onSpawn]).map((i) => i.message)).toContain("npc:a stands on the spawn tile");
+  });
+});
+
 describe("tryStep (server movement check)", () => {
   it("moves one tile onto walkable ground", () => {
     expect(tryStep(rules, tiny, { x: 1, y: 1 }, "S", 0, 0)).toEqual({ ok: true, pos: { x: 1, y: 2 }, readyAt: STEP });

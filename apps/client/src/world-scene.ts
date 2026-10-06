@@ -21,6 +21,8 @@ import {
   type HuntSummary,
   type Direction,
   type MapDefinition,
+  type NpcPlacement,
+  type NpcService,
   type PublicPlayer,
   type TileChar,
   type TilePos,
@@ -36,6 +38,20 @@ const W = 960;
 const H = 540;
 const rules = DEV_FIXTURE_RULES;
 const TILE = rules.provisional.worldTileSizePx.value;
+
+const NPC_SERVICE_TH: Record<Exclude<NpcService, "talk">, string> = {
+  shop: "ร้าน ซื้อ/ขาย",
+  craft: "สร้างของ",
+  orders: "งานสั่ง",
+  frontier: "หอคอยรอยแยก",
+  rebirth: "จุติคู่ใจ",
+  skills: "สกิลคู่ใจ / Bond",
+  equipment: "อุปกรณ์ / Sigil",
+  quests: "เควสรายวัน/สัปดาห์",
+  party: "ปาร์ตี้",
+  team: "ทีมคู่ใจ",
+  journal: "สมุดบันทึก / ฉายา",
+};
 
 const TILE_COLOR: Record<(typeof TILE_LEGEND)[TileChar]["kind"], number> = {
   ground: 0x8a7650,
@@ -83,6 +99,7 @@ export class WorldScene extends Phaser.Scene {
   private api: CharacterApi | null = null;
   private bundle: CharacterBundle | null = null;
   private panelOpen = false;
+  private npcMenu: Phaser.GameObjects.Container | null = null;
   private readonly maps = exampleMapRegistry();
   private readonly species = exampleContentMaps().species;
   private packs = new Map<string, PackView>();
@@ -351,6 +368,17 @@ export class WorldScene extends Phaser.Scene {
       const originX = p.at.x <= 1 ? 0 : p.at.x >= w - 2 ? 1 : 0.5;
       const x = p.at.x * TILE + (originX === 0 ? 0 : originX === 1 ? TILE : TILE / 2);
       layer.add(this.add.text(x, p.at.y * TILE - 6, `→ ${p.label}`, { fontFamily: "sans-serif", fontSize: "12px", color: "#ffffff" }).setOrigin(originX, 1));
+    }
+    // Town people: a marker with a name; clicking one says who they are and opens their service (tapMove).
+    for (const n of map.npcs ?? []) {
+      const [nx, ny] = center(n.at);
+      layer.add(this.add.ellipse(nx, ny + 9, 22, 8, 0x000000, 0.35));
+      layer.add(this.add.rectangle(nx, ny, 18, 24, n.services.includes("frontier") ? 0xb06bf2 : 0x5fd1a4).setStrokeStyle(2, 0x1b1830));
+      layer.add(
+        this.add
+          .text(nx, ny - 15, n.name.th, { fontFamily: "sans-serif", fontSize: "10px", color: "#e8fff4", align: "center", backgroundColor: "#00000077", padding: { x: 2, y: 1 } })
+          .setOrigin(0.5, 1),
+      );
     }
     this.layer = layer;
 
@@ -688,6 +716,48 @@ export class WorldScene extends Phaser.Scene {
       .setVisible(true);
   }
 
+  /** A town NPC: they say their line, then open their service (or offer a choice when they have several). */
+  private talkTo(n: NpcPlacement) {
+    this.flash(`${n.name.th} (${n.role.th}): ${n.line.th}`);
+    const open: Record<Exclude<NpcService, "talk">, () => Promise<void>> = {
+      shop: () => this.openShop(),
+      craft: () => this.openCraft(),
+      orders: () => this.openOrders(),
+      frontier: () => this.openFrontier(),
+      rebirth: () => this.openRebirth(),
+      skills: () => this.openSkills(),
+      equipment: () => this.openEquipment(),
+      quests: () => this.openQuests(),
+      party: () => this.openParty(),
+      team: () => this.openTeam(),
+      journal: () => this.openJournal(),
+    };
+    const services = n.services.filter((s): s is Exclude<NpcService, "talk"> => s !== "talk");
+    if (this.api === null || services.length === 0) return;
+    if (services.length === 1) return void open[services[0]!]();
+    this.npcMenu?.destroy();
+    const menu = this.add.container(W / 2, H / 2).setScrollFactor(0).setDepth(120);
+    const close = () => {
+      menu.destroy();
+      this.npcMenu = null;
+    };
+    const title = this.add.text(0, -24 * services.length - 16, n.name.th, { fontFamily: "sans-serif", fontSize: "15px", color: "#f2c94c" }).setOrigin(0.5, 1);
+    menu.add(title);
+    [...services.map((s) => [NPC_SERVICE_TH[s], () => void open[s]()] as const), ["ปิด", () => {}] as const].forEach(([label, fn], i) => {
+      const b = this.add
+        .text(0, -24 * services.length + i * 44, label, { fontFamily: "sans-serif", fontSize: "14px", color: "#ffffff", backgroundColor: "#463f6b", padding: { x: 10, y: 10 }, fixedWidth: 200, align: "center" })
+        .setOrigin(0.5, 0)
+        .setInteractive({ useHandCursor: true })
+        .on("pointerdown", (_p: Pointer, _x: number, _y: number, e: Phaser.Types.Input.EventData) => {
+          e.stopPropagation();
+          close();
+          fn();
+        });
+      menu.add(b);
+    });
+    this.npcMenu = menu;
+  }
+
   private flash(text: string) {
     this.notice.setText(text).setAlpha(1);
     this.tweens.killTweensOf(this.notice);
@@ -700,7 +770,15 @@ export class WorldScene extends Phaser.Scene {
     const self = this.selfView();
     if (this.map === null || self === null || this.stopped || this.panelOpen) return;
     if (this.autoOn) return this.flash("กำลังล่าอัตโนมัติ: กด H หรือปุ่มลูกศรเพื่อหยุด");
+    // A tap outside an NPC's menu closes it.
+    if (this.npcMenu !== null) {
+      this.npcMenu.destroy();
+      this.npcMenu = null;
+      return;
+    }
     const target = { x: Math.floor(p.worldX / TILE), y: Math.floor(p.worldY / TILE) };
+    const npc = this.map.npcs?.find((n) => n.at.x === target.x && n.at.y === target.y);
+    if (npc !== undefined && this.map.kind === "town") return this.talkTo(npc);
     const pack = [...this.packs.values()].find((v) => v.pack.x === target.x && v.pack.y === target.y)?.pack;
     this.pendingEngage = pack?.packId ?? null;
     if (pack !== undefined && inEngageRange(rules, self.pos, pack)) {

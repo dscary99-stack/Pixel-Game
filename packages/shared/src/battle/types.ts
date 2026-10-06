@@ -39,6 +39,8 @@ export interface BattleUnit {
   skillLevels?: Record<string, number>;
   /** Companions only: the Bond % already applied to `stats` (shown in the UI). */
   bondPercent?: number;
+  /** Companions only: the Bond tier at fight start (secret quest `bond_tier` condition). */
+  bondTier?: number;
   /** Companions only: the stage-3 Rebirth look, drawn by the client (Nut 2026-10-03: with an effect). */
   cosmetic?: { effect: string; color: string };
   /** Companions only: knocked out at some point in this fight (Bond goes down, Nut 2026-10-03). */
@@ -144,6 +146,8 @@ export interface BattleState {
   consumed: Record<string, number>;
   /** Party bonus locked at fight start (P02). Absent on older states = none. */
   partyBonus?: PartyBonus;
+  /** The map the fight started on (field packs and boss lairs); absent for tower floors and dev fights. */
+  mapId?: string;
   /** Boss fights only: phase, telegraph and capture progress (chapter 07 §5). */
   boss?: BossState;
   /** Weekly tower floors only (frontier.ts): the floor, the stat % its enemies carry, its gimmicks and reinforcements. */
@@ -286,6 +290,8 @@ export interface BattleSetup {
   bag: Record<string, number>;
   /** Counted by the server when the fight starts (P02); never from the client. */
   partyBonus?: PartyBonus;
+  /** The map the fight starts on (set by the Map Channel DO; secret quest map goals). */
+  mapId?: string;
   /** A boss fight (chapter 07 §5): the kernel builds the boss and its adds; `enemies` must be empty. */
   boss?: { bossId: string };
   /**

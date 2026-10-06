@@ -101,16 +101,21 @@ export class SecretQuestStore {
       .first<SecretRow>();
   }
 
-  private static toView(row: SecretRow): SecretQuestView {
+  private async toView(row: SecretRow): Promise<SecretQuestView> {
     if (row.revealed_at === null) return { locked: true };
     const set = SecretQuestSetSchema.parse({ generatorVersion: row.generator_version, quests: JSON.parse(row.quests_json) });
-    return { locked: false, quests: set.quests };
+    const rows = await this.db
+      .prepare(`SELECT quest_id, progress, completed_at FROM secret_quest_progress WHERE character_id = ?`)
+      .bind(row.character_id)
+      .all<{ quest_id: string; progress: number; completed_at: string | null }>();
+    const progress = Object.fromEntries(rows.results.map((r) => [r.quest_id, { progress: r.progress, completed: r.completed_at !== null }]));
+    return { locked: false, quests: set.quests, progress };
   }
 
   /** What the client may see; null when the account has no character. */
   async view(accountId: string): Promise<SecretQuestView | null> {
     const row = await this.ensure(accountId);
-    return row === null ? null : SecretQuestStore.toView(row);
+    return row === null ? null : this.toView(row);
   }
 
   /** DEV ONLY: reveal the set (the awakening quest will do this later) and return it. */
@@ -122,6 +127,6 @@ export class SecretQuestStore {
       .bind(this.now(), row.character_id)
       .run();
     const after = await this.row(row.character_id);
-    return after === null ? null : SecretQuestStore.toView(after);
+    return after === null ? null : this.toView(after);
   }
 }

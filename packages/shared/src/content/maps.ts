@@ -37,6 +37,23 @@ export const EXAMPLE_MAPS: MapDefinition[] = [
       { at: { x: 23, y: 8 }, to: { mapId: "map:dawn_field", x: 1, y: 8 }, label: "ทุ่งรุ่งอรุณ" },
     ],
     spawns: [],
+    // Village people from the story doc (each service has a person); EXAMPLE lines until the dialogue pass.
+    npcs: [
+      { id: "npc:elder_pim", at: { x: 8, y: 9 }, name: { th: "ผู้ใหญ่พิมพ์" }, role: { th: "จุดเกิดและพักฟื้น" }, services: ["talk"], line: { th: "พักให้หายเหนื่อยก่อนนะหลาน สมัยข้ายังผูกตรา กวางรุ่งอรุณเคยมาดื่มน้ำที่บ่อนี้ทุกเช้า" } },
+      { id: "npc:aunt_bua", at: { x: 5, y: 9 }, name: { th: "ป้าบัว" }, role: { th: "ร้านของใช้ รับซื้อของ" }, services: ["shop"], line: { th: "ยาสดใหม่จากสายไหมจ้ะ ข่าวจากเมืองไหนก็ถามป้าได้" } },
+      { id: "npc:uncle_lek", at: { x: 10, y: 5 }, name: { th: "ลุงเหล็ก" }, role: { th: "ช่างอาวุธและเกราะ" }, services: ["craft", "equipment"], line: { th: "ผลึกแปลกๆ ที่ข้าเจอเมื่อสิบปีก่อน มันเรืองแสงตอนรอยแยกเปิด" } },
+      { id: "npc:pi_kaew", at: { x: 15, y: 5 }, name: { th: "พี่แก้ว" }, role: { th: "ช่างเครื่องประดับ สุ่มออปชัน" }, services: ["equipment", "craft"], line: { th: "สักวันฉันจะไปเรียนที่เฮลิออสให้ได้ อย่าบอกพ่อนะ" } },
+      { id: "npc:ta_sai", at: { x: 2, y: 9 }, name: { th: "ตาสาย" }, role: { th: "รับซื้อ แยกชิ้นส่วน" }, services: ["equipment", "shop"], line: { th: "ของทุกชิ้นมีค่าถ้ารู้จักแยก ข้าเรียนรู้เรื่องนี้มาแบบเจ็บตัว" } },
+      { id: "npc:nong_min", at: { x: 21, y: 3 }, name: { th: "น้องมินทร์" }, role: { th: "กระดานเควสรายวัน/สัปดาห์" }, services: ["quests"], line: { th: "หอผู้ผูกตราฝากงานมาเพียบเลยค่ะ เลือกเอาที่ชอบได้เลย" } },
+      { id: "npc:uncle_som", at: { x: 3, y: 5 }, name: { th: "ลุงสม" }, role: { th: "กระดานคำสั่งซื้อ" }, services: ["orders"], line: { th: "หลังคาหมู่บ้านยังรั่วอยู่ ใครหาวัสดุมาได้ ลุงจ่ายงาม" } },
+      { id: "npc:rune_reader", at: { x: 16, y: 9 }, name: { th: "ผู้อ่านตรา" }, role: { th: "ใส่/ถอด Sigil สลับแบบจุติ" }, services: ["equipment", "rebirth"], line: { th: "ตราทุกดวงจำได้ว่ามันหลุดมาจากใคร เจ้าล่ะ จำได้ไหม" } },
+      { id: "npc:kru_ueang", at: { x: 19, y: 9 }, name: { th: "ครูเอื้อง" }, role: { th: "ฝึกสกิลคู่ใจ จุติ ดู Bond" }, services: ["skills", "rebirth", "team"], line: { th: "คู่ใจไม่ใช่ของใช้ ข้ารู้ดีที่สุดว่าเสียไปแล้วเป็นอย่างไร" } },
+      { id: "npc:pi_mek", at: { x: 22, y: 9 }, name: { th: "พี่เมฆ" }, role: { th: "ตั้ง/เข้าปาร์ตี้" }, services: ["party"], line: { th: "ล่าคนเดียวมันเหงา มาตั้งทีมกันไหม" } },
+      { id: "npc:boon_harbor", at: { x: 22, y: 6 }, name: { th: "นายท่าเรือบุญ" }, role: { th: "เดินทางข้ามแผนที่" }, services: ["talk"], line: { th: "เรือไปเมืองอื่นยังไม่ออก สภานักเดินทางกำลังตรวจเส้นทางอยู่" } },
+      { id: "npc:doc_ploy", at: { x: 5, y: 12 }, name: { th: "หมอพลอย" }, role: { th: "คลังคู่ใจและจัดทีม" }, services: ["team"], line: { th: "ฉันจดบันทึกอสูรทุกตัวที่ผ่านหมู่บ้านนี้ รวมถึงของเธอด้วย" } },
+      { id: "npc:nang_prae", at: { x: 8, y: 12 }, name: { th: "นางแพร" }, role: { th: "แฟชั่นและฉายา" }, services: ["journal"], line: { th: "ผ้าผืนนี้ถักจากขนอสูรที่ผลัดเอง ไม่มีตัวไหนเจ็บ" } },
+      { id: "npc:uncle_han", at: { x: 16, y: 13 }, name: { th: "ลุงหาญ" }, role: { th: "ผู้เฝ้าประตูหอคอยรอยแยก" }, services: ["frontier"], line: { th: "หอเปิดรับสัปดาห์ละครั้ง ขึ้นไปแล้วอย่าหวังว่าจะลงง่ายๆ" } },
+    ],
   },
   {
     id: "map:dawn_field",

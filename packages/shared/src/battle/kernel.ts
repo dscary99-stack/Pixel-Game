@@ -5,7 +5,7 @@
  * new state + events. Same setup + same seed + same commands => identical results.
  * The Battle Durable Object owns persistence, idempotency and auth; this file owns the rules.
  */
-import { applyBond, bondBonusPercent } from "../bond";
+import { applyBond, bondBonusPercent, bondTier } from "../bond";
 import { companionCombatProfile } from "../companion-growth";
 import { companionKit, effectiveSkillLevel, masteryForVictory, skillLevelCap, skillLevelMods, trainedSkillLevel } from "../skill-training";
 import { AutoBattlePolicySchema, type AutoBattlePolicyInput } from "./auto-policy";
@@ -248,6 +248,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
       skillLevels,
       passiveIds: kit.map((k) => k.skillId).filter((id) => content.skills.get(id)?.passive !== undefined),
       bondPercent,
+      bondTier: bondTier(rules, inst.bond),
       ...(inst.rebirthStage >= 3 && sp.rebirthCosmetic !== undefined
         ? { cosmetic: { effect: sp.rebirthCosmetic.effect, color: sp.rebirthCosmetic.color } }
         : {}),
@@ -282,6 +283,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
     bag: { ...setup.bag },
     consumed: {},
     ...(setup.partyBonus !== undefined && setup.partyBonus.partners > 0 ? { partyBonus: { ...setup.partyBonus } } : {}),
+    ...(setup.mapId !== undefined ? { mapId: setup.mapId } : {}),
     rng: seedRng(setup.seed),
     eventSeq: 0,
     status: "active",

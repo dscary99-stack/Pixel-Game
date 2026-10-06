@@ -13,7 +13,7 @@
  * batch (chapter 11 §4), so each dependent write is guarded by an EXISTS on the row the first write
  * created with this request's hash, and the outcome is read back after the batch instead of assumed.
  */
-import type { BattleStatus, Entitlement, RulesConfig } from "@pmrpg/shared";
+import { SecretQuestSchema, secretQuestCredit, type BattleStatus, type Entitlement, type RulesConfig, type SecretFightFacts } from "@pmrpg/shared";
 import { RewardLedger, hashJson, type GrantResult, type SqlBound, type SqlDb } from "./reward-ledger";
 
 export interface ReserveRequest {
@@ -62,6 +62,8 @@ export interface Settlement {
   allies: AllyResult[];
   /** Every entitlement the battle created. Settlement waits until each one has a receipt. */
   entitlementIds: string[];
+  /** What the fight did, for secret quest progress (absent on fights settled before it existed). */
+  secret?: SecretFightFacts;
 }
 
 export type SettleResult =
@@ -95,7 +97,7 @@ export class Economy {
 
   constructor(
     private readonly db: SqlDb,
-    rules: RulesConfig,
+    private readonly rules: RulesConfig,
     private readonly now: () => string = () => new Date().toISOString(),
   ) {
     this.ledger = new RewardLedger(db, rules, now);
@@ -316,6 +318,7 @@ export class Economy {
       );
     }
     stmts.push(...this.unlockAssets(rid, ours, [rid, hash]));
+    stmts.push(...(await this.secretCredits(s, at, ours, [rid, hash])));
     await this.db.batch(stmts);
 
     const after = await this.row(rid);
@@ -323,6 +326,53 @@ export class Economy {
     if (after?.settlement_hash != null) return { status: "rejected", reservationId: rid, reason: "PAYLOAD_MISMATCH" };
     if (after?.status !== "active") return { status: "rejected", reservationId: rid, reason: "NOT_ACTIVE" };
     return { status: "rejected", reservationId: rid, reason: "RECEIPTS_MISSING" };
+  }
+
+  /**
+   * Secret quest progress for this fight (secret-progress.ts), written in the settlement's own batch.
+   * Only a revealed set counts. The credit row (character, battle) is taken under a fresh token and
+   * every progress write applies only under that token, so a raced or replayed settlement credits
+   * once; progress is capped at the quest's count in SQL as well.
+   */
+  private async secretCredits(s: Settlement, at: string, ours: string, oursArgs: unknown[]): Promise<SqlBound[]> {
+    if (s.secret === undefined || !s.secret.won) return [];
+    const row = await this.db
+      .prepare(
+        `SELECT q.character_id, q.quests_json FROM character_secret_quests q
+           JOIN battle_reservations r ON r.reservation_id = ? AND r.account_id = q.account_id
+          WHERE q.character_id = json_extract(r.loadout_json, '$.characterId') AND q.revealed_at IS NOT NULL`,
+      )
+      .bind(s.reservationId)
+      .first<{ character_id: string; quests_json: string }>();
+    if (row === null) return [];
+    const quests = SecretQuestSchema.array().parse(JSON.parse(row.quests_json));
+    const done = await this.db
+      .prepare(`SELECT quest_id, progress FROM secret_quest_progress WHERE character_id = ?`)
+      .bind(row.character_id)
+      .all<{ quest_id: string; progress: number }>();
+    const progress = new Map(done.results.map((r) => [r.quest_id, r.progress]));
+    const credits = quests.map((q) => ({ q, n: secretQuestCredit(this.rules, q, s.secret!, progress.get(q.id) ?? 0) })).filter((c) => c.n > 0);
+    if (credits.length === 0) return [];
+    const token = crypto.randomUUID();
+    const mine = `EXISTS (SELECT 1 FROM secret_quest_credits WHERE character_id = ? AND source_id = ? AND token = ?)`;
+    const mineArgs = [row.character_id, s.battleId, token];
+    return [
+      this.db
+        .prepare(`INSERT INTO secret_quest_credits (character_id, source_id, token, at) SELECT ?, ?, ?, ? WHERE ${ours} ON CONFLICT DO NOTHING`)
+        .bind(row.character_id, s.battleId, token, at, ...oursArgs),
+      ...credits.map(({ q, n }) =>
+        this.db
+          .prepare(
+            `INSERT INTO secret_quest_progress (character_id, quest_id, progress, completed_at, updated_at)
+             SELECT ?, ?, ?, ?, ? WHERE ${mine}
+             ON CONFLICT (character_id, quest_id) DO UPDATE SET
+               progress = MIN(secret_quest_progress.progress + excluded.progress, ?),
+               completed_at = COALESCE(secret_quest_progress.completed_at, CASE WHEN secret_quest_progress.progress + excluded.progress >= ? THEN excluded.updated_at END),
+               updated_at = excluded.updated_at`,
+          )
+          .bind(row.character_id, q.id, n, n >= q.params.count ? at : null, at, ...mineArgs, q.params.count, q.params.count),
+      ),
+    ];
   }
 
   // ------------------------------------------------------------------ release (reconciler)

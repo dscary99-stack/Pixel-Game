@@ -18,7 +18,7 @@
  *   variant id comes from the character's seed. Rewards are only rolled and stored here; granting
  *   them (through the ledger) waits for progress tracking.
  * Templates here are the contract; the pool itself is EXAMPLE content (content/secret-quests.ts).
- * Progress tracking is not built: nothing here counts or checks a fight yet.
+ * Progress from fights: secret-progress.ts (counted only once the set is revealed).
  */
 import { z } from "zod";
 import { PLAYER_ELEMENTS, RACE_DEFINITIONS } from "./character";
@@ -221,7 +221,14 @@ export const SecretQuestSetSchema = z
 export type SecretQuestSet = z.infer<typeof SecretQuestSetSchema>;
 
 /** What the client may see: a locked set says nothing else (no count, no hints). */
-export type SecretQuestView = { locked: true } | { locked: false; quests: SecretQuest[] };
+export type SecretQuestView =
+  | { locked: true }
+  | {
+      locked: false;
+      quests: SecretQuest[];
+      /** Quest id → progress so far (secret-progress.ts); a quest not listed has none yet. */
+      progress?: Record<string, { progress: number; completed: boolean }>;
+    };
 
 export interface SecretQuestContent {
   species: ReadonlyMap<string, SpeciesDefinition>;

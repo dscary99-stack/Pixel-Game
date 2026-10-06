@@ -383,6 +383,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
       ...(lair !== null ? { boss: { bossId: lair.bossId! } } : {}),
       bag,
       partyBonus: await this.partyBonusFor(account, a.mapId, a.channel),
+      mapId: a.mapId,
     };
     const created = (await this.battle(battleId).handle(account, { kind: "create", setup, reservationId })) as RoomReply;
     if (!created.ok) return fail("ENCOUNTER_REFUSED", created.code);

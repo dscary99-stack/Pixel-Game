@@ -57,6 +57,32 @@ export const SpawnPointSchema = z
   .strict();
 export type SpawnPoint = z.infer<typeof SpawnPointSchema>;
 
+/**
+ * What a town NPC opens when clicked. Each one is a town service the server already gates to towns;
+ * `talk` NPCs only speak (rest point, travel and lore tellers until those systems exist).
+ */
+export const NPC_SERVICES = ["shop", "craft", "orders", "frontier", "rebirth", "skills", "equipment", "quests", "party", "team", "journal", "talk"] as const;
+export type NpcService = (typeof NPC_SERVICES)[number];
+
+/**
+ * A town NPC (story doc: every service has a person with a part in the world). NPCs are markers,
+ * not walls: they never change collision, so movement stays a property of the tiles alone.
+ */
+export const NpcPlacementSchema = z
+  .object({
+    id: z.string().regex(/^npc:[a-z0-9_]+$/),
+    at: TilePosSchema,
+    name: z.object({ th: z.string().min(1), en: z.string().min(1).optional() }).strict(),
+    /** What they do, one short line shown under the name. */
+    role: z.object({ th: z.string().min(1) }).strict(),
+    /** First service is what a click opens; with more than one, a click offers a choice. */
+    services: z.array(z.enum(NPC_SERVICES)).min(1),
+    /** What they say when clicked (story placeholder until the dialogue pass). */
+    line: z.object({ th: z.string().min(1) }).strict(),
+  })
+  .strict();
+export type NpcPlacement = z.infer<typeof NpcPlacementSchema>;
+
 export const MapDefinitionSchema = z
   .object({
     id: MapId,
@@ -77,6 +103,8 @@ export const MapDefinitionSchema = z
      * try again with no quota (P17); it is never an Auto Hunt target (C14).
      */
     bossLair: z.object({ bossId: z.string().regex(/^boss:[a-z0-9_]+$/), at: TilePosSchema }).strict().optional(),
+    /** Town people (towns only). */
+    npcs: z.array(NpcPlacementSchema).optional(),
   })
   .strict();
 export type MapDefinition = z.infer<typeof MapDefinitionSchema>;
@@ -150,6 +178,20 @@ export function validateMaps(
       const at = m.bossLair.at;
       if (!isWalkable(m, at.x, at.y) || portalAt(m, at.x, at.y) !== null) issues.push({ mapId: m.id, message: "boss lair is not on open ground" });
       if (bosses !== undefined && !bosses.has(m.bossLair.bossId)) issues.push({ mapId: m.id, message: `boss lair uses unknown boss ${m.bossLair.bossId}` });
+    }
+    const npcs = m.npcs ?? [];
+    if (m.kind !== "town" && npcs.length > 0) issues.push({ mapId: m.id, message: "only towns have service NPCs" });
+    const npcIds = new Set<string>();
+    const npcCells = new Set<string>();
+    for (const n of npcs) {
+      if (npcIds.has(n.id)) issues.push({ mapId: m.id, message: `${n.id} is duplicated` });
+      npcIds.add(n.id);
+      const cell = `${n.at.x},${n.at.y}`;
+      if (npcCells.has(cell)) issues.push({ mapId: m.id, message: `${n.id} shares a tile with another NPC` });
+      npcCells.add(cell);
+      if (!isWalkable(m, n.at.x, n.at.y) || portalAt(m, n.at.x, n.at.y) !== null) issues.push({ mapId: m.id, message: `${n.id} is not on open ground` });
+      if (n.at.x === m.spawn.x && n.at.y === m.spawn.y) issues.push({ mapId: m.id, message: `${n.id} stands on the spawn tile` });
+      if (new Set(n.services).size !== n.services.length) issues.push({ mapId: m.id, message: `${n.id} lists a service twice` });
     }
     const spawnIds = new Set<string>();
     for (const sp of m.spawns) {

@@ -31,7 +31,10 @@ interface UnitView {
   body: Phaser.GameObjects.Rectangle;
   hpBar: Phaser.GameObjects.Rectangle;
   label: Phaser.GameObjects.Text;
-  /** Under the HP bar: an elite leader's modifiers (so the name line above stays short). */
+  /**
+   * Allies: under the HP bar. Enemies: beside the body (statuses, elite modifiers, reinforcement),
+   * so ten enemies in two columns never stack text into the next cell.
+   */
   sub: Phaser.GameObjects.Text;
   ring: Phaser.GameObjects.Rectangle;
 }
@@ -44,6 +47,8 @@ export class BattleScene extends Phaser.Scene {
   private log: string[] = [];
   private logText!: Phaser.GameObjects.Text;
   private turnText!: Phaser.GameObjects.Text;
+  /** Party bonus, tower floor and boss phase: inside the field's top-left, wrapped clear of the enemy columns. */
+  private infoText!: Phaser.GameObjects.Text;
   private autoOn = false;
   private busy = false;
   private autoButton!: Phaser.GameObjects.Text;
@@ -84,6 +89,7 @@ export class BattleScene extends Phaser.Scene {
     this.add.rectangle(W / 2, 250, W, 400, 0x2a2540).setStrokeStyle(2, 0x0b0a12);
     this.add.text(12, 8, this.transport.label, { fontFamily: "sans-serif", fontSize: "13px", color: "#f2c94c" });
     this.turnText = this.add.text(12, 28, "", { fontFamily: "sans-serif", fontSize: "15px", color: "#ffffff" });
+    this.infoText = this.add.text(12, 56, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#f2c94c", wordWrap: { width: 520 } });
     this.logText = this.add.text(560, 456, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#d8d4ea", wordWrap: { width: 390 } });
 
     const buttons: [string, () => void][] = [
@@ -408,7 +414,8 @@ export class BattleScene extends Phaser.Scene {
         continue;
       }
       // Enemies are drawn a little shorter so a full row of five (tower floors: ten) stays readable.
-      const bh = u.side === "enemy" ? 40 : 56;
+      const enemy = u.side === "enemy";
+      const bh = enemy ? 36 : 56;
       if (!v) {
         const body = this.add.rectangle(x, y, 48, bh, ELEMENT_COLOR[u.element]).setStrokeStyle(3, 0x0b0a12).setInteractive({ useHandCursor: true });
         body.on("pointerdown", () => {
@@ -422,7 +429,9 @@ export class BattleScene extends Phaser.Scene {
         const hpBar = this.add.rectangle(x - 25, y + bh / 2 + 8, 50, 4, 0x6be36b).setOrigin(0, 0.5);
         // Bottom-anchored so a second line (statuses) grows upwards.
         const label = this.add.text(x, y - bh / 2 - 9, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#ffffff", align: "center" }).setOrigin(0.5, 1);
-        const sub = this.add.text(x, y + bh / 2 + 14, "", { fontFamily: "sans-serif", fontSize: "11px", color: "#ffd84a", align: "center" }).setOrigin(0.5, 0);
+        const sub = enemy
+          ? this.add.text(x + 30, y, "", { fontFamily: "sans-serif", fontSize: "10px", color: "#ffd84a", wordWrap: { width: u.row === "front" ? 96 : 140 } }).setOrigin(0, 0.5)
+          : this.add.text(x, y + bh / 2 + 14, "", { fontFamily: "sans-serif", fontSize: "11px", color: "#ffd84a", align: "center" }).setOrigin(0.5, 0);
         v = { body, hpBar, label, ring, sub };
         this.views.set(u.unitId, v);
       }
@@ -435,8 +444,15 @@ export class BattleScene extends Phaser.Scene {
       const elite = u.elite === undefined ? "" : `★ชั้นยอด\n${u.elite.modifiers.map((m) => ELITE_MODIFIER_TH[m].name).join(", ")}${u.elite.counterOn !== null ? " ⚠สวน!" : ""}`;
       // A tower reinforcement says so (it took a fallen enemy's cell this fight).
       const reinforcement = state.units.some((o) => o.replacedBy === u.unitId) ? "▲กำลังเสริม" : "";
-      v.sub.setPosition(x, y + bh / 2 + 14).setText([elite, reinforcement].filter(Boolean).join("\n"));
-      v.label.setPosition(x, y - bh / 2 - 9).setText(`${u.name} Lv${u.level}${u.retired ? " (จับแล้ว)" : ""}${tags ? `\n${tags}` : ""}`);
+      const name = `${u.name} Lv${u.level}${u.retired ? " (จับแล้ว)" : ""}`;
+      if (enemy) {
+        // One name line above; statuses and tags beside the body, inside this cell's band.
+        v.sub.setPosition(x + 30, y).setText([tags, elite, reinforcement].filter(Boolean).join("\n"));
+        v.label.setPosition(x, y - bh / 2 - 9).setText(name);
+      } else {
+        v.sub.setPosition(x, y + bh / 2 + 14).setText([elite, reinforcement].filter(Boolean).join("\n"));
+        v.label.setPosition(x, y - bh / 2 - 9).setText(`${name}${tags ? `\n${tags}` : ""}`);
+      }
     }
     const actor = this.snap.actor ? this.unit(this.snap.actor) : undefined;
     // Boss fights: the phase, and a warned move with what answers it (chapter 07 §5, readable without colour).
@@ -449,7 +465,6 @@ export class BattleScene extends Phaser.Scene {
         bossLine += ` · ⚠ ${sk} รอบ ${state.boss.telegraph.firesRound}${ph?.telegraph ? `: ${ph.telegraph.hint.th}` : ""}`;
       }
     }
-    // Weekly tower: the floor, and a boss label on boss floors (readable without colour).
     // Weekly tower: the floor's name, gimmicks and reinforcements left, and a boss label on boss floors.
     let tower = "";
     if (state.frontier !== undefined) {
@@ -460,10 +475,11 @@ export class BattleScene extends Phaser.Scene {
         `\n${EXAMPLE_FRONTIER.name.th} ชั้น ${state.frontier.floor} ${fd?.name.th ?? ""}${state.boss !== undefined ? ` · ★ ชั้นบอส${fd?.guardianTitle ? ` ${fd.guardianTitle.th}` : ""}` : ""}` +
         ` · ศัตรู ×${(state.frontier.statPct / 100).toFixed(2)}${mods ? ` · ลูกเล่น: ${mods}` : ""}${left > 0 ? ` · กำลังเสริมเหลือ ${left}` : ""}`;
     }
-    const party = state.partyBonus ? ` · ปาร์ตี้ ${state.partyBonus.partners} คน: EXP +${state.partyBonus.expPercent}% วัสดุ +${state.partyBonus.materialDropPercent}%` : "";
+    const party = state.partyBonus ? `ปาร์ตี้ ${state.partyBonus.partners} คน: EXP +${state.partyBonus.expPercent}% วัสดุ +${state.partyBonus.materialDropPercent}%` : "";
     this.turnText.setText(
-      (state.status === "active" ? `รอบ ${state.round} · ตาของ ${actor?.name ?? "-"} · แตะศัตรูเพื่อเลือกเป้า` : `จบไฟต์: ${state.status}`) + party + tower + bossLine,
+      state.status === "active" ? `รอบ ${state.round} · ตาของ ${actor?.name ?? "-"} · แตะศัตรูเพื่อเลือกเป้า` : `จบไฟต์: ${state.status}`,
     );
+    this.infoText.setText(`${party}${tower}${bossLine}`.replace(/^\n/, ""));
     if (state.status !== "active" && this.onExit !== null && this.exitButton === null && !this.watching) {
       const exit = this.onExit;
       this.exitButton = this.button(W - 200, 20, "กลับไปเดินต่อ", () => exit()).setFixedSize(184, 48).setBackgroundColor("#2f7a4a");
@@ -495,7 +511,7 @@ export class BattleScene extends Phaser.Scene {
   private position(u: BattleUnit) {
     if (u.side === "ally") return { x: u.row === "front" ? 330 : 210, y: 150 + u.slot * 100 };
     // Five cells a row, spaced so ten enemies (tower floors) keep their names and bars apart.
-    return { x: u.row === "front" ? 620 : 780, y: 104 + u.slot * 80 };
+    return { x: u.row === "front" ? 600 : 760, y: 118 + u.slot * 76 };
   }
 
   private popup(unitId: string, text: string, color: string) {

@@ -23,6 +23,7 @@ import {
   createBattle,
   currentActor,
   publicView,
+  secretFightFacts,
   type BattleCommand,
   type BattleContent,
   type BattleEvent,
@@ -298,6 +299,8 @@ export class BattleRoom {
             unused: e.unusedReserved,
             allies: e.allies,
             entitlementIds: state.entitlements.map((x) => x.entitlementId),
+            // Secret quests (secret-progress.ts): what this fight did, from the final state only.
+            secret: secretFightFacts(state, (id) => this.content.items.get(id)?.kind === "capture"),
           },
         };
       }
