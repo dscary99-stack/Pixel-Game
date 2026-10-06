@@ -1,7 +1,9 @@
 /**
  * EXAMPLE secret quest templates (Nut 2026-10-05). One per player element, one per draft race (P16)
- * and a small personal pool. Goals, counts, conditions and texts are Claude's first pass: a draft to
- * exercise the contract, not approved endgame content.
+ * and a personal pool of 20. Nut 2026-10-06 asked for more, harder personal quests: the last 12 are
+ * challenges (no items against a boss, a round limit, one element, solo, an elite leader caught,
+ * ending on low HP, tower floors, an old Bond). Goals, counts, conditions and texts are Claude's
+ * first pass: a draft to exercise the contract, not approved endgame content.
  */
 import type { SecretQuestTemplate } from "../secret-quests";
 
@@ -33,4 +35,17 @@ export const EXAMPLE_SECRET_QUEST_TEMPLATES: SecretQuestTemplate[] = [
   { id: "sqt:personal_old_debt", ...meta, kind: "personal", goal: "boss", text: { th: "หนี้เก่า: ชนะ {species} {count} ครั้ง" }, slots: { species: "boss", count: [2, 5], conditions: ["no_items", "full_team", "no_knockout"] } },
   { id: "sqt:personal_colours", ...meta, kind: "personal", goal: "defeat", text: { th: "สีที่ชอบ: ล่า {species} ธาตุ{element} {count} ตัว" }, slots: { element: "any", species: "of_element", count: [30, 70] } },
   { id: "sqt:personal_one_heart", ...meta, kind: "personal", goal: "win", text: { th: "ใจเดียวกัน: ชนะ {count} ไฟต์ด้วยทีมธาตุเดียว" }, slots: { count: [30, 60], conditions: ["mono_element_team", "full_team"] } },
+  // Challenges (Nut 2026-10-06: harder personal quests).
+  { id: "sqt:personal_bare_hands", ...meta, kind: "personal", goal: "boss", text: { th: "มือเปล่า: ชนะ {species} {count} ครั้ง โดยไม่ใช้ไอเท็มเลย" }, slots: { species: "boss", count: [1, 3], conditions: ["no_items"] } },
+  { id: "sqt:personal_swift_end", ...meta, kind: "personal", goal: "win", text: { th: "จบให้ไว: ชนะ {count} ไฟต์ที่ {map} ภายใน {rounds} รอบ" }, slots: { map: "field", count: [5, 15], conditions: ["within_rounds"], rounds: [2, 4] } },
+  { id: "sqt:personal_boss_rush", ...meta, kind: "personal", goal: "boss", text: { th: "ปิดเกมเจ้าถิ่น: ชนะ {species} {count} ครั้ง ภายใน {rounds} รอบ" }, slots: { species: "boss", count: [1, 2], conditions: ["within_rounds"], rounds: [6, 10] } },
+  { id: "sqt:personal_one_colour", ...meta, kind: "personal", goal: "win", text: { th: "สีเดียวทั้งทีม: ชนะ {count} ไฟต์ด้วยทีมธาตุ{element}ล้วน" }, slots: { element: "any", count: [10, 25], conditions: ["mono_element_team"] } },
+  { id: "sqt:personal_lone_wolf", ...meta, kind: "personal", goal: "win", text: { th: "ไม่พึ่งใคร: ชนะ {count} ไฟต์ตามลำพัง ไม่มีคู่ใจ" }, slots: { count: [20, 40], conditions: ["solo"] } },
+  { id: "sqt:personal_alone_vs_lord", ...meta, kind: "personal", goal: "boss", text: { th: "ดวลเดี่ยว: ชนะ {species} {count} ครั้ง ตามลำพัง" }, slots: { species: "boss", count: [1, 2], conditions: ["solo"] } },
+  { id: "sqt:personal_crown_taker", ...meta, kind: "personal", goal: "elite_capture", text: { th: "ชิงมงกุฎ: จับจ่าฝูงชั้นยอด {species} {count} ตัว" }, slots: { species: "elite_leader", count: [1, 2] } },
+  { id: "sqt:personal_quiet_crown", ...meta, kind: "personal", goal: "elite_capture", text: { th: "มงกุฎเงียบ: จับจ่าฝูงชั้นยอด {species} ตามลำพัง {count} ตัว" }, slots: { species: "elite_leader", count: [1, 1], conditions: ["solo"] } },
+  { id: "sqt:personal_last_breath", ...meta, kind: "personal", goal: "win", text: { th: "ลมหายใจสุดท้าย: ชนะ {count} ไฟต์ โดยตัวละครเหลือ HP ไม่ถึง {hpPct}%" }, slots: { count: [3, 8], conditions: ["low_hp_finish"], hpBelowPct: [10, 25] } },
+  { id: "sqt:personal_spire_climber", ...meta, kind: "personal", goal: "tower", text: { th: "ไต่หอ: ไปให้ถึงชั้น {floor} ของหอคอยรอยแยก" }, slots: { count: [1, 1], floor: [30, 70] } },
+  { id: "sqt:personal_spire_summit", ...meta, kind: "personal", goal: "tower", text: { th: "ยอดหอ: ไปให้ถึงชั้น {floor} ของหอคอยรอยแยก โดยไม่ใช้ไอเท็ม" }, slots: { count: [1, 1], floor: [80, 100], conditions: ["no_items"] } },
+  { id: "sqt:personal_old_bond", ...meta, kind: "personal", goal: "win", text: { th: "สายใยเก่า: ชนะ {count} ไฟต์ โดยมีคู่ใจ Bond ขั้น {bondTier} ขึ้นไปในทีม" }, slots: { count: [10, 20], conditions: ["bond_tier"], bondTier: [3, 4] } },
 ];

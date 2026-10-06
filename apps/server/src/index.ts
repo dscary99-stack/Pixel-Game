@@ -85,8 +85,10 @@ const RESERVATION_STALE_MS = 2 * 60_000;
 const rulesFor = (env: Env) => (env.ENVIRONMENT === "dev" ? DEV_FIXTURE_RULES : PRODUCTION_RULES);
 const economyFor = (env: Env) => new Economy(env.DB, rulesFor(env));
 const CONTENT = { ...exampleContentMaps(), shops: exampleShopRegistry(), recipes: exampleRecipeRegistry() };
+/** Floors of the weekly tower (Nut 2026-10-06: 100 to start); secret quest tower goals are checked against it. */
+const TOWER_FLOORS = 100;
 const secretQuestsFor = (env: Env) =>
-  new SecretQuestStore(env.DB, rulesFor(env), EXAMPLE_SECRET_QUEST_TEMPLATES, { ...CONTENT, maps: exampleMapRegistry() }, secretQuestKey(env));
+  new SecretQuestStore(env.DB, rulesFor(env), EXAMPLE_SECRET_QUEST_TEMPLATES, { ...CONTENT, maps: exampleMapRegistry(), frontierFloors: TOWER_FLOORS }, secretQuestKey(env));
 const charactersFor = (env: Env) => new CharacterStore(env.DB, rulesFor(env), CONTENT, undefined, secretQuestsFor(env));
 const TOWNS = [...exampleMapRegistry().values()].filter((m) => m.kind === "town").map((m) => m.id);
 const townFor = (env: Env) => new TownServices(env.DB, rulesFor(env), CONTENT, TOWNS);

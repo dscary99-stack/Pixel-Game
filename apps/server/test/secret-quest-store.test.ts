@@ -14,7 +14,7 @@ const A = "acct:a";
 const B = "acct:b";
 const KEY = "test-secret-quest-key";
 const content = exampleContentMaps();
-const sqContent = { ...content, maps: exampleMapRegistry() };
+const sqContent = { ...content, maps: exampleMapRegistry(), frontierFloors: 100 };
 const now = () => "2026-10-05T00:00:00Z";
 let db: Db;
 let d1: SqliteD1;
@@ -106,6 +106,38 @@ describe("rolled at creation", () => {
     expect(all).toHaveLength(1);
     const name = won!.status === "created" ? won!.character.name : "";
     expect(JSON.parse(all[0]!.quests_json)).toEqual((await expected(KEY, A, name)).quests);
+  });
+});
+
+describe("generator versions", () => {
+  /** A set as generator v1 stored it (3 personal quests, no challenge params). */
+  const V1_QUESTS = [
+    { id: "sq:element:element_earth", kind: "element", templateId: "sqt:element_earth", goal: "defeat", params: { count: 52, element: "EARTH", speciesId: "species:armor_crab", condition: "no_knockout" } },
+    { id: "sq:race:race_stonekin", kind: "race", templateId: "sqt:race_stonekin", goal: "boss", params: { count: 4, speciesId: "species:crystal_crab_lord", condition: "no_knockout" } },
+    { id: "sq:personal:personal_colours", kind: "personal", templateId: "sqt:personal_colours", goal: "defeat", params: { count: 41, element: "WIND", speciesId: "species:bell_bird" } },
+    { id: "sq:personal:personal_lone_walk", kind: "personal", templateId: "sqt:personal_lone_walk", goal: "win", params: { count: 12, mapId: "map:dawn_field", condition: "solo" } },
+    { id: "sq:personal:personal_offering", kind: "personal", templateId: "sqt:personal_offering", goal: "deliver", params: { count: 27, itemId: "item:river_pebble" } },
+  ];
+
+  it("a stored v1 set reads back unchanged: no reroll to v2, not by view, reveal or a replayed create", async () => {
+    const old = new CharacterStore(d1, R, content, now);
+    const created = await old.create(A, req());
+    const id = created.status === "created" ? created.character.id : "";
+    db.prepare(
+      `INSERT INTO character_secret_quests (character_id, account_id, generator_version, quests_json, created_at) VALUES (?, ?, 1, ?, '2026-10-05T00:00:00Z')`,
+    ).run(id, A, JSON.stringify(V1_QUESTS));
+    const before = rows();
+    expect(await secrets.view(A)).toStrictEqual({ locked: true });
+    expect(await store.create(A, req())).toMatchObject({ status: "created" });
+    expect(await secrets.devReveal(A)).toEqual({ locked: false, quests: V1_QUESTS });
+    const after = rows();
+    expect(after).toHaveLength(1);
+    expect(after[0]).toMatchObject({ generator_version: 1, quests_json: before[0]!.quests_json });
+    // A new character today gets a v2 set with 7 personal quests.
+    await store.create(B, req({ operationId: "op_create_b" }));
+    const fresh = rows().find((r) => r.account_id === B)!;
+    expect(fresh.generator_version).toBe(2);
+    expect((JSON.parse(fresh.quests_json) as { kind: string }[]).filter((q) => q.kind === "personal")).toHaveLength(7);
   });
 });
 

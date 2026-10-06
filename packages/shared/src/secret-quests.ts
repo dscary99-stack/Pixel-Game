@@ -8,8 +8,12 @@
  *   public inputs. The same seed and templates always give the same set.
  * - The set stays hidden: nothing about it (not even how many there are) reaches the client until
  *   the server unlocks it. The awakening quest does not exist yet, so nothing unlocks in normal play.
- * - Parameters (species, map, item, count, condition) come from content, chosen by the seeded RNG.
+ * - Parameters (species, map, item, count, condition, and a challenge's rounds / HP line / Bond tier /
+ *   tower floor) come from content, chosen by the seeded RNG.
+ * - Generator v2 (2026-10-06): challenge templates and more personal quests per set. A stored set keeps
+ *   its own generator version and is never rerolled, so v1 sets read back unchanged.
  * Templates here are the contract; the pool itself is EXAMPLE content (content/secret-quests.ts).
+ * Progress tracking is not built: nothing here counts or checks a fight yet.
  */
 import { z } from "zod";
 import { PLAYER_ELEMENTS, RACE_DEFINITIONS } from "./character";
@@ -19,23 +23,35 @@ import { ElementSchema, ItemId, type Element, type ItemDefinition, type SpeciesD
 import type { MapDefinition } from "./world/map";
 
 /** Bump when the roll changes; stored with every set so old sets keep their meaning. */
-export const SECRET_QUEST_GENERATOR_VERSION = 1;
+export const SECRET_QUEST_GENERATOR_VERSION = 2;
 
 export const SecretQuestKindSchema = z.enum(["element", "race", "personal"]);
 export type SecretQuestKind = z.infer<typeof SecretQuestKindSchema>;
 
 /**
  * What the quest asks. defeat/capture name a species; boss a boss species; explore a map to reach;
- * win a number of won fights (on a map when one is given); deliver an item to hand in.
+ * win a number of won fights (on a map when one is given); deliver an item to hand in;
+ * elite_capture an elite-pack leader of a species to catch (by hand, C15); tower a floor of the weekly
+ * tower to reach.
  */
-export const SecretQuestGoalSchema = z.enum(["defeat", "capture", "boss", "explore", "win", "deliver"]);
+export const SecretQuestGoalSchema = z.enum(["defeat", "capture", "boss", "explore", "win", "deliver", "elite_capture", "tower"]);
 export type SecretQuestGoal = z.infer<typeof SecretQuestGoalSchema>;
 
-/** Extra rule a fight must follow to count. */
-export const SecretQuestConditionSchema = z.enum(["solo", "no_items", "full_team", "mono_element_team", "no_knockout"]);
+/**
+ * Extra rule a fight must follow to count. solo: no companions; mono_element_team: every companion
+ * (and the element param when one is rolled) of one element; within_rounds: won by round `rounds`;
+ * low_hp_finish: the character ends under `hpBelowPct`% HP; bond_tier: a companion at Bond tier
+ * `bondTier` or above fights in it.
+ */
+export const SecretQuestConditionSchema = z.enum(["solo", "no_items", "full_team", "mono_element_team", "no_knockout", "within_rounds", "low_hp_finish", "bond_tier"]);
 export type SecretQuestCondition = z.infer<typeof SecretQuestConditionSchema>;
 
-const SpeciesSlotSchema = z.enum(["any", "normal", "boss", "of_element"]);
+/** of_element: a normal species of the rolled element; elite_leader: one that leads an ELITE spawn in the maps. */
+const SpeciesSlotSchema = z.enum(["any", "normal", "boss", "of_element", "elite_leader"]);
+const range = (max: number) => z.tuple([z.number().int().min(1).max(max), z.number().int().min(1).max(max)]);
+
+/** A condition's number comes from its own slot. */
+const CONDITION_SLOT = { within_rounds: "rounds", low_hp_finish: "hpBelowPct", bond_tier: "bondTier" } as const;
 
 export const SecretQuestTemplateSchema = z
   .object({
@@ -49,7 +65,10 @@ export const SecretQuestTemplateSchema = z
     /** race kind: the race this template is for. */
     raceId: z.string().regex(/^race:[a-z0-9_]+$/).optional(),
     goal: SecretQuestGoalSchema,
-    /** Shown only after the quest is revealed; `{species}`, `{element}`, `{map}`, `{item}`, `{count}` are filled in. */
+    /**
+     * Shown only after the quest is revealed; `{species}`, `{element}`, `{map}`, `{item}`, `{count}`,
+     * `{rounds}`, `{hpPct}`, `{bondTier}`, `{floor}` are filled in.
+     */
     text: z.object({ th: z.string().min(1) }).strict(),
     slots: z
       .object({
@@ -59,8 +78,16 @@ export const SecretQuestTemplateSchema = z
         species: SpeciesSlotSchema.optional(),
         map: z.enum(["field", "town", "any"]).optional(),
         item: z.literal("material").optional(),
-        count: z.tuple([z.number().int().min(1).max(9999), z.number().int().min(1).max(9999)]),
+        count: range(9999),
         conditions: z.array(SecretQuestConditionSchema).min(1).max(5).optional(),
+        /** within_rounds: the round the fight must be won by. */
+        rounds: range(50).optional(),
+        /** low_hp_finish: the character's HP % to end under. */
+        hpBelowPct: range(99).optional(),
+        /** bond_tier: the lowest Bond tier (0-based, rules bondTierSize) a companion in the fight needs. */
+        bondTier: range(9).optional(),
+        /** tower goals: the floor to reach (at most the tower's floors). */
+        floor: range(999).optional(),
       })
       .strict(),
   })
@@ -77,6 +104,10 @@ export const SecretQuestParamsSchema = z
     mapId: z.string().regex(/^map:[a-z0-9_]+$/).optional(),
     itemId: ItemId.optional(),
     condition: SecretQuestConditionSchema.optional(),
+    rounds: z.number().int().min(1).max(50).optional(),
+    hpBelowPct: z.number().int().min(1).max(99).optional(),
+    bondTier: z.number().int().min(1).max(9).optional(),
+    floor: z.number().int().min(1).max(999).optional(),
   })
   .strict();
 export type SecretQuestParams = z.infer<typeof SecretQuestParamsSchema>;
@@ -107,6 +138,8 @@ export interface SecretQuestContent {
   species: ReadonlyMap<string, SpeciesDefinition>;
   maps: ReadonlyMap<string, MapDefinition>;
   items: ReadonlyMap<string, ItemDefinition>;
+  /** Floors of the weekly tower; tower goals need it. */
+  frontierFloors?: number;
 }
 
 const byId = <T extends { id: string }>(xs: Iterable<T>): T[] => [...xs].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
@@ -117,10 +150,15 @@ function speciesPool(content: SecretQuestContent, slot: z.infer<typeof SpeciesSl
     .filter((s) => {
       if (slot === "boss") return s.rank === "BOSS";
       if (slot === "any") return true;
+      if (slot === "elite_leader") return eliteLeaders(content).has(s.id);
       if (s.rank !== "NORMAL") return false;
       return slot === "normal" || (element !== undefined && s.allowedElements.includes(element));
     })
     .map((s) => s.id);
+}
+/** Species that can lead an ELITE spawn (any entry may roll as the leader). */
+function eliteLeaders(content: SecretQuestContent): Set<string> {
+  return new Set([...content.maps.values()].flatMap((m) => m.spawns.filter((sp) => sp.rank === "ELITE").flatMap((sp) => sp.entries.map((e) => e.speciesId))));
 }
 function mapPool(content: SecretQuestContent, slot: "field" | "town" | "any"): string[] {
   return byId(content.maps.values())
@@ -139,6 +177,7 @@ function elementChoices(t: SecretQuestTemplate): Element[] {
   return [];
 }
 
+const between = (rng: Rng, [lo, hi]: readonly [number, number]) => lo + rng.nextInt(hi - lo + 1);
 const pick = <T>(rng: Rng, list: readonly T[]): T => {
   if (list.length === 0) throw new Error("secret quest slot has no candidates");
   return list[rng.nextInt(list.length)]!;
@@ -146,12 +185,17 @@ const pick = <T>(rng: Rng, list: readonly T[]): T => {
 
 function rollOne(t: SecretQuestTemplate, content: SecretQuestContent, rng: Rng): SecretQuest {
   const s = t.slots;
-  const params: SecretQuestParams = { count: s.count[0] + rng.nextInt(s.count[1] - s.count[0] + 1) };
+  const params: SecretQuestParams = { count: between(rng, s.count) };
   if (s.element !== undefined) params.element = pick(rng, elementChoices(t));
   if (s.species !== undefined) params.speciesId = pick(rng, speciesPool(content, s.species, params.element));
   if (s.map !== undefined) params.mapId = pick(rng, mapPool(content, s.map));
   if (s.item !== undefined) params.itemId = pick(rng, itemPool(content));
   if (s.conditions !== undefined) params.condition = pick(rng, s.conditions);
+  // Generator v2 slots, rolled after the v1 ones in a fixed order.
+  if (s.rounds !== undefined) params.rounds = between(rng, s.rounds);
+  if (s.hpBelowPct !== undefined) params.hpBelowPct = between(rng, s.hpBelowPct);
+  if (s.bondTier !== undefined) params.bondTier = between(rng, s.bondTier);
+  if (s.floor !== undefined) params.floor = between(rng, s.floor);
   return { id: `sq:${t.kind}:${t.id.slice("sqt:".length)}`, kind: t.kind, templateId: t.id, goal: t.goal, params };
 }
 
@@ -198,13 +242,15 @@ export interface SecretQuestTemplateIssue {
 }
 
 /** Slots each goal needs to mean anything. */
-const GOAL_NEEDS: Record<SecretQuestGoal, ("species" | "map" | "item")[]> = {
+const GOAL_NEEDS: Record<SecretQuestGoal, ("species" | "map" | "item" | "floor")[]> = {
   defeat: ["species"],
   capture: ["species"],
   boss: ["species"],
   explore: ["map"],
   win: [],
   deliver: ["item"],
+  elite_capture: ["species"],
+  tower: ["floor"],
 };
 
 /**
@@ -228,6 +274,25 @@ export function validateSecretQuestTemplates(rules: RulesConfig, templates: read
     for (const need of GOAL_NEEDS[t.goal]) if (s[need] === undefined) issue(`${t.goal} needs a ${need} slot`);
     if (t.goal === "boss" && s.species !== "boss") issue("boss goals pick a boss species");
     if ((t.goal === "defeat" || t.goal === "capture") && s.species === "boss") issue(`${t.goal} goals pick normal species (use goal boss)`);
+    if ((t.goal === "elite_capture") !== (s.species === "elite_leader")) issue("elite_capture goals (and only they) pick an elite_leader species");
+    if (t.goal !== "tower" && s.floor !== undefined) issue("only tower goals have a floor");
+    for (const [cond, slot] of Object.entries(CONDITION_SLOT) as [keyof typeof CONDITION_SLOT, (typeof CONDITION_SLOT)[keyof typeof CONDITION_SLOT]][]) {
+      const has = s.conditions?.includes(cond) === true;
+      if (has && s[slot] === undefined) issue(`${cond} needs a ${slot} slot`);
+      if (!has && s[slot] !== undefined) issue(`${slot} slot without the ${cond} condition`);
+      // Every condition of the list may roll, so a numbered one must be the only one.
+      if (has && s.conditions!.length > 1) issue(`${cond} must be the template's only condition`);
+    }
+    for (const slot of ["rounds", "hpBelowPct", "bondTier", "floor"] as const) {
+      const r = s[slot];
+      if (r !== undefined && r[0] > r[1]) issue(`${slot} range ${r[0]}–${r[1]} is upside down`);
+    }
+    const tiers = rules.provisional.bondTierBonusPercent.value.length;
+    if (s.bondTier !== undefined && s.bondTier[1] > tiers - 1) issue(`bond tier ${s.bondTier[1]} is above the top tier ${tiers - 1}`);
+    if (t.goal === "tower" && s.floor !== undefined) {
+      if (content.frontierFloors === undefined) issue("tower goals need the tower's floor count");
+      else if (s.floor[1] > content.frontierFloors) issue(`floor ${s.floor[1]} is above the tower's ${content.frontierFloors} floors`);
+    }
     if (s.species === "of_element" && s.element === undefined) issue("of_element species needs an element slot");
     if (s.element === "template" && t.element === undefined) issue("element slot 'template' needs the template's element");
     if (s.species !== undefined) {

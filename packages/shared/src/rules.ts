@@ -187,12 +187,12 @@ export const RULES = {
      * Secret quests after the Lv200 awakening quest (Nut 2026-10-05: the game has no ending). Each
      * character gets 1 element quest + 1 race quest + `personalCount` personal quests, rolled once at
      * creation from a server-keyed seed of account id + character name, hidden until unlocked.
-     * The count is Claude's first pass.
+     * Nut 2026-10-06: more personal quests, and challenging ones; 7 is Claude's pick for "more".
      */
     secretQuests: provisional(
-      { personalCount: 3 } as const,
+      { personalCount: 7 } as const,
       "P16",
-      "Nut 2026-10-05: element + race + personal secret quests after the Lv200 awakening; personal count is Claude's first pass",
+      "Nut 2026-10-05: element + race + personal secret quests after the Lv200 awakening; Nut 2026-10-06: more and harder personal ones (7 is Claude's pick)",
     ),
     affixLevelScalePct: provisional(2, "P09", "affix value × (1 + 2% per item level above 1); Claude's first pass"),
     bossActions: provisional({ maxPerRound: 3 } as const, "P15", "bosses act up to 3 times a round; statuses count once per round"),
