@@ -6,6 +6,10 @@
 import {
   type FrontierView,
   JOURNAL_TITLES,
+  EXAMPLE_SECRET_QUEST_TEMPLATES,
+  exampleSecretRewardRegistry,
+  secretTitleRewardId,
+  type SecretQuest,
   levelBand,
   type JournalSpecies,
   questGoalText,
@@ -1207,8 +1211,125 @@ export function journalPanel(api: CharacterApi): Promise<void> {
   });
 }
 
-/** Display name of a title id. */
-export const titleName = (id: string | null | undefined) => (id == null ? null : (JOURNAL_TITLES.find((t) => t.id === id)?.name.th ?? null));
+const secretRewards = exampleSecretRewardRegistry();
+const secretTemplates = new Map(EXAMPLE_SECRET_QUEST_TEMPLATES.map((t) => [t.id, t]));
+
+/** Display name of a title id (journal titles, and secret quest titles by their reward). */
+export const titleName = (id: string | null | undefined) => {
+  if (id == null) return null;
+  const journal = JOURNAL_TITLES.find((t) => t.id === id)?.name.th;
+  if (journal !== undefined) return journal;
+  const reward = secretTitleRewardId(id);
+  return reward === null ? null : (secretRewards.get(reward)?.name.th ?? null);
+};
+
+const SECRET_KIND_TH = { element: "ประจำธาตุ", race: "ประจำเผ่า", personal: "เฉพาะตัว" } as const;
+const SECRET_REWARD_TH = { title: "ฉายา", fashion: "แฟชั่น", companion: "อสูร", gear: "อุปกรณ์" } as const;
+
+/** A secret quest's text with its rolled values filled in (display only). */
+function secretQuestText(q: SecretQuest): string {
+  const t = secretTemplates.get(q.templateId)?.text.th ?? q.templateId;
+  const p = q.params;
+  const fill: Record<string, string | undefined> = {
+    species: p.speciesId === undefined ? undefined : (species.get(p.speciesId)?.name.th ?? p.speciesId),
+    element: p.element === undefined ? undefined : ELEMENT_TH[p.element],
+    map: p.mapId === undefined ? undefined : (exampleMapRegistry().get(p.mapId)?.name.th ?? p.mapId),
+    item: p.itemId === undefined ? undefined : (itemDefs.get(p.itemId)?.name.th ?? p.itemId),
+    count: p.count.toLocaleString(),
+    rounds: p.rounds?.toString(),
+    hpPct: p.hpBelowPct?.toString(),
+    bondTier: p.bondTier === undefined ? undefined : (BOND_TIER_NAMES[p.bondTier] ?? String(p.bondTier)),
+    floor: p.floor?.toString(),
+  };
+  return t.replace(/\{(\w+)\}/g, (m, k: string) => fill[k] ?? m);
+}
+
+/**
+ * Secret quests (Nut 2026-10-05). Locked: one line and nothing else, since the server says nothing
+ * more (no count, no hints). Open: each quest with progress, deliver (in town) and claim buttons.
+ */
+export function secretQuestPanel(api: CharacterApi): Promise<void> {
+  return new Promise((resolve) => {
+    const { panel, close } = overlay();
+    let busy = false;
+    const body = el("div", { "data-secret": "" });
+    const note = el("div", { class: "pm-note", "data-secret-note": "" });
+    const error = el("div", { class: "pm-error", role: "alert" });
+    const actions = el("div", { class: "pm-actions" });
+    const done = el("button", { type: "button", class: "primary" }, "ปิด");
+    actions.append(done);
+    panel.append(el("h2", {}, "เควสลับ"), body, note, error, actions);
+    done.addEventListener("click", () => {
+      close();
+      resolve();
+    });
+    const act = async (run: () => Promise<string>) => {
+      if (busy) return;
+      busy = true;
+      error.textContent = "";
+      try {
+        note.textContent = await run();
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+      } finally {
+        busy = false;
+        await load();
+      }
+    };
+    const load = async () => {
+      try {
+        const [v, bundle] = await Promise.all([api.secretQuests(), api.get()]);
+        body.replaceChildren();
+        if (v.locked) {
+          body.append(el("div", { class: "pm-stats", "data-secret-locked": "" }, "ยังไม่มีใครรู้ว่าเส้นทางของเจ้าซ่อนอะไรไว้… (เปิดหลังเควสบรรลุ)"));
+          return;
+        }
+        const bag = bundle?.bag ?? {};
+        const claimed = new Set(v.claimed ?? []);
+        const list = el("ul", { class: "pm-list" });
+        for (const q of v.quests) {
+          const pr = v.progress?.[q.id];
+          const n = pr?.progress ?? 0;
+          const li = el("li", { class: "pm-skill-pet", "data-secret-quest": q.id });
+          li.append(el("div", {}, `[${SECRET_KIND_TH[q.kind]}] ${secretQuestText(q)}`));
+          li.append(el("span", { class: "pm-affix" }, `ความคืบหน้า ${n.toLocaleString()}/${q.params.count.toLocaleString()}${claimed.has(q.id) ? " · รับรางวัลแล้ว" : pr?.completed ? " · สำเร็จ!" : ""}`));
+          if (q.rewards !== undefined) {
+            li.append(el("span", { class: "pm-affix" }, `รางวัล: ${q.rewards.map((r) => `${SECRET_REWARD_TH[r.kind]} ${secretRewards.get(r.rewardId)?.name.th ?? r.rewardId}`).join(" · ")}`));
+          }
+          if (q.goal === "deliver" && q.params.itemId !== undefined && !pr?.completed) {
+            const itemId = q.params.itemId;
+            const give = Math.min(bag[itemId] ?? 0, q.params.count - n);
+            const b = el("button", { type: "button", "data-secret-deliver": q.id }, `ส่ง ${itemDefs.get(itemId)?.name.th ?? itemId} ×${give}`);
+            b.disabled = give <= 0;
+            b.addEventListener("click", () => {
+              if (!window.confirm(`ส่ง ${itemDefs.get(itemId)?.name.th ?? itemId} ×${give}? ของจะถูกใช้ไป`)) return;
+              void act(async () => {
+                await api.secretDeliver(q.id, give);
+                return `ส่งแล้ว ${give} ชิ้น`;
+              });
+            });
+            li.append(b);
+          }
+          if (pr?.completed && !claimed.has(q.id)) {
+            const b = el("button", { type: "button", class: "primary", "data-secret-claim": q.id }, "รับรางวัล");
+            b.addEventListener("click", () =>
+              void act(async () => {
+                const r = await api.secretClaim(q.id);
+                return `ได้รับ ${r.result.rewards.map((x) => `${SECRET_REWARD_TH[x.kind as keyof typeof SECRET_REWARD_TH] ?? x.kind} ${secretRewards.get(x.rewardId)?.name.th ?? x.rewardId}`).join(" · ")}`;
+              }),
+            );
+            li.append(b);
+          }
+          list.append(li);
+        }
+        body.append(list, el("div", { class: "pm-note" }, "นับเฉพาะไฟต์ที่ชนะโดยทำตามทุกเงื่อนไข · แวะแผนที่นับชั่วโมงละครั้ง · ส่งของได้ในเมือง · รางวัลเป็นของตัวละครนี้คนเดียว"));
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+      }
+    };
+    void load();
+  });
+}
 
 /**
  * NPC Orders (chapter 09): what each villager wants, the reward announced up front, and fills left

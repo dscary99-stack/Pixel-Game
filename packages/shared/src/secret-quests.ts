@@ -228,6 +228,8 @@ export type SecretQuestView =
       quests: SecretQuest[];
       /** Quest id → progress so far (secret-progress.ts); a quest not listed has none yet. */
       progress?: Record<string, { progress: number; completed: boolean }>;
+      /** Quests whose rewards were claimed. */
+      claimed?: string[];
     };
 
 export interface SecretQuestContent {

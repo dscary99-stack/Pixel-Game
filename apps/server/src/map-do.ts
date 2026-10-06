@@ -21,6 +21,7 @@ import {
   defaultCombatBag,
   exampleContentMaps,
   exampleMapRegistry,
+  exampleSecretRewardRegistry,
   huntingAllowed,
   inEngageRange,
   packCycle,
@@ -69,6 +70,7 @@ import { JournalStore } from "./journal-store";
 import { Economy } from "./economy";
 import { EncounterStore } from "./encounter-store";
 import { PartyStore } from "./party-store";
+import { SecretProgressStore } from "./secret-progress-store";
 import { WorldStore } from "./world-store";
 
 /** What each hibernatable socket remembers. */
@@ -105,6 +107,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
   private readonly economy: Economy;
   private readonly characters: CharacterStore;
   private readonly journal: JournalStore;
+  private readonly secrets: SecretProgressStore;
   private channel: MapChannel | null = null;
   private packs: { cycle: number; list: PackInstance[] } | null = null;
   /** Accounts with an engage or resume in flight; a second tap waits for the first answer. */
@@ -123,6 +126,8 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     this.economy = new Economy(env.DB, this.rules);
     this.characters = new CharacterStore(env.DB, this.rules, this.content);
     this.journal = new JournalStore(env.DB, this.rules, this.content);
+    const towns = [...this.maps.values()].filter((m) => m.kind === "town").map((m) => m.id);
+    this.secrets = new SecretProgressStore(env.DB, this.rules, { species: this.content.species, equipment: this.content.equipment, rewards: exampleSecretRewardRegistry() }, towns);
   }
 
   /** Rebuild the channel from live sockets (after hibernation) or create it on first join. */
@@ -242,6 +247,8 @@ export class MapChannelDurableObject extends DurableObject<Env> {
       const to = r.portal.to;
       // Destination channel number: keep the same number (channels are per-map; P11 prototype).
       const ok = await this.store.moveTo(a.presence.accountId, a.generation, a.mapId, to, a.channel);
+      // Explore secret quests: a walk into a map counts (once per map per window; never blocks travel).
+      if (ok) await this.secrets.creditVisit(a.presence.accountId, to.mapId).catch(() => undefined);
       ws.serializeAttachment(null);
       this.deliver(a.presence.accountId, channel.leave(a.presence.accountId).out);
       safeSend(ws, ok ? { t: "transfer", mapId: to.mapId, channel: a.channel } : { t: "kicked", reason: "REPLACED" });

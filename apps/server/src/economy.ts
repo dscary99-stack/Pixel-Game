@@ -15,6 +15,7 @@
  */
 import { SecretQuestSchema, secretQuestCredit, type BattleStatus, type Entitlement, type RulesConfig, type SecretFightFacts } from "@pmrpg/shared";
 import { RewardLedger, hashJson, type GrantResult, type SqlBound, type SqlDb } from "./reward-ledger";
+import { secretProgressWrites } from "./secret-progress-store";
 
 export interface ReserveRequest {
   reservationId: string;
@@ -351,28 +352,10 @@ export class Economy {
       .bind(row.character_id)
       .all<{ quest_id: string; progress: number }>();
     const progress = new Map(done.results.map((r) => [r.quest_id, r.progress]));
-    const credits = quests.map((q) => ({ q, n: secretQuestCredit(this.rules, q, s.secret!, progress.get(q.id) ?? 0) })).filter((c) => c.n > 0);
-    if (credits.length === 0) return [];
-    const token = crypto.randomUUID();
-    const mine = `EXISTS (SELECT 1 FROM secret_quest_credits WHERE character_id = ? AND source_id = ? AND token = ?)`;
-    const mineArgs = [row.character_id, s.battleId, token];
-    return [
-      this.db
-        .prepare(`INSERT INTO secret_quest_credits (character_id, source_id, token, at) SELECT ?, ?, ?, ? WHERE ${ours} ON CONFLICT DO NOTHING`)
-        .bind(row.character_id, s.battleId, token, at, ...oursArgs),
-      ...credits.map(({ q, n }) =>
-        this.db
-          .prepare(
-            `INSERT INTO secret_quest_progress (character_id, quest_id, progress, completed_at, updated_at)
-             SELECT ?, ?, ?, ?, ? WHERE ${mine}
-             ON CONFLICT (character_id, quest_id) DO UPDATE SET
-               progress = MIN(secret_quest_progress.progress + excluded.progress, ?),
-               completed_at = COALESCE(secret_quest_progress.completed_at, CASE WHEN secret_quest_progress.progress + excluded.progress >= ? THEN excluded.updated_at END),
-               updated_at = excluded.updated_at`,
-          )
-          .bind(row.character_id, q.id, n, n >= q.params.count ? at : null, at, ...mineArgs, q.params.count, q.params.count),
-      ),
-    ];
+    const credits = quests
+      .map((q) => ({ questId: q.id, n: secretQuestCredit(this.rules, q, s.secret!, progress.get(q.id) ?? 0), count: q.params.count }))
+      .filter((c) => c.n > 0);
+    return secretProgressWrites(this.db, row.character_id, s.battleId, credits, at, { sql: ours, args: oursArgs });
   }
 
   // ------------------------------------------------------------------ release (reconciler)

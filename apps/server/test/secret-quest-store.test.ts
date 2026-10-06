@@ -129,7 +129,7 @@ describe("generator versions", () => {
     const before = rows();
     expect(await secrets.view(A)).toStrictEqual({ locked: true });
     expect(await store.create(A, req())).toMatchObject({ status: "created" });
-    expect(await secrets.devReveal(A)).toEqual({ locked: false, quests: V1_QUESTS, progress: {} });
+    expect(await secrets.devReveal(A)).toEqual({ locked: false, quests: V1_QUESTS, progress: {}, claimed: [] });
     const after = rows();
     expect(after).toHaveLength(1);
     expect(after[0]).toMatchObject({ generator_version: 1, quests_json: before[0]!.quests_json });
@@ -156,7 +156,7 @@ describe("generator versions", () => {
     ).run(id, A, JSON.stringify(V2_QUESTS));
     const before = rows();
     expect(await store.create(A, req())).toMatchObject({ status: "created" });
-    expect(await secrets.devReveal(A)).toEqual({ locked: false, quests: V2_QUESTS, progress: {} });
+    expect(await secrets.devReveal(A)).toEqual({ locked: false, quests: V2_QUESTS, progress: {}, claimed: [] });
     expect(rows()[0]).toMatchObject({ generator_version: 2, quests_json: before[0]!.quests_json });
   });
 });
@@ -197,11 +197,11 @@ describe("locked means nothing leaks", () => {
   it("the dev reveal returns the stored set and unlocks the view; revealing twice keeps it", async () => {
     await store.create(A, req());
     const want = (await expected(KEY, A, "นัท")).quests;
-    expect(await secrets.devReveal(A)).toEqual({ locked: false, quests: want, progress: {} });
-    expect(await secrets.view(A)).toEqual({ locked: false, quests: want, progress: {} });
+    expect(await secrets.devReveal(A)).toEqual({ locked: false, quests: want, progress: {}, claimed: [] });
+    expect(await secrets.view(A)).toEqual({ locked: false, quests: want, progress: {}, claimed: [] });
     const at = rows()[0]!.revealed_at;
     expect(at).toBe(now());
-    expect(await secrets.devReveal(A)).toEqual({ locked: false, quests: want, progress: {} });
+    expect(await secrets.devReveal(A)).toEqual({ locked: false, quests: want, progress: {}, claimed: [] });
     expect(rows()[0]!.revealed_at).toBe(at);
   });
 });

@@ -109,7 +109,11 @@ export class SecretQuestStore {
       .bind(row.character_id)
       .all<{ quest_id: string; progress: number; completed_at: string | null }>();
     const progress = Object.fromEntries(rows.results.map((r) => [r.quest_id, { progress: r.progress, completed: r.completed_at !== null }]));
-    return { locked: false, quests: set.quests, progress };
+    const claims = await this.db
+      .prepare(`SELECT quest_id FROM secret_quest_claims WHERE character_id = ? ORDER BY quest_id`)
+      .bind(row.character_id)
+      .all<{ quest_id: string }>();
+    return { locked: false, quests: set.quests, progress, claimed: claims.results.map((c) => c.quest_id) };
   }
 
   /** What the client may see; null when the account has no character. */

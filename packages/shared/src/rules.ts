@@ -223,6 +223,11 @@ export const RULES = {
       "Nut 2026-10-05: element + race + personal secret quests after the Lv200 awakening; Nut 2026-10-06: more and harder personal ones (7 is Claude's pick)",
     ),
     /**
+     * Explore secret quests ("visit a map N times"): one visit per map counts per window, so walking
+     * back and forth through a portal does not farm it (secret-progress.ts, A111).
+     */
+    secretQuestVisitWindowMinutes: provisional(60, "P16", "one counted visit per map per hour; Claude's pick so 150–300 visits stay a long goal"),
+    /**
      * Weekly tower run (frontier.ts; Nut's decisions are in `confirmed`). Floor stat % = 100 +
      * statPctPerFloor × floor on HP and ATK/MATK (like an elite's), wild level never changes. Every floor
      * fields 10 monsters (C, Nut 2026-10-06); species climb by wild level, one step every

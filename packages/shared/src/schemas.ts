@@ -462,7 +462,7 @@ export const MonsterInstanceSchema = z
     skillMastery: z.number().int().min(0),
     bond: z.number().int().min(0).max(1000),
     originRecord: z
-      .object({ kind: z.enum(["capture", "starter", "event"]), battleId: z.string().optional(), at: z.string() })
+      .object({ kind: z.enum(["capture", "starter", "event", "secret_reward"]), battleId: z.string().optional(), at: z.string() })
       .strict(),
     ownershipVersion: z.number().int().min(1),
     lockState: z.enum(["free", "in_battle", "in_escrow"]),

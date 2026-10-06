@@ -55,7 +55,15 @@ export class JournalStore {
     const ch = await this.db.prepare(`SELECT title_id FROM characters WHERE account_id = ?`).bind(accountId).first<{ title_id: string | null }>();
     if (ch === null) return null;
     const summary = await this.summary(accountId);
-    return { ...summary, titles: earnedTitles(summary, this.bossSpecies()), titleId: ch.title_id };
+    // Secret quest titles (secret-progress-store.ts) are owned once claimed.
+    const secret = await this.db
+      .prepare(
+        `SELECT r.ref FROM character_secret_rewards r JOIN characters c ON c.id = r.character_id
+          WHERE c.account_id = ? AND r.kind = 'title' AND r.ref IS NOT NULL ORDER BY r.created_at, r.quest_id`,
+      )
+      .bind(accountId)
+      .all<{ ref: string }>();
+    return { ...summary, titles: [...earnedTitles(summary, this.bossSpecies()), ...secret.results.map((r) => r.ref)], titleId: ch.title_id };
   }
 
   async title(accountId: string): Promise<string | null> {

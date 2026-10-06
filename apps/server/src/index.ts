@@ -11,7 +11,10 @@
  *   POST /dev/reconcile            (dev only) run the reconciler now, ignoring reservation age
  *   GET  /character                the caller's character, team and owned companions (404 NO_CHARACTER)
  *   GET  /character/secret-quests  { locked: true } until the set is unlocked (no count, no hints)
+ *   POST /character/secret-quests/deliver {operationId, questId, quantity}  hand in materials (town)
+ *   POST /character/secret-quests/claim {questId}  claim a finished quest's rewards (once)
  *   POST /dev/secret-quests/reveal (dev only) reveal the caller's secret quests and return them
+ *   POST /dev/secret-quests/complete {questId} (dev only) finish one quest so the claim can be tried
  *   POST /character                create the character (idempotent on operationId; one per account)
  *   GET  /party, POST /party, POST /party/join {partyId}, POST /party/leave   party (P02)
  *   POST /town/affix/reroll        roll one gear affix again for coins + material (operationId, equipmentId, slot, expectedAffixes, expectedCost)
@@ -82,6 +85,7 @@ import { JournalStore } from "./journal-store";
 import { NpcOrderStore } from "./npc-order-store";
 import { DisposalStore } from "./disposal-store";
 import { SecretQuestStore, secretQuestKey } from "./secret-quest-store";
+import { SecretProgressStore } from "./secret-progress-store";
 import { FrontierStore, type FrontierBattlePort } from "./frontier-store";
 
 export { BattleDurableObject } from "./battle-do";
@@ -97,6 +101,8 @@ const CONTENT = { ...exampleContentMaps(), shops: exampleShopRegistry(), recipes
 
 const secretQuestsFor = (env: Env) =>
   new SecretQuestStore(env.DB, rulesFor(env), EXAMPLE_SECRET_QUEST_TEMPLATES, { ...CONTENT, maps: exampleMapRegistry(), frontierFloors: PRODUCTION_RULES.confirmed.frontierFloors.value, rewards: exampleSecretRewardRegistry() }, secretQuestKey(env));
+const secretProgressFor = (env: Env) =>
+  new SecretProgressStore(env.DB, rulesFor(env), { species: CONTENT.species, equipment: CONTENT.equipment, rewards: exampleSecretRewardRegistry() }, TOWNS);
 const charactersFor = (env: Env) => new CharacterStore(env.DB, rulesFor(env), CONTENT, undefined, secretQuestsFor(env));
 const TOWNS = [...exampleMapRegistry().values()].filter((m) => m.kind === "town").map((m) => m.id);
 const townFor = (env: Env) => new TownServices(env.DB, rulesFor(env), CONTENT, TOWNS);
@@ -284,6 +290,12 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
   }
   const body = await readJson(request);
   if (body === undefined) return json(400, { error: "INVALID_REQUEST" });
+  if (request.method === "POST" && (url.pathname === "/character/secret-quests/deliver" || url.pathname === "/character/secret-quests/claim")) {
+    const store = secretProgressFor(env);
+    const r = url.pathname.endsWith("/deliver") ? await store.deliver(accountId, body) : await store.claim(accountId, body);
+    if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : r.reason === "NO_CHARACTER" ? 404 : 409, { error: r.reason, message: r.message });
+    return json(200, { ...r, view: await secretQuestsFor(env).view(accountId) });
+  }
   if (request.method === "POST" && url.pathname === "/town/order") {
     const r = await ordersFor(env).fill(accountId, body);
     if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
@@ -377,6 +389,12 @@ async function devRoute(request: Request, env: Env, url: URL): Promise<Response>
   if (request.method === "POST" && url.pathname === "/dev/secret-quests/reveal") {
     const view = await secretQuestsFor(env).devReveal(accountId);
     return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
+  }
+  if (request.method === "POST" && url.pathname === "/dev/secret-quests/complete") {
+    const parsed = z.object({ questId: z.string().min(1) }).strict().safeParse(await readJson(request));
+    if (!parsed.success) return json(400, { error: "INVALID_REQUEST" });
+    if (!(await secretProgressFor(env).devComplete(accountId, parsed.data.questId))) return json(409, { error: "NOT_REVEALED_OR_NO_SUCH_QUEST" });
+    return json(200, await secretQuestsFor(env).view(accountId));
   }
   // DEV ONLY: tower helpers for smokes (jump to a floor between fights, give back the week's entry).
   if (request.method === "POST" && url.pathname === "/dev/frontier/jump") {

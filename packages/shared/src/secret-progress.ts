@@ -6,15 +6,19 @@
  * - Only won fights count, and a fight counts only when every condition the quest carries holds for
  *   the whole fight (its rolled `condition` plus every `require`). Losing, or breaking one condition,
  *   gives nothing for that quest, even for enemies already defeated.
- * - Fight goals: defeat, capture, boss, win, elite_capture, tower. `explore` and `deliver` are not fight
- *   goals and are never credited here (map visits and hand-ins come later).
+ * - Fight goals: defeat, capture, boss, win, elite_capture, tower. `explore` counts a visit (walking
+ *   into the map through a portal, at most one per map per `visitWindowMinutes`); `deliver` counts
+ *   materials handed in at a town. Neither comes from a fight.
+ * - A finished quest is claimed once; its rewards are this character's own (variant id).
  * - Progress counts only once the set is revealed (the awakening quest; not built). The server keeps
  *   that rule (economy.ts); this module only answers "how much does this fight add".
  */
+import { z } from "zod";
 import type { BattleState } from "./battle/types";
+import { OperationIdSchema } from "./character";
 import type { RulesConfig } from "./rules";
-import type { Element } from "./schemas";
-import type { SecretQuest, SecretQuestCondition } from "./secret-quests";
+import type { Element, SpeciesDefinition } from "./schemas";
+import type { SecretQuest, SecretQuestCondition, SecretQuestReward } from "./secret-quests";
 
 /** One fight, as secret quests see it. Built by the server from the final battle state. */
 export interface SecretFightFacts {
@@ -137,4 +141,44 @@ export function secretQuestCredit(rules: RulesConfig, q: SecretQuest, f: SecretF
       break;
   }
   return Math.max(0, Math.min(n, q.params.count - progress));
+}
+
+// ---------------------------------------------------------------- visits, hand-ins, claims
+
+/** Window id for a visit: one visit per map counts per window (rules.provisional.secretQuestVisitWindowMinutes). */
+export function secretVisitWindow(rules: RulesConfig, at: string): string {
+  const ms = rules.provisional.secretQuestVisitWindowMinutes.value * 60_000;
+  return String(Math.floor(Date.parse(at) / ms));
+}
+
+/** Explore quests a walk into `mapId` adds one to (never past the count). */
+export function secretVisitCredit(q: SecretQuest, mapId: string, progress = 0): number {
+  return q.goal === "explore" && q.params.mapId === mapId && progress < q.params.count ? 1 : 0;
+}
+
+const SecretQuestIdSchema = z.string().regex(/^sq:(element|race|personal):[a-z0-9_]+$/);
+
+/** Hand in materials for a `deliver` quest (in a town; never more than the quest still needs). */
+export const SecretDeliverRequestSchema = z.object({ operationId: OperationIdSchema, questId: SecretQuestIdSchema, quantity: z.number().int().min(1).max(9999) }).strict();
+export type SecretDeliverRequest = z.infer<typeof SecretDeliverRequestSchema>;
+
+/** Claim a finished quest's rewards (once per quest per character). */
+export const SecretClaimRequestSchema = z.object({ questId: SecretQuestIdSchema }).strict();
+export type SecretClaimRequest = z.infer<typeof SecretClaimRequestSchema>;
+
+/** A secret title's id: the reward plus the character's variant, so it is theirs alone. */
+export function secretTitleId(r: Pick<SecretQuestReward, "rewardId" | "variantId">): string {
+  return `title:${r.rewardId.slice("srw:".length)}_${r.variantId}`;
+}
+
+/** The reward id behind a secret title id, or null for any other title. */
+export function secretTitleRewardId(titleId: string): string | null {
+  const m = /^title:([a-z0-9_]+)_(v[0-9a-f]{8})$/.exec(titleId);
+  return m === null ? null : `srw:${m[1]}`;
+}
+
+/** A reward companion's element: one its species allows, picked by the variant (so it is fixed). */
+export function secretCompanionElement(species: Pick<SpeciesDefinition, "allowedElements">, variantId: string): Element {
+  const list = [...species.allowedElements].sort();
+  return list[Number.parseInt(variantId.slice(1), 16) % list.length]!;
 }

@@ -31,7 +31,7 @@ import {
 } from "@pmrpg/shared";
 import { ELEMENT_COLOR, type BattleScene } from "./battle-scene";
 import type { CharacterApi, CharacterBundle } from "./character-api";
-import { autoHuntPanel, craftPanel, frontierPanel, journalPanel, ordersPanel, questPanel, titleName, equipmentPanel, partyPanel, rebirthPanel, shopPanel, skillPanel, statsPanel, teamPanel, vitals } from "./character-ui";
+import { autoHuntPanel, craftPanel, frontierPanel, journalPanel, ordersPanel, questPanel, titleName, equipmentPanel, partyPanel, rebirthPanel, secretQuestPanel, shopPanel, skillPanel, statsPanel, teamPanel, vitals } from "./character-ui";
 import type { WorldTransport } from "./world-transport";
 
 const W = 960;
@@ -154,7 +154,7 @@ export class WorldScene extends Phaser.Scene {
         this.huntBox.setVisible(false);
       });
     this.add
-      .text(W - 8, 8, `ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · C สเตตัส · T ทีม · E อุปกรณ์ · B ร้าน / F สร้างของ / O งานสั่ง / G หอคอย / R จุติคู่ใจ (ในเมือง) · K สกิล/Bond · H ล่าอัตโนมัติ · P ปาร์ตี้ · Q เควส · J สมุด" : ""}`, style)
+      .text(W - 8, 8, `ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · C สเตตัส · T ทีม · E อุปกรณ์ · B ร้าน / F สร้างของ / O งานสั่ง / G หอคอย / R จุติคู่ใจ (ในเมือง) · K สกิล/Bond · H ล่าอัตโนมัติ · P ปาร์ตี้ · Q เควส · J สมุด · L เควสลับ" : ""}`, style)
       .setOrigin(1, 0)
       .setScrollFactor(0)
       .setDepth(100);
@@ -177,6 +177,7 @@ export class WorldScene extends Phaser.Scene {
     kb.on("keydown-J", () => void this.openJournal());
     kb.on("keydown-O", () => void this.openOrders());
     kb.on("keydown-G", () => void this.openFrontier());
+    kb.on("keydown-L", () => void this.openSecretQuests());
     if (this.api !== null) {
       const button = (x: number, label: string, open: () => Promise<void>) =>
         this.add
@@ -204,6 +205,7 @@ export class WorldScene extends Phaser.Scene {
         ["สกิล (K)", () => this.openSkills()],
         ["เควส (Q)", () => this.openQuests()],
         ["สมุด (J)", () => this.openJournal()],
+        ["เควสลับ (L)", () => this.openSecretQuests()],
       ];
       let x = 8;
       let lift = 0;
@@ -560,6 +562,13 @@ export class WorldScene extends Phaser.Scene {
     if (this.map !== null && this.map.kind !== "town") return this.flash("ร้านอยู่ในเมือง");
     return this.withPanel("ขายของได้นอกไฟต์เท่านั้น", async (api, bundle) => {
       await shopPanel(api, bundle);
+    });
+  }
+
+  /** Secret quests: view anywhere; handing items in needs a town (the server checks). */
+  private openSecretQuests() {
+    return this.withPanel("ดูเควสลับได้นอกไฟต์", async (api) => {
+      await secretQuestPanel(api);
     });
   }
 
