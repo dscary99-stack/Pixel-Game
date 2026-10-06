@@ -102,6 +102,11 @@ export const RULES = {
     refineBreakFromTarget: confirmed(6, "P07", "Nut v2.1: a failed attempt at target +6 or higher destroys the piece unless a ward was used"),
     refineNoPity: confirmed(true, "P07", "Nut v2.1: no guarantee, no pity counter, no chance that grows with failures"),
     refineWardExists: confirmed(true, "P07", "Nut v2.1: a ward item, crafted from farmed coins plus monster materials (never Premium)"),
+    refineBreakDestroysSigils: confirmed(
+      true,
+      "O16",
+      "Nut 2026-10-07: Sigils on a piece destroyed by refining are lost with it; the player is warned first and can take them out (paid removal) beforehand",
+    ),
     // Weekly battle tower (chapter 07 §4 "tower", frontier.ts). Nut 2026-10-06 decided these.
     frontierFloorByFloor: confirmed(true, "chapter07", "Nut 2026-10-06: the tower is climbed floor by floor"),
     frontierEntriesPerWeek: confirmed(
@@ -551,8 +556,6 @@ export const RULES = {
     reviveRules: open<true>("O15", "revive timeline"),
     stalemateResolution: open<true>("O15"),
     /** Chapter 09: what happens to a weekly reward nobody claimed before the week ended. */
-    /** Refining: what happens to Sigils on a piece that breaks (v2.1 §5). Risky refining of a Sigil piece waits for this. */
-    sigilOnRefineBreak: open<"destroyed" | "returned">("O16", "Sigils on a piece destroyed by refining: lost with it, or back to the bag"),
     weeklyExpiredClaim: open<true>("chapter09", "expired unclaimed weekly reward policy; must never let two periods be claimed twice"),
   },
 } as const;

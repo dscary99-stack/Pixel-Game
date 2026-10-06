@@ -938,13 +938,15 @@ export function refinePanel(api: CharacterApi, start: CharacterBundle): Promise<
       const stones = bundle.bag[quote.stoneItemId] ?? 0;
       const wards = quote.wardItemId === null ? 0 : (bundle.bag[quote.wardItemId] ?? 0);
       if (wards === 0) useWard = false;
+      const sigilsAtRisk = quote.risky && !useWard && piece.sigils.length > 0;
+      const sigilNames = piece.sigils.map((s) => sigilDefs.get(s)?.name.th ?? s).join(", ");
       const now = statLine(refinedBaseStats(def, piece.refineLevel));
       const next = statLine(refinedBaseStats(def, quote.target));
       const failText = !quote.risky
         ? "ของอยู่ ค่าบวกคงเดิม"
         : useWard
           ? "ของอยู่ ค่าบวกคงเดิม (ตราถูกใช้ไป)"
-          : `อุปกรณ์ชิ้นนี้ถูกทำลายถาวร${piece.slot ? " และถูกถอดออก" : ""}${piece.sigils.length ? ` · Sigil ที่ติดอยู่: ${piece.sigils.map((s) => sigilDefs.get(s)?.name.th ?? s).join(", ")} (ยังไม่ตัดสินว่าจะหายหรือคืน)` : ""}`;
+          : `อุปกรณ์ชิ้นนี้ถูกทำลายถาวร${piece.slot ? " และถูกถอดออก" : ""}${sigilsAtRisk ? ` พร้อม Sigil ที่ติดอยู่ (${sigilNames})` : ""}`;
       const lines = [
         `+${quote.from} → +${quote.target} · โอกาสสำเร็จ ${pct(quote.successBp)}`,
         `ค่าตี ${quote.coins.toLocaleString()} เหรียญ (มี ${bundle.coins.toLocaleString()})`,
@@ -965,6 +967,16 @@ export function refinePanel(api: CharacterApi, start: CharacterBundle): Promise<
         box.append(wl);
       }
       box.append(el("div", { class: quote.risky && !useWard ? "pm-error" : "pm-note" }, `ถ้าพลาด: ${failText}`));
+      if (sigilsAtRisk) {
+        // O16 (Nut 2026-10-07): Sigils are lost with a broken piece. Warn and point to removal.
+        box.append(
+          el(
+            "div",
+            { class: "pm-error", "data-refine-sigil-warning": "" },
+            `⚠ ชิ้นนี้มี Sigil: ${sigilNames} ถ้าตีพลาด Sigil จะหายไปพร้อมอุปกรณ์ · ถอด Sigil ก่อนได้ที่ผู้อ่านตรา (เสียเหรียญ) หรือใช้ตราคุ้มครอง`,
+          ),
+        );
+      }
       const go = el("button", { type: "button", class: "primary", "data-refine-go": piece.id }, `ตีบวก +${quote.target}`);
       const short = bundle.coins < quote.coins ? "เหรียญไม่พอ" : stones < quote.stones ? "หินไม่พอ" : piece.lockState !== "free" ? "อยู่ในไฟต์" : null;
       go.disabled = short !== null || busy;
@@ -976,9 +988,10 @@ export function refinePanel(api: CharacterApi, start: CharacterBundle): Promise<
           `โอกาสสำเร็จ ${pct(quote.successBp)}`,
           `จ่าย ${quote.coins.toLocaleString()} เหรียญ + ${itemName(quote.stoneItemId)} ×${quote.stones}${ward ? ` + ${itemName(ward)} ×1` : ""}`,
           `ถ้าพลาด: ${failText}`,
+          ...(sigilsAtRisk ? [`⚠ Sigil ${sigilNames} จะหายไปด้วยถ้าพลาด ยืนยันจะตีโดยไม่ถอดใช่ไหม`] : []),
         ].join("\n");
         if (!window.confirm(msg)) return;
-        void attempt(piece, quote, ward);
+        void attempt(piece, quote, ward, sigilsAtRisk);
       });
       const actionsRow = el("div", { class: "pm-actions" });
       actionsRow.append(go);
@@ -988,19 +1001,19 @@ export function refinePanel(api: CharacterApi, start: CharacterBundle): Promise<
 
     const pieceLabel = (def: EquipmentDefinition, p: EquipmentView) => equipmentDisplayName(def, p.sigils, sigilDefs);
 
-    const attempt = async (piece: EquipmentView, quote: RefineQuote, ward: string | null) => {
+    const attempt = async (piece: EquipmentView, quote: RefineQuote, ward: string | null, acceptSigilLoss: boolean) => {
       if (busy) return;
       busy = true;
       error.textContent = "";
       try {
-        const r = await api.refine(piece.id, piece.refineLevel, piece.version ?? 1, ward, { coins: quote.coins, stoneItemId: quote.stoneItemId, stones: quote.stones });
+        const r = await api.refine(piece.id, piece.refineLevel, piece.version ?? 1, ward, { coins: quote.coins, stoneItemId: quote.stoneItemId, stones: quote.stones }, acceptSigilLoss);
         const x = r.result;
         result.textContent =
           x.outcome === "success"
             ? `สำเร็จ! ตอนนี้ +${x.target} (สุ่มได้ ${x.roll} < ${x.successBp})`
             : x.outcome === "kept"
               ? `พลาด ค่าบวกคงเดิม +${x.from} (สุ่มได้ ${x.roll}, ต้องต่ำกว่า ${x.successBp})`
-              : `พลาด อุปกรณ์แตกแล้ว (สุ่มได้ ${x.roll}, ต้องต่ำกว่า ${x.successBp})`;
+              : `พลาด อุปกรณ์แตกแล้ว${x.sigilsLost.length ? ` พร้อม Sigil ${x.sigilsLost.length} ดวง` : ""} (สุ่มได้ ${x.roll}, ต้องต่ำกว่า ${x.successBp})`;
         result.setAttribute("data-refine-result", x.outcome);
         if (x.outcome === "destroyed") pickedId = null;
       } catch (e) {

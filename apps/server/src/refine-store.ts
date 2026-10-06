@@ -9,10 +9,11 @@
  * receipt back: no second charge, no second roll.
  *
  * A destroyed piece is taken off, its live row deleted and a snapshot kept in disposed_assets as the
- * tombstone. Its Sigils follow O16 (OPEN): without a decision a risky attempt on a piece with Sigils
- * is refused before anything is spent.
+ * tombstone. Its Sigils are lost with it (O16, Nut 2026-10-07): a risky attempt without a ward on a
+ * piece with Sigils must say `acceptSigilLoss` (the client warns first), else it is refused before
+ * anything is spent.
  */
-import { RefineRequestSchema, refineQuote, refineSucceeds, type EquipSlot, type EquipmentDefinition, type RefineResult, type RulesConfig, sigilItemFor, type ItemDefinition } from "@pmrpg/shared";
+import { RefineRequestSchema, refineQuote, refineSucceeds, type EquipSlot, type EquipmentDefinition, type RefineResult, type RulesConfig, type ItemDefinition } from "@pmrpg/shared";
 import { hashJson, type SqlBound, type SqlDb } from "./reward-ledger";
 
 export type RefineRejection =
@@ -30,7 +31,7 @@ export type RefineRejection =
   | "NO_WARD"
   | "INSUFFICIENT_COINS"
   | "INSUFFICIENT_STONES"
-  | "UNRESOLVED_RULE"
+  | "SIGILS_WOULD_BREAK"
   | "CHANGED";
 
 export type RefineOutcome = { status: "done"; replayed: boolean; result: RefineResult } | { status: "rejected"; reason: RefineRejection; message: string };
@@ -73,8 +74,8 @@ export class RefineStore {
   async refine(accountId: string, raw: unknown): Promise<RefineOutcome> {
     const parsed = RefineRequestSchema.safeParse(raw);
     if (!parsed.success) return reject("INVALID_REQUEST", parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; "));
-    const { operationId, equipmentId, expectedLevel, expectedVersion, wardItemId, expectedCost } = parsed.data;
-    const hash = await hashJson({ kind: "refine", equipmentId, expectedLevel, expectedVersion, wardItemId, expectedCost });
+    const { operationId, equipmentId, expectedLevel, expectedVersion, wardItemId, expectedCost, acceptSigilLoss } = parsed.data;
+    const hash = await hashJson({ kind: "refine", equipmentId, expectedLevel, expectedVersion, wardItemId, expectedCost, acceptSigilLoss });
     const prior = await this.prior(accountId, operationId, hash);
     if (prior !== null) return prior;
 
@@ -95,16 +96,14 @@ export class RefineStore {
     if (wardItemId !== null && wardItemId !== quote.wardItemId) return reject("WARD_MISMATCH", `+${quote.target} on this piece takes ${quote.wardItemId}`);
     const sigils = JSON.parse(piece.sigil_sockets_json) as string[];
     const canBreak = quote.risky && wardItemId === null;
-    const sigilFate = this.rules.unresolved.sigilOnRefineBreak.value;
-    if (canBreak && sigils.length > 0 && sigilFate === null) {
-      return reject("UNRESOLVED_RULE", "what happens to Sigils on a broken piece is not decided (O16); use a ward or take the Sigils out first");
+    if (canBreak && sigils.length > 0 && !acceptSigilLoss) {
+      return reject("SIGILS_WOULD_BREAK", "a failure destroys the piece and its Sigils; confirm the loss, use a ward or take the Sigils out first");
     }
 
     const roll = this.roll();
     const success = refineSucceeds(roll, quote.successBp);
     const outcome: RefineResult["outcome"] = success ? "success" : canBreak ? "destroyed" : "kept";
     const destroyed = outcome === "destroyed";
-    const returned = destroyed && sigilFate === "returned" ? sigils : [];
     const result: RefineResult = {
       equipmentId,
       definitionId: def.id,
@@ -117,8 +116,7 @@ export class RefineStore {
       level: destroyed ? null : success ? quote.target : quote.from,
       version: destroyed ? null : piece.version + 1,
       unequipped: destroyed ? piece.slot : null,
-      sigilsLost: destroyed && sigilFate !== "returned" ? sigils : [],
-      sigilsReturned: returned,
+      sigilsLost: destroyed ? sigils : [],
     };
 
     const guards = [
@@ -190,21 +188,17 @@ export class RefineStore {
           .bind(result.level, equipmentId, accountId, ...ours.args),
       );
     } else {
-      for (const s of returned) {
-        const item = sigilItemFor(s, this.content.items);
-        if (item !== undefined) stmts.push(itemLine(line++, item.id, 1));
-      }
       stmts.push(
         this.db
           .prepare(
             `INSERT INTO disposed_assets (account_id, operation_id, asset_kind, asset_id, snapshot_json, disposed_at)
              SELECT ?, ?, 'equipment', id,
                json_object('reason', 'refine_break', 'definitionId', definition_id, 'rarity', rarity, 'refineLevel', refine_level, 'target', ?,
-                           'affixes', json(affixes_json), 'sigils', json(sigil_sockets_json), 'sigilFate', ?, 'slot', ?,
+                           'affixes', json(affixes_json), 'sigils', json(sigil_sockets_json), 'slot', ?,
                            'createdOperationId', created_operation_id, 'createdAt', created_at), ?
              FROM equipment_instances WHERE id = ? AND owner_id = ? AND ${ours.sql} ON CONFLICT DO NOTHING`,
           )
-          .bind(accountId, operationId, quote.target, sigils.length > 0 ? sigilFate : null, piece.slot, at, equipmentId, accountId, ...ours.args),
+          .bind(accountId, operationId, quote.target, piece.slot, at, equipmentId, accountId, ...ours.args),
         // Taking a worn piece off changes the character: bump its version like an equip does.
         this.db
           .prepare(

@@ -1,5 +1,5 @@
 /**
- * Refining / ตีบวก (Nut's REFINEMENT_DESIGN v2.1, 2026-10-07; rules under P07 and O16).
+ * Refining / ตีบวก (Nut's REFINEMENT_DESIGN v2.1, 2026-10-07; rules under P07, O16 decided by Nut).
  *
  * - One attempt raises a piece from +n to target +n+1 (cap rules.provisional.refineMaxLevel).
  * - The server rolls 0..9999; the attempt succeeds when the roll is below the target's basis points.
@@ -13,8 +13,8 @@
  * - Stones by tier: basic 1–49, fused 50–99, dense 100–149, star 150–200.
  * - Power: +3% of each refinable base stat per level, not compounded (`refinedBaseStats`,
  *   equipment.ts). Sigils, affixes and unique effects never grow.
- * - What happens to Sigils on a destroyed piece is OPEN (O16): risky attempts on a piece with Sigils
- *   are refused (UNRESOLVED_RULE) until it is decided.
+ * - Sigils on a destroyed piece are lost with it (O16, Nut 2026-10-07). The player is warned before a
+ *   risky attempt and can remove them first (paid removal in town).
  */
 import { z } from "zod";
 import { OperationIdSchema } from "./character";
@@ -137,6 +137,8 @@ export const RefineRequestSchema = z
     wardItemId: ItemId.nullable(),
     /** The cost the player was shown. */
     expectedCost: z.object({ coins: z.number().int().min(0), stoneItemId: ItemId, stones: z.number().int().min(0) }).strict(),
+    /** The player saw the warning that a failure also destroys the piece's Sigils (O16). */
+    acceptSigilLoss: z.boolean().default(false),
   })
   .strict();
 export type RefineRequest = z.infer<typeof RefineRequestSchema>;
@@ -155,8 +157,7 @@ export interface RefineResult {
   /** The piece's level and version afterwards (null when destroyed). */
   level: number | null;
   version: number | null;
-  /** Destroyed only: the slot it was taken off, and its Sigils (lost or back in the bag, per O16). */
+  /** Destroyed only: the slot it was taken off, and the Sigils lost with it (O16). */
   unequipped: EquipSlot | null;
   sigilsLost: string[];
-  sigilsReturned: string[];
 }

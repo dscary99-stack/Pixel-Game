@@ -2,7 +2,7 @@
  * Refining / ตีบวก (REFINEMENT_DESIGN v2.1) on the D1 migrations (node:sqlite stand-in): one charge
  * and one roll per operation id even when raced, failures keep the level below +6 and destroy the
  * piece from +6 without a ward, a ward is used up either way and never swapped for a risky attempt,
- * O16 blocks risky attempts on Sigil pieces, and wards are crafted from coins plus materials.
+ * Sigils break with the piece only after the player accepts it (O16), and wards are crafted from coins plus materials.
  */
 import { beforeEach, describe, expect, it } from "vitest";
 import {
@@ -12,9 +12,7 @@ import {
   refineQuote,
   refineStoneItemId,
   refineWardItemId,
-  withFixtureOverrides,
   type RefineQuote,
-  type RulesConfig,
 } from "@pmrpg/shared";
 import { CharacterStore } from "../src/character-store";
 import { Economy } from "../src/economy";
@@ -36,8 +34,8 @@ let rolls: number[];
 let dagger: string;
 const now = () => "2026-10-07T00:00:00Z";
 
-const refiner = (rules: RulesConfig = R) =>
-  new RefineStore(d1, rules, { equipment: content.equipment, items: content.items }, [TOWN], () => {
+const refiner = () =>
+  new RefineStore(d1, R, { equipment: content.equipment, items: content.items }, [TOWN], () => {
     const r = rolls.shift();
     if (r === undefined) throw new Error("no roll queued");
     return r;
@@ -243,19 +241,33 @@ describe("refine attempts", () => {
   });
 });
 
-describe("Sigils and O16", () => {
+describe("Sigils and O16 (Nut 2026-10-07: lost with the piece)", () => {
   beforeEach(() => {
     setLevel(dagger, 5);
     db.prepare(`UPDATE equipment_instances SET sigil_sockets_json = '["sigil:ember_fox"]' WHERE id = ?`).run(dagger);
   });
+  const riskyWithSigils = (operationId: string, acceptSigilLoss?: boolean) => {
+    const q = quoteFor(dagger);
+    const p = piece(dagger)!;
+    return refiner().refine(A, {
+      operationId,
+      equipmentId: dagger,
+      expectedLevel: p.level,
+      expectedVersion: p.version,
+      wardItemId: null,
+      expectedCost: { coins: q.coins, stoneItemId: q.stoneItemId, stones: q.stones },
+      ...(acceptSigilLoss === undefined ? {} : { acceptSigilLoss }),
+    });
+  };
 
-  it("refuses a risky attempt without a ward on a Sigil piece while O16 is open, with nothing spent", async () => {
+  it("refuses a risky attempt without a ward on a Sigil piece until the player accepts the loss, with nothing spent", async () => {
     const before = await spent();
-    expect(await attempt("ref_o16_000", dagger)).toMatchObject({ status: "rejected", reason: "UNRESOLVED_RULE" });
+    expect(await riskyWithSigils("ref_o16_000")).toMatchObject({ status: "rejected", reason: "SIGILS_WOULD_BREAK" });
+    expect(await riskyWithSigils("ref_o16_001", false)).toMatchObject({ status: "rejected", reason: "SIGILS_WOULD_BREAK" });
     expect(await spent()).toEqual(before);
   });
 
-  it("a warded attempt keeps the Sigils whatever happens; safe targets are not blocked", async () => {
+  it("a warded attempt keeps the Sigils whatever happens; safe targets need no confirmation", async () => {
     const ward = refineWardItemId(1, 6);
     await eco.devGrant("wards:s", A, { [ward]: 1 });
     rolls = [9000];
@@ -266,18 +278,20 @@ describe("Sigils and O16", () => {
     expect(await attempt("ref_sig2", dagger)).toMatchObject({ status: "done", result: { outcome: "kept" } });
   });
 
-  it("with a fixture decision the Sigils break with the piece, or come back to the bag", async () => {
+  it("once accepted, a break destroys the Sigils with the piece; none come back to the bag", async () => {
+    const sigilsBefore = await eco.balance(A, "item:ember_fox_sigil");
     rolls = [9999];
-    const lost = await attempt("ref_sig3", dagger, null, refiner(withFixtureOverrides(R, { sigilOnRefineBreak: "destroyed" })));
-    expect(lost).toMatchObject({ status: "done", result: { outcome: "destroyed", sigilsLost: ["sigil:ember_fox"], sigilsReturned: [] } });
-    await store.devGrantEquipment("gear:b", A, ["equip:ember_fang_dagger"]);
-    const second = (db.prepare("SELECT id FROM equipment_instances WHERE owner_id = ? AND definition_id = 'equip:ember_fang_dagger'").get(A) as { id: string }).id;
-    setLevel(second, 5);
-    db.prepare(`UPDATE equipment_instances SET sigil_sockets_json = '["sigil:ember_fox"]' WHERE id = ?`).run(second);
-    rolls = [9999];
-    const back = await attempt("ref_sig4", second, null, refiner(withFixtureOverrides(R, { sigilOnRefineBreak: "returned" })));
-    expect(back).toMatchObject({ status: "done", result: { outcome: "destroyed", sigilsLost: [], sigilsReturned: ["sigil:ember_fox"] } });
-    expect(await eco.balance(A, "item:ember_fox_sigil")).toBe(1);
+    expect(await riskyWithSigils("ref_sig3", true)).toMatchObject({ status: "done", result: { outcome: "destroyed", sigilsLost: ["sigil:ember_fox"] } });
+    expect(piece(dagger)).toBeUndefined();
+    expect(await eco.balance(A, "item:ember_fox_sigil")).toBe(sigilsBefore);
+    const snap = JSON.parse((db.prepare("SELECT snapshot_json AS s FROM disposed_assets WHERE asset_id = ?").get(dagger) as { s: string }).s);
+    expect(snap).toMatchObject({ reason: "refine_break", sigils: ["sigil:ember_fox"] });
+  });
+
+  it("a success with the loss accepted keeps the piece and its Sigils", async () => {
+    rolls = [0];
+    expect(await riskyWithSigils("ref_sig4", true)).toMatchObject({ status: "done", result: { outcome: "success", level: 6, sigilsLost: [] } });
+    expect(piece(dagger)!.sigils).toBe('["sigil:ember_fox"]');
   });
 });
 

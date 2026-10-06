@@ -16,8 +16,6 @@ export const DEV_FIXTURE_RULES = withFixtureOverrides(PRODUCTION_RULES, {
     ],
   },
   cooldownTick: "owner_turn_start",
-  // O16 is OPEN; dev follows the v2.1 proposal (Sigils break with the piece) so risky refining can be tried.
-  sigilOnRefineBreak: "destroyed",
 });
 
 /**

@@ -82,7 +82,7 @@ export class CharacterApi {
   }
 
   /** One refine attempt at the level, version and cost shown; `wardItemId` only when the player ticked it. */
-  refine(equipmentId: string, expectedLevel: number, expectedVersion: number, wardItemId: string | null, expectedCost: { coins: number; stoneItemId: string; stones: number }) {
+  refine(equipmentId: string, expectedLevel: number, expectedVersion: number, wardItemId: string | null, expectedCost: { coins: number; stoneItemId: string; stones: number }, acceptSigilLoss = false) {
     return this.call<{ coins: number; result: RefineResult; equipment: EquipmentView[] }>("POST", "/town/refine", {
       operationId: opId("refine"),
       equipmentId,
@@ -90,6 +90,7 @@ export class CharacterApi {
       expectedVersion,
       wardItemId,
       expectedCost,
+      acceptSigilLoss,
     });
   }
 
