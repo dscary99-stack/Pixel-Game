@@ -4,7 +4,7 @@
  * it never computes damage, loot, capture or ownership itself (chapter 11 §1).
  */
 import Phaser from "phaser";
-import { DEV_FIXTURE_RULES, ELITE_MODIFIER_TH, EXAMPLE_FRONTIER, STATUS_DEFINITIONS, exampleContentMaps, type BattleCommand, type BattleEvent, type BattleUnit, type Element, type PublicBattleState } from "@pmrpg/shared";
+import { DEV_FIXTURE_RULES, ELITE_MODIFIER_TH, EXAMPLE_FRONTIER, FRONTIER_MODIFIER_TH, STATUS_DEFINITIONS, exampleContentMaps, type BattleCommand, type BattleEvent, type BattleUnit, type Element, type PublicBattleState } from "@pmrpg/shared";
 import type { BattleTransport, Snapshot } from "./transport";
 import { savedAutoPolicy } from "./character-ui";
 
@@ -326,6 +326,10 @@ export class BattleScene extends Phaser.Scene {
         return this.pushLog(`จับ ${this.name(e.targetId)}: ${e.success ? "สำเร็จ (ได้ Lv1)" : "ไม่สำเร็จ"} โอกาส ${(e.probability * 100).toFixed(0)}%`);
       case "EnemyDefeated":
         return this.pushLog(`${this.name(e.unitId)} ถูกกำจัด`);
+      case "ReinforcementArrived":
+        // Tower: a pre-rolled replacement takes the fallen enemy's cell (frontier.ts).
+        this.popup(e.unitId, "กำลังเสริม!", "#ffb36b");
+        return this.pushLog(`กำลังเสริม: ${CONTENT.species.get(e.speciesId)?.name.th ?? e.speciesId} เข้าแทน ${this.name(e.replaces)} (เหลือ ${e.left})`);
       case "RewardEntitled": {
         const r = e.entitlement;
         if (r.kind === "kill") {
@@ -398,32 +402,41 @@ export class BattleScene extends Phaser.Scene {
     for (const u of state.units) {
       const { x, y } = this.position(u);
       let v = this.views.get(u.unitId);
+      // A tower enemy whose cell a reinforcement took: its body leaves the field.
+      if (u.replacedBy !== undefined) {
+        if (v !== undefined) for (const o of [v.body, v.hpBar, v.label, v.ring, v.sub]) o.setVisible(false);
+        continue;
+      }
+      // Enemies are drawn a little shorter so a full row of five (tower floors: ten) stays readable.
+      const bh = u.side === "enemy" ? 40 : 56;
       if (!v) {
-        const body = this.add.rectangle(x, y, 48, 56, ELEMENT_COLOR[u.element]).setStrokeStyle(3, 0x0b0a12).setInteractive({ useHandCursor: true });
+        const body = this.add.rectangle(x, y, 48, bh, ELEMENT_COLOR[u.element]).setStrokeStyle(3, 0x0b0a12).setInteractive({ useHandCursor: true });
         body.on("pointerdown", () => {
           // Enemies for attacks and enemy skills; allies for heals, buffs and shields.
           if (!u.ko && !u.retired) this.selectedTarget = u.unitId;
           this.render(this.snap.state);
         });
         if (u.cosmetic !== undefined) this.drawCosmetic(body, u.cosmetic);
-        const ring = this.add.rectangle(x, y, 60, 68).setStrokeStyle(2, 0xffffff).setVisible(false);
-        this.add.rectangle(x, y + 36, 52, 6, 0x0b0a12);
-        const hpBar = this.add.rectangle(x - 25, y + 36, 50, 4, 0x6be36b).setOrigin(0, 0.5);
+        const ring = this.add.rectangle(x, y, 60, bh + 12).setStrokeStyle(2, 0xffffff).setVisible(false);
+        this.add.rectangle(x, y + bh / 2 + 8, 52, 6, 0x0b0a12);
+        const hpBar = this.add.rectangle(x - 25, y + bh / 2 + 8, 50, 4, 0x6be36b).setOrigin(0, 0.5);
         // Bottom-anchored so a second line (statuses) grows upwards.
-        const label = this.add.text(x, y - 37, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#ffffff", align: "center" }).setOrigin(0.5, 1);
-        const sub = this.add.text(x, y + 42, "", { fontFamily: "sans-serif", fontSize: "11px", color: "#ffd84a", align: "center" }).setOrigin(0.5, 0);
+        const label = this.add.text(x, y - bh / 2 - 9, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#ffffff", align: "center" }).setOrigin(0.5, 1);
+        const sub = this.add.text(x, y + bh / 2 + 14, "", { fontFamily: "sans-serif", fontSize: "11px", color: "#ffd84a", align: "center" }).setOrigin(0.5, 0);
         v = { body, hpBar, label, ring, sub };
         this.views.set(u.unitId, v);
       }
       v.body.setPosition(x, y).setAlpha(u.ko || u.retired ? 0.25 : 1);
       v.ring.setPosition(x, y).setVisible(u.unitId === this.snap.actor || u.unitId === this.selectedTarget);
       v.ring.setStrokeStyle(2, u.unitId === this.snap.actor ? 0x7dff9b : 0xff6b6b);
-      v.hpBar.setPosition(x - 25, y + 36).setSize(Math.max(0, 50 * (u.hp / u.stats.maxHp)), 4);
+      v.hpBar.setPosition(x - 25, y + bh / 2 + 8).setSize(Math.max(0, 50 * (u.hp / u.stats.maxHp)), 4);
       const tags = (u.statuses ?? []).map((st) => `${STATUS_DEFINITIONS[st.statusId].th}${st.turnsLeft}`).join(" ");
       // An elite leader says so, with its modifiers (chapter 07 §3), readable without colour.
       const elite = u.elite === undefined ? "" : `★ชั้นยอด\n${u.elite.modifiers.map((m) => ELITE_MODIFIER_TH[m].name).join(", ")}${u.elite.counterOn !== null ? " ⚠สวน!" : ""}`;
-      v.sub.setPosition(x, y + 42).setText(elite);
-      v.label.setPosition(x, y - 37).setText(`${u.name} Lv${u.level}${u.retired ? " (จับแล้ว)" : ""}${tags ? `\n${tags}` : ""}`);
+      // A tower reinforcement says so (it took a fallen enemy's cell this fight).
+      const reinforcement = state.units.some((o) => o.replacedBy === u.unitId) ? "▲กำลังเสริม" : "";
+      v.sub.setPosition(x, y + bh / 2 + 14).setText([elite, reinforcement].filter(Boolean).join("\n"));
+      v.label.setPosition(x, y - bh / 2 - 9).setText(`${u.name} Lv${u.level}${u.retired ? " (จับแล้ว)" : ""}${tags ? `\n${tags}` : ""}`);
     }
     const actor = this.snap.actor ? this.unit(this.snap.actor) : undefined;
     // Boss fights: the phase, and a warned move with what answers it (chapter 07 §5, readable without colour).
@@ -437,7 +450,16 @@ export class BattleScene extends Phaser.Scene {
       }
     }
     // Weekly tower: the floor, and a boss label on boss floors (readable without colour).
-    const tower = state.frontier === undefined ? "" : `\n${EXAMPLE_FRONTIER.name.th} ชั้น ${state.frontier.floor}${state.boss !== undefined ? " · ★ ชั้นบอส" : ""} · ศัตรู ×${(state.frontier.statPct / 100).toFixed(2)}`;
+    // Weekly tower: the floor's name, gimmicks and reinforcements left, and a boss label on boss floors.
+    let tower = "";
+    if (state.frontier !== undefined) {
+      const fd = EXAMPLE_FRONTIER.floors[state.frontier.floor - 1];
+      const mods = (state.frontier.modifiers ?? []).map((m) => FRONTIER_MODIFIER_TH[m].name).join(", ");
+      const left = state.frontier.reinforcementsLeft ?? 0;
+      tower =
+        `\n${EXAMPLE_FRONTIER.name.th} ชั้น ${state.frontier.floor} ${fd?.name.th ?? ""}${state.boss !== undefined ? ` · ★ ชั้นบอส${fd?.guardianTitle ? ` ${fd.guardianTitle.th}` : ""}` : ""}` +
+        ` · ศัตรู ×${(state.frontier.statPct / 100).toFixed(2)}${mods ? ` · ลูกเล่น: ${mods}` : ""}${left > 0 ? ` · กำลังเสริมเหลือ ${left}` : ""}`;
+    }
     const party = state.partyBonus ? ` · ปาร์ตี้ ${state.partyBonus.partners} คน: EXP +${state.partyBonus.expPercent}% วัสดุ +${state.partyBonus.materialDropPercent}%` : "";
     this.turnText.setText(
       (state.status === "active" ? `รอบ ${state.round} · ตาของ ${actor?.name ?? "-"} · แตะศัตรูเพื่อเลือกเป้า` : `จบไฟต์: ${state.status}`) + party + tower + bossLine,
@@ -472,7 +494,8 @@ export class BattleScene extends Phaser.Scene {
 
   private position(u: BattleUnit) {
     if (u.side === "ally") return { x: u.row === "front" ? 330 : 210, y: 150 + u.slot * 100 };
-    return { x: u.row === "front" ? 620 : 760, y: 90 + u.slot * 76 };
+    // Five cells a row, spaced so ten enemies (tower floors) keep their names and bars apart.
+    return { x: u.row === "front" ? 620 : 780, y: 104 + u.slot * 80 };
   }
 
   private popup(unitId: string, text: string, color: string) {

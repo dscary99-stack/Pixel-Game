@@ -8,6 +8,7 @@ import type { DerivedStats, GearBonuses } from "../stats";
 import type { ErrorCode } from "../validators";
 import type { ActiveStatus, StatusId } from "../status";
 import type { EliteModifier } from "../elite";
+import type { FrontierModifierId } from "../frontier";
 
 export type Side = "ally" | "enemy";
 export type Row = "front" | "back";
@@ -65,6 +66,8 @@ export interface BattleUnit {
   ko: boolean;
   /** Captured enemies leave the fight without kill loot. */
   retired: boolean;
+  /** Tower floors: a fallen or captured enemy whose cell a reinforcement took (the unit that came in). */
+  replacedBy?: string;
   guarding: boolean;
   cooldowns: Record<string, number>;
   movedThisRound: boolean;
@@ -143,8 +146,18 @@ export interface BattleState {
   partyBonus?: PartyBonus;
   /** Boss fights only: phase, telegraph and capture progress (chapter 07 §5). */
   boss?: BossState;
-  /** Weekly tower floors only (frontier.ts): the floor and the stat % its enemies carry. */
-  frontier?: { floor: number; statPct: number };
+  /** Weekly tower floors only (frontier.ts): the floor, the stat % its enemies carry, its gimmicks and reinforcements. */
+  frontier?: {
+    floor: number;
+    statPct: number;
+    modifiers?: FrontierModifierId[];
+    /** Reinforcements still to come (the queue itself stays on the server: `queue`). */
+    reinforcementsLeft?: number;
+    /** Server only (stripped by publicView): the pre-rolled replacements in arrival order. */
+    queue?: { speciesId: string; element: Element }[];
+    /** Server only: the number for the next reinforcement's unit id (e<n>). */
+    nextUnit?: number;
+  };
   /** Private server RNG state. Never sent to the client. */
   rng: RngState;
   eventSeq: number;
@@ -226,6 +239,8 @@ export type BattleEventBody =
   /** The unit loses this turn to a control status. */
   | { type: "TurnSkipped"; unitId: string; statusId: StatusId }
   | { type: "EnemyDefeated"; unitId: string; speciesId: string }
+  /** Tower floors: a pre-rolled replacement entered a fallen enemy's cell (frontier.ts). */
+  | { type: "ReinforcementArrived"; unitId: string; speciesId: string; element: Element; row: Row; slot: number; replaces: string; left: number }
   | { type: "CaptureResolved"; targetId: string; speciesId: string; success: boolean; probability: number }
   | { type: "RewardEntitled"; entitlement: Entitlement }
   | {
@@ -277,7 +292,15 @@ export interface BattleSetup {
    * A weekly tower floor (frontier.ts): every enemy gets the floor's stat % on HP and ATK/MATK, worked
    * out here from the rules (never a number from outside). Wild level stays the species' own (C29).
    */
-  frontier?: { floor: number };
+  frontier?: {
+    floor: number;
+    /** The floor's gimmicks (content ids; their numbers come from the rules). */
+    modifiers?: FrontierModifierId[];
+    /** Boss floors: monsters that fill the free cells next to the guardian and its adds. */
+    escorts?: { speciesId: string; element: Element }[];
+    /** The finite, pre-rolled replacement queue (frontier.ts), in arrival order. */
+    reinforcements?: { speciesId: string; element: Element }[];
+  };
 }
 
 export type KernelResult =

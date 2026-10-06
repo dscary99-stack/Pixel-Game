@@ -23,6 +23,7 @@ import {
   defaultCombatBag,
   frontierFloorSetup,
   frontierFloorSpecies,
+  frontierNextFloor,
   frontierVitalsAfter,
   isFrontierBossFloor,
   playerSetup,
@@ -378,6 +379,7 @@ export class FrontierStore {
               inside: run.inside === 1,
               battleId: run.battle_id,
               nextIsBoss: run.status === "open" && isFrontierBossFloor(this.rules, run.floor),
+              next: run.status === "open" ? frontierNextFloor(this.rules, this.def, run.floor) : null,
               vitals: this.vitals(run),
             },
     };

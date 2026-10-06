@@ -112,6 +112,15 @@ export const RULES = {
       "Nut 2026-10-06: secret quest rewards can be any kind: a unique title, unique fashion, a unique monster, special equipment",
     ),
     secretQuestsVeryHard: confirmed(true, "chapter02", "Nut 2026-10-06: secret quests must be very hard so the reward is worth it"),
+    frontierFloorNames: confirmed(true, "chapter07", "Nut 2026-10-06: Claude names every tower floor"),
+    frontierMonstersPerFloor: confirmed(10, "chapter07", "Nut 2026-10-06: every tower floor has 10 monsters"),
+    frontierHarderEveryFloor: confirmed(true, "chapter07", "Nut 2026-10-06: difficulty rises on every floor"),
+    frontierFloorGimmicks: confirmed(true, "chapter07", "Nut 2026-10-06: each floor has its own gimmick (high attack, high defence, status, disruption, ...)"),
+    frontierReinforcements: confirmed(
+      true,
+      "chapter07",
+      "Nut 2026-10-06: on later floors a monster that dies is replaced by a reinforcement, so a floor holds more than 10 (finite queue: rewards stay bounded, chapter 07 §5)",
+    ),
   },
   provisional: {
     autoHuntLootRetention: provisional(0.7, "P01", "multiplier, applied once per candidate; not 0.70%"),
@@ -215,27 +224,48 @@ export const RULES = {
     ),
     /**
      * Weekly tower run (frontier.ts; Nut's decisions are in `confirmed`). Floor stat % = 100 +
-     * statPctPerFloor × floor on HP and ATK/MATK (like an elite's), wild level never changes. Packs grow
-     * from packSizeFirst to packSizeLast; species climb by wild level, one step every
+     * statPctPerFloor × floor on HP and ATK/MATK (like an elite's), wild level never changes. Every floor
+     * fields 10 monsters (C, Nut 2026-10-06); species climb by wild level, one step every
      * floorsPerSpeciesStep floors, from a window of speciesWindow species (the top one repeats when
      * content runs out). From eliteFromFloor a normal floor's leader is elite at eliteChancePct.
      * HP/MP carry between floors; after every checkpointEveryFloors-th floor cleared, units still
-     * standing get checkpointRestorePct of max HP/MP back. Claude's first pass.
+     * standing get checkpointRestorePct of max HP/MP back.
+     * Gimmicks (Nut 2026-10-06): one per floor, two from twoModifiersFromFloor, three from
+     * threeModifiersFromFloor; their numbers are in `modifiers`. Reinforcements from reinforceFromFloor:
+     * a finite queue growing from reinforceFirst to reinforceLast at the top floor; the reserves gimmick
+     * adds reservesBonusPct more (rounded up). Claude's first pass.
      */
     frontier: provisional(
       {
         statPctPerFloor: 4,
-        packSizeFirst: 2,
-        packSizeLast: 6,
         floorsPerSpeciesStep: 10,
         speciesWindow: 2,
         eliteFromFloor: 5,
         eliteChancePct: 30,
         checkpointEveryFloors: 5,
         checkpointRestorePct: 30,
+        twoModifiersFromFloor: 50,
+        threeModifiersFromFloor: 80,
+        reinforceFromFloor: 31,
+        reinforceFirst: 2,
+        reinforceLast: 30,
+        reservesBonusPct: 50,
+        modifiers: {
+          fierceAtkPct: 30,
+          toughDefPct: 40,
+          arcaneMatkPct: 30,
+          swiftSpdPct: 20,
+          venomChancePct: 25,
+          venomTurns: 3,
+          disruptChancePct: 12,
+          disruptTurns: 1,
+          regenTurns: 99,
+          shieldPctMaxHp: 15,
+          shieldTurns: 99,
+        },
       } as const,
       "P12",
-      "tower: ×(1 + 4% × floor) HP/ATK/MATK, packs 2→6, elite leaders from floor 5 at 30%, 30% HP/MP back every 5 floors; Claude's first pass",
+      "tower: ×(1 + 4% × floor) HP/ATK/MATK, 10 monsters a floor, elite leaders from floor 5 at 30%, 30% HP/MP back every 5 floors, gimmicks 1/2/3 (from floors 50/80), reinforcements 2→30 from floor 31 (+50% with reserves); Claude's first pass",
     ),
     affixLevelScalePct: provisional(2, "P09", "affix value × (1 + 2% per item level above 1); Claude's first pass"),
     bossActions: provisional({ maxPerRound: 3 } as const, "P15", "bosses act up to 3 times a round; statuses count once per round"),

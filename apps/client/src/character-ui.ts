@@ -1361,7 +1361,22 @@ export function frontierPanel(api: CharacterApi): Promise<string | null> {
             .join("\n"),
         ),
       );
-      body.append(el("div", { class: "pm-note" }, "จับมอนสเตอร์ในหอได้ตามปกติ (เริ่ม Lv1) · บอสทุก 10 ชั้นมีของหายาก · ค่าทั้งหมดเป็นตัวอย่าง (P12)"));
+      // The next floor as content names it: the same for every player (fixed gimmicks).
+      const nf = run?.next ?? null;
+      if (nf !== null) {
+        body.append(
+          el(
+            "div",
+            { class: "pm-stats", "data-frontier-next-floor": "", style: "white-space: pre-line" },
+            [
+              `ชั้น ${nf.floor}: ${nf.name}${nf.guardianTitle !== null ? ` · ★ ${nf.guardianTitle}` : ""}`,
+              `ลูกเล่น: ${nf.modifiers.map((m) => `${m.name} (${m.hint}${m.id === "mono_element" && nf.element !== null ? ` ${nf.element}` : ""})`).join(", ")}`,
+              `ศัตรู ${nf.monsters} ตัว${nf.reinforcements > 0 ? ` · กำลังเสริม ${nf.reinforcements} ตัว (เข้าแทนตัวที่ล้มเมื่อจบรอบ)` : ""}`,
+            ].join("\n"),
+          ),
+        );
+      }
+      body.append(el("div", { class: "pm-note" }, "จับมอนสเตอร์ในหอได้ตามปกติ (เริ่ม Lv1) รวมถึงกำลังเสริม · บอสทุก 10 ชั้นมีของหายาก · ค่าทั้งหมดเป็นตัวอย่าง (P12)"));
       enter.hidden = v.entryUsed;
       next.hidden = run === null || run.status !== "open";
       next.textContent = run?.battleId != null ? "กลับเข้าไฟต์" : `ชั้นถัดไป (${run?.floor ?? 1})`;

@@ -12,11 +12,11 @@ import { AutoBattlePolicySchema, type AutoBattlePolicyInput } from "./auto-polic
 import { computeDamage, computeHeal, critChanceBp, hitChanceBp } from "../damage";
 import { rollLoot } from "../loot";
 import { eliteModifierIssues } from "../elite";
-import { frontierStatPct } from "../frontier";
+import { FrontierModifierIdSchema, frontierMaxReinforcements, frontierModifierStats, frontierStatPct, type FrontierModifierId } from "../frontier";
 import { companionExp, killExp } from "../progression";
 import { Rng, seedRng } from "../rng";
 import type { RulesConfig } from "../rules";
-import type { BossDefinition, DamageEffect, ItemDefinition, LootTable, Passive, PassiveAction, PassiveEvent, PassiveModifier, SigilDefinition, SkillDefinition, SpeciesDefinition, StatusApplication } from "../schemas";
+import type { BossDefinition, DamageEffect, Element, ItemDefinition, LootTable, Passive, PassiveAction, PassiveEvent, PassiveModifier, SigilDefinition, SkillDefinition, SpeciesDefinition, StatusApplication } from "../schemas";
 import { isAreaRule, targetsEnemies } from "../schemas";
 import { deriveStats, type DerivedStats } from "../stats";
 import {
@@ -139,9 +139,21 @@ export function createBattle(rules: RulesConfig, content: BattleContent, setup: 
 function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: BattleSetup): KernelResult {
   const bossDef = setup0.boss === undefined ? undefined : (content.bosses?.get(setup0.boss.bossId) ?? reject("MISSING_REFERENCE", `boss ${setup0.boss.bossId}`));
   if (bossDef !== undefined && setup0.enemies.length > 0) reject("INVALID_COMMAND", "a boss fight builds its own enemies");
-  const setup: BattleSetup = bossDef === undefined ? setup0 : { ...setup0, enemies: bossEnemies(bossDef) };
-  const floor = setup.frontier?.floor;
+  const tower = setup0.frontier;
+  const floor = tower?.floor;
   if (floor !== undefined && (!Number.isInteger(floor) || floor < 1 || floor > rules.confirmed.frontierFloors.value)) reject("INVALID_COMMAND", `no tower floor ${floor}`);
+  const modifiers: FrontierModifierId[] = [...(tower?.modifiers ?? [])];
+  for (const m of modifiers) if (!FrontierModifierIdSchema.safeParse(m).success) reject("INVALID_COMMAND", `unknown tower gimmick ${m}`);
+  if (new Set(modifiers).size !== modifiers.length || modifiers.length > 3) reject("INVALID_COMMAND", "a floor has up to 3 different gimmicks");
+  if (tower?.escorts !== undefined && tower.escorts.length > 0 && bossDef === undefined) reject("INVALID_COMMAND", "escorts stand next to a guardian only");
+  const queue = (tower?.reinforcements ?? []).map((m) => ({ speciesId: m.speciesId, element: m.element }));
+  if (queue.length > frontierMaxReinforcements(rules)) reject("INVALID_COMMAND", `${queue.length} reinforcements > ${frontierMaxReinforcements(rules)}`);
+  for (const m of queue) {
+    const sp = content.species.get(m.speciesId) ?? reject("MISSING_REFERENCE", `species ${m.speciesId}`);
+    if (sp.rank === "BOSS") reject("INVALID_COMMAND", "a reinforcement is never a boss");
+    if (!sp.allowedElements.includes(m.element)) reject("INVALID_COMMAND", `reinforcement ${m.speciesId} element not allowed for species`);
+  }
+  const setup: BattleSetup = bossDef === undefined ? setup0 : { ...setup0, enemies: withEscorts(bossEnemies(bossDef), tower?.escorts ?? []) };
   const towerPct = floor === undefined ? 100 : frontierStatPct(rules, floor);
   const bossLoot = bossDef?.lootTableId;
   if (bossLoot !== undefined && !content.lootTables.has(bossLoot)) reject("MISSING_REFERENCE", `loot table ${bossLoot}`);
@@ -252,67 +264,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
     });
   }
 
-  for (const e of setup.enemies) {
-    const sp = content.species.get(e.speciesId) ?? reject("MISSING_REFERENCE", `species ${e.speciesId}`);
-    if (!sp.allowedElements.includes(e.element)) reject("INVALID_COMMAND", `${e.unitId} element not allowed for species`);
-    if (!content.lootTables.has(sp.lootTableId)) reject("MISSING_REFERENCE", `loot table ${sp.lootTableId}`);
-    // Wild level is the species' fixed level everywhere (C29). There is no override input.
-    const base = deriveStats(sp.fixedWildLevel, sp.wildPrimaryStats);
-    // A wild boss has more HP than its species (chapter 07 §5); a captured one never keeps it.
-    const isBoss = bossDef !== undefined && e.unitId === "e1";
-    // An elite leader is tougher in the wild only (elite.ts, P12); a captured one never keeps it.
-    if (e.elite !== undefined) {
-      if (sp.rank === "BOSS" || bossDef !== undefined) reject("INVALID_COMMAND", `${e.unitId}: a boss is never an elite`);
-      const bad = eliteModifierIssues(e.elite.modifiers);
-      if (bad.length > 0) reject("INVALID_COMMAND", `${e.unitId}: ${bad.join("; ")}`);
-    }
-    const el = rules.provisional.elite.value;
-    const ranked = isBoss
-      ? { ...base, maxHp: Math.floor(base.maxHp * bossDef!.hpMultiplier) }
-      : e.elite !== undefined
-        ? scaleWildStats(base, Math.round(el.hpMultiplier * 100), el.powerPct)
-        : base;
-    // A tower floor scales every enemy the same way an elite is scaled, on top of its rank (frontier.ts).
-    const stats = towerPct === 100 ? ranked : scaleWildStats(ranked, towerPct, towerPct);
-    // Wild monsters fight with their species' active skills, at the cap their wild level allows.
-    for (const id of sp.skillIds) if (!content.skills.has(id)) reject("MISSING_REFERENCE", `skill ${id}`);
-    const wildSkillIds = sp.skillIds.filter((id) => content.skills.get(id)?.kind === "active");
-    const wildSkillLevel = skillLevelCap(rules, sp.fixedWildLevel);
-    const innate = content.skills.get(sp.innatePassiveId);
-    units.push({
-      unitId: e.unitId,
-      side: "enemy",
-      kind: "enemy",
-      name: sp.name.th,
-      speciesId: sp.id,
-      instanceId: null,
-      level: sp.fixedWildLevel,
-      element: e.element,
-      rank: e.elite !== undefined ? "ELITE" : sp.rank,
-      row: e.row,
-      slot: e.slot,
-      stats,
-      hp: stats.maxHp,
-      mp: stats.maxMp,
-      skillIds: wildSkillIds,
-      skillLevels: Object.fromEntries(wildSkillIds.map((id) => [id, wildSkillLevel])),
-      passiveIds: innate?.passive !== undefined ? [innate.id] : [],
-      basicAttackRange: sp.basicAttackRange,
-      primaryStats: { ...sp.wildPrimaryStats },
-      statuses: [],
-      ko: false,
-      retired: false,
-      guarding: false,
-      cooldowns: {},
-      movedThisRound: false,
-      captureWindowOpen: e.captureWindowOpen ?? sp.rank !== "BOSS",
-      lootTableId: e.lootEligible === false ? null : isBoss && bossLoot !== undefined ? bossLoot : sp.lootTableId,
-      ...(e.elite !== undefined ? { elite: { modifiers: [...e.elite.modifiers], enraged: false, moraleBroken: false, counterOn: null } } : {}),
-      ...(sp.rank === "BOSS" && (sp.bossActionsPerRound ?? 1) > 1
-        ? { actionsPerRound: Math.min(sp.bossActionsPerRound!, rules.provisional.bossActions.value.maxPerRound) }
-        : {}),
-    });
-  }
+  for (const e of setup.enemies) units.push(enemyUnit(rules, content, e, { bossDef, towerPct, modifiers }));
 
   validateFormation(rules, units);
   if (!units.some((u) => u.side === "ally" && !u.ko)) reject("INVALID_COMMAND", "no ally can fight");
@@ -338,16 +290,102 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
     ...(bossDef !== undefined
       ? { boss: { bossId: bossDef.id, unitId: "e1", phase: 0, shieldBroken: false, telegraph: null, lastTelegraphRound: 0 } }
       : {}),
-    ...(floor !== undefined ? { frontier: { floor, statPct: towerPct } } : {}),
+    ...(floor !== undefined
+      ? { frontier: { floor, statPct: towerPct, modifiers, reinforcementsLeft: queue.length, queue, nextUnit: setup.enemies.length + 1 } }
+      : {}),
   };
   const ctx = new Ctx(state, rules, content, null);
   ctx.emit({ type: "BattleStarted", originMode: state.originMode, rulesVersion: state.rulesVersion, unitIds: units.map((u) => u.unitId) });
   if (bossDef !== undefined) enterBossPhase(ctx, 0);
   startElites(ctx);
+  for (const u of units) if (u.side === "enemy") startFrontierUnit(ctx, u);
   for (const u of units) if (active(u)) firePassives(ctx, u, "battle_start");
   startRound(ctx);
   advanceToAllyInput(ctx);
   return ctx.finish();
+}
+
+/** Boss floors of the tower: escorts take the free enemy cells next to the guardian and its adds, in order. */
+function withEscorts(enemies: BattleSetup["enemies"], escorts: readonly { speciesId: string; element: Element }[]): BattleSetup["enemies"] {
+  if (escorts.length === 0) return enemies;
+  const order = [2, 1, 3, 0, 4];
+  const free = (["front", "back"] as const).flatMap((row) => order.map((slot) => ({ row, slot }))).filter((c) => !enemies.some((e) => e.row === c.row && e.slot === c.slot));
+  if (escorts.length > free.length) reject("FORMATION_INVALID", `${escorts.length} escorts > ${free.length} free cells`);
+  return [...enemies, ...escorts.map((m, i) => ({ unitId: `e${enemies.length + i + 1}`, speciesId: m.speciesId, element: m.element, row: free[i]!.row, slot: free[i]!.slot }))];
+}
+
+/**
+ * One wild enemy unit: the species at its fixed wild level (C29), a boss's or elite's rank on top, then
+ * the tower floor's stat % and gimmicks. Used at fight start and for tower reinforcements.
+ */
+function enemyUnit(
+  rules: RulesConfig,
+  content: BattleContent,
+  e: BattleSetup["enemies"][number],
+  o: { bossDef: BossDefinition | undefined; towerPct: number; modifiers: readonly FrontierModifierId[] },
+): BattleUnit {
+  const { bossDef, towerPct, modifiers } = o;
+  const sp = content.species.get(e.speciesId) ?? reject("MISSING_REFERENCE", `species ${e.speciesId}`);
+  if (!sp.allowedElements.includes(e.element)) reject("INVALID_COMMAND", `${e.unitId} element not allowed for species`);
+  if (!content.lootTables.has(sp.lootTableId)) reject("MISSING_REFERENCE", `loot table ${sp.lootTableId}`);
+  // Wild level is the species' fixed level everywhere (C29). There is no override input.
+  const base = deriveStats(sp.fixedWildLevel, sp.wildPrimaryStats);
+  // A wild boss has more HP than its species (chapter 07 §5); a captured one never keeps it.
+  const isBoss = bossDef !== undefined && e.unitId === "e1";
+  const bossLoot = bossDef?.lootTableId;
+  // An elite leader is tougher in the wild only (elite.ts, P12); a captured one never keeps it.
+  if (e.elite !== undefined) {
+    if (sp.rank === "BOSS" || bossDef !== undefined) reject("INVALID_COMMAND", `${e.unitId}: a boss is never an elite`);
+    const bad = eliteModifierIssues(e.elite.modifiers);
+    if (bad.length > 0) reject("INVALID_COMMAND", `${e.unitId}: ${bad.join("; ")}`);
+  }
+  const el = rules.provisional.elite.value;
+  const ranked = isBoss
+    ? { ...base, maxHp: Math.floor(base.maxHp * bossDef!.hpMultiplier) }
+    : e.elite !== undefined
+      ? scaleWildStats(base, Math.round(el.hpMultiplier * 100), el.powerPct)
+      : base;
+  // A tower floor scales every enemy the same way an elite is scaled, on top of its rank, then its
+  // gimmicks change ATK/DEF/MATK/SPD (frontier.ts); never the level.
+  const stats = frontierModifierStats(rules, towerPct === 100 ? ranked : scaleWildStats(ranked, towerPct, towerPct), modifiers);
+  // Wild monsters fight with their species' active skills, at the cap their wild level allows.
+  for (const id of sp.skillIds) if (!content.skills.has(id)) reject("MISSING_REFERENCE", `skill ${id}`);
+  const wildSkillIds = sp.skillIds.filter((id) => content.skills.get(id)?.kind === "active");
+  const wildSkillLevel = skillLevelCap(rules, sp.fixedWildLevel);
+  const innate = content.skills.get(sp.innatePassiveId);
+  return {
+    unitId: e.unitId,
+    side: "enemy",
+    kind: "enemy",
+    name: sp.name.th,
+    speciesId: sp.id,
+    instanceId: null,
+    level: sp.fixedWildLevel,
+    element: e.element,
+    rank: e.elite !== undefined ? "ELITE" : sp.rank,
+    row: e.row,
+    slot: e.slot,
+    stats,
+    hp: stats.maxHp,
+    mp: stats.maxMp,
+    skillIds: wildSkillIds,
+    skillLevels: Object.fromEntries(wildSkillIds.map((id) => [id, wildSkillLevel])),
+    passiveIds: innate?.passive !== undefined ? [innate.id] : [],
+    basicAttackRange: sp.basicAttackRange,
+    primaryStats: { ...sp.wildPrimaryStats },
+    statuses: [],
+    ko: false,
+    retired: false,
+    guarding: false,
+    cooldowns: {},
+    movedThisRound: false,
+    captureWindowOpen: e.captureWindowOpen ?? sp.rank !== "BOSS",
+    lootTableId: e.lootEligible === false ? null : isBoss && bossLoot !== undefined ? bossLoot : sp.lootTableId,
+    ...(e.elite !== undefined ? { elite: { modifiers: [...e.elite.modifiers], enraged: false, moraleBroken: false, counterOn: null } } : {}),
+    ...(sp.rank === "BOSS" && (sp.bossActionsPerRound ?? 1) > 1
+      ? { actionsPerRound: Math.min(sp.bossActionsPerRound!, rules.provisional.bossActions.value.maxPerRound) }
+      : {}),
+  };
 }
 
 /**
@@ -420,6 +458,8 @@ function expAwards(ctx: Ctx, wildLevel: number, elite = false): { exp: number; c
 
 function startRound(ctx: Ctx): void {
   const s = ctx.s;
+  // Tower: enemies that fell last round are replaced before the new round's order (frontier.ts).
+  if (s.round > 0) arriveReinforcements(ctx);
   s.round += 1;
   s.turnIndex = 0;
   for (const u of s.units) u.movedThisRound = false;
@@ -1273,6 +1313,7 @@ function strike(ctx: Ctx, actor: BattleUnit, chosen: BattleUnit, action: "attack
     if (rage !== undefined) rage.stacks = Math.min(STATUS_DEFINITIONS.rage.maxStacks, rage.stacks + 1);
   }
   if (active(target)) for (const x of eff.statuses ?? []) applyStatus(ctx, actor, target, x);
+  if (dealt > 0 && active(target)) frontierOnHit(ctx, actor, target);
   if (dealt > 0) {
     firePassives(ctx, actor, "dealt_damage", hitInfo);
     if (target.ko) firePassives(ctx, actor, "kill", hitInfo);
@@ -1437,6 +1478,53 @@ function doFlee(ctx: Ctx, actor: BattleUnit): void {
  * attack; disarmed with no skill left, it guards. Every pick passes the same checks as a manual
  * command, so the AI never tries what the validator would refuse.
  */
+// ================================================================ weekly tower (frontier.ts)
+
+const towerMods = (ctx: Ctx): readonly FrontierModifierId[] => ctx.s.frontier?.modifiers ?? [];
+
+/** A tower enemy entering the fight: the floor's regen and crystal shield gimmicks go on (frontier.ts). */
+function startFrontierUnit(ctx: Ctx, u: BattleUnit): void {
+  const mods = towerMods(ctx);
+  if (!active(u) || mods.length === 0) return;
+  const m = ctx.rules.provisional.frontier.value.modifiers;
+  if (mods.includes("regen")) applyStatus(ctx, u, u, { statusId: "regen", chancePct: 100, turns: m.regenTurns }, true);
+  if (mods.includes("crystal_shield")) applyStatus(ctx, u, u, { statusId: "shield", chancePct: 100, turns: m.shieldTurns, shieldPct: m.shieldPctMaxHp }, true);
+}
+
+/** A tower enemy's hit that landed: venom may poison, disrupt may confuse (resistances apply as usual). */
+function frontierOnHit(ctx: Ctx, actor: BattleUnit, target: BattleUnit): void {
+  if (actor.side !== "enemy" || target.side === "enemy") return;
+  const mods = towerMods(ctx);
+  if (mods.length === 0) return;
+  const m = ctx.rules.provisional.frontier.value.modifiers;
+  if (mods.includes("venom") && active(target)) applyStatus(ctx, actor, target, { statusId: "poison", chancePct: m.venomChancePct, turns: m.venomTurns });
+  if (mods.includes("disrupt") && active(target)) applyStatus(ctx, actor, target, { statusId: "confuse", chancePct: m.disruptChancePct, turns: m.disruptTurns });
+}
+
+/**
+ * Tower reinforcements: every enemy cell whose unit fell or was caught (and was not replaced yet) takes
+ * the next monster of the pre-rolled queue, in unit order, while the queue lasts. Each one is a real
+ * wild unit (EXP, drops, capture), built like the floor's other enemies.
+ */
+function arriveReinforcements(ctx: Ctx): void {
+  const t = ctx.s.frontier;
+  if (t === undefined || t.queue === undefined || t.queue.length === 0) return;
+  const empty = ctx.s.units.filter((u) => u.side === "enemy" && !active(u) && u.replacedBy === undefined);
+  for (const old of empty) {
+    const next = t.queue.shift();
+    if (next === undefined) break;
+    const unitId = `e${t.nextUnit ?? ctx.s.units.length + 1}`;
+    t.nextUnit = (t.nextUnit ?? ctx.s.units.length + 1) + 1;
+    const unit = enemyUnit(ctx.rules, ctx.content, { unitId, speciesId: next.speciesId, element: next.element, row: old.row, slot: old.slot }, { bossDef: undefined, towerPct: t.statPct, modifiers: t.modifiers ?? [] });
+    old.replacedBy = unitId;
+    ctx.s.units.push(unit);
+    t.reinforcementsLeft = t.queue.length;
+    ctx.emit({ type: "ReinforcementArrived", unitId, speciesId: unit.speciesId!, element: unit.element, row: unit.row, slot: unit.slot, replaces: old.unitId, left: t.queue.length });
+    startFrontierUnit(ctx, unit);
+    firePassives(ctx, unit, "battle_start");
+  }
+}
+
 // ================================================================ elites (chapter 07 §3, elite.ts)
 
 const elites = (ctx: Ctx) => ctx.s.units.filter((u) => u.elite !== undefined);
@@ -1702,6 +1790,8 @@ function checkEnd(ctx: Ctx): void {
   if (ctx.s.status !== "active") return;
   checkBossPhase(ctx);
   checkElites(ctx);
+  // Tower: with no enemy standing, the queue comes in at once, so the floor goes on until it is empty.
+  if (!ctx.s.units.some((u) => u.side === "enemy" && active(u))) arriveReinforcements(ctx);
   const enemiesLeft = ctx.s.units.some((u) => u.side === "enemy" && active(u));
   const alliesLeft = ctx.s.units.some((u) => u.side === "ally" && active(u));
   if (!enemiesLeft) endBattle(ctx, "victory");
@@ -1803,5 +1893,11 @@ export function chooseAutoCommand(
 /** What the client may see. The RNG state stays on the server. */
 export function publicView(state: BattleState): Omit<BattleState, "rng"> {
   const { rng: _rng, ...rest } = state;
-  return structuredClone(rest);
+  const out = structuredClone(rest);
+  // The tower's pre-rolled reinforcements stay on the server; the client sees how many are left.
+  if (out.frontier !== undefined) {
+    delete out.frontier.queue;
+    delete out.frontier.nextUnit;
+  }
+  return out;
 }

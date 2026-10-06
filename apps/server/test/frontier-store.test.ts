@@ -162,6 +162,7 @@ describe("floors", () => {
     const setup = created[0]!.setup;
     expect(setup).toMatchObject({ originMode: "manual", frontier: { floor: 1 } });
     expect(setup.enemies).toEqual(frontierFloorSetup(rollFrontierFloor(R, EXAMPLE_FRONTIER, content, runId, 1)).enemies);
+    expect(setup.enemies).toHaveLength(10);
     expect(new Set(created.map((c) => c.setup.battleId))).toEqual(new Set([id]));
     expect(await tower.startFloor(A, { runId, floor: 2 })).toMatchObject({ status: "rejected", reason: "STALE_FLOOR" });
     expect(await tower.leave(A, { runId })).toMatchObject({ reason: "IN_BATTLE" });
@@ -227,10 +228,15 @@ describe("floors", () => {
   it("a boss floor is the guardian's boss fight; clearing it records the first clear once", async () => {
     await enter("enter_0001");
     await tower.devJump(A, 10);
-    expect((await view()).run).toMatchObject({ floor: 10, nextIsBoss: true });
+    expect((await view()).run).toMatchObject({
+      floor: 10,
+      nextIsBoss: true,
+      next: { floor: 10, name: EXAMPLE_FRONTIER.floors[9]!.name.th, guardianTitle: EXAMPLE_FRONTIER.floors[9]!.guardianTitle!.th, monsters: 10, reinforcements: 0 },
+    });
     const s = await started(10);
     expect(s.boss).toBe(true);
-    expect(created.at(-1)!.setup).toMatchObject({ enemies: [], boss: { bossId: "boss:rift_spire_warden" }, frontier: { floor: 10 } });
+    expect(created.at(-1)!.setup).toMatchObject({ enemies: [], boss: { bossId: "boss:rift_spire_warden" }, frontier: { floor: 10, modifiers: EXAMPLE_FRONTIER.floors[9]!.modifiers } });
+    expect(created.at(-1)!.setup.frontier!.escorts).toHaveLength(7);
     await finish(s.battleId, "victory");
     await Promise.all([tower.settle(A), tower.settle(A)]);
     expect(db.prepare(`SELECT character_id, frontier_id, floor FROM frontier_first_clears`).all()).toEqual([
@@ -291,7 +297,8 @@ describe("a real floor fight end to end", () => {
       await room.command(A, { commandId: crypto.randomUUID(), sessionGeneration: 0, expectedStateVersion: v.stateVersion, command: cmd });
     }
     const end = await room.view(A);
-    expect(end.frontier).toEqual({ floor: 1, statPct: 104 });
+    expect(end.frontier).toEqual({ floor: 1, statPct: 104, modifiers: EXAMPLE_FRONTIER.floors[0]!.modifiers, reinforcementsLeft: 0 });
+    expect(end.units.filter((u) => u.side === "enemy")).toHaveLength(10);
     expect((await room.drainOutbox(eco)).settled).toBe(true);
     const run = (await view()).run!;
     if (end.status === "victory") expect(run).toMatchObject({ floor: 2, best: 1, status: "open" });

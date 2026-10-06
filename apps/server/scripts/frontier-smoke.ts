@@ -1,7 +1,8 @@
 // End-to-end tower check against `wrangler dev` (chapter 07 §4, Nut 2026-10-06): enter the Rift Spire
-// in town with this week's one entry, win floor 1 and stand on floor 2, step out and come back, jump
-// (dev) to floor 10 for the guardian, capture on a tower floor, lose to end the run, and be refused
-// at the door from the field. Run `npm run db:migrate:local` and `npm run dev:server` first, then
+// in town with this week's one entry, win floor 1 (10 monsters, its gimmick) and stand on floor 2, step
+// out and come back, capture on a tower floor, jump (dev) to floor 10 for the guardian (filled to 10
+// with escorts), jump to floor 31+ and see a reinforcement take a fallen enemy's cell, lose to end the
+// run, and be refused at the door from the field. Run `npm run db:migrate:local` and `npm run dev:server` first, then
 // `npm run smoke:frontier`.
 import { AUTO_GAP_MS, api, autoToEnd, battleCall, connect, run, sleep, toField, type Msg } from "./smoke-lib";
 
@@ -23,9 +24,9 @@ must(made.status === 200 || made.status === 201, "create", made.body);
 await http("POST", "/dev/grant", {
   operationId: `devw_${run}`,
   items: { "item:supply_mole_capture": 10, "item:bell_bird_capture": 10 },
-  piece: { definitionId: "equip:wooden_sword", rarity: "EPIC", affixes: [{ stat: "PATK", value: 400 }] },
+  piece: { definitionId: "equip:wooden_sword", rarity: "EPIC", affixes: [{ stat: "PATK", value: 3000 }, { stat: "SPD", value: 300 }] },
 });
-await http("POST", "/dev/grant", { operationId: `deva_${run}`, piece: { definitionId: "equip:cloth_tunic", rarity: "EPIC", affixes: [{ stat: "HP", value: 900 }] } });
+await http("POST", "/dev/grant", { operationId: `deva_${run}`, piece: { definitionId: "equip:cloth_tunic", rarity: "EPIC", affixes: [{ stat: "HP", value: 30000 }, { stat: "PDEF", value: 400 }, { stat: "MDEF", value: 400 }] } });
 let bundle = (await http("GET", "/character")).body;
 let version = bundle.character.version as number;
 const strong = (def: string) => bundle.equipment.find((e: Msg) => e.definitionId === def && e.affixes.length > 0)?.id as string;
@@ -67,9 +68,14 @@ out.enter = { status: enter.status, runId, replayed: replay.body.replayed, secon
 // 2. Floor 1: win → floor 2; the tower's numbers are on the fight.
 const f1 = await climb(runId, 1);
 must(f1.end.status === "victory" && f1.after.run.floor === 2 && f1.after.run.best === 1, "floor 1", { end: f1.end.status, run: f1.after.run });
+must(f1.state0.units.filter((u: Msg) => u.side === "enemy").length === 10, "10 monsters on floor 1", f1.state0.units.length);
+must(Array.isArray(f1.state0.frontier.modifiers) && f1.state0.frontier.modifiers.length === 1, "floor 1 gimmick", f1.state0.frontier);
 out.floor1 = {
   battleId: f1.start.battleId,
   frontier: f1.state0.frontier,
+  name: enter.body.view.run.next?.name,
+  next: enter.body.view.run.next,
+  enemyCount: f1.state0.units.filter((u: Msg) => u.side === "enemy").length,
   enemies: f1.state0.units.filter((u: Msg) => u.side === "enemy").map((u: Msg) => `${u.speciesId} Lv${u.level} hp${u.stats.maxHp}${u.rank === "ELITE" ? " ELITE" : ""}`),
   outcome: f1.end.status,
   next: f1.after.run.floor,
@@ -119,32 +125,66 @@ must(jumped.body.run.floor === 10 && jumped.body.run.nextIsBoss === true, "jump"
 const f10 = await climb(runId, 10);
 const guardian = f10.state0.units.find((u: Msg) => u.rank === "BOSS");
 must(f10.start.boss === true && guardian !== undefined && f10.state0.boss !== undefined, "boss floor", f10.start);
+must(f10.state0.units.filter((u: Msg) => u.side === "enemy").length === 10, "10 monsters on the boss floor", f10.state0.units.length);
 out.bossFloor = {
   boss: f10.start.boss,
   frontier: f10.state0.frontier,
   phaseAtStart: f10.state0.boss,
   guardian: `${guardian.speciesId} Lv${guardian.level} hp${guardian.stats.maxHp} x${guardian.actionsPerRound} captureOpen=${guardian.captureWindowOpen}`,
+  enemyCount: f10.state0.units.filter((u: Msg) => u.side === "enemy").length,
   enemies: f10.state0.units.filter((u: Msg) => u.side === "enemy").map((u: Msg) => `${u.unitId} ${u.speciesId} ${u.row}${u.slot}`),
   outcome: f10.end.status,
   after: { floor: f10.after.run.floor, best: f10.after.run.best, status: f10.after.run.status },
 };
 
-// 6. A loss ends the run: plain gear high up the tower.
-if (f10.after.run.status === "open") {
+// 6. Reinforcements from floor 31: jump (dev) to a later floor, see a replacement take a fallen enemy's
+// cell after a kill. If the guardian won, the dev reset gives the week's entry back for a new run first.
+let climbId = runId;
+if (f10.after.run.status !== "open") {
+  await http("POST", "/dev/frontier/reset");
+  const again = await http("POST", "/frontier/enter", { operationId: `fe5_${run}` });
+  must(again.status === 200, "re-enter after dev reset", again.body);
+  climbId = again.body.view.run.runId;
+}
+const jumped31 = await http("POST", "/dev/frontier/jump", { floor: 33 });
+out.preview33 = jumped31.body.run.next;
+must(jumped31.body.run.next.reinforcements > 0 && jumped31.body.run.next.modifiers.length === 1, "floor 33 preview", jumped31.body.run.next);
+const f33 = await climb(climbId, 33);
+const evs = await battleCall(account, f33.start.battleId)("GET", "/events?since=0");
+const list: Msg[] = Array.isArray(evs) ? evs : (evs.events ?? []);
+const arrivals = list.filter((e: Msg) => e.type === "ReinforcementArrived");
+const firstArrival = arrivals[0];
+must(firstArrival !== undefined, "a reinforcement arrived on floor 33", { status: f33.end.status, left: f33.end.frontier });
+const replaced = f33.end.units.find((u: Msg) => u.unitId === firstArrival.replaces);
+must(replaced?.replacedBy === firstArrival.unitId && (replaced.ko || replaced.retired), "the reinforcement took a fallen enemy's cell", replaced);
+out.reinforcements = {
+  floor: 33,
+  frontier: f33.state0.frontier,
+  queued: jumped31.body.run.next.reinforcements,
+  arrived: arrivals.length,
+  first: `${firstArrival.unitId} ${firstArrival.speciesId} → ${firstArrival.row}${firstArrival.slot} (replaces ${firstArrival.replaces}, left ${firstArrival.left})`,
+  arrivedAfterKill: list.findIndex((e: Msg) => e.type === "EnemyDefeated" && e.unitId === firstArrival.replaces) < list.indexOf(firstArrival),
+  kills: f33.end.entitlements.filter((e: Msg) => e.kind === "kill").length,
+  outcome: f33.end.status,
+};
+const afterClimb = (await http("GET", "/frontier")).body.run;
+
+// 7. A loss ends the run: plain gear high up the tower.
+if (afterClimb.status === "open") {
   await equip("MAIN_HAND", null);
   await equip("ARMOR", null);
   await http("POST", "/dev/frontier/jump", { floor: 95 });
-  const f95 = await climb(runId, 95);
+  const f95 = await climb(climbId, 95);
   out.loss = { floor: 95, frontier: f95.state0.frontier, outcome: f95.end.status, run: { status: f95.after.run.status, endReason: f95.after.run.endReason, best: f95.after.run.best } };
   must(f95.end.status === "defeat" && f95.after.run.status === "ended" && f95.after.run.endReason === "defeat", "loss", out.loss);
 } else {
-  out.loss = { floor: 10, run: { status: f10.after.run.status, endReason: f10.after.run.endReason } };
-  must(f10.after.run.endReason === "defeat", "loss at the guardian", f10.after.run);
+  out.loss = { floor: 33, run: { status: afterClimb.status, endReason: afterClimb.endReason } };
+  must(afterClimb.endReason === "defeat", "loss on floor 33", afterClimb);
 }
-out.afterLoss = (await http("POST", "/frontier/floor/start", { runId, floor: (await http("GET", "/frontier")).body.run.floor })).body.error;
+out.afterLoss = (await http("POST", "/frontier/floor/start", { runId: climbId, floor: (await http("GET", "/frontier")).body.run.floor })).body.error;
 out.reenterAfterLoss = (await http("POST", "/frontier/enter", { operationId: `fe3_${run}` })).body.error;
 
-// 7. The door is in town: from the field the entry is refused (dev reset gives the entry back first).
+// 8. The door is in town: from the field the entry is refused (dev reset gives the entry back first).
 const F = await toField(account);
 await F.wait((m) => m.t === "welcome" || m.t === "packs");
 const reset = await http("POST", "/dev/frontier/reset");
