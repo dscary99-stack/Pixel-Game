@@ -5,7 +5,7 @@
  */
 import { createHmac } from "node:crypto";
 import { beforeEach, describe, expect, it } from "vitest";
-import { EXAMPLE_SECRET_QUEST_TEMPLATES as T, PRODUCTION_RULES as R, exampleContentMaps, exampleMapRegistry, rollSecretQuests } from "@pmrpg/shared";
+import { EXAMPLE_SECRET_QUEST_TEMPLATES as T, PRODUCTION_RULES as R, exampleContentMaps, exampleMapRegistry, exampleSecretRewardRegistry, rollSecretQuests } from "@pmrpg/shared";
 import { CharacterStore } from "../src/character-store";
 import { DEV_SECRET_QUEST_KEY, SecretQuestStore, secretQuestKey, secretQuestSeed } from "../src/secret-quest-store";
 import { SqliteD1, freshDb, type Db } from "./sqlite-d1";
@@ -14,7 +14,7 @@ const A = "acct:a";
 const B = "acct:b";
 const KEY = "test-secret-quest-key";
 const content = exampleContentMaps();
-const sqContent = { ...content, maps: exampleMapRegistry(), frontierFloors: R.confirmed.frontierFloors.value };
+const sqContent = { ...content, maps: exampleMapRegistry(), frontierFloors: R.confirmed.frontierFloors.value, rewards: exampleSecretRewardRegistry() };
 const now = () => "2026-10-05T00:00:00Z";
 let db: Db;
 let d1: SqliteD1;
@@ -133,11 +133,31 @@ describe("generator versions", () => {
     const after = rows();
     expect(after).toHaveLength(1);
     expect(after[0]).toMatchObject({ generator_version: 1, quests_json: before[0]!.quests_json });
-    // A new character today gets a v2 set with 7 personal quests.
+    // A new character today gets a v3 set: 7 personal quests, each with its rewards.
     await store.create(B, req({ operationId: "op_create_b" }));
     const fresh = rows().find((r) => r.account_id === B)!;
-    expect(fresh.generator_version).toBe(2);
-    expect((JSON.parse(fresh.quests_json) as { kind: string }[]).filter((q) => q.kind === "personal")).toHaveLength(7);
+    expect(fresh.generator_version).toBe(3);
+    const quests = JSON.parse(fresh.quests_json) as { kind: string; rewards?: { kind: string; variantId: string }[] }[];
+    expect(quests.filter((q) => q.kind === "personal")).toHaveLength(7);
+    for (const q of quests) expect(q.rewards?.length).toBeGreaterThan(0);
+  });
+
+  it("a stored v2 set (no rewards) reads back unchanged too", async () => {
+    const V2_QUESTS = [
+      ...V1_QUESTS.slice(0, 2),
+      { id: "sq:personal:personal_swift_end", kind: "personal", templateId: "sqt:personal_swift_end", goal: "win", params: { count: 9, mapId: "map:dawn_field", condition: "within_rounds", rounds: 3 } },
+      { id: "sq:personal:personal_spire_climber", kind: "personal", templateId: "sqt:personal_spire_climber", goal: "tower", params: { count: 1, floor: 44 } },
+    ];
+    const old = new CharacterStore(d1, R, content, now);
+    const created = await old.create(A, req());
+    const id = created.status === "created" ? created.character.id : "";
+    db.prepare(
+      `INSERT INTO character_secret_quests (character_id, account_id, generator_version, quests_json, created_at) VALUES (?, ?, 2, ?, '2026-10-06T00:00:00Z')`,
+    ).run(id, A, JSON.stringify(V2_QUESTS));
+    const before = rows();
+    expect(await store.create(A, req())).toMatchObject({ status: "created" });
+    expect(await secrets.devReveal(A)).toEqual({ locked: false, quests: V2_QUESTS });
+    expect(rows()[0]).toMatchObject({ generator_version: 2, quests_json: before[0]!.quests_json });
   });
 });
 

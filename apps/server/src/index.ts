@@ -61,6 +61,7 @@ import {
   exampleNpcOrderRegistry,
   exampleMapRegistry,
   EXAMPLE_SECRET_QUEST_TEMPLATES,
+  exampleSecretRewardRegistry,
   EXAMPLE_FRONTIER,
   RaritySchema,
   RolledAffixSchema,
@@ -95,7 +96,7 @@ const economyFor = (env: Env) => new Economy(env.DB, rulesFor(env));
 const CONTENT = { ...exampleContentMaps(), shops: exampleShopRegistry(), recipes: exampleRecipeRegistry() };
 
 const secretQuestsFor = (env: Env) =>
-  new SecretQuestStore(env.DB, rulesFor(env), EXAMPLE_SECRET_QUEST_TEMPLATES, { ...CONTENT, maps: exampleMapRegistry(), frontierFloors: PRODUCTION_RULES.confirmed.frontierFloors.value }, secretQuestKey(env));
+  new SecretQuestStore(env.DB, rulesFor(env), EXAMPLE_SECRET_QUEST_TEMPLATES, { ...CONTENT, maps: exampleMapRegistry(), frontierFloors: PRODUCTION_RULES.confirmed.frontierFloors.value, rewards: exampleSecretRewardRegistry() }, secretQuestKey(env));
 const charactersFor = (env: Env) => new CharacterStore(env.DB, rulesFor(env), CONTENT, undefined, secretQuestsFor(env));
 const TOWNS = [...exampleMapRegistry().values()].filter((m) => m.kind === "town").map((m) => m.id);
 const townFor = (env: Env) => new TownServices(env.DB, rulesFor(env), CONTENT, TOWNS);

@@ -105,6 +105,13 @@ export const RULES = {
     frontierFloors: confirmed(100, "chapter07", "Nut 2026-10-06: 100 floors to start"),
     frontierForBossRareItems: confirmed(true, "chapter07", "Nut 2026-10-06: the point is hunting the bosses' rare items (drop chance under 1%)"),
     frontierCapture: confirmed(true, "chapter07", "Nut 2026-10-06: monsters inside can be captured (normal capture, by hand, C15)"),
+    // Nut 2026-10-06 (second round, 04:37Z).
+    secretQuestRewardKinds: confirmed(
+      ["title", "fashion", "companion", "gear"] as const,
+      "chapter02",
+      "Nut 2026-10-06: secret quest rewards can be any kind: a unique title, unique fashion, a unique monster, special equipment",
+    ),
+    secretQuestsVeryHard: confirmed(true, "chapter02", "Nut 2026-10-06: secret quests must be very hard so the reward is worth it"),
   },
   provisional: {
     autoHuntLootRetention: provisional(0.7, "P01", "multiplier, applied once per candidate; not 0.70%"),
