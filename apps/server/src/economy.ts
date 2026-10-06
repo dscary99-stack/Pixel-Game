@@ -46,6 +46,9 @@ export interface AllyResult {
   hp: number;
   mp: number;
   ko: boolean;
+  /** The unit's maxima in that fight (newer fights only); the tower's checkpoint uses them. */
+  maxHp?: number;
+  maxMp?: number;
 }
 
 /** What the Battle DO sends when a fight ends. Built from the kernel's BattleEnded event. */

@@ -15,7 +15,7 @@ import {
 } from "../src";
 
 // The tower has 100 floors (Nut 2026-10-06); tower goals are checked against it.
-const content = { ...exampleContentMaps(), maps: exampleMapRegistry(), frontierFloors: 100 };
+const content = { ...exampleContentMaps(), maps: exampleMapRegistry(), frontierFloors: R.confirmed.frontierFloors.value };
 const seed = (s: string) => s.repeat(64).slice(0, 64);
 const who = { element: "FIRE", raceId: "race:human" } as const;
 

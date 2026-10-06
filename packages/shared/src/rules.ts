@@ -93,6 +93,18 @@ export const RULES = {
       "O15",
       "Nut 2026-10-04: effect hit offsets effect resistance, never above the skill's chance: chance = skill × (1 − max(0, res − hit)/100)",
     ),
+    // Weekly battle tower (chapter 07 §4 "tower", frontier.ts). Nut 2026-10-06 decided these.
+    frontierFloorByFloor: confirmed(true, "chapter07", "Nut 2026-10-06: the tower is climbed floor by floor"),
+    frontierEntriesPerWeek: confirmed(
+      1,
+      "chapter07",
+      "Nut 2026-10-06: a character may enter once per week (the quest week, P13 reset); Nut's own decision for this tower, not an energy/stamina system (C16)",
+    ),
+    frontierEnemiesGrowPerFloor: confirmed(true, "chapter07", "Nut 2026-10-06: enemies get stronger each floor (never by wild level, C29)"),
+    frontierBossEveryFloors: confirmed(10, "chapter07", "Nut 2026-10-06: a boss every 10 floors"),
+    frontierFloors: confirmed(100, "chapter07", "Nut 2026-10-06: 100 floors to start"),
+    frontierForBossRareItems: confirmed(true, "chapter07", "Nut 2026-10-06: the point is hunting the bosses' rare items (drop chance under 1%)"),
+    frontierCapture: confirmed(true, "chapter07", "Nut 2026-10-06: monsters inside can be captured (normal capture, by hand, C15)"),
   },
   provisional: {
     autoHuntLootRetention: provisional(0.7, "P01", "multiplier, applied once per candidate; not 0.70%"),
@@ -193,6 +205,30 @@ export const RULES = {
       { personalCount: 7 } as const,
       "P16",
       "Nut 2026-10-05: element + race + personal secret quests after the Lv200 awakening; Nut 2026-10-06: more and harder personal ones (7 is Claude's pick)",
+    ),
+    /**
+     * Weekly tower run (frontier.ts; Nut's decisions are in `confirmed`). Floor stat % = 100 +
+     * statPctPerFloor × floor on HP and ATK/MATK (like an elite's), wild level never changes. Packs grow
+     * from packSizeFirst to packSizeLast; species climb by wild level, one step every
+     * floorsPerSpeciesStep floors, from a window of speciesWindow species (the top one repeats when
+     * content runs out). From eliteFromFloor a normal floor's leader is elite at eliteChancePct.
+     * HP/MP carry between floors; after every checkpointEveryFloors-th floor cleared, units still
+     * standing get checkpointRestorePct of max HP/MP back. Claude's first pass.
+     */
+    frontier: provisional(
+      {
+        statPctPerFloor: 4,
+        packSizeFirst: 2,
+        packSizeLast: 6,
+        floorsPerSpeciesStep: 10,
+        speciesWindow: 2,
+        eliteFromFloor: 5,
+        eliteChancePct: 30,
+        checkpointEveryFloors: 5,
+        checkpointRestorePct: 30,
+      } as const,
+      "P12",
+      "tower: ×(1 + 4% × floor) HP/ATK/MATK, packs 2→6, elite leaders from floor 5 at 30%, 30% HP/MP back every 5 floors; Claude's first pass",
     ),
     affixLevelScalePct: provisional(2, "P09", "affix value × (1 + 2% per item level above 1); Claude's first pass"),
     bossActions: provisional({ maxPerRound: 3 } as const, "P15", "bosses act up to 3 times a round; statuses count once per round"),

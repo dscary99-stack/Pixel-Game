@@ -32,6 +32,12 @@
  *   POST /town/rebirth/branch      switch a reached Rebirth stage's variant branch for coins (operationId, companionId, stage, expectedBranch, branch, expectedCost)
  *   POST /town/skill               train one companion skill a level (operationId, companionId, skillId, expectedLevel)
  *   PUT  /character/team           set the team (expectedVersion; ≤5, no duplicate species, outside fights)
+ *   GET  /frontier                 the weekly tower: this week's entry used, current and best floor (settles a finished floor first)
+ *   POST /frontier/enter           use this week's entry at the town NPC (operationId; once a week, in town)
+ *   POST /frontier/floor/start     start or resume the next floor fight ({ runId, floor }); answers the battle id
+ *   POST /frontier/leave           step out between floors; the run stays for the week ({ runId })
+ *   POST /dev/frontier/jump        (dev only) move this week's run to a floor ({ floor })
+ *   POST /dev/frontier/reset       (dev only) give back this week's entry
  *   GET  /world/where              where the caller's character is saved (map + channel)
  *   GET  /world/:mapId/:channel    WebSocket into that Map Channel DO (walking, presence)
  *
@@ -55,6 +61,7 @@ import {
   exampleNpcOrderRegistry,
   exampleMapRegistry,
   EXAMPLE_SECRET_QUEST_TEMPLATES,
+  EXAMPLE_FRONTIER,
   RaritySchema,
   RolledAffixSchema,
   type BattleSetup,
@@ -74,6 +81,7 @@ import { JournalStore } from "./journal-store";
 import { NpcOrderStore } from "./npc-order-store";
 import { DisposalStore } from "./disposal-store";
 import { SecretQuestStore, secretQuestKey } from "./secret-quest-store";
+import { FrontierStore, type FrontierBattlePort } from "./frontier-store";
 
 export { BattleDurableObject } from "./battle-do";
 export { MapChannelDurableObject } from "./map-do";
@@ -85,16 +93,24 @@ const RESERVATION_STALE_MS = 2 * 60_000;
 const rulesFor = (env: Env) => (env.ENVIRONMENT === "dev" ? DEV_FIXTURE_RULES : PRODUCTION_RULES);
 const economyFor = (env: Env) => new Economy(env.DB, rulesFor(env));
 const CONTENT = { ...exampleContentMaps(), shops: exampleShopRegistry(), recipes: exampleRecipeRegistry() };
-/** Floors of the weekly tower (Nut 2026-10-06: 100 to start); secret quest tower goals are checked against it. */
-const TOWER_FLOORS = 100;
+
 const secretQuestsFor = (env: Env) =>
-  new SecretQuestStore(env.DB, rulesFor(env), EXAMPLE_SECRET_QUEST_TEMPLATES, { ...CONTENT, maps: exampleMapRegistry(), frontierFloors: TOWER_FLOORS }, secretQuestKey(env));
+  new SecretQuestStore(env.DB, rulesFor(env), EXAMPLE_SECRET_QUEST_TEMPLATES, { ...CONTENT, maps: exampleMapRegistry(), frontierFloors: PRODUCTION_RULES.confirmed.frontierFloors.value }, secretQuestKey(env));
 const charactersFor = (env: Env) => new CharacterStore(env.DB, rulesFor(env), CONTENT, undefined, secretQuestsFor(env));
 const TOWNS = [...exampleMapRegistry().values()].filter((m) => m.kind === "town").map((m) => m.id);
 const townFor = (env: Env) => new TownServices(env.DB, rulesFor(env), CONTENT, TOWNS);
 const journalFor = (env: Env) => new JournalStore(env.DB, rulesFor(env), CONTENT);
 const ordersFor = (env: Env) => new NpcOrderStore(env.DB, rulesFor(env), exampleNpcOrderRegistry());
 const disposalFor = (env: Env) => new DisposalStore(env.DB, rulesFor(env), { equipment: CONTENT.equipment, affixPools: CONTENT.affixPools }, TOWNS);
+/** Floor fights go to their Battle DO like any other fight (create from a D1 reservation). */
+const battlePort = (env: Env): FrontierBattlePort => ({
+  async create(accountId, setup, reservationId) {
+    const r = (await env.BATTLE.get(env.BATTLE.idFromName(setup.battleId)).handle(accountId, { kind: "create", setup, reservationId })) as RoomReply;
+    return r.ok ? { ok: true } : { ok: false, code: r.code, message: r.message };
+  },
+});
+const frontierFor = (env: Env) =>
+  new FrontierStore(env.DB, rulesFor(env), EXAMPLE_FRONTIER, { ...CONTENT, maps: exampleMapRegistry() }, economyFor(env), charactersFor(env), battlePort(env), journalFor(env));
 const questsFor = (env: Env) => new QuestStore(env.DB, rulesFor(env), { ...CONTENT, maps: exampleMapRegistry() }, TOWNS);
 
 /** DEV ONLY: dev accounts appear on first use with a starter bag and starter gear; real account creation waits for O11. */
@@ -131,6 +147,7 @@ export default {
     if (url.pathname.startsWith("/world/")) return worldRoute(request, env, url);
     if (url.pathname === "/character" || url.pathname.startsWith("/character/") || url.pathname.startsWith("/town/") || url.pathname.startsWith("/quests") || url.pathname === "/journal") return characterRoute(request, env, url);
     if (url.pathname === "/party" || url.pathname.startsWith("/party/")) return partyRoute(request, env, url);
+    if (url.pathname === "/frontier" || url.pathname.startsWith("/frontier/")) return frontierRoute(request, env, url);
     const m = url.pathname.match(/^\/battles\/([a-z0-9_:-]{1,80})(?:\/([a-z-]+))?$/);
     if (m === null) return json(404, { error: "NOT_FOUND" });
     const battleId = m[1]!;
@@ -205,6 +222,32 @@ async function partyRoute(request: Request, env: Env, url: URL): Promise<Respons
   else return json(404, { error: "NOT_FOUND" });
   if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
   return json(200, { party: r.party });
+}
+
+/** The weekly tower (Nut 2026-10-06): status, enter, next floor, leave. */
+async function frontierRoute(request: Request, env: Env, url: URL): Promise<Response> {
+  const accountId = resolveAccount(request, env);
+  if (accountId === null) return json(401, { error: "UNAUTHENTICATED" });
+  await devStarter(env, accountId);
+  const tower = frontierFor(env);
+  if (request.method === "GET" && url.pathname === "/frontier") {
+    const view = await tower.view(accountId);
+    return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
+  }
+  if (request.method !== "POST") return json(405, { error: "METHOD_NOT_ALLOWED" });
+  const body = await readJson(request);
+  if (body === undefined) return json(400, { error: "INVALID_REQUEST" });
+  const r =
+    url.pathname === "/frontier/enter"
+      ? await tower.enter(accountId, body)
+      : url.pathname === "/frontier/floor/start"
+        ? await tower.startFloor(accountId, body)
+        : url.pathname === "/frontier/leave"
+          ? await tower.leave(accountId, body)
+          : null;
+  if (r === null) return json(404, { error: "NOT_FOUND" });
+  if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : r.reason === "NO_CHARACTER" ? 404 : 409, { error: r.reason, message: r.message });
+  return json(200, r);
 }
 
 async function characterRoute(request: Request, env: Env, url: URL): Promise<Response> {
@@ -332,6 +375,17 @@ async function devRoute(request: Request, env: Env, url: URL): Promise<Response>
   // DEV ONLY: stands in for the Lv200 awakening quest (not built) so the set can be checked.
   if (request.method === "POST" && url.pathname === "/dev/secret-quests/reveal") {
     const view = await secretQuestsFor(env).devReveal(accountId);
+    return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
+  }
+  // DEV ONLY: tower helpers for smokes (jump to a floor between fights, give back the week's entry).
+  if (request.method === "POST" && url.pathname === "/dev/frontier/jump") {
+    const parsed = z.object({ floor: z.number().int().min(1).max(PRODUCTION_RULES.confirmed.frontierFloors.value) }).strict().safeParse(await readJson(request));
+    if (!parsed.success) return json(400, { error: "INVALID_REQUEST" });
+    const view = await frontierFor(env).devJump(accountId, parsed.data.floor);
+    return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
+  }
+  if (request.method === "POST" && url.pathname === "/dev/frontier/reset") {
+    const view = await frontierFor(env).devReset(accountId);
     return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
   }
   // DEV ONLY: a piece with set affixes, plus coins and items, so smokes can test rerolls.

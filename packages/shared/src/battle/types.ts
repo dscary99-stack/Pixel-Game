@@ -143,6 +143,8 @@ export interface BattleState {
   partyBonus?: PartyBonus;
   /** Boss fights only: phase, telegraph and capture progress (chapter 07 §5). */
   boss?: BossState;
+  /** Weekly tower floors only (frontier.ts): the floor and the stat % its enemies carry. */
+  frontier?: { floor: number; statPct: number };
   /** Private server RNG state. Never sent to the client. */
   rng: RngState;
   eventSeq: number;
@@ -229,7 +231,8 @@ export type BattleEventBody =
   | {
       type: "BattleEnded";
       outcome: Exclude<BattleStatus, "active">;
-      allies: { unitId: string; instanceId: string | null; hp: number; mp: number; ko: boolean }[];
+      /** maxHp/maxMp: the unit's own maxima in this fight (absent on older events). */
+      allies: { unitId: string; instanceId: string | null; hp: number; mp: number; ko: boolean; maxHp?: number; maxMp?: number }[];
       consumed: Record<string, number>;
       unusedReserved: Record<string, number>;
     };
@@ -270,6 +273,11 @@ export interface BattleSetup {
   partyBonus?: PartyBonus;
   /** A boss fight (chapter 07 §5): the kernel builds the boss and its adds; `enemies` must be empty. */
   boss?: { bossId: string };
+  /**
+   * A weekly tower floor (frontier.ts): every enemy gets the floor's stat % on HP and ATK/MATK, worked
+   * out here from the rules (never a number from outside). Wild level stays the species' own (C29).
+   */
+  frontier?: { floor: number };
 }
 
 export type KernelResult =

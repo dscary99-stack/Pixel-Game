@@ -2,7 +2,7 @@
  * Character and team requests (server mode). The server decides everything; the client shows
  * what it gets back. Identity uses the dev header until O11 picks auth.
  */
-import type { CharacterView, CreateCharacterRequest, DisposeQuote, EquipSlot, EquipmentView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RolledAffix } from "@pmrpg/shared";
+import type { CharacterView, CreateCharacterRequest, DisposeQuote, EquipSlot, EquipmentView, FrontierView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RolledAffix } from "@pmrpg/shared";
 
 export type StoredCompanion = MonsterInstance & { hp: number | null; mp: number | null };
 
@@ -137,6 +137,22 @@ export class CharacterApi {
   /** The claim key is the period + slot, so a retried claim never pays twice. */
   claimQuest(periodId: string, slot: number | "main") {
     return this.call<{ coins: number; replayed: boolean; result: { reward: QuestReward; delivered?: { itemId: string; quantity: number } } }>("POST", "/quests/claim", { periodId, slot });
+  }
+
+  /** The weekly tower: entry used, current and best floor (the server settles a finished floor first). */
+  frontier() {
+    return this.call<FrontierView>("GET", "/frontier");
+  }
+  /** One id per tap of "enter": a retried request gets the same run, never a second entry. */
+  frontierEnter(operationId: string) {
+    return this.call<{ replayed: boolean; view: FrontierView }>("POST", "/frontier/enter", { operationId });
+  }
+  /** Start (or resume) the floor shown; the answer is the fight to open. */
+  frontierStart(runId: string, floor: number) {
+    return this.call<{ battleId: string; floor: number; boss: boolean; resumed: boolean }>("POST", "/frontier/floor/start", { runId, floor });
+  }
+  frontierLeave(runId: string) {
+    return this.call<{ view: FrontierView }>("POST", "/frontier/leave", { runId });
   }
 
   party() {

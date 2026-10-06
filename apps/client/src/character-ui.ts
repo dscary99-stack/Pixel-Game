@@ -4,6 +4,7 @@
  * comes with the art pass (chapter 10 §4).
  */
 import {
+  type FrontierView,
   JOURNAL_TITLES,
   levelBand,
   type JournalSpecies,
@@ -1261,6 +1262,117 @@ export function ordersPanel(api: CharacterApi): Promise<void> {
           list.append(li);
         }
         body.append(list, el("div", { class: "pm-note" }, "จำนวนต่อสัปดาห์มีจำกัด · ร้านปกติยังรับซื้อเหมือนเดิม · งานตัวอย่าง (P12)"));
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+      }
+    };
+    void load();
+  });
+}
+
+/**
+ * Weekly tower NPC (town only; the server checks the stored position too). Shows the tower, whether
+ * this week's entry is used, the current and best floor; Enter / Next floor / Leave. Resolves with the
+ * floor fight to open, or null when closed. Everything is the server's answer; nothing is decided here.
+ */
+export function frontierPanel(api: CharacterApi): Promise<string | null> {
+  return new Promise((resolve) => {
+    const { panel, close } = overlay();
+    let busy = false;
+    // One id for this panel's "enter": a retried tap can never use a second entry.
+    const enterOp = `frontier_${crypto.randomUUID().replace(/-/g, "")}`;
+    const title = el("h2", { "data-frontier-title": "" }, "หอคอย");
+    const body = el("div", { "data-frontier": "" });
+    const error = el("div", { class: "pm-error", role: "alert" });
+    const actions = el("div", { class: "pm-actions" });
+    const leave = el("button", { type: "button", "data-frontier-leave": "" }, "ออกจากหอ");
+    const enter = el("button", { type: "button", class: "primary", "data-frontier-enter": "" }, "เข้าหอคอย");
+    const next = el("button", { type: "button", class: "primary", "data-frontier-next": "" }, "ชั้นถัดไป");
+    const done = el("button", { type: "button" }, "ปิด");
+    actions.append(leave, enter, next, done);
+    panel.append(title, body, error, actions);
+    const finish = (battleId: string | null) => {
+      close();
+      resolve(battleId);
+    };
+    done.addEventListener("click", () => finish(null));
+    let view: FrontierView | null = null;
+    const act = async (run: () => Promise<void>) => {
+      if (busy) return;
+      busy = true;
+      error.textContent = "";
+      try {
+        await run();
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+      } finally {
+        busy = false;
+      }
+    };
+    enter.addEventListener("click", () =>
+      act(async () => {
+        if (!window.confirm("ใช้สิทธิ์เข้าหอคอยของสัปดาห์นี้? (เข้าได้สัปดาห์ละครั้ง)")) return;
+        view = (await api.frontierEnter(enterOp)).view;
+        draw();
+      }),
+    );
+    next.addEventListener("click", () =>
+      act(async () => {
+        const run = view?.run;
+        if (run == null) return;
+        const r = await api.frontierStart(run.runId, run.floor);
+        finish(r.battleId);
+      }),
+    );
+    leave.addEventListener("click", () =>
+      act(async () => {
+        const run = view?.run;
+        if (run == null) return;
+        view = (await api.frontierLeave(run.runId)).view;
+        draw();
+      }),
+    );
+    const draw = () => {
+      const v = view;
+      if (v === null) return;
+      title.textContent = v.name.th;
+      body.replaceChildren();
+      const run = v.run;
+      const ends = new Date(v.endsAt).toLocaleString("th-TH", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+      body.append(el("div", { class: "pm-note" }, v.lore));
+      body.append(
+        el(
+          "div",
+          { class: "pm-stats", "data-frontier-status": "", style: "white-space: pre-line" },
+          [
+            `สิทธิ์เข้าสัปดาห์นี้: ${v.entryUsed ? "ใช้แล้ว" : "ยังไม่ใช้"} · รีเซ็ต ${ends}`,
+            run === null ? `ยังไม่ได้เข้า · ${v.floors} ชั้น บอสทุก ${v.bossEvery} ชั้น` : `ชั้นปัจจุบัน: ${run.status === "open" ? `${run.floor}${run.nextIsBoss ? " (ชั้นบอส ★)" : ""}` : "-"} · ดีที่สุดสัปดาห์นี้: ${run.best}/${v.floors}`,
+            run === null
+              ? ""
+              : run.status === "ended"
+                ? run.endReason === "summit"
+                  ? "ถึงยอดหอแล้ว! รอสัปดาห์หน้า"
+                  : "แพ้แล้ว รอบนี้จบ · เข้าใหม่ได้สัปดาห์หน้า"
+                : run.battleId !== null
+                  ? `ไฟต์ชั้น ${run.floor} ยังค้างอยู่ (กด "ชั้นถัดไป" เพื่อกลับเข้าไป)`
+                  : `${run.inside ? "อยู่ในหอ" : "ออกมาพักข้างนอก"} · HP/MP ติดตัวข้ามชั้น ฟื้น 30% ทุก 5 ชั้น`,
+          ]
+            .filter((x) => x !== "")
+            .join("\n"),
+        ),
+      );
+      body.append(el("div", { class: "pm-note" }, "จับมอนสเตอร์ในหอได้ตามปกติ (เริ่ม Lv1) · บอสทุก 10 ชั้นมีของหายาก · ค่าทั้งหมดเป็นตัวอย่าง (P12)"));
+      enter.hidden = v.entryUsed;
+      next.hidden = run === null || run.status !== "open";
+      next.textContent = run?.battleId != null ? "กลับเข้าไฟต์" : `ชั้นถัดไป (${run?.floor ?? 1})`;
+      leave.hidden = run === null || run.status !== "open" || run.battleId !== null || !run.inside;
+    };
+    const load = async (tries = 0) => {
+      try {
+        view = await api.frontier();
+        draw();
+        // A floor that just ended may still be recording; ask again shortly.
+        if (view.run?.battleId != null && tries < 5) setTimeout(() => void load(tries + 1), 800);
       } catch (e) {
         error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
       }

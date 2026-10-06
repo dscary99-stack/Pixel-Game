@@ -12,6 +12,7 @@ import { AutoBattlePolicySchema, type AutoBattlePolicyInput } from "./auto-polic
 import { computeDamage, computeHeal, critChanceBp, hitChanceBp } from "../damage";
 import { rollLoot } from "../loot";
 import { eliteModifierIssues } from "../elite";
+import { frontierStatPct } from "../frontier";
 import { companionExp, killExp } from "../progression";
 import { Rng, seedRng } from "../rng";
 import type { RulesConfig } from "../rules";
@@ -139,6 +140,11 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
   const bossDef = setup0.boss === undefined ? undefined : (content.bosses?.get(setup0.boss.bossId) ?? reject("MISSING_REFERENCE", `boss ${setup0.boss.bossId}`));
   if (bossDef !== undefined && setup0.enemies.length > 0) reject("INVALID_COMMAND", "a boss fight builds its own enemies");
   const setup: BattleSetup = bossDef === undefined ? setup0 : { ...setup0, enemies: bossEnemies(bossDef) };
+  const floor = setup.frontier?.floor;
+  if (floor !== undefined && (!Number.isInteger(floor) || floor < 1 || floor > rules.confirmed.frontierFloors.value)) reject("INVALID_COMMAND", `no tower floor ${floor}`);
+  const towerPct = floor === undefined ? 100 : frontierStatPct(rules, floor);
+  const bossLoot = bossDef?.lootTableId;
+  if (bossLoot !== undefined && !content.lootTables.has(bossLoot)) reject("MISSING_REFERENCE", `loot table ${bossLoot}`);
   if (bossDef !== undefined) {
     const sp = content.species.get(bossDef.speciesId);
     if (sp?.rank !== "BOSS") reject("INVALID_COMMAND", `boss ${bossDef.id} needs a BOSS species`);
@@ -261,11 +267,13 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
       if (bad.length > 0) reject("INVALID_COMMAND", `${e.unitId}: ${bad.join("; ")}`);
     }
     const el = rules.provisional.elite.value;
-    const stats = isBoss
+    const ranked = isBoss
       ? { ...base, maxHp: Math.floor(base.maxHp * bossDef!.hpMultiplier) }
       : e.elite !== undefined
-        ? { ...base, maxHp: Math.floor(base.maxHp * el.hpMultiplier), patk: Math.floor((base.patk * el.powerPct) / 100), matk: Math.floor((base.matk * el.powerPct) / 100) }
+        ? scaleWildStats(base, Math.round(el.hpMultiplier * 100), el.powerPct)
         : base;
+    // A tower floor scales every enemy the same way an elite is scaled, on top of its rank (frontier.ts).
+    const stats = towerPct === 100 ? ranked : scaleWildStats(ranked, towerPct, towerPct);
     // Wild monsters fight with their species' active skills, at the cap their wild level allows.
     for (const id of sp.skillIds) if (!content.skills.has(id)) reject("MISSING_REFERENCE", `skill ${id}`);
     const wildSkillIds = sp.skillIds.filter((id) => content.skills.get(id)?.kind === "active");
@@ -298,7 +306,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
       cooldowns: {},
       movedThisRound: false,
       captureWindowOpen: e.captureWindowOpen ?? sp.rank !== "BOSS",
-      lootTableId: e.lootEligible === false ? null : sp.lootTableId,
+      lootTableId: e.lootEligible === false ? null : isBoss && bossLoot !== undefined ? bossLoot : sp.lootTableId,
       ...(e.elite !== undefined ? { elite: { modifiers: [...e.elite.modifiers], enraged: false, moraleBroken: false, counterOn: null } } : {}),
       ...(sp.rank === "BOSS" && (sp.bossActionsPerRound ?? 1) > 1
         ? { actionsPerRound: Math.min(sp.bossActionsPerRound!, rules.provisional.bossActions.value.maxPerRound) }
@@ -330,6 +338,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
     ...(bossDef !== undefined
       ? { boss: { bossId: bossDef.id, unitId: "e1", phase: 0, shieldBroken: false, telegraph: null, lastTelegraphRound: 0 } }
       : {}),
+    ...(floor !== undefined ? { frontier: { floor, statPct: towerPct } } : {}),
   };
   const ctx = new Ctx(state, rules, content, null);
   ctx.emit({ type: "BattleStarted", originMode: state.originMode, rulesVersion: state.rulesVersion, unitIds: units.map((u) => u.unitId) });
@@ -339,6 +348,14 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
   startRound(ctx);
   advanceToAllyInput(ctx);
   return ctx.finish();
+}
+
+/**
+ * A wild unit made tougher (an elite leader, a tower floor): HP by `hpPct`, ATK and MATK by `powerPct`,
+ * whole numbers, rounded down. Everything else (level, DEF, SPD, skills) stays the species' own.
+ */
+export function scaleWildStats(stats: DerivedStats, hpPct: number, powerPct: number): DerivedStats {
+  return { ...stats, maxHp: Math.floor((stats.maxHp * hpPct) / 100), patk: Math.floor((stats.patk * powerPct) / 100), matk: Math.floor((stats.matk * powerPct) / 100) };
 }
 
 function clampResource(v: number | undefined, max: number): number {
@@ -1706,7 +1723,7 @@ function endBattle(ctx: Ctx, outcome: "victory" | "defeat" | "fled"): void {
     outcome,
     allies: s.units
       .filter((u) => u.side === "ally")
-      .map((u) => ({ unitId: u.unitId, instanceId: u.instanceId, hp: u.hp, mp: u.mp, ko: u.ko })),
+      .map((u) => ({ unitId: u.unitId, instanceId: u.instanceId, hp: u.hp, mp: u.mp, ko: u.ko, maxHp: u.stats.maxHp, maxMp: u.stats.maxMp })),
     consumed: { ...s.consumed },
     unusedReserved: Object.fromEntries(Object.entries(s.bag).filter(([, q]) => q > 0)),
   });

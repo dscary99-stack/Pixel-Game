@@ -8,6 +8,7 @@ const proxy = {
   "/party": "http://127.0.0.1:8787",
   "/quests": "http://127.0.0.1:8787",
   "/journal": "http://127.0.0.1:8787",
+  "/frontier": "http://127.0.0.1:8787",
   "/world": { target: "http://127.0.0.1:8787", ws: true },
 };
 

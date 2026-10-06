@@ -38,3 +38,5 @@ export * from "./disposal";
 export * from "./elite";
 export * from "./secret-quests";
 export * from "./content/secret-quests";
+export * from "./frontier";
+export * from "./content/frontier";

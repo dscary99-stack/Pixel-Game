@@ -748,6 +748,7 @@ normal/packdense/elitefieldsใช้Auto; dungeonเสนอAutoเฉพา�
 unlockwaypointจากfirstvisit +ingame travel fee; Autoไม่ข้ามmapเอง ไม่ซื้อของ/teleport/sellimplicit
 environmenthazardsต้องwarn ไม่ฆ่าAutoแบบซ่อน; townnohunt
 Eventdungeonเปิดตามschedule/เหตุการณ์ไม่มีenergy/dailyentryquotaโดยปริยาย; eventmonstersต้องมีreturnpath/catchupเพื่อสะสมภายหลัง ไม่exclusivepowerFOMO
+tower CONFIRMED (นัท 2026-10-06): หอคอยรายสัปดาห์ 100 ชั้น ปีนทีละชั้น เข้าได้สัปดาห์ละ 1 ครั้ง (รอบสัปดาห์ของเควส; เป็นการตัดสินของนัท ไม่ใช่ energy/stamina) ศัตรูแรงขึ้นทุกชั้น บอสทุก 10 ชั้น จุดประสงค์คือของหายากจากบอส จับมอนในหอได้ตามปกติ; ตัวเลขการเติบโต/ขนาดฝูง/ฟื้นตัวเป็น P12 (ตัวอย่าง "หอคอยรอยแยก" `frontier:rift_spire`, ดู STATUS A90–A96)
 
 ## 5. Boss — รูปแบบที่เสนอ P17
 mapเจ้าถิ่น manualchallenge -> privatebattle player1+5 ->killหรือmanualcapture ->return; retryrepeatไม่มีdailycap/energy; ไม่auto-repeatboss

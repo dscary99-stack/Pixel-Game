@@ -14,7 +14,7 @@ const A = "acct:a";
 const B = "acct:b";
 const KEY = "test-secret-quest-key";
 const content = exampleContentMaps();
-const sqContent = { ...content, maps: exampleMapRegistry(), frontierFloors: 100 };
+const sqContent = { ...content, maps: exampleMapRegistry(), frontierFloors: R.confirmed.frontierFloors.value };
 const now = () => "2026-10-05T00:00:00Z";
 let db: Db;
 let d1: SqliteD1;

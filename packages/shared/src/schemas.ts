@@ -410,6 +410,8 @@ export const BossDefinitionSchema = z
     adds: z.array(z.object({ speciesId: SpeciesId, element: ElementSchema, row: z.enum(["front", "back"]), lootEligible: z.boolean() }).strict()).max(9),
     /** Early phase teaches the pattern, later ones change it (chapter 07 §5: a low boss needs 2 phases). */
     phases: z.array(BossPhaseSchema).min(1).max(3),
+    /** The boss's own loot table instead of its species' (tower guardians with rare items); adds keep theirs. */
+    lootTableId: LootTableId.optional(),
   })
   .strict()
   .superRefine((b, ctx) => {

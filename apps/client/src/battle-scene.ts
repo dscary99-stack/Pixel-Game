@@ -4,7 +4,7 @@
  * it never computes damage, loot, capture or ownership itself (chapter 11 §1).
  */
 import Phaser from "phaser";
-import { DEV_FIXTURE_RULES, ELITE_MODIFIER_TH, STATUS_DEFINITIONS, exampleContentMaps, type BattleCommand, type BattleEvent, type BattleUnit, type Element, type PublicBattleState } from "@pmrpg/shared";
+import { DEV_FIXTURE_RULES, ELITE_MODIFIER_TH, EXAMPLE_FRONTIER, STATUS_DEFINITIONS, exampleContentMaps, type BattleCommand, type BattleEvent, type BattleUnit, type Element, type PublicBattleState } from "@pmrpg/shared";
 import type { BattleTransport, Snapshot } from "./transport";
 import { savedAutoPolicy } from "./character-ui";
 
@@ -436,9 +436,11 @@ export class BattleScene extends Phaser.Scene {
         bossLine += ` · ⚠ ${sk} รอบ ${state.boss.telegraph.firesRound}${ph?.telegraph ? `: ${ph.telegraph.hint.th}` : ""}`;
       }
     }
+    // Weekly tower: the floor, and a boss label on boss floors (readable without colour).
+    const tower = state.frontier === undefined ? "" : `\n${EXAMPLE_FRONTIER.name.th} ชั้น ${state.frontier.floor}${state.boss !== undefined ? " · ★ ชั้นบอส" : ""} · ศัตรู ×${(state.frontier.statPct / 100).toFixed(2)}`;
     const party = state.partyBonus ? ` · ปาร์ตี้ ${state.partyBonus.partners} คน: EXP +${state.partyBonus.expPercent}% วัสดุ +${state.partyBonus.materialDropPercent}%` : "";
     this.turnText.setText(
-      (state.status === "active" ? `รอบ ${state.round} · ตาของ ${actor?.name ?? "-"} · แตะศัตรูเพื่อเลือกเป้า` : `จบไฟต์: ${state.status}`) + party + bossLine,
+      (state.status === "active" ? `รอบ ${state.round} · ตาของ ${actor?.name ?? "-"} · แตะศัตรูเพื่อเลือกเป้า` : `จบไฟต์: ${state.status}`) + party + tower + bossLine,
     );
     if (state.status !== "active" && this.onExit !== null && this.exitButton === null && !this.watching) {
       const exit = this.onExit;

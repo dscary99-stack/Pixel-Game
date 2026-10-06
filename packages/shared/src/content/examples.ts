@@ -172,6 +172,44 @@ export const EXAMPLE_BOSSES: BossDefinition[] = [
   },
 ];
 
+/**
+ * EXAMPLE tower guardians (หอคอยรอยแยก, frontier.ts): boss floors take these in turn. The crab lord is the
+ * only BOSS species so far, so both are it with other adds and its phases; they drop from their own
+ * table, where the rift core and the crystal plate are rare (under 1%, Nut 2026-10-04). Claude's first pass.
+ */
+export const EXAMPLE_FRONTIER_BOSSES: BossDefinition[] = [
+  {
+    id: "boss:rift_spire_warden",
+    ...meta,
+    name: { th: "ผู้เฝ้าหอรอยแยก" },
+    speciesId: "species:crystal_crab_lord",
+    element: "EARTH",
+    hpMultiplier: 4,
+    adds: [
+      { speciesId: "species:armor_crab", element: "EARTH", row: "front", lootEligible: true },
+      { speciesId: "species:lantern_snail", element: "WATER", row: "back", lootEligible: true },
+    ],
+    phases: EXAMPLE_BOSSES[0]!.phases,
+    lootTableId: "loot:rift_spire_guardian",
+  },
+  {
+    id: "boss:rift_spire_tyrant",
+    ...meta,
+    name: { th: "ทรราชหอรอยแยก" },
+    speciesId: "species:crystal_crab_lord",
+    element: "WATER",
+    hpMultiplier: 5,
+    adds: [
+      { speciesId: "species:ember_fox", element: "FIRE", row: "front", lootEligible: true },
+      { speciesId: "species:armor_crab", element: "WATER", row: "front", lootEligible: true },
+      { speciesId: "species:bell_bird", element: "WIND", row: "back", lootEligible: true },
+      { speciesId: "species:lantern_snail", element: "LIGHT", row: "back", lootEligible: true },
+    ],
+    phases: EXAMPLE_BOSSES[0]!.phases,
+    lootTableId: "loot:rift_spire_guardian",
+  },
+];
+
 // Effects follow chapter 05 §5's ideas (EXAMPLE numbers). Each Sigil also names the piece it is in.
 export const EXAMPLE_SIGILS: SigilDefinition[] = [
   sigil("sigil:armor_crab", "species:armor_crab", ["SHIELD"], 0.0005, "กระดอง", { modifiers: [{ kind: "guard_reduction", reductionPct: 10 }] }),
@@ -206,6 +244,8 @@ export const EXAMPLE_ITEMS: ItemDefinition[] = [
   { id: "item:bell_feather", ...meta, name: { th: "ขนนกกระดิ่ง" }, kind: "material", vendorPrice: 3 },
   { id: "item:crystal_shard", ...meta, name: { th: "เศษกระดองผลึก" }, kind: "material", vendorPrice: 15 },
   { id: "item:river_pebble", ...meta, name: { th: "กรวดริมน้ำ" }, kind: "material", vendorPrice: 1 },
+  // Tower guardians' rare material (frontier.ts, EXAMPLE).
+  { id: "item:rift_core", ...meta, name: { th: "แกนรอยแยก" }, kind: "material", vendorPrice: 120 },
 ];
 
 const SPECIES_GEAR = {
@@ -245,6 +285,33 @@ export const EXAMPLE_LOOT_TABLES: LootTable[] = EXAMPLE_SPECIES.map((s) => {
     maxTypesPerEnemy: 5,
   };
 });
+
+/**
+ * EXAMPLE loot of the tower guardians: crystal shards and pebbles often, and in a small pool the rift
+ * core (about 0.9% a clear) and the crystal plate (about 0.3%), both rare by Nut's under-1% line.
+ */
+export const EXAMPLE_FRONTIER_LOOT_TABLES: LootTable[] = [
+  {
+    id: "loot:rift_spire_guardian",
+    ...meta,
+    speciesId: "species:crystal_crab_lord",
+    sigilRoll: { sigilId: "sigil:crystal_crab_lord", itemId: "item:crystal_crab_lord_sigil", probability: 0.0005 },
+    emptySlotWeight: 300,
+    pools: [
+      { id: "guardian", weight: 400, entries: [{ itemId: "item:crystal_shard", weight: 1, minQty: 1, maxQty: 3 }] },
+      { id: "region", weight: 150, entries: [{ itemId: "item:river_pebble", weight: 1, minQty: 2, maxQty: 4 }] },
+      {
+        id: "rare",
+        weight: 2,
+        entries: [
+          { itemId: "item:rift_core", weight: 3, minQty: 1, maxQty: 1 },
+          { itemId: "equip:crystal_shell_plate", weight: 1, minQty: 1, maxQty: 1 },
+        ],
+      },
+    ],
+    maxTypesPerEnemy: 5,
+  },
+];
 
 // ---------------------------------------------------------------- helpers
 
@@ -387,10 +454,10 @@ export function exampleContentMaps() {
     species: new Map(EXAMPLE_SPECIES.map((s) => [s.id, s])),
     skills: new Map(EXAMPLE_SKILLS.map((s) => [s.id, s])),
     items: new Map(EXAMPLE_ITEMS.map((s) => [s.id, s])),
-    lootTables: new Map(EXAMPLE_LOOT_TABLES.map((s) => [s.id, s])),
+    lootTables: new Map([...EXAMPLE_LOOT_TABLES, ...EXAMPLE_FRONTIER_LOOT_TABLES].map((s) => [s.id, s])),
     sigils: new Map(EXAMPLE_SIGILS.map((s) => [s.id, s])),
     equipment: new Map(EXAMPLE_EQUIPMENT.map((s) => [s.id, s])),
     affixPools: new Map(EXAMPLE_AFFIX_POOLS.map((s) => [s.id, s])),
-    bosses: new Map(EXAMPLE_BOSSES.map((s) => [s.id, s])),
+    bosses: new Map([...EXAMPLE_BOSSES, ...EXAMPLE_FRONTIER_BOSSES].map((s) => [s.id, s])),
   };
 }
