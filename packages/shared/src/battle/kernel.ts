@@ -124,6 +124,15 @@ class Ctx {
 
 const active = (u: BattleUnit) => !u.ko && !u.retired;
 
+/** The account that commands an ally: its controller in a party fight, else the fight's owner. */
+export const controllerOf = (state: Pick<BattleState, "ownerAccountId">, u: Pick<BattleUnit, "controllerId">): string => u.controllerId ?? state.ownerAccountId;
+
+/** The combat bag an ally's items come from: its controller's own (party fights), else the fight's. */
+export function combatBagOf<S extends Pick<BattleState, "bag" | "consumed" | "members">>(state: S, u: Pick<BattleUnit, "controllerId">): Pick<BattleState, "bag" | "consumed"> {
+  const m = u.controllerId === undefined ? undefined : state.members?.find((x) => x.accountId === u.controllerId);
+  return m ?? state;
+}
+
 /** A unit's stats with its statuses applied (status.ts). Base `stats` never change mid-fight. */
 const eff = (ctx: Ctx, u: BattleUnit): DerivedStats => statsWithStatuses(ctx.rules, u.stats, u.statuses);
 
@@ -166,19 +175,87 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
       if (ph.telegraph !== undefined && !sp!.skillIds.includes(ph.telegraph.skillId)) reject("MISSING_REFERENCE", `telegraph ${ph.telegraph.skillId} is not the boss's skill`);
     }
   }
+  const party = setup.partyMembers ?? [];
+  if (party.length > 0) {
+    // Nut 2026-10-07: a party fights a boss together, 1 companion each, up to 5 players (10 ally places).
+    if (bossDef === undefined || tower !== undefined) reject("INVALID_COMMAND", "only a field boss is fought as a party");
+    if (party.length + 1 > rules.confirmed.partyMaxMembers.value) reject("INVALID_COMMAND", `${party.length + 1} players > ${rules.confirmed.partyMaxMembers.value}`);
+    const each = rules.confirmed.partyBossCompanionsEach.value;
+    for (const m of [{ player: setup.player, companions: setup.companions }, ...party]) {
+      if (m.companions.length > each) reject("INVALID_COMMAND", `${m.player.accountId} brings ${m.companions.length} companions > ${each}`);
+    }
+    const accounts = [setup.player.accountId, ...party.map((m) => m.player.accountId)];
+    if (new Set(accounts).size !== accounts.length) reject("INVALID_COMMAND", "a player is in the fight twice");
+  }
+  // C04 (no duplicate species) is per player's own team; party members may bring the same species.
   const teamIssues = [
-    ...validateTeam(
-      rules,
-      setup.companions.map((c) => ({ instanceId: c.instance.id, speciesId: c.instance.speciesId })),
+    ...[setup.companions, ...party.map((m) => m.companions)].flatMap((cs) =>
+      validateTeam(
+        rules,
+        cs.map((c) => ({ instanceId: c.instance.id, speciesId: c.instance.speciesId })),
+      ),
     ),
     ...validateEnemyCount(rules, setup.enemies.length),
   ];
   if (teamIssues.length > 0) reject(teamIssues[0]!.code, teamIssues.map((i) => i.message).join("; "));
   if (setup.enemies.length === 0) reject("INVALID_COMMAND", "battle needs at least one enemy");
   validateBag(rules, content, setup.bag);
+  for (const m of party) validateBag(rules, content, m.bag);
 
-  const units: BattleUnit[] = [];
+  const units: BattleUnit[] = [
+    ...allyUnits(rules, content, setup.player, setup.companions, "player", party.length > 0 ? setup.player.accountId : undefined),
+    ...party.flatMap((m, i) => allyUnits(rules, content, m.player, m.companions, `player:${i + 2}`, m.player.accountId)),
+  ];
+  for (const e of setup.enemies) units.push(enemyUnit(rules, content, e, { bossDef, towerPct, modifiers }));
+
+  validateFormation(rules, units, party.length > 0);
+  if (!units.some((u) => u.side === "ally" && !u.ko)) reject("INVALID_COMMAND", "no ally can fight");
   const p = setup.player;
+
+  const state: BattleState = {
+    battleId: setup.battleId,
+    rulesVersion: rules.rulesVersion,
+    originMode: setup.originMode,
+    ownerAccountId: p.accountId,
+    // Pinned for the whole fight (capture.ts): a deploy never changes a running fight's odds.
+    captureProfile: rules.provisional.captureProfile.value,
+    stateVersion: 0,
+    round: 0,
+    turnOrder: [],
+    turnIndex: 0,
+    units,
+    bag: { ...setup.bag },
+    consumed: {},
+    ...(party.length > 0 ? { members: party.map((m, i) => ({ accountId: m.player.accountId, playerUnitId: `player:${i + 2}`, bag: { ...m.bag }, consumed: {} })) } : {}),
+    ...(setup.partyBonus !== undefined && setup.partyBonus.partners > 0 ? { partyBonus: { ...setup.partyBonus } } : {}),
+    ...(setup.mapId !== undefined ? { mapId: setup.mapId } : {}),
+    rng: seedRng(setup.seed),
+    eventSeq: 0,
+    status: "active",
+    resolutions: {},
+    entitlements: [],
+    ...(bossDef !== undefined
+      ? { boss: { bossId: bossDef.id, unitId: "e1", phase: 0, shieldBroken: false, telegraph: null, lastTelegraphRound: 0 } }
+      : {}),
+    ...(floor !== undefined
+      ? { frontier: { floor, statPct: towerPct, modifiers, reinforcementsLeft: queue.length, queue, nextUnit: setup.enemies.length + 1 } }
+      : {}),
+  };
+  const ctx = new Ctx(state, rules, content, null);
+  ctx.emit({ type: "BattleStarted", originMode: state.originMode, rulesVersion: state.rulesVersion, unitIds: units.map((u) => u.unitId) });
+  if (bossDef !== undefined) enterBossPhase(ctx, 0);
+  startElites(ctx);
+  for (const u of units) if (u.side === "enemy") startFrontierUnit(ctx, u);
+  for (const u of units) if (active(u)) firePassives(ctx, u, "battle_start");
+  startRound(ctx);
+  advanceToAllyInput(ctx);
+  return ctx.finish();
+}
+
+/** One player's character and companions as units. `controllerId` is set in party fights only. */
+function allyUnits(rules: RulesConfig, content: BattleContent, p: BattleSetup["player"], companions: BattleSetup["companions"], playerUnitId: string, controllerId: string | undefined): BattleUnit[] {
+  const units: BattleUnit[] = [];
+  const ctl = controllerId === undefined ? {} : { controllerId };
   const pStats = deriveStats(p.level, p.primaryStats, p.gear);
   for (const sid of p.skillIds) requireActiveSkill(content, sid);
   const sigils: Record<string, number> = {};
@@ -187,9 +264,10 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
     sigils[id] = (sigils[id] ?? 0) + 1;
   }
   units.push({
-    unitId: "player",
+    unitId: playerUnitId,
     side: "ally",
     kind: "player",
+    ...ctl,
     name: p.name,
     speciesId: null,
     instanceId: null,
@@ -215,7 +293,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
     lootTableId: null,
   });
 
-  for (const c of setup.companions) {
+  for (const c of companions) {
     const inst = c.instance;
     if (inst.ownerId !== p.accountId) reject("NOT_OWNER", `${inst.id} is not owned by ${p.accountId}`);
     const sp = content.species.get(inst.speciesId) ?? reject("MISSING_REFERENCE", `species ${inst.speciesId}`);
@@ -234,6 +312,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
       unitId: `ally:${inst.id}`,
       side: "ally",
       kind: "companion",
+      ...ctl,
       name: inst.nickname ?? sp.name.th,
       speciesId: sp.id,
       instanceId: inst.id,
@@ -267,48 +346,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
     });
   }
 
-  for (const e of setup.enemies) units.push(enemyUnit(rules, content, e, { bossDef, towerPct, modifiers }));
-
-  validateFormation(rules, units);
-  if (!units.some((u) => u.side === "ally" && !u.ko)) reject("INVALID_COMMAND", "no ally can fight");
-
-  const state: BattleState = {
-    battleId: setup.battleId,
-    rulesVersion: rules.rulesVersion,
-    originMode: setup.originMode,
-    ownerAccountId: p.accountId,
-    // Pinned for the whole fight (capture.ts): a deploy never changes a running fight's odds.
-    captureProfile: rules.provisional.captureProfile.value,
-    stateVersion: 0,
-    round: 0,
-    turnOrder: [],
-    turnIndex: 0,
-    units,
-    bag: { ...setup.bag },
-    consumed: {},
-    ...(setup.partyBonus !== undefined && setup.partyBonus.partners > 0 ? { partyBonus: { ...setup.partyBonus } } : {}),
-    ...(setup.mapId !== undefined ? { mapId: setup.mapId } : {}),
-    rng: seedRng(setup.seed),
-    eventSeq: 0,
-    status: "active",
-    resolutions: {},
-    entitlements: [],
-    ...(bossDef !== undefined
-      ? { boss: { bossId: bossDef.id, unitId: "e1", phase: 0, shieldBroken: false, telegraph: null, lastTelegraphRound: 0 } }
-      : {}),
-    ...(floor !== undefined
-      ? { frontier: { floor, statPct: towerPct, modifiers, reinforcementsLeft: queue.length, queue, nextUnit: setup.enemies.length + 1 } }
-      : {}),
-  };
-  const ctx = new Ctx(state, rules, content, null);
-  ctx.emit({ type: "BattleStarted", originMode: state.originMode, rulesVersion: state.rulesVersion, unitIds: units.map((u) => u.unitId) });
-  if (bossDef !== undefined) enterBossPhase(ctx, 0);
-  startElites(ctx);
-  for (const u of units) if (u.side === "enemy") startFrontierUnit(ctx, u);
-  for (const u of units) if (active(u)) firePassives(ctx, u, "battle_start");
-  startRound(ctx);
-  advanceToAllyInput(ctx);
-  return ctx.finish();
+  return units;
 }
 
 /** Boss floors of the tower: escorts take the free enemy cells next to the guardian and its adds, in order. */
@@ -427,15 +465,16 @@ function validateBag(rules: RulesConfig, content: BattleContent, bag: Record<str
   }
 }
 
-function validateFormation(rules: RulesConfig, units: BattleUnit[]): void {
+/** Ally cells per row: P15's 3 + 3, or P22's 5 + 5 in a party boss fight. */
+function allyRowSlots(rules: RulesConfig, row: Row, party: boolean): number {
+  if (party) return rules.provisional.partyBoss.value.rowSlots;
+  return row === "front" ? rules.provisional.formationFrontSlots.value : rules.provisional.formationBackSlots.value;
+}
+
+function validateFormation(rules: RulesConfig, units: BattleUnit[], party: boolean): void {
   const seen = new Set<string>();
   for (const u of units) {
-    const max =
-      u.side === "enemy"
-        ? ENEMY_ROW_SLOTS
-        : u.row === "front"
-          ? rules.provisional.formationFrontSlots.value
-          : rules.provisional.formationBackSlots.value;
+    const max = u.side === "enemy" ? ENEMY_ROW_SLOTS : allyRowSlots(rules, u.row, party);
     if (!Number.isInteger(u.slot) || u.slot < 0 || u.slot >= max) reject("FORMATION_INVALID", `${u.unitId} slot ${u.slot} out of range`);
     const key = `${u.side}:${u.row}:${u.slot}`;
     if (seen.has(key)) reject("FORMATION_INVALID", `two units at ${key}`);
@@ -450,14 +489,14 @@ function validateFormation(rules: RulesConfig, units: BattleUnit[]): void {
  * EXP from one enemy: the character's award, and each companion's award scaled by its level at fight
  * start (unit levels never change mid-fight). Every companion that started the fight counts, KO'd or not.
  */
-function expAwards(ctx: Ctx, wildLevel: number, elite = false): { exp: number; companionExp: Record<string, number> } {
+function expAwards(ctx: Ctx, wildLevel: number, elite = false, recipient = ctx.s.ownerAccountId): { exp: number; companionExp: Record<string, number> } {
   // Party bonus (P02) on the base award, before each companion's level scaling; an elite leader gives more.
   const bonus = ctx.s.partyBonus?.expPercent ?? 0;
   const base = elite ? Math.floor((killExp(ctx.rules, wildLevel) * ctx.rules.provisional.elite.value.expPct) / 100) : killExp(ctx.rules, wildLevel);
   const exp = Math.floor((base * (100 + bonus)) / 100);
   const perCompanion: Record<string, number> = {};
   for (const a of ctx.s.units) {
-    if (a.side === "ally" && a.instanceId !== null) perCompanion[a.instanceId] = companionExp(ctx.rules, exp, a.actualLevel ?? a.level, wildLevel);
+    if (a.side === "ally" && a.instanceId !== null && controllerOf(ctx.s, a) === recipient) perCompanion[a.instanceId] = companionExp(ctx.rules, exp, a.actualLevel ?? a.level, wildLevel);
   }
   return { exp, companionExp: perCompanion };
 }
@@ -1360,36 +1399,45 @@ function knockOut(ctx: Ctx, u: BattleUnit): void {
   if (ctx.s.resolutions[u.unitId] !== undefined) throw new Error(`enemy ${u.unitId} resolved twice`);
   ctx.s.resolutions[u.unitId] = "defeated";
   ctx.emit({ type: "EnemyDefeated", unitId: u.unitId, speciesId: u.speciesId! });
-  // Adds without loot eligibility (boss fights) give EXP only.
+  // Adds without loot eligibility (boss fights) give EXP only. In a party fight every member gets their
+  // own loot roll and EXP for the same enemy (owner first, so a solo fight rolls exactly as before).
   const table = u.lootTableId === null ? undefined : ctx.content.lootTables.get(u.lootTableId)!;
-  const entitlement: Entitlement = {
-    entitlementId: `${ctx.s.battleId}:${u.unitId}:defeated`,
-    kind: "kill",
-    enemyUnitId: u.unitId,
-    speciesId: u.speciesId!,
-    originMode: ctx.s.originMode,
-    items:
-      table === undefined
-        ? []
-        : rollLoot(ctx.rules, table, ctx.s.originMode, ctx.rng, {
-            percent: ctx.s.partyBonus?.materialDropPercent ?? 0,
-            isMaterial: (id) => ctx.content.items.get(id)?.kind === "material",
-          }),
-    ...expAwards(ctx, u.level, u.elite !== undefined),
-  };
-  ctx.s.entitlements.push(entitlement);
-  ctx.emit({ type: "RewardEntitled", entitlement });
+  for (const who of fightRecipients(ctx.s)) {
+    const entitlement: Entitlement = {
+      entitlementId: `${ctx.s.battleId}:${u.unitId}:defeated`,
+      kind: "kill",
+      enemyUnitId: u.unitId,
+      speciesId: u.speciesId!,
+      originMode: ctx.s.originMode,
+      items:
+        table === undefined
+          ? []
+          : rollLoot(ctx.rules, table, ctx.s.originMode, ctx.rng, {
+              percent: ctx.s.partyBonus?.materialDropPercent ?? 0,
+              isMaterial: (id) => ctx.content.items.get(id)?.kind === "material",
+            }),
+      ...expAwards(ctx, u.level, u.elite !== undefined, who),
+      ...recipientField(ctx.s, who),
+    };
+    ctx.s.entitlements.push(entitlement);
+    ctx.emit({ type: "RewardEntitled", entitlement });
+  }
 }
+
+/** Who a fight's rewards go to: the owner, then each party member. */
+const fightRecipients = (s: BattleState) => [s.ownerAccountId, ...(s.members ?? []).map((m) => m.accountId)];
+const recipientField = (s: BattleState, who: string) => (who === s.ownerAccountId ? {} : { recipientId: who });
 
 function requirePlayerActor(actor: BattleUnit, what: string): void {
   if (actor.kind !== "player") reject("INVALID_COMMAND", `only the player character can ${what} (chapter 03 §2)`);
 }
 
-function consumeItem(ctx: Ctx, itemId: string): void {
-  const left = ctx.s.bag[itemId] ?? 0;
+function consumeItem(ctx: Ctx, actor: BattleUnit, itemId: string): void {
+  const b = combatBagOf(ctx.s, actor);
+  const left = b.bag[itemId] ?? 0;
   if (left <= 0) reject("INSUFFICIENT_RESOURCE", `no ${itemId} in the combat bag`);
-  ctx.s.bag[itemId] = left - 1;
-  ctx.s.consumed[itemId] = (ctx.s.consumed[itemId] ?? 0) + 1;
+  b.bag[itemId] = left - 1;
+  b.consumed[itemId] = (b.consumed[itemId] ?? 0) + 1;
   ctx.emit({ type: "ItemConsumed", itemId, remaining: left - 1 });
 }
 
@@ -1399,15 +1447,15 @@ function doItem(ctx: Ctx, actor: BattleUnit, itemId: string, target: BattleUnit)
   if (item.kind === "revive") {
     const block = reviveBlock(ctx.rules, ctx.s, actor, target);
     if (block !== null) reject(block.code, block.message);
-    if ((ctx.s.bag[itemId] ?? 0) <= 0) reject("INSUFFICIENT_RESOURCE", `no ${itemId} in the combat bag`);
-    consumeItem(ctx, itemId);
+    if ((combatBagOf(ctx.s, actor).bag[itemId] ?? 0) <= 0) reject("INSUFFICIENT_RESOURCE", `no ${itemId} in the combat bag`);
+    consumeItem(ctx, actor, itemId);
     actionEvent(ctx, actor, "item", target, {});
     return revive(ctx, actor, target, item.reviveHpPct ?? 1, itemId);
   }
   if (item.kind !== "heal") reject("INVALID_COMMAND", `${item.kind} items are not usable in Phase A`);
   if (target.side !== "ally" || !active(target)) reject("INVALID_TARGET", "heal items need a living ally");
-  if ((ctx.s.bag[itemId] ?? 0) <= 0) reject("INSUFFICIENT_RESOURCE", `no ${itemId} in the combat bag`);
-  consumeItem(ctx, itemId);
+  if ((combatBagOf(ctx.s, actor).bag[itemId] ?? 0) <= 0) reject("INSUFFICIENT_RESOURCE", `no ${itemId} in the combat bag`);
+  consumeItem(ctx, actor, itemId);
   // Anti-heal and zombie work on potions too.
   const gained = receiveHeal(ctx, target, item.healHp ?? 0);
   actionEvent(ctx, actor, "item", target, gained >= 0 ? { heal: gained, targetHpAfter: target.hp } : { hit: true, damage: -gained, targetHpAfter: target.hp });
@@ -1440,13 +1488,13 @@ function doCapture(ctx: Ctx, actor: BattleUnit, target: BattleUnit, itemId: stri
     target,
     species: target.speciesId === null ? undefined : ctx.content.species.get(target.speciesId),
     item: ctx.content.items.get(itemId),
-    inBag: ctx.s.bag[itemId] ?? 0,
+    inBag: combatBagOf(ctx.s, actor).bag[itemId] ?? 0,
   });
   if (!check.ok) reject(check.code === "QUALITY_NOT_ENABLED" ? "INVALID_COMMAND" : check.code, check.message);
   const p = (check as CaptureBreakdown).probability;
   const species = ctx.content.species.get(target.speciesId!)!;
 
-  consumeItem(ctx, itemId); // a failed capture still uses the item, exactly once
+  consumeItem(ctx, actor, itemId); // a failed capture still uses the item, exactly once
   const success = ctx.rng.chance(p);
   actionEvent(ctx, actor, "capture", target, {});
   ctx.emit({ type: "CaptureResolved", targetId: target.unitId, speciesId: species.id, success, probability: p, profileVersion: (check as CaptureBreakdown).profileVersion });
@@ -1456,21 +1504,22 @@ function doCapture(ctx: Ctx, actor: BattleUnit, target: BattleUnit, itemId: stri
   target.guarding = false;
   if (ctx.s.resolutions[target.unitId] !== undefined) throw new Error(`enemy ${target.unitId} resolved twice`);
   ctx.s.resolutions[target.unitId] = "captured";
-  const entitlement: Entitlement = {
-    entitlementId: `${ctx.s.battleId}:${target.unitId}:captured`,
-    kind: "capture",
-    enemyUnitId: target.unitId,
-    speciesId: species.id,
-    element: target.element,
-    level: ctx.rules.confirmed.capturedInitialLevel.value,
-    ...expAwards(ctx, target.level, target.elite !== undefined),
-  };
-  ctx.s.entitlements.push(entitlement);
-  ctx.emit({ type: "RewardEntitled", entitlement });
+  // The monster goes to whoever caught it; in a party fight the others get the same EXP, no loot.
+  const catcher = controllerOf(ctx.s, actor);
+  for (const who of fightRecipients(ctx.s)) {
+    const id = `${ctx.s.battleId}:${target.unitId}:captured`;
+    const awards = expAwards(ctx, target.level, target.elite !== undefined, who);
+    const entitlement: Entitlement =
+      who === catcher
+        ? { entitlementId: id, kind: "capture", enemyUnitId: target.unitId, speciesId: species.id, element: target.element, level: ctx.rules.confirmed.capturedInitialLevel.value, ...awards, ...recipientField(ctx.s, who) }
+        : { entitlementId: id, kind: "kill", enemyUnitId: target.unitId, speciesId: species.id, originMode: ctx.s.originMode, items: [], ...awards, ...recipientField(ctx.s, who) };
+    ctx.s.entitlements.push(entitlement);
+    ctx.emit({ type: "RewardEntitled", entitlement });
+  }
 }
 
 function doMove(ctx: Ctx, actor: BattleUnit, row: Row, slot: number): void {
-  const max = row === "front" ? ctx.rules.provisional.formationFrontSlots.value : ctx.rules.provisional.formationBackSlots.value;
+  const max = allyRowSlots(ctx.rules, row, ctx.s.members !== undefined);
   if (!Number.isInteger(slot) || slot < 0 || slot >= max) reject("FORMATION_INVALID", `slot ${slot} out of range`);
   if (actor.row === row && actor.slot === slot) reject("INVALID_COMMAND", "already there");
   if (actor.movedThisRound) reject("INVALID_COMMAND", "this unit was already moved this round");
@@ -1843,8 +1892,13 @@ function endBattle(ctx: Ctx, outcome: "victory" | "defeat" | "fled"): void {
       .filter((u) => u.side === "ally")
       .map((u) => ({ unitId: u.unitId, instanceId: u.instanceId, hp: u.hp, mp: u.mp, ko: u.ko, maxHp: u.stats.maxHp, maxMp: u.stats.maxMp })),
     consumed: { ...s.consumed },
-    unusedReserved: Object.fromEntries(Object.entries(s.bag).filter(([, q]) => q > 0)),
+    unusedReserved: unusedOf(s.bag),
+    ...(s.members !== undefined ? { members: Object.fromEntries(s.members.map((m) => [m.accountId, { consumed: { ...m.consumed }, unusedReserved: unusedOf(m.bag) }])) } : {}),
   });
+}
+
+function unusedOf(bag: Record<string, number>): Record<string, number> {
+  return Object.fromEntries(Object.entries(bag).filter(([, q]) => q > 0));
 }
 
 /**
@@ -1857,16 +1911,18 @@ function companionResults(ctx: Ctx, outcome: "victory" | "defeat" | "fled"): voi
   const p = ctx.rules.provisional;
   const won = outcome === "victory";
   const mastery = won ? masteryForVictory(ctx.rules, Object.keys(ctx.s.resolutions).length) : 0;
-  const companions: Record<string, { bond: number; mastery: number }> = {};
-  for (const u of ctx.s.units) {
-    if (u.kind !== "companion" || u.instanceId === null) continue;
-    const bond = u.fell === true ? -p.bondLossOnFall.value : won ? p.bondPerVictory.value : 0;
-    if (bond !== 0 || mastery !== 0) companions[u.instanceId] = { bond, mastery };
+  for (const who of fightRecipients(ctx.s)) {
+    const companions: Record<string, { bond: number; mastery: number }> = {};
+    for (const u of ctx.s.units) {
+      if (u.kind !== "companion" || u.instanceId === null || controllerOf(ctx.s, u) !== who) continue;
+      const bond = u.fell === true ? -p.bondLossOnFall.value : won ? p.bondPerVictory.value : 0;
+      if (bond !== 0 || mastery !== 0) companions[u.instanceId] = { bond, mastery };
+    }
+    if (Object.keys(companions).length === 0) continue;
+    const entitlement: Entitlement = { entitlementId: `${ctx.s.battleId}:all:result`, kind: "fight_result", companions, ...recipientField(ctx.s, who) };
+    ctx.s.entitlements.push(entitlement);
+    ctx.emit({ type: "RewardEntitled", entitlement });
   }
-  if (Object.keys(companions).length === 0) return;
-  const entitlement: Entitlement = { entitlementId: `${ctx.s.battleId}:all:result`, kind: "fight_result", companions };
-  ctx.s.entitlements.push(entitlement);
-  ctx.emit({ type: "RewardEntitled", entitlement });
 }
 
 // ================================================================ auto battle
@@ -1890,7 +1946,8 @@ export function chooseAutoCommand(
   if (actor.kind === "player" && content !== undefined) {
     for (const rule of policy.itemRules) {
       if (content.items.get(rule.itemId)?.kind !== "heal") continue;
-      if ((state.bag[rule.itemId] ?? 0) <= 0 || (state.consumed[rule.itemId] ?? 0) >= rule.maxPerFight) continue;
+      const own = combatBagOf(state, actor);
+      if ((own.bag[rule.itemId] ?? 0) <= 0 || (own.consumed[rule.itemId] ?? 0) >= rule.maxPerFight) continue;
       const pool = rule.target === "self" ? [actor] : state.units.filter((u) => u.side === "ally" && active(u));
       const low = pool
         .filter((u) => active(u) && u.hp * 100 < rule.hpBelowPercent * u.stats.maxHp)

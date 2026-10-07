@@ -18,6 +18,8 @@ export interface BattleUnit {
   unitId: string;
   side: Side;
   kind: "player" | "companion" | "enemy";
+  /** Party boss fights: the account that commands this ally. Absent = the fight's owner. */
+  controllerId?: string;
   name: string;
   speciesId: string | null;
   /** MonsterInstance id for companions; null for player and wild enemies. */
@@ -82,7 +84,12 @@ export interface BattleUnit {
 
 export type BattleStatus = "active" | "victory" | "defeat" | "fled";
 
-export type Entitlement =
+/**
+ * What one fight owes the economy. In a party boss fight every member gets their own copy of each
+ * enemy's reward (own loot roll, own companions' EXP) under the same id with `recipientId` set;
+ * absent = the fight's owner.
+ */
+export type Entitlement = (
   | {
       entitlementId: string;
       kind: "kill";
@@ -117,7 +124,16 @@ export type Entitlement =
       /** No EXP here: it came with each enemy's own entitlement. */
       exp?: undefined;
       companionExp?: undefined;
-    };
+    }
+) & { recipientId?: string };
+
+/** Party boss fights (Nut 2026-10-07): a member other than the owner, with their own combat bag. */
+export interface PartyMemberState {
+  accountId: string;
+  playerUnitId: string;
+  bag: Record<string, number>;
+  consumed: Record<string, number>;
+}
 
 export interface BossState {
   bossId: string;
@@ -143,9 +159,11 @@ export interface BattleState {
   turnOrder: string[];
   turnIndex: number;
   units: BattleUnit[];
-  /** Reserved combat bag: itemId -> remaining quantity. */
+  /** Reserved combat bag: itemId -> remaining quantity. In a party fight, the owner's bag. */
   bag: Record<string, number>;
   consumed: Record<string, number>;
+  /** Party boss fights: the other members (up to partyMaxMembers − 1), each with their own bag. */
+  members?: PartyMemberState[];
   /** Party bonus locked at fight start (P02). Absent on older states = none. */
   partyBonus?: PartyBonus;
   /** The map the fight started on (field packs and boss lairs); absent for tower floors and dev fights. */
@@ -262,6 +280,8 @@ export type BattleEventBody =
       allies: { unitId: string; instanceId: string | null; hp: number; mp: number; ko: boolean; maxHp?: number; maxMp?: number }[];
       consumed: Record<string, number>;
       unusedReserved: Record<string, number>;
+      /** Party boss fights: each other member's bag result (the fields above are the owner's). */
+      members?: Record<string, { consumed: Record<string, number>; unusedReserved: Record<string, number> }>;
     };
 
 export type BattleEvent = EventBase & BattleEventBody;
@@ -273,11 +293,23 @@ export interface Position {
   slot: number;
 }
 
+export type PlayerSetup = BattleSetup["player"];
+export type CompanionSetup = BattleSetup["companions"][number];
+
+/** A party boss fight member besides the owner (Nut 2026-10-07: 1 companion each, 5 players = 10 places). */
+export interface PartyMemberSetup {
+  player: PlayerSetup;
+  companions: CompanionSetup[];
+  bag: Record<string, number>;
+}
+
 export interface BattleSetup {
   battleId: string;
   originMode: OriginMode;
   /** Server-only seed. */
   seed: string;
+  /** Party boss fights only: the other members. Allies then use partyBossRowSlots cells per row. */
+  partyMembers?: PartyMemberSetup[];
   player: Position & {
     accountId: string;
     name: string;

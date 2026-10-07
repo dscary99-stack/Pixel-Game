@@ -236,6 +236,12 @@ export const RULES = {
       "P21",
       "sign-in lasts 30 days; ID 4–24 of a–z 0–9 _ . -; password 8–128; 10 wrong passwords lock that ID for 15 minutes",
     ),
+    /**
+     * Party boss fights (Nut 2026-10-07: 5 players, 1 companion each = 10 ally places). Claude's numbers:
+     * 5 cells per row (players front, companions back), and how long a member's turn may wait before any
+     * other member may have the server play it with plain Auto (no items).
+     */
+    partyBoss: provisional({ rowSlots: 5, standInAfterMs: 30_000 } as const, "P22", "5 cells per row; a stalled member's turn can be played by Auto after 30 s"),
     oneHandWeaponAttackPct: provisional(60, "P20", "one-hand weapon PATK/MATK ≤ 60% of a two-hand weapon at the same required level"),
     guardDamageMultiplier: provisional(0.6, "P15", "guard reduces damage by 40% until the guard's next turn starts"),
     formationFrontSlots: provisional(3, "P15"),

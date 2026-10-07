@@ -14,7 +14,8 @@
  *   that rule (economy.ts); this module only answers "how much does this fight add".
  */
 import { z } from "zod";
-import type { BattleState } from "./battle/types";
+import type { BattleState, BattleUnit } from "./battle/types";
+import { combatBagOf, controllerOf } from "./battle/kernel";
 import { OperationIdSchema } from "./character";
 import type { RulesConfig } from "./rules";
 import type { Element, SpeciesDefinition } from "./schemas";
@@ -49,9 +50,12 @@ export interface SecretFightFacts {
  * Reduce a finished fight to its facts. `isCaptureItem` tells capture devices apart (they never break
  * `no_items`). Server only: it reads the full state.
  */
-export function secretFightFacts(state: BattleState, isCaptureItem: (itemId: string) => boolean): SecretFightFacts {
-  const player = state.units.find((u) => u.kind === "player");
-  const companions = state.units.filter((u) => u.kind === "companion");
+export function secretFightFacts(state: BattleState, isCaptureItem: (itemId: string) => boolean, accountId: string = state.ownerAccountId): SecretFightFacts {
+  // Party boss fights: only this member's own character, companions and bag count for them.
+  const mine = (u: BattleUnit) => controllerOf(state, u) === accountId;
+  const player = state.units.find((u) => u.kind === "player" && mine(u));
+  const companions = state.units.filter((u) => u.kind === "companion" && mine(u));
+  const consumed = combatBagOf(state, accountId === state.ownerAccountId ? {} : { controllerId: accountId }).consumed;
   const enemies = state.units.filter((u) => u.side === "enemy");
   const boss = state.boss === undefined ? undefined : state.units.find((u) => u.unitId === state.boss!.unitId);
   const out: SecretFightFacts = {
@@ -59,7 +63,7 @@ export function secretFightFacts(state: BattleState, isCaptureItem: (itemId: str
     round: state.round,
     companions: companions.map((c) => ({ element: c.element, bondTier: c.bondTier ?? 0 })),
     characterHpPct: player === undefined || player.stats.maxHp <= 0 ? 0 : Math.floor((player.hp * 100) / player.stats.maxHp),
-    itemsUsed: Object.entries(state.consumed)
+    itemsUsed: Object.entries(consumed)
       .filter(([id]) => !isCaptureItem(id))
       .reduce((n, [, q]) => n + q, 0),
     knockedOut: (player?.ko ?? false) || companions.some((c) => c.ko || c.fell === true),

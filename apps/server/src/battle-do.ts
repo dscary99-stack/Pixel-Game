@@ -96,7 +96,7 @@ export class BattleDurableObject extends DurableObject<Env> {
       switch (op.kind) {
         case "create": {
           if (op.setup.player.accountId !== accountId) return { ok: false, code: "NOT_OWNER", message: "setup owner mismatch" };
-          const body = await this.room.create(op.setup, op.reservationId);
+          const body = await this.room.create(op.setup, op.reservationId, op.memberReservations);
           await this.kickOutbox();
           return { ok: true, body };
         }
@@ -105,7 +105,15 @@ export class BattleDurableObject extends DurableObject<Env> {
         case "view":
           return {
             ok: true,
-            body: { state: await this.room.view(accountId), actor: await this.room.actor(), settlement: await this.kickOutbox(), autopilot: await this.room.autopilot() },
+            body: {
+              state: await this.room.view(accountId),
+              actor: await this.room.actor(),
+              settlement: await this.kickOutbox(),
+              autopilot: await this.room.autopilot(),
+              // Party boss fights: who is asking (their units carry controllerId) and when a stalled turn may be played by Auto.
+              you: accountId,
+              standInAt: await this.room.standInAt(),
+            },
           };
         case "autopilot": {
           await this.room.setAutopilot(accountId, op.on, op.policy);
@@ -131,7 +139,7 @@ export class BattleDurableObject extends DurableObject<Env> {
 }
 
 export type RoomOp =
-  | { kind: "create"; setup: BattleSetup; reservationId: string }
+  | { kind: "create"; setup: BattleSetup; reservationId: string; memberReservations?: Record<string, string> }
   | { kind: "claim" }
   | { kind: "view" }
   | { kind: "events"; cursor: number }

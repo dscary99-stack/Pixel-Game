@@ -49,7 +49,8 @@ export type WorldServerMessage =
   /** The packs this player can engage right now (already-fought ones are left out). */
   | { t: "packs"; packs: VisiblePack[] }
   /** A private fight exists for this player; `resumed` when it was already running (reconnect). */
-  | { t: "encounter"; battleId: string; resumed: boolean }
+  /** `party`: everyone in a party boss fight (Nut 2026-10-07), first the one who started it. */
+  | { t: "encounter"; battleId: string; resumed: boolean; party?: string[] }
   | { t: "resumed" }
   /** HP/MP of the character and free companions are full again (town rest, chapter 03 §3). */
   | { t: "rested" }

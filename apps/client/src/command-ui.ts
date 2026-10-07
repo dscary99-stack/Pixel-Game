@@ -56,6 +56,8 @@ export function refusalTh(code: string | undefined, message: string | undefined)
       return "ไฟต์นี้หนีไม่ได้";
     case "REVIVE_NOT_READY":
       return "ยังชุบไม่ได้: ต้องล้มครบ 1 ตาก่อน";
+    case "NOT_YOUR_TURN":
+      return "ยังไม่ถึงตาเรา (ตาของเพื่อนในปาร์ตี้)";
     default:
       return `${code ?? ""} ${message ?? ""}`.trim();
   }

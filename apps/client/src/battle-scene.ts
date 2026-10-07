@@ -118,6 +118,8 @@ export class BattleScene extends Phaser.Scene {
 
     // While watching, read what the server did; the server paces the actions (Auto Hunt).
     this.time.addEvent({ delay: 400, loop: true, callback: () => void this.watchTick() });
+    // Party boss fights: follow teammates' turns, and have Auto stand in for one who left it waiting.
+    this.time.addEvent({ delay: 1000, loop: true, callback: () => void this.partyTick() });
     if (this.watching) this.showWatchUi();
 
     const { snapshot, events } = await this.transport.start();
@@ -173,8 +175,38 @@ export class BattleScene extends Phaser.Scene {
     this.autoButton.setText(this.autoOn ? "Auto: เปิด" : "Auto: ปิด");
   }
 
+  /** Party boss fight (Nut 2026-10-07): is the unit whose turn it is one of ours? Solo fights: always. */
+  private myTurn(): boolean {
+    const s = this.snap?.state;
+    if (s?.members === undefined || this.snap.actor === null) return true;
+    const a = this.unit(this.snap.actor);
+    return a !== undefined && (a.controllerId ?? s.ownerAccountId) === this.snap.you;
+  }
+
+  private async partyTick() {
+    const s = this.snap?.state;
+    if (s?.members === undefined || s.status !== "active" || this.busy || this.myTurn()) return;
+    this.busy = true;
+    try {
+      // A teammate who left their turn waiting past P22's time: Auto plays it (the server checks the time).
+      if (this.snap.standInAt != null && Date.now() >= this.snap.standInAt) {
+        const { response, snapshot } = await this.transport.autoStep();
+        if (response.status === "accepted") {
+          this.pushLog(`${this.name(this.snap.actor ?? "")} ไม่ได้สั่ง: Auto เล่นแทน`);
+          return this.apply(snapshot, response.events);
+        }
+      }
+      const { snapshot, events } = await this.transport.poll(this.cursor);
+      this.apply(snapshot, events);
+    } catch {
+      // The next tick tries again.
+    } finally {
+      this.busy = false;
+    }
+  }
+
   private async autoTick() {
-    if (!this.autoOn || this.busy || this.snap?.state.status !== "active") return;
+    if (!this.autoOn || this.busy || this.snap?.state.status !== "active" || !this.myTurn()) return;
     this.busy = true;
     try {
       const { response, snapshot } = await this.transport.autoStep(savedAutoPolicy());
@@ -277,6 +309,7 @@ export class BattleScene extends Phaser.Scene {
   private async act(kind: "attack" | "skill" | "guard" | "item" | "capture" | "flee" | "revive") {
     if (this.watching) return this.pushLog("กำลังล่าอัตโนมัติ: กด หยุดล่า ก่อนสั่งเอง");
     if (this.busy || this.snap.state.status !== "active" || this.snap.actor === null) return;
+    if (!this.myTurn()) return this.pushLog(`ยังไม่ถึงตาเรา: ตาของ ${this.name(this.snap.actor)}`);
     const actor = this.unit(this.snap.actor)!;
     const sel = this.selectedTarget === null ? undefined : this.unit(this.selectedTarget);
     const target = sel !== undefined && sel.side === "enemy" ? sel.unitId : this.firstEnemy();
@@ -494,7 +527,10 @@ export class BattleScene extends Phaser.Scene {
       }
       // Enemies are drawn a little shorter so a full row of five (tower floors: ten) stays readable.
       const enemy = u.side === "enemy";
-      const bh = enemy ? 36 : 56;
+      // Party boss fights: ten allies in two rows of five, drawn like the enemy rows.
+      const partyFight = state.members !== undefined;
+      const compact = enemy || partyFight;
+      const bh = compact ? 36 : 56;
       if (!v) {
         const body = this.add.rectangle(x, y, 48, bh, ELEMENT_COLOR[u.element]).setStrokeStyle(3, 0x0b0a12).setInteractive({ useHandCursor: true });
         body.on("pointerdown", () => {
@@ -511,6 +547,8 @@ export class BattleScene extends Phaser.Scene {
         const label = this.add.text(x, y - bh / 2 - 9, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#ffffff", align: "center" }).setOrigin(0.5, 1);
         const sub = enemy
           ? this.add.text(x + 30, y, "", { fontFamily: "sans-serif", fontSize: "10px", color: "#ffd84a", wordWrap: { width: u.row === "front" ? 96 : 140 } }).setOrigin(0, 0.5)
+          : partyFight
+            ? this.add.text(x - 30, y, "", { fontFamily: "sans-serif", fontSize: "10px", color: "#ffd84a", align: "right", wordWrap: { width: 80 } }).setOrigin(1, 0.5)
           : this.add.text(x, y + bh / 2 + 14, "", { fontFamily: "sans-serif", fontSize: "11px", color: "#ffd84a", align: "center" }).setOrigin(0.5, 0);
         v = { body, hpBar, label, ring, sub };
         this.views.set(u.unitId, v);
@@ -529,6 +567,10 @@ export class BattleScene extends Phaser.Scene {
         // One name line above; statuses and tags beside the body, inside this cell's band.
         v.sub.setPosition(x + 30, y).setText([tags, elite, reinforcement].filter(Boolean).join("\n"));
         v.label.setPosition(x, y - bh / 2 - 9).setText(name);
+      } else if (partyFight) {
+        // Statuses beside the body; our own units' names in gold so they stand out from teammates'.
+        v.sub.setPosition(x - 30, y).setText([tags, elite].filter(Boolean).join("\n"));
+        v.label.setPosition(x, y - bh / 2 - 9).setText(name).setColor((u.controllerId ?? state.ownerAccountId) === this.snap.you ? "#f2c94c" : "#ffffff");
       } else {
         v.sub.setPosition(x, y + bh / 2 + 14).setText([elite, reinforcement].filter(Boolean).join("\n"));
         v.label.setPosition(x, y - bh / 2 - 9).setText(`${name}${tags ? `\n${tags}` : ""}`);
@@ -556,8 +598,9 @@ export class BattleScene extends Phaser.Scene {
         ` · ศัตรู ×${(state.frontier.statPct / 100).toFixed(2)}${mods ? ` · ลูกเล่น: ${mods}` : ""}${left > 0 ? ` · กำลังเสริมเหลือ ${left}` : ""}`;
     }
     const party = state.partyBonus ? `ปาร์ตี้ ${state.partyBonus.partners} คน: EXP +${state.partyBonus.expPercent}% วัสดุ +${state.partyBonus.materialDropPercent}%` : "";
+    const waiting = state.members !== undefined && !this.myTurn() ? " (เพื่อน · รอเขาสั่ง)" : "";
     this.turnText.setText(
-      state.status === "active" ? `รอบ ${state.round} · ตาของ ${actor?.name ?? "-"} · แตะศัตรูเพื่อเลือกเป้า` : `จบไฟต์: ${state.status}`,
+      state.status === "active" ? `รอบ ${state.round} · ตาของ ${actor?.name ?? "-"}${waiting} · แตะศัตรูเพื่อเลือกเป้า` : `จบไฟต์: ${state.status}`,
     );
     this.infoText.setText(`${party}${tower}${bossLine}`.replace(/^\n/, ""));
     if (state.status !== "active" && this.onExit !== null && this.exitButton === null && !this.watching) {
@@ -589,7 +632,8 @@ export class BattleScene extends Phaser.Scene {
   }
 
   private position(u: BattleUnit) {
-    if (u.side === "ally") return { x: u.row === "front" ? 330 : 210, y: 150 + u.slot * 100 };
+    // Party boss fights have 5 cells a row (P22): the same band, tighter.
+    if (u.side === "ally") return this.snap.state.members !== undefined ? { x: u.row === "front" ? 360 : 230, y: 118 + u.slot * 76 } : { x: u.row === "front" ? 330 : 210, y: 150 + u.slot * 100 };
     // Five cells a row, spaced so ten enemies (tower floors) keep their names and bars apart.
     return { x: u.row === "front" ? 600 : 760, y: 118 + u.slot * 76 };
   }

@@ -30,6 +30,7 @@
     "smoke:secret": "vite-node apps/server/scripts/secret-smoke.ts",
     "smoke:refine": "vite-node apps/server/scripts/refine-smoke.ts",
     "smoke:account": "vite-node apps/server/scripts/account-smoke.ts",
+    "smoke:party-boss": "vite-node apps/server/scripts/party-boss-smoke.ts",
     "db:migrate:local": "cd apps/server && wrangler d1 migrations apply pixel-monster-rpg-dev --local",
     "check": "npm run typecheck && npm test && npm run build:client && npm run build:server"
   },

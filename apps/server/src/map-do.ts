@@ -31,7 +31,9 @@ import {
   autoHuntReadiness,
   NO_PARTY_BONUS,
   partyBonus,
+  partyBossMember,
   type PartyBonus,
+  type PartyMemberSetup,
   companionCombatProfile,
   deriveStats,
   gearBonuses,
@@ -355,8 +357,13 @@ export class MapChannelDurableObject extends DurableObject<Env> {
       members = pack.members;
     }
 
+    // Party boss fight (Nut 2026-10-07): party members standing at the boss on this channel, not in a
+    // fight and able to fight, go in together (1 companion each, up to 5 players).
+    const mates = lair === null ? [] : await this.bossMates(account, a, lair);
+
     const { battleId, roster } = await this.encounters.claim(account, claimKey, members);
     const reservationId = `res:${battleId}`;
+    const mine = mates.length === 0 ? null : partyBossMember(this.rules, 0, playerSetup(account, character, worn), companionSetups(character.team, instances));
     // A retry after a crash reuses the bag already reserved; otherwise reserve a fresh default bag.
     const prior = await this.economy.reservedBag(reservationId);
     // A released reservation means this fight was cancelled before it started; the pack stays
@@ -371,7 +378,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
         accountId: account,
         battleId,
         bag,
-        companionIds: character.team.map((t) => t.instanceId),
+        companionIds: mine === null ? character.team.map((t) => t.instanceId) : mine.companions.map((c) => c.instance.id),
         characterId: character.id,
         equipmentIds,
       });
@@ -380,19 +387,46 @@ export class MapChannelDurableObject extends DurableObject<Env> {
         return fail("ENCOUNTER_REFUSED", reserved.reason);
       }
     }
+    // Each mate reserves their own bag, character, gear and one companion; one who cannot (in another
+    // fight, items gone) is left out. A retry reuses what is already reserved.
+    const joined: { account: string; ws: WebSocket; a: Attachment; member: PartyMemberSetup; reservationId: string }[] = [];
+    for (const m of mates) {
+      const place = partyBossMember(this.rules, joined.length + 1, playerSetup(m.account, m.loadout.character, m.loadout.worn), companionSetups(m.loadout.character.team, m.loadout.instances));
+      const rid = `res:${battleId}:${m.account}`;
+      const before = await this.economy.reservedBag(rid);
+      let mBag = before?.bag;
+      if (mBag === undefined) {
+        const kind = (id: string) => this.content.items.get(id)?.kind;
+        mBag = defaultCombatBag(this.rules, await this.economy.balances(m.account), kind);
+        const r = await this.economy.reserve({
+          reservationId: rid,
+          accountId: m.account,
+          battleId,
+          bag: mBag,
+          companionIds: place.companions.map((c) => c.instance.id),
+          characterId: m.loadout.character.id,
+          equipmentIds: m.loadout.equipmentIds,
+        });
+        if (r.status === "rejected") continue;
+      } else if (before!.status !== "reserved" && before!.status !== "active") continue;
+      joined.push({ account: m.account, ws: m.ws, a: m.a, member: { ...place, bag: mBag }, reservationId: rid });
+    }
     const setup: BattleSetup = {
       battleId,
       originMode: origin,
       seed: crypto.randomUUID(),
-      player: playerSetup(account, character, worn),
-      companions: companionSetups(character.team, instances),
+      player: mine?.player ?? playerSetup(account, character, worn),
+      companions: mine?.companions ?? companionSetups(character.team, instances),
       enemies: pack === undefined ? [] : packEnemies({ ...pack, members: roster }),
       ...(lair !== null ? { boss: { bossId: lair.bossId! } } : {}),
+      ...(joined.length > 0 ? { partyMembers: joined.map((j) => j.member) } : {}),
       bag,
-      partyBonus: await this.partyBonusFor(account, a.mapId, a.channel),
+      // Fighting the boss together counts every member as an active partner (P02).
+      partyBonus: joined.length > 0 ? partyBonus(this.rules, joined.length) : await this.partyBonusFor(account, a.mapId, a.channel),
       mapId: a.mapId,
     };
-    const created = (await this.battle(battleId).handle(account, { kind: "create", setup, reservationId })) as RoomReply;
+    const memberReservations = Object.fromEntries(joined.map((j) => [j.account, j.reservationId]));
+    const created = (await this.battle(battleId).handle(account, { kind: "create", setup, reservationId, memberReservations })) as RoomReply;
     if (!created.ok) return fail("ENCOUNTER_REFUSED", created.code);
     // Journal (chapter 09): every species met in this fight, boss adds included.
     const adds = lair === null ? [] : (this.content.bosses.get(lair.bossId!)?.adds ?? []);
@@ -400,9 +434,37 @@ export class MapChannelDurableObject extends DurableObject<Env> {
 
     this.setBattle(ws, this.att(ws) ?? a, battleId);
     await this.store.save(account, a.generation, a.mapId, presence.pos);
-    safeSend(ws, { t: "encounter", battleId, resumed: false });
+    safeSend(ws, { t: "encounter", battleId, resumed: false, ...(joined.length > 0 ? { party: [account, ...joined.map((j) => j.account)] } : {}) });
     await this.sendPacks(account, a.mapId, a.channel);
+    for (const j of joined) {
+      await this.journal.recordSeen(j.account, [...roster, ...adds]);
+      this.setBattle(j.ws, this.att(j.ws) ?? j.a, battleId);
+      const pos = this.ensureChannel(j.a.mapId, j.a.channel).get(j.account)?.pos ?? j.a.presence.pos;
+      await this.store.save(j.account, j.a.generation, j.a.mapId, pos);
+      safeSend(j.ws, { t: "encounter", battleId, resumed: false, party: [account, ...joined.map((x) => x.account)] });
+    }
     return null;
+  }
+
+  /** Party members who can join a boss fight now: same channel, next to the boss, free, able to fight. */
+  private async bossMates(account: string, a: Attachment, lair: { at?: unknown } & Parameters<typeof inEngageRange>[2]) {
+    const here = this.ensureChannel(a.mapId, a.channel);
+    const out: { account: string; ws: WebSocket; a: Attachment; loadout: NonNullable<Awaited<ReturnType<CharacterStore["loadout"]>>> }[] = [];
+    const room = this.rules.confirmed.partyMaxMembers.value - 1;
+    for (const id of await this.parties.partners(account)) {
+      if (out.length >= room) break;
+      const p = here.get(id);
+      if (p === undefined || p.battleId !== null || this.busy.has(id) || !inEngageRange(this.rules, p.pos, lair)) continue;
+      const ws = this.ctx.getWebSockets(id)[0];
+      const att = ws === undefined ? null : this.att(ws);
+      if (ws === undefined || att === null || att.auto) continue;
+      const loadout = await this.characters.loadout(id);
+      if (loadout === null) continue;
+      const alive = (hp: number | null) => hp === null || hp > 0;
+      if (!alive(loadout.character.hp) && ![...loadout.instances.values()].some((i) => alive(i.hp))) continue;
+      out.push({ account: id, ws, a: att, loadout });
+    }
+    return out;
   }
 
   /** Back from a fight: only once the Battle DO says it is over and D1 has the settlement. */
@@ -418,7 +480,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
       }
       // Rewards and HP land in D1 before the player walks on: wait briefly for the settlement
       // (each view nudges the Battle DO's outbox), else ask the client to try again.
-      const rid = `res:${presence.battleId}`;
+      const rid = (await this.economy.reservationIdFor(presence.battleId, account)) ?? `res:${presence.battleId}`;
       let r = await this.economy.reservation(rid);
       for (let i = 0; i < 10 && r?.status === "active"; i++) {
         await new Promise((done) => setTimeout(done, 200));

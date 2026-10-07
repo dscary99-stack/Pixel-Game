@@ -26,6 +26,10 @@ import {
 export interface Snapshot {
   state: PublicBattleState;
   actor: string | null;
+  /** Server only: the caller's account (party boss fights: their units carry it as controllerId). */
+  you?: string;
+  /** Party boss fights: from when another member's stalled turn may be played by Auto (P22). */
+  standInAt?: number | null;
 }
 
 export interface BattleTransport {

@@ -432,6 +432,12 @@ export class Economy {
     return row === null ? null : { status: row.status, bag: JSON.parse(row.bag_json) as Record<string, number> };
   }
 
+  /** One account's reservation in a battle (a party boss fight has one per member). */
+  async reservationIdFor(battleId: string, accountId: string): Promise<string | null> {
+    const r = await this.db.prepare(`SELECT reservation_id FROM battle_reservations WHERE battle_id = ? AND account_id = ?`).bind(battleId, accountId).first<{ reservation_id: string }>();
+    return r?.reservation_id ?? null;
+  }
+
   async reservation(reservationId: string): Promise<{ status: ReservationStatus; outcome: string | null } | null> {
     const r = await this.db
       .prepare(`SELECT status, outcome FROM battle_reservations WHERE reservation_id = ?`)
