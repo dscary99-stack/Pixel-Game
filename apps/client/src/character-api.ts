@@ -2,6 +2,7 @@
  * Character and team requests (server mode). The server decides everything; the client shows
  * what it gets back. Identity uses the dev header until O11 picks auth.
  */
+import { authHeaders, type Identity } from "./identity";
 import type { CharacterView, CreateCharacterRequest, DisposeQuote, EquipSlot, EquipmentView, FrontierView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RefineResult, RolledAffix, SecretQuestView } from "@pmrpg/shared";
 
 export type StoredCompanion = MonsterInstance & { hp: number | null; mp: number | null };
@@ -34,7 +35,7 @@ export class ApiError extends Error {
 export class CharacterApi {
   constructor(
     private readonly base: string,
-    private readonly devAccount: string,
+    private readonly identity: Identity,
   ) {}
 
   /** The caller's character, or null when they have not made one yet. */
@@ -222,7 +223,7 @@ export class CharacterApi {
   private async call<T>(method: string, path: string, body?: unknown): Promise<T> {
     const res = await fetch(`${this.base}${path}`, {
       method,
-      headers: { "content-type": "application/json", "x-dev-account": this.devAccount },
+      headers: { "content-type": "application/json", ...authHeaders(this.identity) },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
     const json = (await res.json().catch(() => ({}))) as { error?: string; message?: string };

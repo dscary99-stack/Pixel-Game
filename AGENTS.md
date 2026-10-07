@@ -23,7 +23,7 @@ docs/             เอกสารออกแบบและสถานะ
 npm install
 npm run check          # typecheck + tests + build client + wrangler dry-run
 npm test               # vitest
-npm run dev:client     # http://127.0.0.1:5173 (local preview; หน้าแรก = เดินในแผนที่, ?battle = ฉากต่อสู้; ?server = ต่อ wrangler dev และต้องสร้างตัวละครก่อน)
+npm run dev:client     # http://127.0.0.1:5173 (local preview; หน้าแรก = เดินในแผนที่, ?battle = ฉากต่อสู้; ?server = ต่อ wrangler dev และต้องสร้างตัวละครก่อน; ?server&login = เข้าสู่ระบบและเลือกช่องตัวละครแบบจริง)
 npm run db:migrate:local  # ใส่ D1 migrations ลงฐานข้อมูล local ก่อน dev:server ครั้งแรก/หลังเพิ่ม migration
 npm run dev:server     # wrangler dev :8787; เปิด client ด้วย ?server
 npm run smoke:server   # end-to-end ไฟต์ กับ wrangler dev ที่รันอยู่
@@ -39,6 +39,7 @@ npm run smoke:quest       # end-to-end เควส: กระดานราย
 npm run smoke:boss        # end-to-end บอสเจ้าถิ่น: เห็นบอสบนแผนที่ → ไกลเกินถูกปฏิเสธ → เดินไปท้าเอง → ไฟต์ส่วนตัวมีลูกน้อง/phase → แพ้แล้วท้าใหม่ได้ไฟต์ใหม่ กับ wrangler dev
 npm run smoke:frontier    # end-to-end หอคอยรอยแยก: เข้าในเมือง (สัปดาห์ละครั้ง ไม่ใช่ energy) → เข้าซ้ำถูกปฏิเสธ → ชั้น 1 มีศัตรู 10 ตัว + ลูกเล่นของชั้น ชนะแล้วไปชั้น 2 → ออกแล้วกลับมาต่อ → จับมอนในหอได้ → dev กระโดดชั้น 10 สู้บอส (เติมผู้คุ้มกันครบ 10) → dev กระโดดชั้น 33 เห็นกำลังเสริมเข้าแทนตัวที่ล้ม → แพ้แล้วจบรอบ → เข้าจากทุ่งถูกปฏิเสธ กับ wrangler dev
 npm run smoke:secret      # end-to-end เควสลับ: ล็อกไม่บอกอะไร → dev เปิด → เดินผ่านประตูนับแวะ (ชั่วโมงละครั้ง) → ส่งของในเมือง (retry ไม่หักซ้ำ) → รับรางวัลครั้งเดียว → ฉายาเลือกใช้ได้ กับ wrangler dev
+npm run smoke:account     # end-to-end บัญชี: สร้าง ID → รหัสผิดถูกปฏิเสธ → เข้าสู่ระบบ → 10 ช่องตัวละคร → สร้าง 2 ตัวในช่อง 1 กับ 10 (ของ/เหรียญแยกกัน) → เดินในแผนที่ด้วย session → Google/Facebook ที่ยังไม่ตั้งค่าตอบ NOT_CONFIGURED → ออกจากระบบแล้ว 401 กับ wrangler dev
 npm run smoke:refine      # end-to-end ตีบวก: ราคาผิด/ตราก่อน +6 ถูกปฏิเสธไม่เสียอะไร → retry ได้ receipt เดิม → +0→+5 → คราฟต์ตรา → ใช้ตราที่ +6 (ตราหมดทั้งสำเร็จ/พลาด) → ตราที่ไม่มีถูกปฏิเสธ → ตีเสี่ยงจนแตก (ของหาย) → ในทุ่งถูกปฏิเสธ กับ wrangler dev
 ```
 

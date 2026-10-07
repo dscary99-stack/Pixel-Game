@@ -9,6 +9,8 @@ const proxy = {
   "/quests": "http://127.0.0.1:8787",
   "/journal": "http://127.0.0.1:8787",
   "/frontier": "http://127.0.0.1:8787",
+  "/auth": "http://127.0.0.1:8787",
+  "/account": "http://127.0.0.1:8787",
   "/world": { target: "http://127.0.0.1:8787", ws: true },
 };
 

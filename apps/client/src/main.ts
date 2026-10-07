@@ -3,13 +3,16 @@ import type { BattleSetup, MonsterInstance } from "@pmrpg/shared";
 import { BattleScene, GAME_SIZE } from "./battle-scene";
 import { CharacterApi } from "./character-api";
 import { createCharacterForm } from "./character-ui";
+import { devIdentity, type Identity } from "./identity";
+import { signInAndPick } from "./login-ui";
 import { HttpTransport, LocalPreviewTransport, type BattleTransport } from "./transport";
 import { WorldScene } from "./world-scene";
 import { LocalWorldTransport, ServerWorldTransport } from "./world-transport";
 
 // Default page: the walking slice (Phase B). `?battle` opens the battle preview instead.
 // `?server` talks to `wrangler dev` through the Vite proxy (or `?server=https://host`);
-// without it the page runs a local, non-authoritative preview.
+// without it the page runs a local, non-authoritative preview. `?server&login` (and every non-dev
+// build) signs in and picks one of the 10 character places (O10/O11) instead of using a dev account.
 const params = new URLSearchParams(location.search);
 const server = params.get("server");
 const game = new Phaser.Game({
@@ -29,19 +32,19 @@ if (params.has("battle")) {
   // another one (reservation lock), and abandoning a fight has no policy yet (O11/O15).
   const transport: BattleTransport =
     server !== null
-      ? new HttpTransport(server, `battle:${crypto.randomUUID().slice(0, 8)}`, `acct:dev_${crypto.randomUUID().slice(0, 8)}`)
+      ? new HttpTransport(server, `battle:${crypto.randomUUID().slice(0, 8)}`, devIdentity(`acct:dev_${crypto.randomUUID().slice(0, 8)}`))
       : new LocalPreviewTransport(previewSetup(params.get("seed") ?? "preview"));
   game.scene.add("battle", BattleScene, true, { transport });
 } else {
   // Dev identity: `?account=name` picks one (open two tabs with different names to see each other);
   // otherwise one per browser tab, kept across reloads so a reload is a reconnect, not a new player.
-  const account = params.get("account") ?? sessionAccount();
   if (server !== null) {
-    // Server mode needs a stored character (Phase D); a new account makes one first.
-    const api = new CharacterApi(server, account);
+    // Server mode needs a stored character (Phase D); an empty place or new dev account makes one first.
     void (async () => {
+      const identity: Identity = params.has("login") || !import.meta.env.DEV ? await signInAndPick(server) : devIdentity(params.get("account") ?? sessionAccount());
+      const api = new CharacterApi(server, identity);
       const bundle = (await api.get()) ?? (await createCharacterForm(api));
-      game.scene.add("world", WorldScene, true, { transport: new ServerWorldTransport(server, account), api, bundle });
+      game.scene.add("world", WorldScene, true, { transport: new ServerWorldTransport(server, identity), api, bundle });
     })();
   } else {
     game.scene.add("world", WorldScene, true, { transport: new LocalWorldTransport(), api: null, bundle: null });

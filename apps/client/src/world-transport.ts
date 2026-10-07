@@ -5,6 +5,7 @@
  * - LocalWorldTransport: runs the shared MapChannel in the browser so the scene can be developed
  *   without a server. NOT authoritative; nothing it says is saved.
  */
+import { authHeaders, identityLabel, socketQuery, type Identity } from "./identity";
 import {
   DEV_FIXTURE_RULES,
   EXAMPLE_START_MAP,
@@ -51,16 +52,16 @@ export class ServerWorldTransport implements WorldTransport {
 
   constructor(
     private readonly base: string,
-    private readonly devAccount: string,
+    private readonly identity: Identity,
   ) {
-    this.label = `SERVER · ${devAccount}`;
+    this.label = `SERVER · ${identityLabel(identity)}`;
   }
 
   async connect(mapId: string | null, channel: number | null, onMessage: (m: WorldServerMessage) => void, onClose: (reason: string) => void) {
     this.close();
-    const q = `dev_account=${encodeURIComponent(this.devAccount)}`;
+    const q = socketQuery(this.identity);
     if (mapId === null || channel === null) {
-      const where = (await (await fetch(`${this.base}/world/where?${q}`)).json()) as { mapId: string; channel: number };
+      const where = (await (await fetch(`${this.base}/world/where`, { headers: authHeaders(this.identity) })).json()) as { mapId: string; channel: number };
       mapId = where.mapId;
       channel = channel ?? where.channel;
     }
@@ -99,7 +100,7 @@ export class ServerWorldTransport implements WorldTransport {
   }
 
   battle(battleId: string): BattleTransport {
-    return new HttpTransport(this.base, battleId, this.devAccount, true);
+    return new HttpTransport(this.base, battleId, this.identity, true);
   }
 
   private send(m: WorldClientMessage) {

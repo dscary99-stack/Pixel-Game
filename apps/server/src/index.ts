@@ -43,6 +43,14 @@
  *   POST /frontier/leave           step out between floors; the run stays for the week ({ runId })
  *   POST /dev/frontier/jump        (dev only) move this week's run to a floor ({ floor })
  *   POST /dev/frontier/reset       (dev only) give back this week's entry
+ *   GET  /auth/config              which sign-in buttons to show (provider list, public Google/Facebook app ids)
+ *   POST /auth/register {loginId, password}   make an in-game ID and sign in (O11)
+ *   POST /auth/login {loginId, password}      sign in with an in-game ID
+ *   POST /auth/google {idToken}, POST /auth/facebook {accessToken}  sign in with the provider (checked by the Worker)
+ *   POST /auth/logout              end this sign-in
+ *   GET  /account                  the user's 10 character places (O10) and which one this sign-in plays
+ *   POST /account/select {slot}    play that place (empty: then POST /character makes the character there)
+ *   POST /account/deselect         back to the character screen
  *   GET  /world/where              where the caller's character is saved (map + channel)
  *   GET  /world/:mapId/:channel    WebSocket into that Map Channel DO (walking, presence)
  *
@@ -68,12 +76,15 @@ import {
   EXAMPLE_SECRET_QUEST_TEMPLATES,
   exampleSecretRewardRegistry,
   EXAMPLE_FRONTIER,
+  FacebookLoginRequestSchema,
+  GoogleLoginRequestSchema,
   RaritySchema,
   RolledAffixSchema,
   type BattleSetup,
 } from "@pmrpg/shared";
 import { z } from "zod";
-import { resolveAccount } from "./auth";
+import { accountsFor, resolveAccount, resolveSession } from "./auth";
+import { verifyFacebookToken, verifyGoogleIdToken } from "./identity-providers";
 import type { Env, RoomOp, RoomReply } from "./battle-do";
 import { CharacterStore } from "./character-store";
 import { Economy } from "./economy";
@@ -155,6 +166,7 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/dev/")) return devRoute(request, env, url);
+    if (url.pathname.startsWith("/auth/") || url.pathname === "/account" || url.pathname.startsWith("/account/")) return accountRoute(request, env, url);
     if (url.pathname.startsWith("/world/")) return worldRoute(request, env, url);
     if (url.pathname === "/character" || url.pathname.startsWith("/character/") || url.pathname.startsWith("/town/") || url.pathname.startsWith("/quests") || url.pathname === "/journal") return characterRoute(request, env, url);
     if (url.pathname === "/party" || url.pathname.startsWith("/party/")) return partyRoute(request, env, url);
@@ -164,7 +176,7 @@ export default {
     const battleId = m[1]!;
     const action = m[2] ?? "";
 
-    const accountId = resolveAccount(request, env);
+    const accountId = await resolveAccount(request, env);
     if (accountId === null) return json(401, { error: "UNAUTHENTICATED" });
 
     let op: RoomOp;
@@ -195,8 +207,58 @@ export default {
 
 const MAPS = exampleMapRegistry();
 
+/** Sign-in and character places (O10/O11). */
+async function accountRoute(request: Request, env: Env, url: URL): Promise<Response> {
+  const accounts = accountsFor(env);
+  const rules = rulesFor(env);
+  if (request.method === "GET" && url.pathname === "/auth/config") {
+    return json(200, {
+      providers: rules.confirmed.loginProviders.value.filter((p) => p === "local" || (p === "google" ? !!env.GOOGLE_CLIENT_ID : !!env.FACEBOOK_APP_ID && !!env.FACEBOOK_APP_SECRET)),
+      googleClientId: env.GOOGLE_CLIENT_ID ?? null,
+      facebookAppId: env.FACEBOOK_APP_ID ?? null,
+      maxCharacters: rules.confirmed.maxCharactersPerAccount.value,
+    });
+  }
+  const authFail = (r: { reason: string; message: string }) =>
+    json(r.reason === "INVALID_REQUEST" ? 400 : r.reason === "LOGIN_ID_TAKEN" ? 409 : r.reason === "LOCKED" ? 429 : 401, { error: r.reason, message: r.message });
+  if (request.method === "POST" && url.pathname.startsWith("/auth/") && url.pathname !== "/auth/logout") {
+    const body = await readJson(request);
+    if (body === undefined) return json(400, { error: "INVALID_REQUEST" });
+    if (url.pathname === "/auth/register" || url.pathname === "/auth/login") {
+      const r = url.pathname === "/auth/register" ? await accounts.register(body) : await accounts.passwordLogin(body);
+      return r.status === "ok" ? json(200, r.grant) : authFail(r);
+    }
+    if (url.pathname === "/auth/google" || url.pathname === "/auth/facebook") {
+      const google = url.pathname === "/auth/google";
+      const parsed = (google ? GoogleLoginRequestSchema : FacebookLoginRequestSchema).safeParse(body);
+      if (!parsed.success) return json(400, { error: "INVALID_REQUEST" });
+      const check = google
+        ? await verifyGoogleIdToken((parsed.data as { idToken: string }).idToken, { clientId: env.GOOGLE_CLIENT_ID })
+        : await verifyFacebookToken((parsed.data as { accessToken: string }).accessToken, { appId: env.FACEBOOK_APP_ID, appSecret: env.FACEBOOK_APP_SECRET });
+      if (!check.ok) return json(check.reason === "INVALID_TOKEN" ? 401 : 503, { error: check.reason, message: check.message });
+      return json(200, await accounts.externalLogin(google ? "google" : "facebook", check.subject));
+    }
+    return json(404, { error: "NOT_FOUND" });
+  }
+  const session = await resolveSession(request, env);
+  if (session === null) return json(401, { error: "UNAUTHENTICATED" });
+  if (request.method === "POST" && url.pathname === "/auth/logout") {
+    await accounts.logout(session);
+    return json(200, { ok: true });
+  }
+  if (request.method === "GET" && url.pathname === "/account") return json(200, await accounts.view(session.userId, session.selectedSlot));
+  if (request.method === "POST" && url.pathname === "/account/select") {
+    const r = await accounts.select(session, (await readJson(request)) ?? null);
+    if (r.status === "rejected") return json(400, { error: r.reason, message: r.message });
+    await devStarter(env, r.accountId);
+    return json(200, { account: r.account });
+  }
+  if (request.method === "POST" && url.pathname === "/account/deselect") return json(200, await accounts.deselect(session));
+  return json(404, { error: "NOT_FOUND" });
+}
+
 async function worldRoute(request: Request, env: Env, url: URL): Promise<Response> {
-  const accountId = resolveAccount(request, env);
+  const accountId = await resolveAccount(request, env);
   if (accountId === null) return json(401, { error: "UNAUTHENTICATED" });
   const rules = env.ENVIRONMENT === "dev" ? DEV_FIXTURE_RULES : PRODUCTION_RULES;
   await devStarter(env, accountId);
@@ -222,7 +284,7 @@ async function worldRoute(request: Request, env: Env, url: URL): Promise<Respons
 
 /** Party (P02): see your party, start one, join by code, leave. */
 async function partyRoute(request: Request, env: Env, url: URL): Promise<Response> {
-  const accountId = resolveAccount(request, env);
+  const accountId = await resolveAccount(request, env);
   if (accountId === null) return json(401, { error: "UNAUTHENTICATED" });
   const parties = new PartyStore(env.DB, rulesFor(env));
   let r: PartyResult;
@@ -237,7 +299,7 @@ async function partyRoute(request: Request, env: Env, url: URL): Promise<Respons
 
 /** The weekly tower (Nut 2026-10-06): status, enter, next floor, leave. */
 async function frontierRoute(request: Request, env: Env, url: URL): Promise<Response> {
-  const accountId = resolveAccount(request, env);
+  const accountId = await resolveAccount(request, env);
   if (accountId === null) return json(401, { error: "UNAUTHENTICATED" });
   await devStarter(env, accountId);
   const tower = frontierFor(env);
@@ -262,7 +324,7 @@ async function frontierRoute(request: Request, env: Env, url: URL): Promise<Resp
 }
 
 async function characterRoute(request: Request, env: Env, url: URL): Promise<Response> {
-  const accountId = resolveAccount(request, env);
+  const accountId = await resolveAccount(request, env);
   if (accountId === null) return json(401, { error: "UNAUTHENTICATED" });
   await devStarter(env, accountId);
   const store = charactersFor(env);
@@ -388,7 +450,7 @@ export const displayName = (accountId: string) => accountId.replace(/^acct:/, ""
 
 async function devRoute(request: Request, env: Env, url: URL): Promise<Response> {
   if (env.ENVIRONMENT !== "dev") return json(404, { error: "NOT_FOUND" });
-  const accountId = resolveAccount(request, env);
+  const accountId = await resolveAccount(request, env);
   if (accountId === null) return json(401, { error: "UNAUTHENTICATED" });
   if (request.method === "GET" && url.pathname === "/dev/inventory") {
     const economy = economyFor(env);

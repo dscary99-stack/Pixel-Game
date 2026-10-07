@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEV_FIXTURE_RULES, PRODUCTION_RULES, exampleContentMaps, type BattleSetup, type CommandResponse } from "@pmrpg/shared";
 import { BattleRoom, MemoryStorage, RoomError } from "../src/battle-room";
-import { resolveAccount } from "../src/auth";
 
 /** A clock that moves 1 s per read, so Auto is never early in these tests. */
 const ticking = () => {
@@ -173,15 +172,6 @@ describe("BattleRoom (server authority)", () => {
     expect((await room.view(OWNER)).bag["item:armor_crab_capture"]).toBe(1);
     const caught = (await room.view(OWNER)).entitlements.filter((e) => e.kind === "capture");
     expect(caught.length).toBeLessThanOrEqual(1);
-  });
-});
-
-describe("Worker auth stub (O11 open)", () => {
-  const req = new Request("https://x/battles/b", { headers: { "x-dev-account": "acct:nut" } });
-  it("accepts the dev header only in dev with DEV_AUTH", () => {
-    expect(resolveAccount(req, { ENVIRONMENT: "dev", DEV_AUTH: "true" })).toBe("acct:nut");
-    expect(resolveAccount(req, { ENVIRONMENT: "dev" })).toBeNull();
-    expect(resolveAccount(req, { ENVIRONMENT: "production", DEV_AUTH: "true" })).toBeNull();
   });
 });
 

@@ -153,7 +153,7 @@ const ELEMENT_CSS: Record<Element, string> = {
   NEUTRAL: "#c8c8d0",
 };
 
-function overlay(): { root: HTMLDivElement; panel: HTMLDivElement; close: () => void } {
+export function overlay(): { root: HTMLDivElement; panel: HTMLDivElement; close: () => void } {
   if (document.getElementById("pm-style") === null) {
     const style = document.createElement("style");
     style.id = "pm-style";
@@ -169,7 +169,7 @@ function overlay(): { root: HTMLDivElement; panel: HTMLDivElement; close: () => 
   return { root, panel, close: () => root.remove() };
 }
 
-function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, text?: string): HTMLElementTagNameMap[K] {
+export function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, text?: string): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
   if (text !== undefined) e.textContent = text;

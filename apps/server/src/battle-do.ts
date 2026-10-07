@@ -19,8 +19,13 @@ export interface Env {
   MAP: DurableObjectNamespace<import("./map-do").MapChannelDurableObject>;
   DB: D1Database;
   ENVIRONMENT: Environment;
-  /** "true" only in local dev: lets x-dev-account stand in for auth (O11 auth provider not chosen). */
+  /** "true" only in local dev: lets x-dev-account stand in for a sign-in (smokes, dev client). */
   DEV_AUTH?: string;
+  /** Sign-in providers (O11). Unset: that button is hidden and its route answers NOT_CONFIGURED. */
+  GOOGLE_CLIENT_ID?: string;
+  FACEBOOK_APP_ID?: string;
+  /** Worker secret (`wrangler secret put FACEBOOK_APP_SECRET`). */
+  FACEBOOK_APP_SECRET?: string;
   /** Worker secret: HMAC key for secret quest seeds. Required outside dev (`wrangler secret put SECRET_QUEST_KEY`). */
   SECRET_QUEST_KEY?: string;
 }

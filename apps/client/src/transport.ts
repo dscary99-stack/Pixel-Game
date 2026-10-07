@@ -5,6 +5,7 @@
  * - LocalPreviewTransport: runs the shared kernel in the browser with DEV fixture rules so the
  *   scene can be developed without a server. It is NOT authoritative and must never grant rewards.
  */
+import { authHeaders, type Identity } from "./identity";
 import {
   DEV_FIXTURE_RULES,
   applyCommand,
@@ -103,7 +104,7 @@ export class HttpTransport implements BattleTransport {
   constructor(
     private readonly base: string,
     private readonly battleId: string,
-    private readonly devAccount: string,
+    private readonly identity: Identity,
     private readonly attach = false,
   ) {
     this.label = `SERVER · ${base || "wrangler dev via Vite proxy"}`;
@@ -147,7 +148,7 @@ export class HttpTransport implements BattleTransport {
   private async call<T>(method: string, action: string, body?: unknown): Promise<T> {
     const res = await fetch(`${this.base}/battles/${this.battleId}${action ? `/${action}` : ""}`, {
       method,
-      headers: { "content-type": "application/json", "x-dev-account": this.devAccount },
+      headers: { "content-type": "application/json", ...authHeaders(this.identity) },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
     if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);

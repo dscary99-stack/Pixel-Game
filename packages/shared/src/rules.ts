@@ -216,6 +216,26 @@ export const RULES = {
      * held in either hand pay for it with lower stats. Content check: a one-hand weapon's PATK/MATK is at most
      * this % of a two-hand weapon's at the same required level.
      */
+    /**
+     * Login accounts (O10/O11, Nut 2026-10-07: Google, Facebook, an ID made in the game; 10 characters each).
+     * Ops numbers Claude set: how long a sign-in lasts, password rules, and the lock after wrong passwords.
+     */
+    login: provisional(
+      {
+        sessionDays: 30,
+        loginIdMin: 4,
+        loginIdMax: 24,
+        passwordMin: 8,
+        passwordMax: 128,
+        /** PBKDF2-SHA256; Workers allow at most 100,000 iterations. */
+        pbkdf2Iterations: 100_000,
+        /** This many wrong passwords in the window locks password sign-in for that ID until the window ends. */
+        failedLoginLimit: 10,
+        failedLoginWindowMs: 15 * 60_000,
+      } as const,
+      "P21",
+      "sign-in lasts 30 days; ID 4–24 of a–z 0–9 _ . -; password 8–128; 10 wrong passwords lock that ID for 15 minutes",
+    ),
     oneHandWeaponAttackPct: provisional(60, "P20", "one-hand weapon PATK/MATK ≤ 60% of a two-hand weapon at the same required level"),
     guardDamageMultiplier: provisional(0.6, "P15", "guard reduces damage by 40% until the guard's next turn starts"),
     formationFrontSlots: provisional(3, "P15"),
