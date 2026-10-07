@@ -33,6 +33,7 @@ export type DisposalRejection =
   | "HAS_SIGILS"
   | "CHOICE_PENDING"
   | "PROTECTED"
+  | "NOT_SELLABLE"
   | "COST_CHANGED"
   | "CHANGED";
 
@@ -55,6 +56,7 @@ interface PieceRow {
   sigil_sockets_json: string;
   affix_pending_json: string | null;
   protected: number;
+  no_sell: number;
   worn: number;
 }
 
@@ -85,6 +87,11 @@ export class DisposalStore {
     const pieces = await this.pieces(accountId, ids);
     const why = this.whyNot(pieces, ids);
     if (why !== null) return why;
+    // ห้ามขาย (Nut 2026-10-07) keeps a piece away from NPC buyers too; salvage is still allowed.
+    if (mode === "sell") {
+      const bound = pieces.find((p) => p.no_sell === 1 || this.content.equipment.get(p.definition_id)?.noSell === true);
+      if (bound !== undefined) return reject("NOT_SELLABLE", `${this.content.equipment.get(bound.definition_id)?.name.th ?? bound.id} cannot be sold (ห้ามขาย)`);
+    }
     const paid = this.quoteFor(mode, pieces);
     if (JSON.stringify(paid) !== JSON.stringify(expected)) return reject("COST_CHANGED", "the price changed; look again before confirming");
 
@@ -93,7 +100,7 @@ export class DisposalStore {
       `EXISTS (SELECT 1 FROM player_positions WHERE account_id = ? AND map_id IN (${marks(this.townMapIds.length)}))`,
       `NOT ${OPEN_BATTLE}`,
       `(SELECT COUNT(*) FROM equipment_instances WHERE owner_id = ? AND id IN (${marks(n)}) AND lock_state = 'free' AND protected = 0
-          AND sigil_sockets_json = '[]' AND affix_pending_json IS NULL) = ?`,
+          AND sigil_sockets_json = '[]' AND affix_pending_json IS NULL${mode === "sell" ? " AND no_sell = 0" : ""}) = ?`,
       `NOT EXISTS (SELECT 1 FROM character_equipment WHERE equipment_instance_id IN (${marks(n)}))`,
     ];
     const args: unknown[] = [accountId, ...this.townMapIds, accountId, accountId, ...ids, n, ...ids];
@@ -254,7 +261,7 @@ export class DisposalStore {
     if (ids.length === 0) return [];
     const { results } = await this.db
       .prepare(
-        `SELECT e.id, e.definition_id, e.rarity, e.lock_state, e.sigil_sockets_json, e.affix_pending_json, e.protected,
+        `SELECT e.id, e.definition_id, e.rarity, e.lock_state, e.sigil_sockets_json, e.affix_pending_json, e.protected, e.no_sell,
            (SELECT COUNT(*) FROM character_equipment ce WHERE ce.equipment_instance_id = e.id) AS worn
          FROM equipment_instances e WHERE e.owner_id = ? AND e.id IN (${marks(ids.length)})`,
       )

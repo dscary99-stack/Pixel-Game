@@ -487,6 +487,9 @@ export const MonsterInstanceSchema = z
     nickname: z.string().min(1).optional(),
     /** Owner-set guard: no release (or future auto action) touches it. */
     protected: z.boolean().optional(),
+    /** ห้ามขาย / ห้ามเทรด on this one companion (market.ts), e.g. a secret-quest reward. */
+    noSell: z.boolean().optional(),
+    noTrade: z.boolean().optional(),
   })
   .strict();
 export type MonsterInstance = z.infer<typeof MonsterInstanceSchema>;
@@ -510,6 +513,10 @@ export const ItemDefinitionSchema = z
     sigilId: SigilId.optional(),
     /** Coins an NPC pays per unit (chapter 06); 0 = the NPC does not buy it. */
     vendorPrice: z.number().int().min(0),
+    /** ห้ามขาย (Nut 2026-10-07): never on the World Market and never sold to an NPC. */
+    noSell: z.boolean().optional(),
+    /** ห้ามเทรด (Nut 2026-10-07): never given in a direct trade between players. */
+    noTrade: z.boolean().optional(),
   })
   .strict()
   .superRefine((it, ctx) => {
@@ -599,6 +606,9 @@ export const EquipmentDefinitionSchema = z
     maxSigilSlots: z.number().int().min(0),
     affixPoolId: z.string().min(1),
     visualSetId: z.string().min(1),
+    /** ห้ามขาย / ห้ามเทรด for every piece of this kind (a single piece can also carry its own flags). */
+    noSell: z.boolean().optional(),
+    noTrade: z.boolean().optional(),
     /**
      * Refining (refine.ts): the fixed cost level that prices refining this piece (server data, never
      * the owner's level or a reduced requirement), and which base stats refining raises. A piece

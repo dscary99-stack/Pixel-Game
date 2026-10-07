@@ -58,6 +58,8 @@ interface CharacterRow {
 
 interface InstanceRow {
   id: string;
+  no_sell?: number;
+  no_trade?: number;
   species_id: string;
   owner_id: string;
   current_level: number;
@@ -102,6 +104,7 @@ export type EquipResult =
         | "STALE_VERSION"
         | "IN_BATTLE"
         | "NOT_OWNER"
+        | "ASSET_LOCKED"
         | "SLOT_MISMATCH"
         | "LEVEL_TOO_LOW"
         | "MISSING_REFERENCE"
@@ -111,6 +114,8 @@ export type EquipResult =
 
 interface EquipmentRow {
   id: string;
+  no_sell?: number;
+  no_trade?: number;
   definition_id: string;
   refine_level: number;
   lock_state: EquipmentView["lockState"];
@@ -129,7 +134,7 @@ export type CreateResult =
 
 export type SetTeamResult =
   | { status: "saved"; character: CharacterView }
-  | { status: "rejected"; reason: "INVALID_REQUEST" | "NO_CHARACTER" | "STALE_VERSION" | "IN_BATTLE" | "NOT_OWNER" | "TEAM_TOO_LARGE" | "DUPLICATE_SPECIES" | "FORMATION_INVALID"; message: string };
+  | { status: "rejected"; reason: "INVALID_REQUEST" | "NO_CHARACTER" | "STALE_VERSION" | "IN_BATTLE" | "NOT_OWNER" | "ASSET_LOCKED" | "TEAM_TOO_LARGE" | "DUPLICATE_SPECIES" | "FORMATION_INVALID"; message: string };
 
 const OPEN_BATTLE = `EXISTS (SELECT 1 FROM battle_reservations WHERE account_id = ? AND status IN ('reserved', 'active'))`;
 
@@ -300,6 +305,7 @@ export class CharacterStore {
     const owned = new Map((await this.companions(accountId)).map((c) => [c.id, c]));
     const members = companionIds.map((id) => owned.get(id));
     if (members.some((m) => m === undefined)) return { status: "rejected", reason: "NOT_OWNER", message: "every team member must be your own companion" };
+    if (members.some((m) => m!.lockState === "in_escrow")) return { status: "rejected", reason: "ASSET_LOCKED", message: "a companion listed on the market or held in a trade cannot join the team" };
     const team = members.map((m) => ({ instanceId: m!.id, speciesId: m!.speciesId }));
     const issues = validateTeam(this.rules, team);
     if (issues.length > 0) return { status: "rejected", reason: issues[0]!.code as "TEAM_TOO_LARGE" | "DUPLICATE_SPECIES", message: issues.map((i) => i.message).join("; ") };
@@ -315,7 +321,7 @@ export class CharacterStore {
 
     const teamHash = await hashJson({ expectedVersion, slots });
     const n = slots.length;
-    const ownedGuard = n === 0 ? "1" : `(SELECT COUNT(*) FROM monster_instances WHERE owner_id = ? AND id IN (${marks(n)})) = ?`;
+    const ownedGuard = n === 0 ? "1" : `(SELECT COUNT(*) FROM monster_instances WHERE owner_id = ? AND lock_state <> 'in_escrow' AND id IN (${marks(n)})) = ?`;
     const ownedArgs = n === 0 ? [] : [accountId, ...slots.map((t) => t.instanceId), n];
     const ours = `EXISTS (SELECT 1 FROM characters WHERE id = ? AND version = ? AND team_hash = ?)`;
     const oursArgs = [row.id, expectedVersion + 1, teamHash];
@@ -389,7 +395,7 @@ export class CharacterStore {
   async equipment(accountId: string): Promise<EquipmentView[]> {
     const { results } = await this.db
       .prepare(
-        `SELECT e.id, e.definition_id, e.refine_level, e.lock_state, e.sigil_sockets_json, e.rarity, e.affixes_json, e.affix_pending_json, e.protected, e.version, ce.slot
+        `SELECT e.id, e.definition_id, e.refine_level, e.lock_state, e.sigil_sockets_json, e.rarity, e.affixes_json, e.affix_pending_json, e.protected, e.no_sell, e.no_trade, e.version, ce.slot
          FROM equipment_instances e
          LEFT JOIN character_equipment ce ON ce.equipment_instance_id = e.id
          WHERE e.owner_id = ? ORDER BY e.definition_id, e.id`,
@@ -400,6 +406,8 @@ export class CharacterStore {
       affixes: JSON.parse(r.affixes_json) as EquipmentView["affixes"],
       ...(r.affix_pending_json === null ? {} : { pendingAffix: JSON.parse(r.affix_pending_json) as NonNullable<EquipmentView["pendingAffix"]> }),
       ...(r.protected === 1 ? { protected: true } : {}),
+      ...(r.no_sell === 1 || this.content.equipment.get(r.definition_id)?.noSell === true ? { noSell: true } : {}),
+      ...(r.no_trade === 1 || this.content.equipment.get(r.definition_id)?.noTrade === true ? { noTrade: true } : {}),
       version: r.version,
     }));
   }
@@ -416,6 +424,7 @@ export class CharacterStore {
     const owned = await this.equipment(accountId);
     const byId = new Map(owned.map((e) => [e.id, { id: e.id, definitionId: e.definitionId, sigilSockets: e.sigils }]));
     if (instanceId !== null && !byId.has(instanceId)) return { status: "rejected", reason: "NOT_OWNER", message: "that equipment is not yours" };
+    if (instanceId !== null && owned.find((e) => e.id === instanceId)!.lockState === "in_escrow") return { status: "rejected", reason: "ASSET_LOCKED", message: "a piece listed on the market or held in a trade cannot be worn" };
     const current: Loadout = Object.fromEntries(owned.filter((e) => e.slot !== null).map((e) => [e.slot, e.id]));
     const plan = planEquip(this.rules, current, slot, instanceId, byId, this.content.equipment, this.content.sigils, row.level);
     if (!plan.ok) return { status: "rejected", reason: plan.code, message: plan.message };
@@ -481,6 +490,20 @@ export class CharacterStore {
       .run();
   }
 
+  /** DEV ONLY: one companion of a species at a level, once per operation id (smoke tests of trade). */
+  async devGrantCompanion(operationId: string, accountId: string, speciesId: string, level: number): Promise<void> {
+    const sp = this.content.species.get(speciesId);
+    if (sp === undefined) throw new Error(`unknown species ${speciesId}`);
+    const start = this.rules.provisional.primaryStatStart.value;
+    await this.db
+      .prepare(
+        `INSERT INTO monster_instances (id, species_id, owner_id, current_level, element, primary_stats_json, origin_json, created_operation_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`,
+      )
+      .bind(`mon:${operationId}`, speciesId, accountId, level, sp.allowedElements[0], JSON.stringify({ STR: start, VIT: start, INT: start, DEX: start, AGI: start, SPI: start }), JSON.stringify({ kind: "capture", at: this.now() }), operationId)
+      .run();
+  }
+
   private row(accountId: string): Promise<CharacterRow | null> {
     return this.db.prepare(`SELECT * FROM characters WHERE account_id = ?`).bind(accountId).first<CharacterRow>();
   }
@@ -528,6 +551,8 @@ function toInstance(r: InstanceRow): StoredInstance {
     lockState: r.lock_state,
     ...(r.nickname ? { nickname: r.nickname } : {}),
     ...(r.protected === 1 ? { protected: true } : {}),
+    ...(r.no_sell === 1 ? { noSell: true } : {}),
+    ...(r.no_trade === 1 ? { noTrade: true } : {}),
     hp: r.hp,
     mp: r.mp,
   };

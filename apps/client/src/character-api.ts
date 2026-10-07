@@ -3,7 +3,7 @@
  * what it gets back. Identity uses the dev header until O11 picks auth.
  */
 import { authHeaders, type Identity } from "./identity";
-import type { CharacterView, CreateCharacterRequest, DisposeQuote, EquipSlot, EquipmentView, FrontierView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RefineResult, RolledAffix, SecretQuestView } from "@pmrpg/shared";
+import type { AssetSnapshot, CharacterView, CreateCharacterRequest, MarketBrowseQuery, MarketKind, MarketView, TradeKind, TradeSide, TradeView, DisposeQuote, EquipSlot, EquipmentView, FrontierView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RefineResult, RolledAffix, SecretQuestView } from "@pmrpg/shared";
 
 export type StoredCompanion = MonsterInstance & { hp: number | null; mp: number | null };
 
@@ -218,6 +218,36 @@ export class CharacterApi {
 
   trainSkill(operationId: string, companionId: string, skillId: string, expectedLevel: number) {
     return this.call<{ coins: number; result: { level: number } }>("POST", "/town/skill", { operationId, companionId, skillId, expectedLevel });
+  }
+
+  /** World Market page (anyone can browse anywhere; listing and buying are in town). */
+  market(query: MarketBrowseQuery = {}) {
+    const p = new URLSearchParams();
+    for (const [k, v] of Object.entries(query)) if (v !== undefined && v !== "") p.set(k, String(v));
+    const qs = p.toString();
+    return this.call<MarketView>("GET", `/market${qs === "" ? "" : `?${qs}`}`);
+  }
+  /** List at the price and fee shown; the thing goes into escrow until it sells or is taken back. */
+  marketList(kind: MarketKind, assetId: string, quantity: number, price: number, expectedFee: number) {
+    return this.call<{ coins: number; result: { listingId: string; fee: number; expiresAt: string } }>("POST", "/market/list", { operationId: opId("mlist"), kind, assetId, quantity, price, expectedFee });
+  }
+  marketBuy(listingId: string, expectedPrice: number) {
+    return this.call<{ coins: number; result: { listingId: string; price: number; asset: AssetSnapshot } }>("POST", "/market/buy", { operationId: opId("mbuy"), listingId, expectedPrice });
+  }
+  marketCancel(listingId: string) {
+    return this.call<{ coins: number; result: { listingId: string } }>("POST", "/market/cancel", { operationId: opId("mcancel"), listingId });
+  }
+
+  /** Your trade code and your open and recent offers. */
+  trades() {
+    return this.call<TradeView>("GET", "/trade");
+  }
+  /** Offer `give` (held from now) for `want` to the player with that trade code. */
+  tradeOffer(kind: TradeKind, toCode: string, give: Partial<TradeSide>, want: Partial<TradeSide>) {
+    return this.call<{ coins: number; result: { offerId: string; expiresAt: string } }>("POST", "/trade/offer", { operationId: opId("toffer"), kind, toCode, give, want });
+  }
+  tradeRespond(how: "accept" | "decline" | "cancel", offerId: string) {
+    return this.call<{ coins: number; result: { offerId: string; status: string } }>("POST", `/trade/${how}`, { operationId: opId(`t${how}`), offerId });
   }
 
   private async call<T>(method: string, path: string, body?: unknown): Promise<T> {

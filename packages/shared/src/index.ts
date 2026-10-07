@@ -47,3 +47,4 @@ export * from "./capture";
 export * from "./flee";
 export * from "./trade";
 export * from "./account";
+export * from "./market";

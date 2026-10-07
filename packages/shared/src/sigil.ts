@@ -111,6 +111,7 @@ export function sellQuote(lines: SellRequest["lines"], items: ReadonlyMap<string
   for (const l of lines) {
     const def = items.get(l.itemId);
     if (def === undefined || def.vendorPrice <= 0) return { ok: false, code: "NOT_SELLABLE", message: `the shop does not buy ${def?.name.th ?? l.itemId}` };
+    if (def.noSell === true) return { ok: false, code: "NOT_SELLABLE", message: `${def.name.th} cannot be sold (ห้ามขาย)` };
     out.push({ itemId: l.itemId, quantity: l.quantity, coins: def.vendorPrice * l.quantity });
   }
   return { ok: true, lines: out, total: out.reduce((n, l) => n + l.coins, 0) };

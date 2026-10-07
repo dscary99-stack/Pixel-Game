@@ -32,6 +32,7 @@ import {
 import { ELEMENT_COLOR, type BattleScene } from "./battle-scene";
 import type { CharacterApi, CharacterBundle } from "./character-api";
 import { autoHuntPanel, craftPanel, refinePanel, frontierPanel, journalPanel, ordersPanel, questPanel, titleName, equipmentPanel, partyPanel, rebirthPanel, secretQuestPanel, shopPanel, skillPanel, statsPanel, teamPanel, vitals } from "./character-ui";
+import { marketPanel, tradePanel } from "./market-ui";
 import type { WorldTransport } from "./world-transport";
 
 const W = 960;
@@ -52,6 +53,8 @@ const NPC_SERVICE_TH: Record<Exclude<NpcService, "talk">, string> = {
   party: "ปาร์ตี้",
   team: "ทีมคู่ใจ",
   journal: "สมุดบันทึก / ฉายา",
+  market: "ตลาดโลก",
+  trade: "แลกเปลี่ยนกับผู้เล่น",
 };
 
 const TILE_COLOR: Record<(typeof TILE_LEGEND)[TileChar]["kind"], number> = {
@@ -663,6 +666,20 @@ export class WorldScene extends Phaser.Scene {
     await this.reloadCharacter();
   }
 
+  /** World Market at the harbour; browsing works anywhere, listing and buying in town (the server checks). */
+  private async openMarket() {
+    return this.withPanel("ตลาดเปิดนอกไฟต์เท่านั้น", async (api, bundle) => {
+      await marketPanel(api, bundle);
+    });
+  }
+
+  /** Direct trade with another player by their trade code; in town (the server checks). */
+  private async openTrade() {
+    return this.withPanel("แลกเปลี่ยนได้นอกไฟต์เท่านั้น", async (api, bundle) => {
+      await tradePanel(api, bundle);
+    });
+  }
+
   /** Party: allowed anywhere, also during Auto Hunt (it changes no fight in progress). */
   private async openParty() {
     if (this.api === null || this.panelOpen) return;
@@ -749,6 +766,8 @@ export class WorldScene extends Phaser.Scene {
       party: () => this.openParty(),
       team: () => this.openTeam(),
       journal: () => this.openJournal(),
+      market: () => this.openMarket(),
+      trade: () => this.openTrade(),
     };
     const services = n.services.filter((s): s is Exclude<NpcService, "talk"> => s !== "talk");
     if (this.api === null || services.length === 0) return;

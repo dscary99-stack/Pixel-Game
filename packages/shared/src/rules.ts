@@ -242,6 +242,25 @@ export const RULES = {
      * other member may have the server play it with plain Auto (no items).
      */
     partyBoss: provisional({ rowSlots: 5, standInAfterMs: 30_000 } as const, "P22", "5 cells per row; a stalled member's turn can be played by Auto after 30 s"),
+    /**
+     * World Market (Nut 2026-10-07: list goods for sale to everyone). Escrow first (chapter 11 §4).
+     * Fee/tax follow chapter 06's example (listing 0.5% not refunded, sale 3%); duration, caps and
+     * town-only are Claude's numbers (chapter 06 left listing limits OPEN).
+     */
+    market: provisional(
+      { listingFeeBps: 50, minListingFee: 1, saleTaxBps: 300, listingHours: 72, maxActiveListings: 20, minPrice: 1, maxPrice: 1_000_000_000, pageSize: 20 } as const,
+      "P23",
+      "fee 0.5% (min 1) kept on cancel/expiry, sale tax 3% from the seller; 72 h listings; 20 active per character; list/buy/cancel in town",
+    ),
+    /**
+     * Direct trade between players (Nut 2026-10-07: item trade and companion trade are separate).
+     * The proposer's side is held in escrow; the other player's side is checked when they accept.
+     */
+    playerTrade: provisional(
+      { offerHours: 24, maxOpenOffers: 10, maxItemLines: 10, maxEquipment: 10, maxCompanions: 5 } as const,
+      "P24",
+      "offers last 24 h; 10 open per character; up to 10 item lines + 10 pieces, or 5 companions, per side; no tax; in town",
+    ),
     oneHandWeaponAttackPct: provisional(60, "P20", "one-hand weapon PATK/MATK ≤ 60% of a two-hand weapon at the same required level"),
     guardDamageMultiplier: provisional(0.6, "P15", "guard reduces damage by 40% until the guard's next turn starts"),
     formationFrontSlots: provisional(3, "P15"),

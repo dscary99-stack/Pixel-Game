@@ -11,6 +11,8 @@ const proxy = {
   "/frontier": "http://127.0.0.1:8787",
   "/auth": "http://127.0.0.1:8787",
   "/account": "http://127.0.0.1:8787",
+  "/market": "http://127.0.0.1:8787",
+  "/trade": "http://127.0.0.1:8787",
   "/world": { target: "http://127.0.0.1:8787", ws: true },
 };
 

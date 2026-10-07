@@ -276,8 +276,8 @@ export class SecretProgressStore {
           this.db
             .prepare(
               `INSERT INTO monster_instances
-                 (id, species_id, owner_id, current_level, element, primary_stats_json, origin_json, created_operation_id, growth_seed, growth_history_version)
-               SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${ours} ON CONFLICT DO NOTHING`,
+                 (id, species_id, owner_id, current_level, element, primary_stats_json, origin_json, created_operation_id, growth_seed, growth_history_version, no_sell, no_trade)
+               SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1 WHERE ${ours} ON CONFLICT DO NOTHING`,
             )
             .bind(
               g.ref,
@@ -296,11 +296,12 @@ export class SecretProgressStore {
       } else if (r.kind === "gear" && def?.kind === "gear") {
         if (!this.content.equipment.has(def.baseEquipmentId)) throw new Error(`reward ${r.rewardId} names unknown gear ${def.baseEquipmentId}`);
         // The unique effect is not designed yet (A97): the piece is its base, marked as this reward.
+        // Secret-quest rewards are personal: ห้ามขาย and ห้ามเทรด (A131, Claude's proposal), like the companion above.
         stmts.push(
           this.db
             .prepare(
-              `INSERT INTO equipment_instances (id, definition_id, owner_id, rarity, affixes_json, created_operation_id, created_at)
-               SELECT ?, ?, ?, 'COMMON', '[]', ?, ? WHERE ${ours} ON CONFLICT DO NOTHING`,
+              `INSERT INTO equipment_instances (id, definition_id, owner_id, rarity, affixes_json, created_operation_id, created_at, no_sell, no_trade)
+               SELECT ?, ?, ?, 'COMMON', '[]', ?, ?, 1, 1 WHERE ${ours} ON CONFLICT DO NOTHING`,
             )
             .bind(g.ref, def.baseEquipmentId, accountId, op, at, ...oursArgs),
         );

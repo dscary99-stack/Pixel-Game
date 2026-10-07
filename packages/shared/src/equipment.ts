@@ -165,6 +165,9 @@ export interface EquipmentView {
   pendingAffix?: { operationId: string; slot: number; affix: RolledAffix };
   /** Owner-set guard: no sell or salvage touches it. */
   protected?: boolean;
+  /** ห้ามขาย / ห้ามเทรด (market.ts): from the definition or on this piece. */
+  noSell?: boolean;
+  noTrade?: boolean;
   /** Bumped by every refine attempt; a refine request names the version it saw. */
   version?: number;
 }

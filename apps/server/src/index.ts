@@ -51,6 +51,13 @@
  *   GET  /account                  the user's 10 character places (O10) and which one this sign-in plays
  *   POST /account/select {slot}    play that place (empty: then POST /character makes the character there)
  *   POST /account/deselect         back to the character screen
+ *   GET  /market?kind=&q=&sort=&page=  World Market: open listings (anyone, anywhere) and your own listings
+ *   POST /market/list              list an item stack, a piece or a companion (operationId, kind, assetId, quantity, price, expectedFee; in town)
+ *   POST /market/buy               buy a listing at the shown price (operationId, listingId, expectedPrice; in town)
+ *   POST /market/cancel            take your listing back; the fee is not refunded (operationId, listingId)
+ *   GET  /trade                    your trade code, open offers to and from you, recent closed ones
+ *   POST /trade/offer              offer an item trade or a companion trade to a trade code (operationId, kind, toCode, give, want; in town)
+ *   POST /trade/accept|decline|cancel  answer an offer to you, or take back your own (operationId, offerId)
  *   GET  /world/where              where the caller's character is saved (map + channel)
  *   GET  /world/:mapId/:channel    WebSocket into that Map Channel DO (walking, presence)
  *
@@ -97,6 +104,7 @@ import { QuestStore } from "./quest-store";
 import { JournalStore } from "./journal-store";
 import { NpcOrderStore } from "./npc-order-store";
 import { DisposalStore } from "./disposal-store";
+import { MarketStore, TradeStore } from "./exchange-store";
 import { SecretQuestStore, secretQuestKey } from "./secret-quest-store";
 import { SecretProgressStore } from "./secret-progress-store";
 import { FrontierStore, type FrontierBattlePort } from "./frontier-store";
@@ -123,6 +131,9 @@ const townFor = (env: Env) => new TownServices(env.DB, rulesFor(env), CONTENT, T
 const refineFor = (env: Env) => new RefineStore(env.DB, rulesFor(env), { equipment: CONTENT.equipment, items: CONTENT.items }, TOWNS);
 const journalFor = (env: Env) => new JournalStore(env.DB, rulesFor(env), CONTENT);
 const ordersFor = (env: Env) => new NpcOrderStore(env.DB, rulesFor(env), exampleNpcOrderRegistry());
+const exchangeContent = { items: CONTENT.items, equipment: CONTENT.equipment, species: CONTENT.species };
+const marketFor = (env: Env) => new MarketStore(env.DB, rulesFor(env), exchangeContent, TOWNS, (a) => charactersFor(env).syncLevels(a));
+const tradeFor = (env: Env) => new TradeStore(env.DB, rulesFor(env), exchangeContent, TOWNS, (a) => charactersFor(env).syncLevels(a));
 const disposalFor = (env: Env) => new DisposalStore(env.DB, rulesFor(env), { equipment: CONTENT.equipment, affixPools: CONTENT.affixPools }, TOWNS);
 /** Floor fights go to their Battle DO like any other fight (create from a D1 reservation). */
 const battlePort = (env: Env): FrontierBattlePort => ({
@@ -170,6 +181,7 @@ export default {
     if (url.pathname.startsWith("/world/")) return worldRoute(request, env, url);
     if (url.pathname === "/character" || url.pathname.startsWith("/character/") || url.pathname.startsWith("/town/") || url.pathname.startsWith("/quests") || url.pathname === "/journal") return characterRoute(request, env, url);
     if (url.pathname === "/party" || url.pathname.startsWith("/party/")) return partyRoute(request, env, url);
+    if (url.pathname === "/market" || url.pathname.startsWith("/market/") || url.pathname === "/trade" || url.pathname.startsWith("/trade/")) return exchangeRoute(request, env, url);
     if (url.pathname === "/frontier" || url.pathname.startsWith("/frontier/")) return frontierRoute(request, env, url);
     const m = url.pathname.match(/^\/battles\/([a-z0-9_:-]{1,80})(?:\/([a-z-]+))?$/);
     if (m === null) return json(404, { error: "NOT_FOUND" });
@@ -295,6 +307,44 @@ async function partyRoute(request: Request, env: Env, url: URL): Promise<Respons
   else return json(404, { error: "NOT_FOUND" });
   if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
   return json(200, { party: r.party });
+}
+
+/** World Market and direct trade (Nut 2026-10-07). */
+async function exchangeRoute(request: Request, env: Env, url: URL): Promise<Response> {
+  const accountId = await resolveAccount(request, env);
+  if (accountId === null) return json(401, { error: "UNAUTHENTICATED" });
+  await devStarter(env, accountId);
+  const market = marketFor(env);
+  const trade = tradeFor(env);
+  if (request.method === "GET" && url.pathname === "/market") {
+    const p = url.searchParams;
+    const view = await market.view(accountId, {
+      ...(p.get("kind") ? { kind: p.get("kind") as "item" } : {}),
+      ...(p.get("q") ? { q: p.get("q")! } : {}),
+      ...(p.get("sort") ? { sort: p.get("sort") as "newest" } : {}),
+      ...(p.get("page") ? { page: Number(p.get("page")) } : {}),
+    });
+    return "error" in view ? json(400, { error: "INVALID_REQUEST", message: view.error }) : json(200, view);
+  }
+  if (request.method === "GET" && url.pathname === "/trade") {
+    const view = await trade.view(accountId);
+    return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
+  }
+  if (request.method !== "POST") return json(405, { error: "METHOD_NOT_ALLOWED" });
+  const body = await readJson(request);
+  if (body === undefined) return json(400, { error: "INVALID_REQUEST" });
+  const r =
+    url.pathname === "/market/list" ? await market.list(accountId, body)
+    : url.pathname === "/market/buy" ? await market.buy(accountId, body)
+    : url.pathname === "/market/cancel" ? await market.cancel(accountId, body)
+    : url.pathname === "/trade/offer" ? await trade.offer(accountId, body)
+    : url.pathname === "/trade/accept" ? await trade.accept(accountId, body)
+    : url.pathname === "/trade/decline" ? await trade.close(accountId, body, "declined")
+    : url.pathname === "/trade/cancel" ? await trade.close(accountId, body, "cancelled")
+    : null;
+  if (r === null) return json(404, { error: "NOT_FOUND" });
+  if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : r.reason === "NO_CHARACTER" ? 404 : 409, { error: r.reason, message: r.message });
+  return json(200, { ...r, coins: await townFor(env).coins(accountId) });
 }
 
 /** The weekly tower (Nut 2026-10-06): status, enter, next floor, leave. */
@@ -491,6 +541,10 @@ async function devRoute(request: Request, env: Env, url: URL): Promise<Response>
     if (Object.keys(g.items).length > 0) await economyFor(env).devGrant(`${g.operationId}:items`, accountId, g.items);
     if (g.coins > 0) await townFor(env).devGrantCoins(`${g.operationId}:coins`, accountId, g.coins);
     if (g.piece !== undefined) await charactersFor(env).devGrantPiece(`${g.operationId}:piece`, accountId, g.piece);
+    if (g.companion !== undefined) {
+      if (!CONTENT.species.has(g.companion.speciesId)) return json(400, { error: "UNKNOWN_SPECIES" });
+      await charactersFor(env).devGrantCompanion(`${g.operationId}:companion`, accountId, g.companion.speciesId, g.companion.level);
+    }
     return json(200, { ok: true });
   }
   return json(404, { error: "NOT_FOUND" });
@@ -502,6 +556,7 @@ const DevGrantSchema = z
     coins: z.number().int().min(0).max(1_000_000).default(0),
     items: z.record(z.string(), z.number().int().min(1).max(10_000)).default({}),
     piece: z.object({ definitionId: z.string(), rarity: RaritySchema, affixes: z.array(RolledAffixSchema).max(3) }).strict().optional(),
+    companion: z.object({ speciesId: z.string(), level: z.number().int().min(1).max(200) }).strict().optional(),
   })
   .strict();
 
