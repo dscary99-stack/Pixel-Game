@@ -117,6 +117,21 @@ export const RULES = {
       "O15",
       "Nut 2026-10-04: effect hit offsets effect resistance, never above the skill's chance: chance = skill × (1 − max(0, res − hit)/100)",
     ),
+    // Nut 2026-10-07: the rest of the end-of-build decision batch.
+    weeklyUnclaimedExpires: confirmed(true, "chapter09", "Nut 2026-10-07: a weekly reward not claimed before the week ends is gone"),
+    sigilFullOnOffHandAndDualWield: confirmed(
+      true,
+      "O09",
+      "Nut 2026-10-07: Sigils and effects on the off hand and on a second weapon count in full; weapons that can go in either hand have lower stats to make up for it",
+    ),
+    maxCharactersPerAccount: confirmed(10, "O10", "Nut 2026-10-07: 10 characters per account, for many different builds"),
+    loginProviders: confirmed(["google", "facebook", "local"] as const, "O11", "Nut 2026-10-07: sign in with Google, Facebook, or an ID created in the game"),
+    partyMaxMembers: confirmed(5, "P02", "Nut 2026-10-07: a party has up to 5 players"),
+    partyBossCompanionsEach: confirmed(
+      1,
+      "P02",
+      "Nut 2026-10-07: in a party boss fight each member brings 1 companion, so 5 players fill the 10 ally places",
+    ),
     // O01 (Nut 2026-10-07): a companion received from someone else is at most 30 levels above you, and a
     // companion you have fights at its own level, with no cap (replaces the P05 min(level, player + 10)).
     tradeLevelGap: confirmed(30, "O01", "Nut 2026-10-07: a received companion (and its species' wild level) may be at most the recipient's level + 30"),
@@ -196,6 +211,12 @@ export const RULES = {
     elementStrong: provisional(1.25, "P04", "chapter 02 element chart"),
     elementWeak: provisional(0.8, "P04", "chapter 02 element chart"),
     roundingMode: provisional("half_up_once" as const, "P04", "round once on the result event"),
+    /**
+     * O09 (Nut 2026-10-07): Sigils on the off hand and a second weapon count in full, so weapons that can be
+     * held in either hand pay for it with lower stats. Content check: a one-hand weapon's PATK/MATK is at most
+     * this % of a two-hand weapon's at the same required level.
+     */
+    oneHandWeaponAttackPct: provisional(60, "P20", "one-hand weapon PATK/MATK ≤ 60% of a two-hand weapon at the same required level"),
     guardDamageMultiplier: provisional(0.6, "P15", "guard reduces damage by 40% until the guard's next turn starts"),
     formationFrontSlots: provisional(3, "P15"),
     formationBackSlots: provisional(3, "P15"),
@@ -494,7 +515,6 @@ export const RULES = {
       "O15 parts: PROVISIONAL numbers; timing (own-turn durations, ticks at turn start, refresh, boss hard-control immunity) is the list Nut reviewed 2026-10-04",
     ),
     // Party (chapter 08 "Party", P02): bonus while partners hunt on the same map and channel.
-    partyMaxMembers: provisional(4, "P02"),
     partyExpPercentPerMember: provisional(5, "P02", "per eligible additional member"),
     partyExpPercentCap: provisional(15, "P02"),
     partyMaterialDropPercentPerMember: provisional(2, "P02", "relative, ordinary materials only; never Sigils, capture or gear"),
@@ -603,10 +623,8 @@ export const RULES = {
       "decides O15 flee: chance = clamp(lowest flee value among living enemies × player SPD / fastest enemy SPD, 5%, 95%); bosses 0 = cannot flee; Claude's numbers",
     ),
   },
-  unresolved: {
-    /** Chapter 09: what happens to a weekly reward nobody claimed before the week ended. */
-    weeklyExpiredClaim: open<true>("chapter09", "expired unclaimed weekly reward policy; must never let two periods be claimed twice"),
-  },
+  // Nut answered the last OPEN rules on 2026-10-07. A new OPEN rule goes here as open<T>(...) with value null.
+  unresolved: {} as Readonly<Record<string, Rule<null>>>,
 } as const;
 
 export type RulesConfig = typeof RULES & {

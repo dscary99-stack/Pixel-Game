@@ -70,7 +70,7 @@ function equip(
 
 export const EXAMPLE_EQUIPMENT: EquipmentDefinition[] = [
   // Starter pieces (dev hands these out; a real starter kit is not designed yet).
-  equip("equip:wooden_sword", "ดาบไม้", "WEAPON", 1, { PATK: 8 }, 1, { weaponKind: "physical_melee", handedness: "one_hand" }),
+  equip("equip:wooden_sword", "ดาบไม้", "WEAPON", 1, { PATK: 6 }, 1, { weaponKind: "physical_melee", handedness: "one_hand" }),
   equip("equip:training_bow", "ธนูฝึก", "WEAPON", 1, { PATK: 10, ACCURACY_PCT: 3 }, 2, { weaponKind: "physical_ranged", handedness: "two_hand" }),
   equip("equip:apprentice_staff", "ไม้เท้าฝึกหัด", "WEAPON", 1, { MATK: 12, MP: 10 }, 2, { weaponKind: "magic", handedness: "two_hand" }),
   equip("equip:cloth_tunic", "เสื้อผ้าฝ้าย", "ARMOR", 1, { PDEF: 4, HP: 30 }, 1),

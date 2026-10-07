@@ -38,15 +38,16 @@ describe("party (P02)", () => {
     expect(db.prepare("SELECT COUNT(*) AS n FROM parties WHERE id = ?").get(code)).toEqual({ n: 0 });
   });
 
-  it("at most 4: two players racing for the last place, one gets in", async () => {
+  it("at most 5 (Nut 2026-10-07): two players racing for the last place, one gets in", async () => {
     const made = await parties.create(who[0]!);
     const code = made.status === "ok" ? made.party!.partyId : "";
     await parties.join(who[1]!, { partyId: code });
     await parties.join(who[2]!, { partyId: code });
-    const r = await Promise.all([parties.join(who[3]!, { partyId: code }), parties.join(who[4]!, { partyId: code })]);
+    await parties.join(who[3]!, { partyId: code });
+    const r = await Promise.all([parties.join(who[4]!, { partyId: code }), parties.join(who[5]!, { partyId: code })]);
     expect(r.map((x) => x.status).sort()).toEqual(["ok", "rejected"]);
     expect(r.find((x) => x.status === "rejected")).toMatchObject({ reason: "PARTY_FULL" });
-    expect(db.prepare("SELECT COUNT(*) AS n FROM party_members WHERE party_id = ?").get(code)).toEqual({ n: 4 });
+    expect(db.prepare("SELECT COUNT(*) AS n FROM party_members WHERE party_id = ?").get(code)).toEqual({ n: 5 });
   });
 
   it("counts only partners who started a fight in the window", async () => {

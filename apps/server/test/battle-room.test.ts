@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEV_FIXTURE_RULES, PRODUCTION_RULES, exampleContentMaps, withFixtureOverrides, type BattleSetup, type CommandResponse } from "@pmrpg/shared";
+import { DEV_FIXTURE_RULES, PRODUCTION_RULES, exampleContentMaps, type BattleSetup, type CommandResponse } from "@pmrpg/shared";
 import { BattleRoom, MemoryStorage, RoomError } from "../src/battle-room";
 import { resolveAccount } from "../src/auth";
 
@@ -142,8 +142,8 @@ describe("BattleRoom (server authority)", () => {
   });
 
   it("refuses to run with fixture rules outside dev (OPEN rules have no production default)", () => {
-    // No battle rule is OPEN now, so any OPEN rule filled by a fixture stands in.
-    expect(() => new BattleRoom(new MemoryStorage(), withFixtureOverrides(PRODUCTION_RULES, { weeklyExpiredClaim: true }), content, "production")).toThrow(RoomError);
+    // No rule is OPEN now; a rules set marked as carrying fixtures is still refused outside dev.
+    expect(() => new BattleRoom(new MemoryStorage(), { ...PRODUCTION_RULES, fixtureOverrides: ["someOpenRule"] }, content, "production")).toThrow(RoomError);
     expect(() => new BattleRoom(new MemoryStorage(), PRODUCTION_RULES, content, "production")).not.toThrow();
   });
 

@@ -351,7 +351,7 @@ describe("party bonus in a fight (P02)", () => {
     const { partyBonus } = await import("../src/index");
     expect(partyBonus(rules, 0)).toEqual({ partners: 0, expPercent: 0, materialDropPercent: 0 });
     expect(partyBonus(rules, 2)).toEqual({ partners: 2, expPercent: 10, materialDropPercent: 4 });
-    expect(partyBonus(rules, 7)).toEqual({ partners: 3, expPercent: 15, materialDropPercent: 6 });
+    expect(partyBonus(rules, 7)).toEqual({ partners: 4, expPercent: 15, materialDropPercent: 6 });
     const c = content();
     const run = (bonus?: ReturnType<typeof partyBonus>) => {
       let s = ok(createBattle(rules, c, baseSetup(bonus === undefined ? {} : { partyBonus: bonus }))).state;

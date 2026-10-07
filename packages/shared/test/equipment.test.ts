@@ -37,6 +37,16 @@ describe("equipment content (EXAMPLE)", () => {
     expect(EXAMPLE_EQUIPMENT.every((d) => d.example && d.status === "draft")).toBe(true);
     expect(validateEquipmentDefinitions(EXAMPLE_EQUIPMENT)).toEqual([]);
     expect(validateEquipmentDefinitions([{ ...EXAMPLE_EQUIPMENT[0]!, baseStats: { LUCK: 3 } as never }])).toHaveLength(1);
+  });
+
+  it("O09: a one-hand weapon pays for dual wield with lower attack than a two-hand weapon at the same level (P20)", () => {
+    expect(PRODUCTION_RULES.confirmed.sigilFullOnOffHandAndDualWield).toMatchObject({ value: true, status: "CONFIRMED", decision: "O09" });
+    const sword = EXAMPLE_EQUIPMENT.find((d) => d.id === "equip:wooden_sword")!;
+    const bow = EXAMPLE_EQUIPMENT.find((d) => d.id === "equip:training_bow")!;
+    expect(sword.baseStats.PATK! * 100).toBeLessThanOrEqual(bow.baseStats.PATK! * PRODUCTION_RULES.provisional.oneHandWeaponAttackPct.value);
+    const strong = { ...sword, baseStats: { PATK: 9 } };
+    expect(validateEquipmentDefinitions([strong, bow])).toEqual([expect.objectContaining({ path: "equip:wooden_sword" })]);
+    expect(validateEquipmentDefinitions([strong, { ...bow, requiredLevel: 2 }])).toEqual([]);
     expect(DEV_STARTER_EQUIPMENT.every((id) => defs.has(id))).toBe(true);
   });
 
@@ -91,10 +101,10 @@ describe("gear in battle stats", () => {
 
   it("sums worn base stats into derived stats", () => {
     const g = gearBonuses([defs.get("equip:wooden_sword")!, defs.get("equip:cloth_tunic")!]);
-    expect(g).toEqual({ PATK: 8, PDEF: 4, HP: 30 });
+    expect(g).toEqual({ PATK: 6, PDEF: 4, HP: 30 });
     const base = deriveStats(1, character.primaryStats);
     const geared = deriveStats(1, character.primaryStats, g);
-    expect(geared.patk - base.patk).toBe(8);
+    expect(geared.patk - base.patk).toBe(6);
     expect(geared.maxHp - base.maxHp).toBe(30);
   });
 
@@ -110,7 +120,7 @@ describe("gear in battle stats", () => {
       defs,
     );
     const p = playerSetup("acct:a", character, worn);
-    expect(p.gear).toEqual({ PATK: 8 });
+    expect(p.gear).toEqual({ PATK: 6 });
     expect(p.basicAttackRange).toBe("melee");
     expect(playerSetup("acct:a", character).basicAttackRange).toBe("ranged");
   });

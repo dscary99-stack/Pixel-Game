@@ -166,6 +166,9 @@ describe("claiming", () => {
     clock = "2026-10-06T03:00:00.000Z";
     expect(await quests.claim(A, { periodId: DAY, slot: 1 })).toMatchObject({ reason: "EXPIRED" });
     clock = "2026-10-13T03:00:00.000Z";
-    expect(await quests.claim(A, { periodId: "w:2026-10-05", slot: "main" })).toMatchObject({ reason: "UNRESOLVED_RULE" });
+    // Nut 2026-10-07: an unclaimed weekly reward is gone once its week ends; nothing is paid.
+    const before = await coins();
+    expect(await quests.claim(A, { periodId: "w:2026-10-05", slot: "main" })).toMatchObject({ reason: "EXPIRED" });
+    expect(await coins()).toBe(before);
   });
 });

@@ -68,7 +68,7 @@ export class PartyStore {
            AND (SELECT COUNT(*) FROM party_members WHERE party_id = ?) < ?
          ON CONFLICT DO NOTHING`,
       )
-      .bind(accountId, partyId, this.now(), partyId, partyId, this.rules.provisional.partyMaxMembers.value)
+      .bind(accountId, partyId, this.now(), partyId, partyId, this.rules.confirmed.partyMaxMembers.value)
       .run();
     const after = await this.partyOf(accountId);
     if (after === partyId) return { status: "ok", party: await this.view(accountId) };

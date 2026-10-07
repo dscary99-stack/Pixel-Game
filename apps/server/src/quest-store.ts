@@ -61,10 +61,8 @@ export class QuestStore {
     const at = this.now();
     const period = questPeriod(this.rules, cadence, at);
     if (period.id !== periodId) {
-      if (cadence === "weekly" && periodId < period.id && this.rules.unresolved.weeklyExpiredClaim.value === null) {
-        return reject("UNRESOLVED_RULE", "what happens to an unclaimed reward of an ended week is still OPEN (chapter 09)");
-      }
-      return reject("EXPIRED", "that quest period is over");
+      // An unclaimed reward of an ended day or week is gone (weekly: Nut 2026-10-07).
+      return reject("EXPIRED", "that quest period is over; its unclaimed rewards are gone");
     }
     const board = await this.storedBoard(accountId, periodId);
     if (board === null) return reject("NO_SUCH_QUEST", "open the quest board first");

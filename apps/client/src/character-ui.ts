@@ -2177,7 +2177,7 @@ export function partyPanel(api: CharacterApi): Promise<void> {
       el(
         "div",
         { class: "pm-note" },
-        `สูงสุด ${RULES.provisional.partyMaxMembers.value} คน · เพื่อนที่อยู่แผนที่และ channel เดียวกันและเพิ่งสู้ (ภายใน ${RULES.provisional.partyActivityWindowMs.value / 60_000} นาที) ให้ EXP +${RULES.provisional.partyExpPercentPerMember.value}% ต่อคน (สูงสุด ${RULES.provisional.partyExpPercentCap.value}%) และวัสดุทั่วไป +${RULES.provisional.partyMaterialDropPercentPerMember.value}% ต่อคน (สูงสุด ${RULES.provisional.partyMaterialDropPercentCap.value}%) · ไฟต์ยังเป็นของใครของมัน`,
+        `สูงสุด ${RULES.confirmed.partyMaxMembers.value} คน · เพื่อนที่อยู่แผนที่และ channel เดียวกันและเพิ่งสู้ (ภายใน ${RULES.provisional.partyActivityWindowMs.value / 60_000} นาที) ให้ EXP +${RULES.provisional.partyExpPercentPerMember.value}% ต่อคน (สูงสุด ${RULES.provisional.partyExpPercentCap.value}%) และวัสดุทั่วไป +${RULES.provisional.partyMaterialDropPercentPerMember.value}% ต่อคน (สูงสุด ${RULES.provisional.partyMaterialDropPercentCap.value}%) · ไฟต์ยังเป็นของใครของมัน`,
       ),
       body,
       error,

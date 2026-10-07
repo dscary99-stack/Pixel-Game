@@ -22,7 +22,7 @@ export const NO_PARTY_BONUS: PartyBonus = { partners: 0, expPercent: 0, material
 
 export function partyBonus(rules: RulesConfig, eligiblePartners: number): PartyBonus {
   const P = rules.provisional;
-  const n = Math.max(0, Math.min(eligiblePartners, P.partyMaxMembers.value - 1));
+  const n = Math.max(0, Math.min(eligiblePartners, rules.confirmed.partyMaxMembers.value - 1));
   return {
     partners: n,
     expPercent: Math.min(P.partyExpPercentCap.value, n * P.partyExpPercentPerMember.value),

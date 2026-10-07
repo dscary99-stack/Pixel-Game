@@ -1,7 +1,8 @@
 /**
  * Character equipment (chapter 05 §1, C21, C23). Twelve slots; a weapon fits either hand, an
- * off-hand item only the off hand, a two-hand weapon leaves the off hand empty (O09 keeps dual-wield
- * class rules open, so any class may hold two one-hand weapons for now).
+ * off-hand item only the off hand, a two-hand weapon leaves the off hand empty. Any class may hold two
+ * one-hand weapons; O09 (Nut 2026-10-07) counts both in full and makes up for it with lower one-hand
+ * weapon stats (P20, checked by validateEquipmentDefinitions).
  *
  * Gear changes happen outside fights (P15). Gear adds its base stats plus its rolled affixes
  * (`GearBonuses`, affix.ts); a refined piece adds more of its refinable base stats (refine.ts).
@@ -51,13 +52,27 @@ export type EquipRequest = z.infer<typeof EquipRequestSchema>;
 /** Which instance sits in which slot. */
 export type Loadout = Partial<Record<EquipSlot, string>>;
 
-/** Content check: equipment only grants stats the formulas know about. */
-export function validateEquipmentDefinitions(defs: readonly EquipmentDefinition[]): ValidationIssue[] {
+/**
+ * Content check: equipment only grants stats the formulas know about, and a one-hand weapon's PATK/MATK
+ * stays within P20's % of any two-hand weapon at the same required level (O09).
+ */
+export function validateEquipmentDefinitions(defs: readonly EquipmentDefinition[], rules: RulesConfig = PRODUCTION_RULES): ValidationIssue[] {
   const out: ValidationIssue[] = [];
   for (const d of defs) {
     for (const [k, v] of Object.entries(d.baseStats)) {
       if (!(GEAR_STAT_KEYS as readonly string[]).includes(k)) out.push({ code: "INVALID_COMMAND", message: `${d.id} has unknown stat ${k}`, path: d.id });
       if (!Number.isInteger(v)) out.push({ code: "INVALID_COMMAND", message: `${d.id} ${k} is not a whole number`, path: d.id });
+    }
+  }
+  const pct = rules.provisional.oneHandWeaponAttackPct.value;
+  const weapons = defs.filter((d) => d.category === "WEAPON");
+  for (const one of weapons.filter((d) => d.handedness === "one_hand")) {
+    for (const two of weapons.filter((d) => d.handedness === "two_hand" && d.requiredLevel === one.requiredLevel)) {
+      for (const k of ["PATK", "MATK"] as const) {
+        const a = one.baseStats[k] ?? 0;
+        const b = two.baseStats[k] ?? 0;
+        if (a > 0 && b > 0 && a * 100 > b * pct) out.push({ code: "INVALID_COMMAND", message: `${one.id} ${k} ${a} is above ${pct}% of two-hand ${two.id} (${b}) at Lv${one.requiredLevel}`, path: one.id });
+      }
     }
   }
   return out;
