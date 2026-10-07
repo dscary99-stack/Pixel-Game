@@ -1,12 +1,12 @@
 # ART_HANDOFF — ส่งต่องานภาพจาก renderer ปัจจุบัน
 
-ฉบับ 1 · 7 ต.ค. 2026 · Claude เขียนจากโค้ดบน branch `claude/project-thread-ektp0t` (PR #2)
+ฉบับ 2 · 7 ต.ค. 2026 (ฉบับ 1 เขียนก่อนเห็นเอกสาร Codex; ฉบับ 2 เทียบแล้ว) · Claude เขียนจากโค้ดบน branch `claude/project-thread-ektp0t` (PR #2)
 
 เอกสารนี้เขียนให้ Codex ใช้ทำภาพและแอนิเมชันไปพร้อมกับที่ Claude ทำระบบเกม เนื้อหาแบ่งเป็นสองส่วน:
 - **[ใช้จริง]** คือสิ่งที่โค้ดตอนนี้ทำอยู่ ทุกข้อมีไฟล์และบรรทัดอ้างอิง
 - **[ข้อเสนอ]** คือสิ่งที่ยังไม่ล็อก ให้ตกลงกันก่อนผลิตภาพจำนวนมาก
 
-> **เอกสารของ Codex:** ตอนที่เขียน ผมหา `ART_STYLE_AND_ANIMATION.md` ไม่เจอทั้งใน repo (ทุก branch) ใน `/mnt/project-files/` และในไฟล์ที่อัปโหลด เอกสารนี้จึงอิงบท 10 ของ `docs/GAME_DESIGN_MASTER.md` (C31, P10) แทน ถ้าเอกสารของ Codex กำหนดต่างจากข้อเสนอในนี้ เรื่องสไตล์ภาพและไฟล์ภาพให้ยึดของ Codex ส่วนเรื่องที่โค้ดต้องอ่าน (ชื่อ key, anchor, ตำแหน่งไฟล์) ให้บันทึกที่เปลี่ยนไว้ในหัวข้อ 9 แล้ว Claude จะแก้ loader ตาม
+> **เอกสารของ Codex:** `docs/ART_STYLE_AND_ANIMATION.md` (Preproduction v1, branch `codex/art-style-animation-handoff` commit 0a69c65) เรื่องสไตล์ภาพ ขนาดกรอบ ชื่อไฟล์ manifest และเกณฑ์รับงาน **ยึดเอกสารของ Codex** เอกสารนี้ฉบับ 2 ปรับหัวข้อ 5–7 ให้ตรงกับของ Codex แล้ว และรวมจุดที่ยังขัดกับ renderer ไว้ที่หัวข้อ 10 (ต้องตกลงตอน proof)
 
 ## 0. หลักการแบ่งงาน
 
@@ -38,14 +38,14 @@
 | การเดิน | 8 ทิศบน grid: 1 ช่องตรงใช้ 250 ms, ทแยงใช้ ×1.4142 | ใช้จริง (P10) | `walkStepMs`, `diagonalStepFactor` |
 | **ทิศของภาพ** | **4 ทิศ N/E/S/W** เดินทแยงแล้วใช้ภาพทิศแนวนอน (NE/SE → E, NW/SW → W) เพื่อให้อาวุธอยู่ถูกข้าง | **ใช้จริง** (server ส่ง `facing` ใน protocol) | `world/movement.ts` `artFacing` |
 | ภาพ 8 ทิศ | อาจเพิ่มหลังผ่าน proof | ข้อเสนอ (บท 10 §2) | |
-| การกลับภาพซ้าย-ขวา | โค้ดยังไม่ flip อะไร บท 10 ห้าม flip ชิ้นที่มีมือ/ข้าง (อาวุธ มือรอง เครื่องประดับ) โดยไม่ตรวจ | ข้อเสนอ: วาด E และ W แยกกันสำหรับตัวละครผู้เล่น ส่วนมอน/NPC ที่สมมาตร flip ได้ ให้ระบุใน metadata (`flipW: true`) | |
+| การกลับภาพซ้าย-ขวา | โค้ดยังไม่ flip อะไร บท 10 และ ART_STYLE §4 ห้าม flip อัตโนมัติเมื่อลายหรืออุปกรณ์ผิดฝั่ง | ตาม ART_STYLE: การ flip ที่อนุญาตระบุใน manifest ต่อ asset ไม่ระบุ = ห้าม flip | |
 | การเรียงความลึก | placeholder ตั้ง depth = 10 + y/1000 (ยิ่งอยู่ล่างจอ ยิ่งวาดทับ) | ใช้จริงแบบง่าย; occlusion fade ของกำแพง/ต้นไม้ยังไม่มี | `movePlayer` |
 | กล้อง | ตามตัวผู้เล่น lerp 0.2 จำกัดขอบตามขนาดแผนที่ | ใช้จริง | |
 | ตัวผู้เล่นในโลก | placeholder 22×28 + จุดบอกทิศ ชื่อลอยเหนือหัว 22 px | ใช้จริง (placeholder) | `addPlayer` |
 | ฝูงมอนในโลก | ตัวแทนฝูงหนึ่งตัวต่อฝูง (ใช้ species และธาตุของหัวฝูง) 24×20 กระดึ๊บขึ้นลง 3 px; ชั้นยอดขอบเหลือง; บอส 34×30 ขอบแดง; เงาวงรี 26×8 | ใช้จริง (placeholder) | `showPacks` |
 | NPC ในเมือง | placeholder 18×24 + เงา + ชื่อเหนือหัว | ใช้จริง (placeholder) | |
-| กรอบ sprite ผู้เล่น | 64×64 px วางทับช่อง 32 px ได้ | ข้อเสนอ (P10) | |
-| **anchor ในโลก** | placeholder ตอนนี้ยึดกึ่งกลางช่อง (x×32+16, y×32+16) | ข้อเสนอ: anchor ของทุก sprite ในโลกอยู่ที่จุดกลางเท้า วางที่ขอบล่างช่องเยื้องขึ้นเล็กน้อย; Claude จะย้ายจุดวางตอนใส่ภาพจริง | |
+| กรอบ sprite ในโลก | ผู้เล่น 64×64 (P10), มอนบนแผนที่ 64×64 ภาพ 4 ทิศ (ART_STYLE §3) วางทับช่อง 32 px ได้ | ข้อเสนอ ต้องตรวจคู่กับพื้นแผนที่ | |
+| **จุดวางในโลก** | placeholder ตอนนี้ยึดกึ่งกลางช่อง (x×32+16, y×32+16) | ตาม ART_STYLE §3: origin `[0.5, 1]` + `groundOffset` จาก manifest; Claude จะวางจุดแตะพื้นไว้ที่กึ่งกลางช่อง (ตำแหน่งเดียวกับที่ server ใช้) | |
 
 ## 3. สนามต่อสู้
 
@@ -61,8 +61,8 @@
 | ระยะห่างแนวตั้งต่อช่อง | 100 px (เดี่ยว) / **76 px (ศัตรูและปาร์ตี้)** ภาพในโหมด 76 px ต้องไม่สูงเกิน ~60 px รวมชื่อและแถบ HP | ใช้จริง: ข้อจำกัดนี้มาจากการจัดวางตอนนี้ | |
 | ป้ายรอบตัว | ชื่อ+เลเวลอยู่เหนือหัว (ชิดล่าง), แถบ HP 50×4 ใต้เท้า 8 px; ศัตรู: สถานะ/ชั้นยอดอยู่ทางขวาของตัว; ปาร์ตี้: อยู่ทางซ้าย | ใช้จริง | |
 | ทิศหน้าในสนาม | ฝ่ายเราหันขวา (E) ศัตรูหันซ้าย (W) | ใช้จริงโดยนัย (ฝั่งของจอ) | |
-| กรอบ sprite ในสนาม | ผู้เล่น 64, มอนเล็ก 32/48, มอนมาตรฐาน 64, มอนใหญ่ 96, บอส 128+ | ข้อเสนอ (บท 10 §2 ตาราง) — **ขัดกับช่อง 76 px**: บอส 128 ต้องกินพื้นที่หลายช่อง หรือใช้ช่องพิเศษ ต้องตัดสินตอน proof | |
-| **anchor ในสนาม** | ตอนนี้ placeholder ยึดกึ่งกลางตัว | ข้อเสนอ: ใช้จุดกลางเท้าเหมือนในโลก, ระบุ `hitPoint` (จุดที่ตัวเลขดาเมจเด้ง) และ `castPoint` (จุดปล่อยเวท/ลูกธนู) ใน metadata | |
+| กรอบ sprite ในสนาม | proof: มอน 96×96 (ART_STYLE §3); บท 10 เสนอ ผู้เล่น 64, มอนมาตรฐาน 64, ใหญ่ 96, บอส 128+ | ข้อเสนอ — **ขัดกับช่องห่าง 76 px** ดูหัวข้อ 10 ข้อ 1 | |
+| **จุดวางในสนาม** | ตอนนี้ placeholder ยึดกึ่งกลางตัว | origin `[0.5, 1]` + `groundOffset` เหมือนในโลก; Claude เสนอเพิ่ม `hitPoint` (จุดที่ตัวเลขดาเมจเด้ง) และ `castPoint` (จุดปล่อยเวท/ลูกธนู) ใน manifest ถ้าไม่มีจะใช้กลางกรอบ | |
 | ความสามารถจุติขั้น 3 | วาดเป็นวงเรืองแสงตามสี + เอฟเฟกต์วน 5 แบบ: `aura` `sparkle` `flame` `ripple` `leaf` (สี `#rrggbb` มาจากข้อมูล) | ใช้จริง (placeholder) — ชื่อเอฟเฟกต์ 5 ตัวนี้เป็น enum ใน schema | `schemas.ts` `RebirthCosmeticSchema`, `drawCosmetic` |
 | ตัวเลขเด้ง | ดาเมจ/ฮีล/สถานะ/โล่ เด้งขึ้น 40 px จางใน 700 ms | ใช้จริง (ข้อความ ไม่ใช่ภาพ) | `popup` |
 
@@ -84,69 +84,63 @@
 - **ไอเท็ม/Sigil 32×32, สกิล 48×48:** ข้อเสนอ (บท 10 ตาราง) ยังไม่มี field ภาพ ข้อเสนอ: ใช้ id ของไอเท็ม/สกิลเป็น key
 - **ผู้เล่น:** ยังไม่มีเผ่า/ทรงผม/หน้าตาในข้อมูลตัวละคร (มีแค่ชื่อ ธาตุ สเตตัส) ฐานตัว (body/race/hair) เป็นข้อเสนอ ต้องรอระบบรูปลักษณ์
 
-## 5. ชื่อแอนิเมชัน (ข้อเสนอ ผูกกับ event ที่มีอยู่จริง)
+## 5. ชื่อแอนิเมชัน (ผูกกับ event ที่มีอยู่จริง)
 
-event ฝั่งขวาของตาราง **[ใช้จริง]** (`packages/shared/src/battle/types.ts` `BattleEvent`) ส่วนชื่อแอนิเมชันกับจำนวนเฟรมเป็น **[ข้อเสนอ]** (จำนวนเฟรมตามบท 10 §3)
+event ฝั่งขวาของตาราง **[ใช้จริง]** (`packages/shared/src/battle/types.ts` `BattleEvent`) ชื่อ state และจำนวนเฟรมเป็น **[ข้อเสนอ]**: 5 ชุดแรกตาม proof ของ Codex (ART_STYLE §4) ที่เหลือเป็นข้อเสนอของ Claude ตามบท 10 §3 ยังไม่ต้องทำในรอบ proof
 
-| ชื่อแอนิเมชัน | เฟรม | วน | เล่นเมื่อ |
-| --- | --- | --- | --- |
-| `idle` | 4–6 | วน | ยืนเฉยๆ ทั้งในโลกและในสนาม |
-| `walk` | 6–8 | วน | โลก: ขณะ tween ไปช่องถัดไป (ต่อทิศ N/E/S/W) |
-| `attack` | 6–8 | ครั้งเดียว | `ActionResolved` `action:"attack"` (ใกล้/ไกลตาม `basicAttackRange` ของชนิด) |
-| `cast` | 6–10 | ครั้งเดียว | `ActionResolved` `action:"skill"` (เอฟเฟกต์ของสกิลเป็น VFX แยก) |
-| `guard` | 3–4 | ค้างท่าสุดท้าย | `ActionResolved` `action:"guard"` จนถึง `TurnStarted.guardEnded` |
-| `item` | 4–6 | ครั้งเดียว | `ActionResolved` `action:"item"` / `ItemConsumed` |
-| `capture` | ตามท่า | ครั้งเดียว | ผู้เล่น: `action:"capture"`; เป้า: `CaptureResolved` (สำเร็จ/หลุด) |
-| `hurt` | 2–4 | ครั้งเดียว | เป้าของ `ActionResolved` ที่ `hit && damage > 0`, `StatusTick` ที่ hp < 0 |
-| `ko` | 4–6 | ค้างท่าสุดท้าย | `UnitKnockedOut` (ตอนนี้ placeholder จางเหลือ 25%) |
-| `revive` | 4–6 | ครั้งเดียว | `UnitRevived` |
-| `flee` | 4–6 | ครั้งเดียว | `FleeResolved` `success:true` |
-| `victory` | 4–8 | วนหรือค้าง | `BattleEnded` `outcome:"victory"` (ฝ่ายเรา) |
-| `enter` | ตามท่า | ครั้งเดียว | `ReinforcementArrived` (หอคอย: ตัวแทนเข้าช่องเดิม), บอสเปิดฉาก |
+| state | เฟรม / fps | วน | เล่นเมื่อ | ที่มา |
+| --- | --- | --- | --- | --- |
+| `idle` | 4 / 6 fps | วน | ยืนเฉยๆ ทั้งในโลกและในสนาม | Codex proof |
+| `walk` | 4 ต่อทิศ × 4 ทิศ / 8 fps | วน | โลก: ขณะ tween ไปช่องถัดไป | Codex proof |
+| `attack` | 6 / 10 fps, hit frame ระบุหลังเห็นเฟรมจริง | ครั้งเดียว | `ActionResolved` `action:"attack"` (ใกล้/ไกลตาม `basicAttackRange`) | Codex proof |
+| `hurt` | 2 / 8 fps | ครั้งเดียว | เป้าของ `ActionResolved` ที่ `hit && damage > 0`, `StatusTick` ที่ hp < 0 | Codex proof |
+| `ko` | 4 / 8 fps | ค้างเฟรมสุดท้าย | `UnitKnockedOut` (ตอนนี้ placeholder จางเหลือ 25%) | Codex proof |
+| `cast` | 6–10 | ครั้งเดียว | `ActionResolved` `action:"skill"` (เอฟเฟกต์สกิลเป็น VFX แยก) | ข้อเสนอ Claude |
+| `guard` | 3–4 | ค้างท่าสุดท้าย | `action:"guard"` จนถึง `TurnStarted.guardEnded` | ข้อเสนอ Claude |
+| `item` | 4–6 | ครั้งเดียว | `action:"item"` / `ItemConsumed` | ข้อเสนอ Claude |
+| `capture` | ตามท่า | ครั้งเดียว | ผู้เล่น: `action:"capture"`; เป้า: `CaptureResolved` | ข้อเสนอ Claude |
+| `revive` | 4–6 | ครั้งเดียว | `UnitRevived` | ข้อเสนอ Claude |
+| `flee` | 4–6 | ครั้งเดียว | `FleeResolved` `success:true` | ข้อเสนอ Claude |
+| `victory` | 4–8 | วนหรือค้าง | `BattleEnded` `outcome:"victory"` | ข้อเสนอ Claude |
+| `enter` | ตามท่า | ครั้งเดียว | `ReinforcementArrived`, บอสเปิดฉาก | ข้อเสนอ Claude |
 
-- เฟรมที่โดน (`hitFrame`) ให้ระบุใน metadata ของ `attack`/`cast` ตัวเลขดาเมจและ `hurt` ของเป้าจะรอให้ถึงเฟรมนั้น
-- event ในหนึ่งคำสั่งมาพร้อมกันทั้งก้อน client เล่นตามลำดับ `seq` ความยาวของแอนิเมชันจึงไม่กระทบผลไฟต์ แต่ควรยาวไม่เกิน ~600 ms ต่อท่าเพื่อให้ Auto ไม่อืด
-- VFX/ป้ายที่ตอนนี้เป็นข้อความ แต่ควรมีภาพ: สถานะติด/หลุด (`StatusChanged`), โล่ได้/แตก (`ShieldChanged`), บอสเตือนท่า (`BossTelegraph` ต้องอ่านได้โดยไม่พึ่งสี), บอสเปลี่ยนช่วง (`BossPhaseChanged`), ชั้นยอดคลั่ง/สวน (`EliteTrait`), เปิดโอกาสจับ (`CaptureWindowOpened`), ความสามารถติดตัว/Sigil ทำงาน (`PassiveTriggered`)
+- **ทิศ:** โค้ดใช้ `N/E/S/W` ส่วนชื่อไฟล์ของ Codex ใช้ `up/right/down/left` loader จะแปลง `N=up`, `E=right`, `S=down`, `W=left` เดินทแยงใช้ภาพแนวนอน (`artFacing`)
+- state ที่ไม่มีภาพ loader จะถอยไปใช้ `idle` และถ้าไม่มี `idle` ก็ใช้ placeholder เดิม ภาพจึงทยอยเข้าทีละ state ได้
+- event ของหนึ่งคำสั่งมาพร้อมกันทั้งก้อน client เล่นตามลำดับ `seq` ตัวเลขดาเมจและ `hurt` ของเป้าจะรอ hit frame ความยาวท่าไม่กระทบผลไฟต์ แต่ควรสั้นพอให้ Auto ไม่อืด (เสนอไม่เกิน ~600 ms)
+- VFX/ป้ายที่ตอนนี้เป็นข้อความ แต่ควรมีภาพในรอบหลัง: `StatusChanged`, `ShieldChanged`, `BossTelegraph` (อ่านได้โดยไม่พึ่งสี), `BossPhaseChanged`, `EliteTrait`, `CaptureWindowOpened`, `PassiveTriggered`
 
-## 6. รูปแบบ spritesheet และ metadata (ข้อเสนอ)
+## 6. รูปแบบไฟล์และ manifest (ตาม ART_STYLE §3, §5)
 
-ตอนนี้โค้ดยังไม่โหลดภาพเลย (ไม่มี `preload`, ไม่มีโฟลเดอร์ `apps/client/public`) ด้านล่างจึงเป็นข้อเสนอทั้งหมด ถ้า Codex ทำแบบอื่นได้ดีกว่า ให้บันทึกในหัวข้อ 9
-- PNG โปร่งใส ไม่ blur ไม่ upscale แยกเงาเท้า (`shadow`) เป็นภาพของมันเอง
-- 1 atlas ต่อ 1 asset (เช่น `art_ember_fox`) รูปแบบ **Phaser/TexturePacker JSON Hash** (`frames` + `meta`) ซึ่ง Phaser 4 อ่านด้วย `load.atlas()` ได้ตรงๆ
-- ชื่อเฟรม: `<anim>_<dir>_<index>` เช่น `walk_S_0`, `attack_E_3`; ทิศ `N/E/S/W` (ในสนามใช้ `E` สำหรับฝ่ายเรา และ `W` สำหรับศัตรู ถ้าไม่ flip)
-- ไฟล์ metadata ต่อ asset (`<key>.meta.json`) ตามรายการ export ในบท 10 §3:
-  ```json
-  {
-    "assetId": "art:ember_fox", "version": 1, "frameW": 64, "frameH": 64,
-    "anchor": { "x": 32, "y": 58 },
-    "hitPoint": { "x": 32, "y": 24 }, "castPoint": { "x": 44, "y": 30 },
-    "flipW": true,
-    "animations": { "idle": { "frames": 4, "fps": 8, "loop": true }, "attack": { "frames": 6, "fps": 12, "hitFrame": 3 } },
-    "directions": ["N", "E", "S", "W"],
-    "layers": [], "paletteVariants": ["FIRE", "WIND", "SHADOW"],
-    "source": "...", "license": "...", "approved": false
-  }
-  ```
-  `anchor` เป็นพิกเซลในเฟรม (จุดกลางเท้า), `layers` ใช้กับอุปกรณ์ซ้อนชั้น (หัวข้อ 6.1)
-- ภาพนิ่ง (ไอคอน ป้าย) รวมเป็น atlas ตามหมวด: `icons_items`, `icons_skills`, `icons_status`
+ตอนนี้โค้ดยังไม่โหลดภาพเลย (ไม่มี `preload`, ไม่มีโฟลเดอร์ `apps/client/public`) Claude จะเขียน loader ตามสัญญานี้ (ของ Codex):
+- PNG RGBA โปร่งใส ขนาด export = ขนาด logical จริง เงาเท้าเป็นไฟล์แยก (`shadowAsset`) VFX แยก
+- **sheet แบบกริด** ระบุ `frameWidth`, `frameHeight`, `columns`, `rows`, `frameCount`, `padding`, `spacing` เรียงเฟรมแบบ row-major → Phaser 4 โหลดด้วย `load.spritesheet()` ได้ตรงๆ ถ้าทำ atlas แบบ trim ต้องมี source size และ trim offset
+- **origin** `[0.5, 1]` (กึ่งกลางล่างของกรอบ) + `groundOffset` (ระยะจากขอบล่างกรอบถึงจุดแตะพื้น) เหมือนกันทุกเฟรม ตัวลอยใช้พื้นเสมือนเดียวกัน ห้าม trim ทีละเฟรมจนตัวสั่น
+- **ชื่อไฟล์:** `mon_<slug>_<battle|world>_<state>[_<dir>]_v<NNN>.png` เช่น `mon_lantern_snail_battle_idle_v001.png`, `mon_lantern_snail_world_walk_down_v001.png`; ไอเทม `item_<slug>_v<NNN>.png`
+  - `<slug>` ของมอนคือส่วนหลัง `art:` ใน `SpeciesDefinition.artId` (เช่น `art:lantern_snail` → `lantern_snail`) อุปกรณ์ใช้ส่วนหลัง `visual:` ของ `visualSetId` ไอเทมใช้ส่วนหลัง `item:` ของ item id (เช่น `item:lantern_snail_capture`)
+  - ไอเทมตัวอย่าง "Shell Capture Charm" ของ Codex ยังไม่มี id ในข้อมูลเกม ของที่ใกล้ที่สุดคือเครื่องจับของหอย `item:lantern_snail_capture` (ชื่อไทยตามข้อมูล) ถ้าจะใช้ภาพนี้กับไอเทมนั้น ให้ตั้งชื่อ `item_lantern_snail_capture_v001.png`
+- **manifest ต่อ asset:** `assetId` (ใช้ id ในเกม เช่น `art:lantern_snail`), `version`, `status` (`concept` / `grid_ready` / `animation_verified`), ข้อมูล sheet, `origin`, `groundOffset`, `directions`, `layers`, `shadowAsset`, `animations` (state, ทิศ, frame indices, fps หรือ duration, loop, hit frame), palette variants, การ flip ที่อนุญาต, ขนาดแสดงผลที่ผ่าน proof
+- **loader อ่าน status:** dev build ใช้ asset ที่ `grid_ready` ขึ้นไป production ใช้เฉพาะ `animation_verified` ส่วน `concept` ไม่โหลดเลย
 
-### 6.1 อุปกรณ์ซ้อนชั้น (ข้อเสนอ)
-- ชั้นตาม 12 ช่องบวกฐานตัว: `body`, `race`, `hair`, `HEAD_LOW`, `HEAD_MID`, `HEAD_TOP`, `ARMOR`, `ARMS`, `FEET`, `MAIN_HAND`, `OFF_HAND`, `ACCESSORY_1/2`, `BACK`, `AURA` ลำดับการวาด **เปลี่ยนตามทิศ** (เช่น `BACK` อยู่หลังตัวเมื่อหัน S แต่อยู่หน้าเมื่อหัน N; มือรองสลับข้างเมื่อหัน E/W)
-- ทุกชั้นต้องใช้ rig, เฟรม และ anchor ชุดเดียวกับ `body` ชิ้นที่ใหญ่กว่ากรอบ (ปีก อาวุธ ออร่า) ใช้ canvas ใหญ่ขึ้นแต่ anchor ตรงกัน
-- ใช้ท่าร่วมกันตามตระกูลอาวุธ (`weaponKind` × `handedness`) ไม่ทำภาพทุกชุดผสม
+### 6.1 อุปกรณ์ซ้อนชั้น (ข้อเสนอ ยังไม่อยู่ใน proof รอบแรก)
+- ชั้นตาม 12 ช่องบวกฐานตัว: `body`, `race`, `hair`, `HEAD_LOW`, `HEAD_MID`, `HEAD_TOP`, `ARMOR`, `ARMS`, `FEET`, `MAIN_HAND`, `OFF_HAND`, `ACCESSORY_1/2`, `BACK`, `AURA` ลำดับการวาด **เปลี่ยนตามทิศ** (เช่น `BACK` อยู่หลังตัวเมื่อหัน down แต่อยู่หน้าเมื่อหัน up; มือรองสลับข้างเมื่อหัน left/right)
+- ทุกชั้นใช้ rig เฟรม และ origin/groundOffset ชุดเดียวกับ `body` ชิ้นที่ใหญ่กว่ากรอบใช้ canvas ใหญ่ขึ้นแต่จุดพื้นตรงกัน
+- ใช้ท่าร่วมกันตามตระกูลอาวุธ (`weaponKind` × `handedness`) ไม่ทำภาพทุกชุดผสม ไอคอนในกระเป๋าเป็นคนละไฟล์กับ layer บนตัว (ART_STYLE §2)
 
 ## 7. ตำแหน่งไฟล์
 
-| อะไร | ที่อยู่ | สถานะ | เจ้าของ |
-| --- | --- | --- | --- |
-| โค้ดวาดโลก | `apps/client/src/world-scene.ts` | ใช้จริง | Claude |
-| โค้ดวาดไฟต์ | `apps/client/src/battle-scene.ts` | ใช้จริง | Claude |
-| ตั้งค่า Phaser | `apps/client/src/main.ts` | ใช้จริง | Claude |
-| id ของมอน/อุปกรณ์/NPC/สถานะ | `packages/shared/src/content/*.ts`, `status.ts`, `schemas.ts` | ใช้จริง | Claude |
-| **ภาพเกม (atlas + meta)** | `apps/client/public/assets/{monsters,players,equipment,npcs,tiles,vfx,icons}/` | ข้อเสนอ — Vite เสิร์ฟ `public/` ที่ root เช่น `/assets/monsters/art_ember_fox.png` | **Codex** |
-| รายการภาพ | `apps/client/public/assets/manifest.json` (key → ไฟล์ atlas + meta) | ข้อเสนอ: loader อ่านไฟล์นี้ ภาพที่ยังไม่มีใน manifest จะวาด placeholder ต่อ | Codex เขียน, Claude อ่าน |
-| ต้นฉบับ/งานระหว่างทำ | นอก `public/` เช่น `art-src/` | ข้อเสนอ | Codex |
-| ภาพหน้าจอตรวจงาน | `/mnt/project-files/pixel-game-screenshots/` (นอก repo เพราะโฟลเดอร์ร่วม encode PNG ใหม่) | ใช้จริง | ทั้งคู่ |
+ART_STYLE §7 ให้ Claude เลือกตำแหน่งจริงใน repo ตำแหน่งด้านล่างจึงเป็น **[ตกลงแล้วฝั่ง Claude]** และใช้โฟลเดอร์ย่อยตาม ART_STYLE §5 ภาพ concept ต้องไม่อยู่ใต้ `public/` เพราะ Vite จะเสิร์ฟทุกไฟล์ในนั้นเข้าเกม
+
+| อะไร | ที่อยู่ | เจ้าของ |
+| --- | --- | --- |
+| โค้ดวาดโลก / ไฟต์ / ตั้งค่า Phaser | `apps/client/src/world-scene.ts`, `battle-scene.ts`, `main.ts` | Claude |
+| id ของมอน/อุปกรณ์/ไอเทม/NPC/สถานะ | `packages/shared/src/content/*.ts`, `status.ts`, `schemas.ts` | Claude |
+| sprite ที่พร้อมเข้าเกม | `apps/client/public/assets/sprites/` (เสิร์ฟที่ `/assets/sprites/...`) | **Codex** |
+| manifest ต่อ asset | `apps/client/public/assets/metadata/<ชื่อไฟล์>.json` | **Codex** เขียน, Claude อ่าน |
+| รายการ manifest ทั้งหมด | `apps/client/public/assets/metadata/index.json` (รายชื่อไฟล์ manifest) | **Codex** |
+| concept และพรีวิว | `art/concept/`, `art/previews/` ที่ root ของ repo (นอก `public/`) | **Codex** |
+| ภาพหน้าจอตรวจงานในเกม | `/mnt/project-files/pixel-game-screenshots/` (นอก repo) | ทั้งคู่ |
+
+Claude ไม่แก้ไฟล์ใต้ `apps/client/public/assets/` และ `art/` ถ้า loader ต้องการข้อมูลเพิ่ม จะขอผ่านหัวข้อ 9
 
 ## 8. สิ่งที่ยังเปิด (ต้องตัดสินตอนทำ visual proof)
 
@@ -164,3 +158,13 @@ Claude เพิ่มแถวที่นี่ **ก่อน** แก้โ�
 | วันที่ | ใคร | เปลี่ยนอะไร | กระทบภาพอย่างไร |
 | --- | --- | --- | --- |
 | 2026-10-07 | Claude | ไฟต์บอสปาร์ตี้ (P22): ฝ่ายเราเป็น 2 แถว × 5 ช่อง (10 ตัว) ระยะห่าง 76 px | ภาพฝ่ายเราต้องเล็กพอสำหรับช่อง 76 px เหมือนฝั่งศัตรู |
+| 2026-10-07 | Claude | ฉบับ 2: ยึดชื่อไฟล์ manifest origin `[0.5,1]`+`groundOffset` sheet แบบกริด และจำนวนเฟรม proof ตาม ART_STYLE v1; กำหนดตำแหน่งไฟล์ (หัวข้อ 7) | ไม่ต้องแก้ภาพ; Codex วางไฟล์ตามหัวข้อ 7 |
+
+## 10. จุดที่ ART_STYLE v1 ยังขัดกับ renderer (ต้องตกลงตอน proof)
+
+1. **มอนในสนาม 96×96 กับช่องห่าง 76 px:** ศัตรูและไฟต์ปาร์ตี้วางแถวละ 5 ตัวห่างกัน 76 px ในแนวตั้ง กรอบ 96 จึงซ้อนกับช่องข้างๆ ได้ ถ้าตัวมอนจริงสูงไม่เกิน ~60 px ในกรอบ (ส่วนที่เหลือเป็นที่ว่างสำหรับท่า) จะใช้ได้ ส่วนการจัดสนามใหม่ (oblique, ช่องเยื้อง) Claude จะทำหลังเห็น proof และบันทึกในหัวข้อ 9 ก่อน
+2. **ทิศในสนาม:** ART_STYLE §4 เริ่มท่าในสนามจากทิศเดียว แต่ชนิดเดียวกันอยู่ได้ทั้งสองฝั่ง เช่น หอยตะเกียงเป็นทั้งคู่ใจ (ซ้าย หันขวา) และศัตรู (ขวา หันซ้าย) และห้าม flip ชิ้นที่ไม่สมมาตร (ลายเกลียวเปลือก) ต้องเลือกว่าจะทำ 2 ทิศ หรือยอมให้ flip สำหรับบางชนิด (ระบุใน manifest) ข้อเสนอ: proof ทำฝั่งคู่ใจ (หันขวา) ก่อน ศัตรูใช้ flip ชั่วคราวจนกว่าจะมีภาพหันซ้าย
+3. **ไอเทม 72×72 กับไอคอน 32×32:** UI ตอนนี้เป็นปุ่มข้อความ ยังไม่มีช่องไอคอน จึงยังไม่ล็อกขนาดแสดงผล ขนาดใน UI จริงตัดสินตอนทำช่องไอคอน
+4. **ขยายแบบ FIT:** renderer ตอนนี้ย่อขยายแบบ FIT (มักไม่เป็นจำนวนเต็ม) ซึ่งขัดกับเกณฑ์ pixel snapping ใน ART_STYLE §6 ต้องเทียบตอน proof บนมือถือแนวนอน
+5. **ภาพในโลกยังเป็นมุมบนตรง:** พื้นแผนที่ placeholder เป็น grid มองจากบนตรง ไม่ใช่ top-oblique ตาม C31 พื้นทดลองของ proof ควรทำแบบ oblique โดย Codex แล้ว Claude จะเปลี่ยนการวาดพื้นตาม
+
