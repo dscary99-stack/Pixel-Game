@@ -1,5 +1,5 @@
 /**
- * Companion stat growth (chapter 04 §4, P05) and effective level (O02).
+ * Companion stat growth (chapter 04 §4, P05) and the level a companion fights at (O01/O02).
  *
  * - Every companion of a species gets the same number of points per level (equal budget); only
  *   where they land is random, by its archetype's weights. No hidden per-stat IVs.
@@ -7,7 +7,8 @@
  *   stats are a pure function of (seed, archetype, level, Rebirth stage). Reconnects, trades and
  *   recomputes always give the same numbers.
  * - Rebirth keeps the same trajectory and adds its bonus on top (+4/+7/+10% total, not added up).
- * - In a fight a companion uses min(level, player level + gap) (O02); its real level and EXP stay.
+ * - In a fight a companion uses its real level: no cap against the player's level (Nut 2026-10-07, O01).
+ *   Getting a high companion is limited at the transfer instead (trade.ts, +30).
  */
 import { Rng, seedRng } from "./rng";
 import type { RulesConfig } from "./rules";
@@ -52,9 +53,10 @@ export function rebirthBonusPercent(rules: RulesConfig, stage: number): number {
   return table[Math.min(stage, table.length) - 1]!;
 }
 
-/** The level a companion fights at (O02): never above the player's level + gap. */
-export function companionEffectiveLevel(rules: RulesConfig, companionLevel: number, playerLevel: number): number {
-  return Math.min(companionLevel, playerLevel + rules.provisional.companionEffectiveLevelGap.value);
+/** The level a companion fights at: its own level (Nut 2026-10-07: no level limit in battle, O01). */
+export function companionEffectiveLevel(rules: RulesConfig, companionLevel: number, _playerLevel: number): number {
+  if (rules.confirmed.companionBattleLevelCap.value !== false) throw new Error("companion battle level cap is not a rule");
+  return companionLevel;
 }
 
 /** What a companion fights with: its effective level and the primary stats at that level. */

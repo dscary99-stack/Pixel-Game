@@ -64,18 +64,19 @@ describe("companion growth (P05, chapter 04 §4)", () => {
   });
 });
 
-describe("effective level (was O02)", () => {
-  it("fights at most 10 levels above the player; real level and EXP stay", () => {
-    expect(companionEffectiveLevel(rules, 50, 20)).toBe(30);
+describe("battle level (O01, Nut 2026-10-07: no level limit in battle)", () => {
+  it("a companion fights at its real level, however far above the player", () => {
+    expect(rules.confirmed.companionBattleLevelCap).toMatchObject({ value: false, status: "CONFIRMED", decision: "O01" });
+    expect(companionEffectiveLevel(rules, 50, 20)).toBe(50);
     expect(companionEffectiveLevel(rules, 25, 20)).toBe(25);
     const inst = { ...companion("m1", "species:lantern_snail", "WATER", 50), growthHistoryVersion: 2, growthSeed: "g" };
     const r = createBattle(rules, content(), baseSetup({ companions: [{ instance: inst, row: "back", slot: 0 }] }));
     if (!r.ok) throw new Error(r.message);
     const unit = r.state.units.find((u) => u.instanceId === "m1")!;
-    expect(unit.level).toBe(30);
+    expect(unit.level).toBe(50);
     expect(unit.actualLevel).toBe(50);
-    // Stats are the growth path at Lv30, not at Lv50.
-    const at30 = companionPrimaryStats(rules, "support", "g", 30, 0);
-    expect(total(at30)).toBe(60 + 3 * 29);
+    // Stats are the growth path at its own Lv50.
+    const at50 = companionPrimaryStats(rules, "support", "g", 50, 0);
+    expect(total(at50)).toBe(60 + 3 * 49);
   });
 });

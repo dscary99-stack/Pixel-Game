@@ -56,7 +56,7 @@ describe("skill levels (chapter 04 §5, P06)", () => {
   it("adds power only: same rolls, bigger coefficient, same MP cost", () => {
     const cmd = { type: "skill" as const, actorId: "ally:m1", skillId: "skill:fox_mark_bite", targetId: "e1" };
     const fight = (trained: number) => {
-      // Lv60 companion with a Lv20 character fights at Lv30, where skill Lv3 is the cap.
+      // A Lv60 companion fights at Lv60 (no battle level cap, O01), where skill Lv5 is the cap.
       const inst = { ...companion("m1", "species:ember_fox", "FIRE", 60), trainedSkillLevels: { "skill:fox_mark_bite": trained } };
       let s: BattleState = ok(createBattle(rules, c, baseSetup({ companions: [{ instance: inst, row: "front", slot: 0 }] }))).state;
       for (let i = 0; i < 20 && currentActor(s)?.unitId !== "ally:m1"; i++) s = ok(applyCommand(rules, c, s, chooseAutoCommand(s)!, { source: "player" })).state;
@@ -69,12 +69,12 @@ describe("skill levels (chapter 04 §5, P06)", () => {
     const one = fight(1);
     const capped = fight(9);
     expect(one.level).toBe(1);
-    expect(capped.level).toBe(3);
+    expect(capped.level).toBe(5);
     expect(one.mpSpent).toBe(4);
     expect(capped.mpSpent).toBe(4);
     expect(one.ev.hit).toBe(true);
     expect(capped.ev.hit).toBe(true);
-    expect(capped.ev.breakdown!.base / one.ev.breakdown!.base).toBeCloseTo(1.08, 6);
+    expect(capped.ev.breakdown!.base / one.ev.breakdown!.base).toBeCloseTo(1.16, 6);
   });
 });
 

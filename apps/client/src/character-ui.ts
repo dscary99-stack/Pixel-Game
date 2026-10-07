@@ -662,7 +662,7 @@ export function teamPanel(api: CharacterApi, start: CharacterBundle): Promise<Ch
       const inTeam = new Set(bundle.character.team.map((t) => t.instanceId));
       for (const c of bundle.companions) {
         const sp = species.get(c.speciesId);
-        // What it fights with: effective level (≤ character Lv + gap) and the growth stats there.
+        // What it fights with: its own level (no battle level cap, O01) and the growth stats there.
         const prof = sp === undefined ? { level: c.currentLevel, primaryStats: c.primaryStats } : companionCombatProfile(RULES, sp, c, bundle.character.level);
         const base = deriveStats(prof.level, prof.primaryStats);
         const maxHp = sp === undefined ? base.maxHp : applyBond(RULES, sp.archetype, c.bond, base).maxHp;

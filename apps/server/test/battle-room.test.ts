@@ -143,7 +143,7 @@ describe("BattleRoom (server authority)", () => {
 
   it("refuses to run with fixture rules outside dev (OPEN rules have no production default)", () => {
     // No battle rule is OPEN now, so any OPEN rule filled by a fixture stands in.
-    expect(() => new BattleRoom(new MemoryStorage(), withFixtureOverrides(PRODUCTION_RULES, { tradeLevelGap: 30 }), content, "production")).toThrow(RoomError);
+    expect(() => new BattleRoom(new MemoryStorage(), withFixtureOverrides(PRODUCTION_RULES, { weeklyExpiredClaim: true }), content, "production")).toThrow(RoomError);
     expect(() => new BattleRoom(new MemoryStorage(), PRODUCTION_RULES, content, "production")).not.toThrow();
   });
 

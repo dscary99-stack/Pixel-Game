@@ -117,6 +117,10 @@ export const RULES = {
       "O15",
       "Nut 2026-10-04: effect hit offsets effect resistance, never above the skill's chance: chance = skill × (1 − max(0, res − hit)/100)",
     ),
+    // O01 (Nut 2026-10-07): a companion received from someone else is at most 30 levels above you, and a
+    // companion you have fights at its own level, with no cap (replaces the P05 min(level, player + 10)).
+    tradeLevelGap: confirmed(30, "O01", "Nut 2026-10-07: a received companion (and its species' wild level) may be at most the recipient's level + 30"),
+    companionBattleLevelCap: confirmed(false, "O01", "Nut 2026-10-07: no level limit on taking a companion into battle; it fights at its real level"),
     // The rest of O15 (Nut 2026-10-07): per-skill cooldowns, flee, revive, no forced end.
     cooldownTick: confirmed<CooldownTickPolicy>("owner_turn_start", "O15", "Nut 2026-10-07: each skill has its own cooldown in turns, set by its impact"),
     fleeFromSpeedAndMonster: confirmed(true, "O15", "Nut 2026-10-07: the flee % comes from SPD plus the flee chance of those monsters"),
@@ -383,11 +387,6 @@ export const RULES = {
       "each level-up point lands on a stat by these archetype weights (chapter 04 §4 order); same total for everyone",
     ),
     companionGrowthPointsPerLevel: provisional(3, "P05", "same budget as the player's stat points; only the split is random"),
-    companionEffectiveLevelGap: provisional(
-      10,
-      "P05",
-      "was O02; Nut delegated 2026-10-03: a companion fights at min(level, player level + 10); same 10 as the companion EXP gap",
-    ),
     maxRebirths: provisional(3, "P05", "was O03; Nut delegated 2026-10-03: three stages, the O03 proposal"),
     rebirthBonusPercent: provisional([4, 7, 10] as const, "P05", "O03 proposal: total bonus over base primary stats at stage 1/2/3; not added together"),
     rebirthRequirements: provisional(
@@ -605,7 +604,6 @@ export const RULES = {
     ),
   },
   unresolved: {
-    tradeLevelGap: open<number>("O01", "user range 20–40; proposal +30"),
     /** Chapter 09: what happens to a weekly reward nobody claimed before the week ended. */
     weeklyExpiredClaim: open<true>("chapter09", "expired unclaimed weekly reward policy; must never let two periods be claimed twice"),
   },

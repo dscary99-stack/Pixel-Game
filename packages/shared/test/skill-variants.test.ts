@@ -54,8 +54,8 @@ describe("Rebirth variants in the kit (chapter 04 §7)", () => {
     const unit = ok(createBattle(rules, c, baseSetup({ companions: [{ instance: inst, row: "front", slot: 0 }] }))).state.units.find((u) => u.unitId === "ally:m1")!;
     expect(unit.skillIds).toContain("skill:fox_blood_bite");
     expect(unit.skillIds).not.toContain("skill:fox_mark_bite");
-    // Lv120 companion with a Lv20 character fights at Lv30: skill cap 3.
-    expect(unit.skillLevels?.["skill:fox_blood_bite"]).toBe(3);
+    // A Lv120 companion fights at Lv120 (no battle level cap, O01), so its trained Lv4 is kept.
+    expect(unit.skillLevels?.["skill:fox_blood_bite"]).toBe(4);
   });
 
   it("the validator checks the variant rules", () => {

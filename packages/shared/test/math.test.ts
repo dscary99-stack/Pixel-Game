@@ -51,11 +51,11 @@ describe("decision register in config", () => {
   });
 
   it("labels fixture overrides so production can refuse them", () => {
-    const r = withFixtureOverrides(rules, { tradeLevelGap: 30 });
-    expect(r.unresolved.tradeLevelGap.value).toBe(30);
-    expect(r.unresolved.tradeLevelGap.note).toContain("TEST FIXTURE");
-    expect(r.fixtureOverrides).toEqual(["tradeLevelGap"]);
-    expect(rules.unresolved.tradeLevelGap.value).toBeNull();
+    const r = withFixtureOverrides(rules, { weeklyExpiredClaim: true });
+    expect(r.unresolved.weeklyExpiredClaim.value).toBe(true);
+    expect(r.unresolved.weeklyExpiredClaim.note).toContain("TEST FIXTURE");
+    expect(r.fixtureOverrides).toEqual(["weeklyExpiredClaim"]);
+    expect(rules.unresolved.weeklyExpiredClaim.value).toBeNull();
   });
 });
 
