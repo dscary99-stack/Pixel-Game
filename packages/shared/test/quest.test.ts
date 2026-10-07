@@ -42,17 +42,16 @@ describe("quest boards (P13: daily 8 choose 4, weekly several ways)", () => {
     expect(roll(5, "b")).not.toEqual(b);
   });
 
-  it("names only monsters within reach and no capture goal while capture rates are OPEN (O07)", () => {
+  it("names only monsters within reach, and capture goals now that capture has a profile (O07 → P18)", () => {
     for (const seed of ["a", "b", "c", "d"]) {
       const b = roll(1, seed);
       for (const g of b.goals) {
         if (g.kind === "hunt" || g.kind === "boss" || g.kind === "capture") for (const id of g.speciesIds) expect(content.species.get(id)!.fixedWildLevel).toBeLessThanOrEqual(4);
-        expect(g.kind).not.toBe("capture");
         expect(g.kind).not.toBe("boss");
       }
     }
     const withCapture = roll(5, "a", "daily", DEV_FIXTURE_RULES);
-    expect(withCapture.goals.some((g) => g.kind === "capture")).toBe(DEV_FIXTURE_RULES.unresolved.captureRates.value !== null);
+    expect(withCapture.goals.some((g) => g.kind === "capture")).toBe(true);
   });
 
   it("a weekly board can name the field boss once it is in reach, and never delivers", () => {

@@ -149,7 +149,7 @@ export function rollQuestBoard(rules: RulesConfig, content: QuestContent, cadenc
   const r = reachable(rules, content, level);
   const items = deliverable(content, r.species);
   const profs = craftable(content);
-  const canCapture = rules.unresolved.captureRates.value !== null;
+  const canCapture = rules.provisional.captureProfile.value !== null;
   const capturable = r.species.filter((id) => content.species.get(id)?.rank !== "BOSS");
 
   const makers: (() => QuestGoal | null)[] = [

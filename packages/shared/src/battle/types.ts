@@ -1,6 +1,6 @@
 import type { PartyBonus } from "../party";
 import type { OriginMode, LootLine } from "../loot";
-import type { Rank } from "../rules";
+import type { CaptureProfile, Rank } from "../rules";
 import type { RngState } from "../rng";
 import type { Element, MonsterInstance, PassiveEvent, PrimaryStats } from "../schemas";
 import type { DamageBreakdown } from "../damage";
@@ -162,6 +162,8 @@ export interface BattleState {
     /** Server only: the number for the next reinforcement's unit id (e<n>). */
     nextUnit?: number;
   };
+  /** The capture rules this fight started with (capture.ts); absent on states from before pinning = current profile. */
+  captureProfile?: CaptureProfile;
   /** Private server RNG state. Never sent to the client. */
   rng: RngState;
   eventSeq: number;
@@ -245,7 +247,7 @@ export type BattleEventBody =
   | { type: "EnemyDefeated"; unitId: string; speciesId: string }
   /** Tower floors: a pre-rolled replacement entered a fallen enemy's cell (frontier.ts). */
   | { type: "ReinforcementArrived"; unitId: string; speciesId: string; element: Element; row: Row; slot: number; replaces: string; left: number }
-  | { type: "CaptureResolved"; targetId: string; speciesId: string; success: boolean; probability: number }
+  | { type: "CaptureResolved"; targetId: string; speciesId: string; success: boolean; probability: number; profileVersion: string }
   | { type: "RewardEntitled"; entitlement: Entitlement }
   | {
       type: "BattleEnded";

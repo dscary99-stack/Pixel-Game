@@ -7,6 +7,7 @@ import Phaser from "phaser";
 import { DEV_FIXTURE_RULES, ELITE_MODIFIER_TH, EXAMPLE_FRONTIER, FRONTIER_MODIFIER_TH, STATUS_DEFINITIONS, exampleContentMaps, type BattleCommand, type BattleEvent, type BattleUnit, type Element, type PublicBattleState } from "@pmrpg/shared";
 import type { BattleTransport, Snapshot } from "./transport";
 import { savedAutoPolicy } from "./character-ui";
+import { capturePreview, pct2 } from "./capture-ui";
 
 const CONTENT = exampleContentMaps();
 /** Display name for a loot line: item or equipment, falling back to the id. */
@@ -217,6 +218,44 @@ export class BattleScene extends Phaser.Scene {
     await this.send({ type: "skill", actorId: actor.unitId, skillId, targetId: target });
   }
 
+  /** The capture preview: the chance and how it was made, then confirm or cancel (O07 capture-v1). */
+  private capturePanel: Phaser.GameObjects.Text[] = [];
+  private closeCapturePreview() {
+    for (const b of this.capturePanel) b.destroy();
+    this.capturePanel = [];
+  }
+  private openCapturePreview(actorId: string, targetId: string) {
+    this.closeCapturePreview();
+    this.closeSkillMenu();
+    // Capture is a manual command only (C15): Auto goes off before the player decides.
+    if (this.autoOn) {
+      this.toggleAuto();
+      this.pushLog("ปิด Auto แล้ว: การจับต้องสั่งเอง");
+    }
+    const pv = capturePreview(DEV_FIXTURE_RULES, this.snap.state, CONTENT, actorId, targetId);
+    const text = this.add
+      .text(16, 300, pv.lines.join("\n"), { fontFamily: "sans-serif", fontSize: "12px", color: pv.ok ? "#ffffff" : "#ffb3b3", backgroundColor: "#1d1a2e", padding: { x: 8, y: 6 }, lineSpacing: 5, wordWrap: { width: 520 } })
+      .setDepth(20)
+      .setData("capture-preview", pv.ok ? "ok" : "refused");
+    this.capturePanel.push(text);
+    const btn = (x: number, label: string, color: string, fn: () => void) => {
+      const b = this.add
+        .text(x, 410, label, { fontFamily: "sans-serif", fontSize: "13px", color: "#ffffff", backgroundColor: color, padding: { x: 10, y: 6 } })
+        .setDepth(20)
+        .setInteractive({ useHandCursor: true });
+      b.on("pointerdown", fn);
+      this.capturePanel.push(b);
+    };
+    if (pv.ok && pv.itemId !== null) {
+      const itemId = pv.itemId;
+      btn(16, "ยืนยันจับ", "#2f6b5a", () => {
+        this.closeCapturePreview();
+        void this.send({ type: "capture", actorId, targetId, itemId });
+      });
+    }
+    btn(pv.ok ? 120 : 16, pv.ok ? "ยกเลิก" : "ปิด", "#4a4560", () => this.closeCapturePreview());
+  }
+
   private async act(kind: "attack" | "skill" | "guard" | "item" | "capture") {
     if (this.watching) return this.pushLog("กำลังล่าอัตโนมัติ: กด หยุดล่า ก่อนสั่งเอง");
     if (this.busy || this.snap.state.status !== "active" || this.snap.actor === null) return;
@@ -225,6 +264,7 @@ export class BattleScene extends Phaser.Scene {
     const target = sel !== undefined && sel.side === "enemy" ? sel.unitId : this.firstEnemy();
     let cmd: BattleCommand | null = null;
     if (kind !== "skill") this.closeSkillMenu();
+    if (kind !== "capture") this.closeCapturePreview();
     switch (kind) {
       case "attack":
         if (target) cmd = { type: "attack", actorId: actor.unitId, targetId: target };
@@ -237,11 +277,9 @@ export class BattleScene extends Phaser.Scene {
       case "item":
         cmd = { type: "item", actorId: actor.unitId, itemId: "item:small_potion", targetId: actor.unitId };
         break;
-      case "capture": {
-        const t = target ? this.unit(target) : undefined;
-        if (t?.speciesId) cmd = { type: "capture", actorId: actor.unitId, targetId: t.unitId, itemId: `item:${t.speciesId.slice("species:".length)}_capture` };
+      case "capture":
+        if (target) return this.openCapturePreview(actor.unitId, target);
         break;
-      }
     }
     if (cmd === null) return this.pushLog("ไม่มีเป้าหมาย/สกิลสำหรับคำสั่งนี้");
     await this.send(cmd);
@@ -260,6 +298,8 @@ export class BattleScene extends Phaser.Scene {
 
   private apply(snapshot: Snapshot, events: BattleEvent[], response?: { status: string; reasonCode?: string; message?: string }) {
     this.snap = snapshot;
+    // A preview made for an older state is out of date (HP, statuses, bag may have moved).
+    if (events.length > 0) this.closeCapturePreview();
     if (response?.status === "rejected") this.pushLog(`ปฏิเสธ: ${response.reasonCode} ${response.message ?? ""}`);
     for (const e of events) {
       // Polls can overlap with command responses: show each event once.
@@ -329,7 +369,7 @@ export class BattleScene extends Phaser.Scene {
         return;
       }
       case "CaptureResolved":
-        return this.pushLog(`จับ ${this.name(e.targetId)}: ${e.success ? "สำเร็จ (ได้ Lv1)" : "ไม่สำเร็จ"} โอกาส ${(e.probability * 100).toFixed(0)}%`);
+        return this.pushLog(`จับ ${this.name(e.targetId)}: ${e.success ? "สำเร็จ (ได้ Lv1)" : "ไม่สำเร็จ (เครื่องจับถูกใช้ไป 1 ชิ้น)"} โอกาส ${pct2(e.probability)}`);
       case "EnemyDefeated":
         return this.pushLog(`${this.name(e.unitId)} ถูกกำจัด`);
       case "ReinforcementArrived":

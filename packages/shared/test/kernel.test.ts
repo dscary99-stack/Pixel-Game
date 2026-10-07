@@ -7,7 +7,6 @@ import {
   currentActor,
   publicView,
   validTargets,
-  withFixtureOverrides,
   type BattleContent,
   type BattleEvent,
   type BattleSetup,
@@ -15,7 +14,7 @@ import {
   type KernelResult,
   type RulesConfig,
 } from "../src/index";
-import { baseSetup, companion, content, fixtureRules, rules, speciesAtLevel } from "./fixtures";
+import { baseSetup, companion, content, fixtureRules, rules, speciesAtLevel, withCaptureProfile } from "./fixtures";
 
 const ok = (r: KernelResult) => {
   if (!r.ok) throw new Error(`${r.code}: ${r.message}`);
@@ -254,9 +253,11 @@ describe("capture (C08, C09, C15)", () => {
     expect(capture(fixtureRules, s, lv25.id, "auto")).toMatchObject({ ok: false, code: "AUTO_CAPTURE_FORBIDDEN" });
   });
 
-  it("is UNRESOLVED_RULE without the O07 rate table, before consuming the item", () => {
+  it("runs on the default rules now that O07 has a profile (capture-v1), and pins it in the fight", () => {
     const s = untilPlayerTurn(rules, c, ok(createBattle(rules, c, setupWith(lv25.id))).state);
-    expect(capture(rules, s, lv25.id)).toMatchObject({ ok: false, code: "UNRESOLVED_RULE" });
+    expect(s.captureProfile?.version).toBe("capture-v1");
+    const r = ok(capture(rules, s, lv25.id));
+    expect(r.events.find((e) => e.type === "CaptureResolved")).toMatchObject({ profileVersion: "capture-v1" });
   });
 
   it("needs an open capture window on bosses", () => {
@@ -269,12 +270,8 @@ describe("capture (C08, C09, C15)", () => {
   });
 
   it("success gives a Lv1 companion entitlement and no kill loot; failure uses the item once", () => {
-    const always = withFixtureOverrides(fixtureRules, {
-      captureRates: { rankBounds: { NORMAL: [1, 1], ELITE: [1, 1], BOSS: [1, 1] }, hpFactor: [{ maxHpRatio: 1, factor: 1 }] },
-    });
-    const never = withFixtureOverrides(fixtureRules, {
-      captureRates: { rankBounds: { NORMAL: [0, 0], ELITE: [0, 0], BOSS: [0, 0] }, hpFactor: [{ maxHpRatio: 1, factor: 1 }] },
-    });
+    const always = withCaptureProfile(fixtureRules, { rankBounds: { NORMAL: [1, 1], ELITE: [1, 1], BOSS: [1, 1] } });
+    const never = withCaptureProfile(fixtureRules, { rankBounds: { NORMAL: [0, 0], ELITE: [0, 0], BOSS: [0, 0] } });
     const sOk = untilPlayerTurn(always, c, ok(createBattle(always, c, setupWith(lv25.id))).state);
     const win = ok(capture(always, sOk, lv25.id));
     expect(win.state.status).toBe("victory");

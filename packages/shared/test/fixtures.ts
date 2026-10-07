@@ -5,7 +5,9 @@ import {
   exampleContentMaps,
   type BattleContent,
   type BattleSetup,
+  type CaptureProfile,
   type MonsterInstance,
+  type RulesConfig,
   type SpeciesDefinition,
 } from "../src/index";
 
@@ -72,4 +74,10 @@ export function baseSetup(over: Partial<BattleSetup> = {}): BattleSetup {
     bag: { "item:small_potion": 3, "item:armor_crab_capture": 2, "item:ember_fox_capture": 2 },
     ...over,
   };
+}
+
+/** Test-only: a copy of the rules with some capture profile fields replaced (fights pin it at start). */
+export function withCaptureProfile(r: RulesConfig, patch: Partial<CaptureProfile>): RulesConfig {
+  const cp = r.provisional.captureProfile;
+  return { ...r, provisional: { ...r.provisional, captureProfile: { ...cp, value: { ...cp.value, ...patch } } } } as RulesConfig;
 }

@@ -146,19 +146,32 @@ describe("BattleRoom (server authority)", () => {
     expect(() => new BattleRoom(new MemoryStorage(), PRODUCTION_RULES, content, "production")).not.toThrow();
   });
 
-  it("returns UNRESOLVED_RULE for capture on production rules (O07 open)", async () => {
+  it("captures on production rules (capture-v1); a retry replays it and a stale version is refused, so nothing is caught twice", async () => {
     const room = new BattleRoom(new MemoryStorage(), PRODUCTION_RULES, content, "staging");
     await room.create(setup(), "res:room");
     const s = await room.view(OWNER);
     // Player SPD 120 beats both example enemies, so the player acts first.
     expect(await room.actor()).toBe("player");
-    const r = await room.command(OWNER, {
+    const cmd = {
       commandId: crypto.randomUUID(),
       sessionGeneration: 0,
       expectedStateVersion: s.stateVersion,
       command: { type: "capture", actorId: "player", targetId: "e1", itemId: "item:armor_crab_capture" },
-    });
-    expect(r).toMatchObject({ status: "rejected", reasonCode: "UNRESOLVED_RULE" });
+    };
+    const first = accepted(await room.command(OWNER, cmd));
+    const resolved = first.events.filter((e) => e.type === "CaptureResolved");
+    // Crab base 25%, full HP, no status: exactly the base, with the profile it was rolled under.
+    expect(resolved).toEqual([expect.objectContaining({ probability: 0.25, profileVersion: "capture-v1" })]);
+    const retry = accepted(await room.command(OWNER, cmd));
+    expect(retry.replayed).toBe(true);
+    expect(retry.events).toEqual(first.events);
+    const after = await room.view(OWNER);
+    expect(after.bag["item:armor_crab_capture"]).toBe(1);
+    const stale = await room.command(OWNER, { ...cmd, commandId: crypto.randomUUID() });
+    expect(stale).toMatchObject({ status: "rejected" });
+    expect((await room.view(OWNER)).bag["item:armor_crab_capture"]).toBe(1);
+    const caught = (await room.view(OWNER)).entitlements.filter((e) => e.kind === "capture");
+    expect(caught.length).toBeLessThanOrEqual(1);
   });
 });
 

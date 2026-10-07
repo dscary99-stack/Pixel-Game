@@ -32,10 +32,25 @@ export interface CaptureHpFactorStep {
   readonly factor: number;
 }
 
-export interface CaptureRateTable {
-  /** [min, max] probability (0–1) per rank. */
+/**
+ * One capture rule set (capture.ts). A fight pins the profile it started with (BattleState.captureProfile),
+ * so a deploy never changes the odds of a fight already running.
+ */
+export interface CaptureProfile {
+  readonly version: string;
+  /** Multiplies the species base by the target's rank (ELITE is harder; BOSS has its own low base). */
+  readonly rankFactors: Readonly<Record<Rank, number>>;
+  /** [min, max] probability (0–1) per rank, applied last. Never makes an ineligible target capturable. */
   readonly rankBounds: Readonly<Record<Rank, readonly [number, number]>>;
   readonly hpFactor: readonly CaptureHpFactorStep[];
+  /** The best one active status counts; anything not listed is 1. */
+  readonly statusFactors: Readonly<Record<string, number>>;
+  /** Capture item qualities this profile accepts, with their factor. Anything else is refused. */
+  readonly qualityFactors: Readonly<Record<string, number>>;
+  /** Capture mastery: every account the same in v1. */
+  readonly masteryFactor: number;
+  /** No pity: failures never raise the next chance. */
+  readonly pity: false;
 }
 
 /**
@@ -510,6 +525,26 @@ export const RULES = {
       "P08",
       "fixed by item level, never by market price or the player's income; values are P12 assumptions",
     ),
+    // Capture (capture.ts; CAPTURE_DESIGN_O07_V1, Nut chose this approach 2026-10-07). The approach is decided;
+    // every number here is PROVISIONAL until playtest. First round only: standard items, mastery 1, no pity.
+    captureProfile: provisional<CaptureProfile>(
+      {
+        version: "capture-v1",
+        rankFactors: { NORMAL: 1, ELITE: 0.6, BOSS: 1 },
+        rankBounds: { NORMAL: [0.05, 0.9], ELITE: [0.02, 0.6], BOSS: [0.01, 0.3] },
+        hpFactor: [
+          { maxHpRatio: 0.25, factor: 2 },
+          { maxHpRatio: 0.5, factor: 1.5 },
+          { maxHpRatio: 1, factor: 1 },
+        ],
+        statusFactors: { sleep: 1.25, freeze: 1.25, stun: 1.25, petrify: 1.25, paralyze: 1.15, root: 1.15, silence: 1.1 },
+        qualityFactors: { "1": 1 },
+        masteryFactor: 1,
+        pity: false,
+      },
+      "P18",
+      "decides O07: Nut 2026-10-07 chose CAPTURE_DESIGN_O07_V1 round one; numbers PROVISIONAL (playtest); higher item qualities and capture mastery are later work",
+    ),
     // Refining (refine.ts; Nut's REFINEMENT_DESIGN v2.1). PROVISIONAL parts of that document.
     refineMaxLevel: provisional(10, "P07", "v2.1: the +10 cap is still a trial value"),
     refineSafeSuccessBp: provisional([9500, 9000, 8500, 8000, 7500] as const, "P07", "v2.1: targets +1..+5; a failure keeps the level"),
@@ -550,7 +585,6 @@ export const RULES = {
   },
   unresolved: {
     tradeLevelGap: open<number>("O01", "user range 20–40; proposal +30"),
-    captureRates: open<CaptureRateTable>("O07", "rank bounds and HP factor table"),
     cooldownTick: open<CooldownTickPolicy>("O15", "cooldown counter tick point; Nut 2026-10-04: must be per skill, details to review"),
     fleeChance: open<number>("O15", "flee formula"),
     reviveRules: open<true>("O15", "revive timeline"),

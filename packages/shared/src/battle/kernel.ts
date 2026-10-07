@@ -15,7 +15,8 @@ import { eliteModifierIssues } from "../elite";
 import { FrontierModifierIdSchema, frontierMaxReinforcements, frontierModifierStats, frontierStatPct, type FrontierModifierId } from "../frontier";
 import { companionExp, killExp } from "../progression";
 import { Rng, seedRng } from "../rng";
-import type { RulesConfig } from "../rules";
+import type { CaptureProfile, RulesConfig } from "../rules";
+import { captureChance, captureCheck, fightCaptureProfile, type CaptureBreakdown } from "../capture";
 import type { BossDefinition, DamageEffect, Element, ItemDefinition, LootTable, Passive, PassiveAction, PassiveEvent, PassiveModifier, SigilDefinition, SkillDefinition, SpeciesDefinition, StatusApplication } from "../schemas";
 import { isAreaRule, targetsEnemies } from "../schemas";
 import { deriveStats, type DerivedStats } from "../stats";
@@ -275,6 +276,8 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
     rulesVersion: rules.rulesVersion,
     originMode: setup.originMode,
     ownerAccountId: p.accountId,
+    // Pinned for the whole fight (capture.ts): a deploy never changes a running fight's odds.
+    captureProfile: rules.provisional.captureProfile.value,
     stateVersion: 0,
     round: 0,
     turnOrder: [],
@@ -938,6 +941,8 @@ function checkStatusBlocks(ctx: Ctx, actor: BattleUnit, cmd: BattleCommand): voi
   }
   if (cmd.type === "attack") blocked("attack", "cannot attack");
   if (cmd.type === "item") blocked("items", "cannot use items");
+  // A capture uses a capture item, so whatever forbids items forbids it (berserk).
+  if (cmd.type === "capture") blocked("items", "cannot use capture items");
   if (cmd.type === "move") blocked("move", "cannot move");
   if (cmd.type === "flee") blocked("flee", "cannot flee");
   if (cmd.type === "attack" || cmd.type === "skill") {
@@ -1390,42 +1395,31 @@ function doItem(ctx: Ctx, actor: BattleUnit, itemId: string, target: BattleUnit)
   actionEvent(ctx, actor, "item", target, gained >= 0 ? { heal: gained, targetHpAfter: target.hp } : { hit: true, damage: -gained, targetHpAfter: target.hp });
 }
 
-/** Capture probability (chapter 04 §3). Status and mastery factors are 1 until those systems exist. */
-export function captureProbability(rules: RulesConfig, species: SpeciesDefinition, target: BattleUnit, itemQuality: number): number | null {
-  const table = rules.unresolved.captureRates.value;
-  if (table === null) return null;
-  const ratio = target.hp / target.stats.maxHp;
-  const step = [...table.hpFactor].sort((a, b) => a.maxHpRatio - b.maxHpRatio).find((s) => ratio <= s.maxHpRatio);
-  const hpFactor = step?.factor ?? 1;
-  const [lo, hi] = table.rankBounds[target.rank ?? species.rank];
-  return Math.min(hi, Math.max(lo, species.captureBaseRate * hpFactor * 1 * 1 * itemQuality));
+/** Capture chance for this fight (capture.ts), or the reason it cannot be tried. */
+export function captureProbability(rules: RulesConfig, species: SpeciesDefinition, target: BattleUnit, itemQuality: number, profile?: CaptureProfile): number {
+  return captureChance(fightCaptureProfile(rules, profile), species, target, itemQuality).probability;
 }
 
 function doCapture(ctx: Ctx, actor: BattleUnit, target: BattleUnit, itemId: string, source: CommandSource): void {
-  if (source === "auto" || ctx.rules.confirmed.autoCapture.value !== false) {
-    reject("AUTO_CAPTURE_FORBIDDEN", "capture is a manual player command only (C15)");
-  }
+  if (source !== "player") reject("AUTO_CAPTURE_FORBIDDEN", "capture is a manual player command only (C15)");
   requirePlayerActor(actor, "capture");
-  if (target.side !== "enemy" || !active(target)) reject("INVALID_TARGET", "capture needs a living enemy");
-  // Level gate is checked before any item is consumed (C09).
-  const gap = ctx.rules.confirmed.captureWildLevelGap.value;
-  if (target.level > actor.level + gap) {
-    reject("LEVEL_INELIGIBLE", `wild Lv${target.level} > player Lv${actor.level} + ${gap}`);
-  }
-  if (!target.captureWindowOpen) reject("NO_VALID_CAPTURE_WINDOW", "this target has no open capture window");
+  // Every check comes before anything is spent or rolled (C09 level gate, window, item, quality, bag).
+  const check = captureCheck(ctx.rules, fightCaptureProfile(ctx.rules, ctx.s.captureProfile), {
+    source: "player",
+    actor,
+    target,
+    species: target.speciesId === null ? undefined : ctx.content.species.get(target.speciesId),
+    item: ctx.content.items.get(itemId),
+    inBag: ctx.s.bag[itemId] ?? 0,
+  });
+  if (!check.ok) reject(check.code === "QUALITY_NOT_ENABLED" ? "INVALID_COMMAND" : check.code, check.message);
+  const p = (check as CaptureBreakdown).probability;
   const species = ctx.content.species.get(target.speciesId!)!;
-  const item = ctx.content.items.get(itemId) ?? reject("MISSING_REFERENCE", `item ${itemId}`);
-  if (item.kind !== "capture" || item.captureSpeciesId !== species.id) {
-    reject("INVALID_COMMAND", `${itemId} cannot capture ${species.id}`);
-  }
-  if ((ctx.s.bag[itemId] ?? 0) <= 0) reject("INSUFFICIENT_RESOURCE", `no ${itemId} in the combat bag`);
-  const p = captureProbability(ctx.rules, species, target, item.captureQuality ?? 1);
-  if (p === null) reject("UNRESOLVED_RULE", "capture rate table is OPEN (O07)");
 
   consumeItem(ctx, itemId); // a failed capture still uses the item, exactly once
-  const success = ctx.rng.chance(p!);
+  const success = ctx.rng.chance(p);
   actionEvent(ctx, actor, "capture", target, {});
-  ctx.emit({ type: "CaptureResolved", targetId: target.unitId, speciesId: species.id, success, probability: p! });
+  ctx.emit({ type: "CaptureResolved", targetId: target.unitId, speciesId: species.id, success, probability: p, profileVersion: (check as CaptureBreakdown).profileVersion });
   if (!success) return;
 
   target.retired = true;
