@@ -25,60 +25,74 @@ const meta = { version: 1, status: "draft", example: true } as const;
 
 export const EXAMPLE_SKILLS: SkillDefinition[] = [
   // Armor crab (ปูเกราะ)
-  support("skill:crab_take_hit", "รับแทน", 5, { statusId: "protect", chancePct: 100, turns: 2 }),
-  support("skill:crab_self_shield", "โล่ตน", 5, { statusId: "shield", chancePct: 100, turns: 2, shieldPct: 20 }, "self"),
-  dmg("skill:crab_shield_bash", "ใช้โล่บางส่วนโจมตี", "physical", 1.3, 0, "EARTH", "melee", 6, 0, { statuses: [{ statusId: "stun", chancePct: 20, turns: 1 }] }),
+  support("skill:crab_take_hit", "รับแทน", 5, { statusId: "protect", chancePct: 100, turns: 2 }, "single_ally", 4),
+  support("skill:crab_self_shield", "โล่ตน", 5, { statusId: "shield", chancePct: 100, turns: 2, shieldPct: 20 }, "self", 3),
+  dmg("skill:crab_shield_bash", "ใช้โล่บางส่วนโจมตี", "physical", 1.3, 0, "EARTH", "melee", 6, 3, { statuses: [{ statusId: "stun", chancePct: 20, turns: 1 }] }),
   innate("skill:crab_innate_mp_refund", "รับแทนสำเร็จคืนMP", [{ on: "protected_ally", then: [{ kind: "restore_mp", target: "self", amount: 3 }] }]),
   // Ember fox (จิ้งจอกสะเก็ด)
-  dmg("skill:fox_mark_bite", "กัดติดmark", "physical", 1.2, 0, "FIRE", "melee", 4, 0, { statuses: [{ statusId: "mark", chancePct: 80, turns: 2 }, { statusId: "bleed", chancePct: 35, turns: 3 }] }),
+  dmg("skill:fox_mark_bite", "กัดติดmark", "physical", 1.2, 0, "FIRE", "melee", 4, 2, { statuses: [{ statusId: "mark", chancePct: 80, turns: 2 }, { statusId: "bleed", chancePct: 35, turns: 3 }] }),
   // EXAMPLE level tables (each skill grows its own way, chapter 04 §5): the volley spreads to more targets.
-  steps(dmg("skill:fox_light_volley", "หมู่เบา", "physical", 0.9, 5, "FIRE", "ranged", 5, 0, { statuses: [{ statusId: "burn", chancePct: 30, turns: 2 }] }), [
+  steps(dmg("skill:fox_light_volley", "หมู่เบา", "physical", 0.9, 5, "FIRE", "ranged", 5, 3, { statuses: [{ statusId: "burn", chancePct: 30, turns: 2 }] }), [
     ["power", 5], ["power", 5], ["power", 5], ["extra_targets", 1], ["power", 5], ["power", 5], ["mp_cost", -1], ["extra_targets", 1], ["power", 10],
   ]),
-  steps(dmg("skill:fox_consume_mark", "กินmarkโจมตีหนัก", "physical", 1.6, 0, "FIRE", "melee", 10, 2, { bonusVsStatus: { statusId: "mark", bonusPct: 50, consume: true } }), [
+  steps(dmg("skill:fox_consume_mark", "กินmarkโจมตีหนัก", "physical", 1.6, 0, "FIRE", "melee", 10, 3, { bonusVsStatus: { statusId: "mark", bonusPct: 50, consume: true } }), [
     ["power", 6], ["power", 6], ["mp_cost", -2], ["power", 6], ["power", 6], ["cooldown", -1], ["power", 6], ["power", 6], ["power", 10],
   ]),
   innate("skill:fox_innate_kill_heal", "กำจัดเป้าหมายmarkแล้วฮีลเล็ก", [{ on: "kill", otherHas: "mark", then: [{ kind: "heal", target: "self", pctMaxHp: 8 }] }]),
   // Lantern snail (หอยตะเกียง)
-  steps(heal("skill:snail_single_heal", "ฮีลเดี่ยว", 1.2, 20, 8), [
+  steps(heal("skill:snail_single_heal", "ฮีลเดี่ยว", 1.2, 20, 8, 3), [
     ["power", 5], ["power", 5], ["mp_cost", -2], ["power", 5], ["power", 5], ["power", 5], ["extra_targets", 1], ["power", 5], ["mp_cost", -2],
   ]),
-  dmg("skill:snail_glare", "ส่องลดหลบ", "magic", 0.8, 0, "WATER", "ranged", 5, 0, { statuses: [{ statusId: "evasion_down", chancePct: 70, turns: 2 }] }),
-  support("skill:snail_ally_shield", "โล่เพื่อน", 6, { statusId: "shield", chancePct: 100, turns: 2, shieldPct: 18 }),
+  dmg("skill:snail_glare", "ส่องลดหลบ", "magic", 0.8, 0, "WATER", "ranged", 5, 2, { statuses: [{ statusId: "evasion_down", chancePct: 70, turns: 2 }] }),
+  support("skill:snail_ally_shield", "โล่เพื่อน", 6, { statusId: "shield", chancePct: 100, turns: 2, shieldPct: 18 }, "single_ally", 3),
   innate("skill:snail_innate_mp_return", "โล่หมดอายุคืนMP", [{ on: "shield_expired", then: [{ kind: "restore_mp", target: "self", amount: 4 }] }]),
   // Supply mole (ตุ่นเสบียง), chapter 04 §2 kit; Lv2 near the town gate
-  heal("skill:mole_light_heal", "ฮีลเบา", 0.8, 10, 6),
+  heal("skill:mole_light_heal", "ฮีลเบา", 0.8, 10, 6, 2),
   skill("skill:mole_cost_cut", "ลดต้นทุนสกิลถัดไปเพื่อน", "passive"),
-  dmg("skill:mole_weakening_hit", "โจมตีลดATK", "physical", 1.1, 0, "EARTH", "melee", 4, 0, { statuses: [{ statusId: "atk_down", chancePct: 60, turns: 2 }] }),
+  dmg("skill:mole_weakening_hit", "โจมตีลดATK", "physical", 1.1, 0, "EARTH", "melee", 4, 2, { statuses: [{ statusId: "atk_down", chancePct: 60, turns: 2 }] }),
   innate("skill:mole_innate_mp_refund", "basicสำเร็จคืนMPเล็ก", [{ on: "dealt_damage", action: "attack", then: [{ kind: "restore_mp", target: "self", amount: 1 }] }]),
   // Bell bird (นกกระดิ่ง), chapter 04 §2 kit; Lv3
-  support("skill:bird_haste", "เร่งเพื่อน", 4, { statusId: "spd_up", chancePct: 100, turns: 2 }),
-  support("skill:bird_cleanse", "ล้างสถานะ1ชนิด", 5, { statusId: "cleanse", chancePct: 100, turns: 1 }),
+  support("skill:bird_haste", "เร่งเพื่อน", 4, { statusId: "spd_up", chancePct: 100, turns: 2 }, "single_ally", 4),
+  support("skill:bird_cleanse", "ล้างสถานะ1ชนิด", 5, { statusId: "cleanse", chancePct: 100, turns: 1 }, "single_ally", 4),
   dmg("skill:bird_back_peck", "โจมตีหลัง", "physical", 1.0, 0, "WIND", "ranged", 4, 0),
   innate("skill:bird_innate_resist", "cleanseครั้งแรกให้ต้านสถานะ", [{ on: "used_skill", skillApplies: "cleanse", oncePerBattle: true, then: [{ kind: "status", target: "other", statuses: [{ statusId: "res_up", chancePct: 100, turns: 2 }] }] }]),
   // Rebirth variants (chapter 04 §7, EXAMPLE): same role, played differently. Crab follows chapter 04's example.
-  variant(support("skill:crab_shield_thick", "โล่หนา (โล่มาก ใช้MPสูง)", 9, { statusId: "shield", chancePct: 100, turns: 2, shieldPct: 35 }, "self"), "skill:crab_self_shield"),
-  variant(support("skill:crab_shield_shared", "โล่บางแชร์ (โล่บางให้ทั้งทีม)", 8, { statusId: "shield", chancePct: 100, turns: 2, shieldPct: 10 }, "all_allies"), "skill:crab_self_shield"),
+  variant(support("skill:crab_shield_thick", "โล่หนา (โล่มาก ใช้MPสูง)", 9, { statusId: "shield", chancePct: 100, turns: 2, shieldPct: 35 }, "self", 4), "skill:crab_self_shield"),
+  variant(support("skill:crab_shield_shared", "โล่บางแชร์ (โล่บางให้ทั้งทีม)", 8, { statusId: "shield", chancePct: 100, turns: 2, shieldPct: 10 }, "all_allies", 5), "skill:crab_self_shield"),
   variant(innate("skill:crab_innate_mp_surge", "รับแทนสำเร็จคืนMPมากขึ้น", [{ on: "protected_ally", then: [{ kind: "restore_mp", target: "self", amount: 6 }] }]), "skill:crab_innate_mp_refund"),
   variant(innate("skill:crab_innate_small_heal", "รับแทนสำเร็จฮีลเล็กแทน", [{ on: "protected_ally", then: [{ kind: "heal", target: "self", pctMaxHp: 4 }] }]), "skill:crab_innate_mp_refund"),
-  variant(dmg("skill:crab_pierce_bash", "กระแทกเจาะเกราะ", "physical", 1.3, 0, "EARTH", "melee", 6, 0, { penetrationPct: 30 }), "skill:crab_shield_bash"),
-  variant(dmg("skill:crab_light_bash", "กระแทกประหยัดโล่", "physical", 1.15, 0, "EARTH", "melee", 3, 0), "skill:crab_shield_bash"),
-  variant(dmg("skill:fox_blood_bite", "กัดดูดเลือด", "physical", 1.1, 0, "FIRE", "melee", 4, 0, { lifestealPct: 30 }), "skill:fox_mark_bite"),
-  variant(dmg("skill:fox_keen_bite", "กัดแม่นคม", "physical", 1.15, 0, "FIRE", "melee", 4, 0, { accuracyBonusPct: 15, critBonusPct: 15 }), "skill:fox_mark_bite"),
+  variant(dmg("skill:crab_pierce_bash", "กระแทกเจาะเกราะ", "physical", 1.3, 0, "EARTH", "melee", 6, 3, { penetrationPct: 30 }), "skill:crab_shield_bash"),
+  variant(dmg("skill:crab_light_bash", "กระแทกประหยัดโล่", "physical", 1.15, 0, "EARTH", "melee", 3, 2), "skill:crab_shield_bash"),
+  variant(dmg("skill:fox_blood_bite", "กัดดูดเลือด", "physical", 1.1, 0, "FIRE", "melee", 4, 2, { lifestealPct: 30 }), "skill:fox_mark_bite"),
+  variant(dmg("skill:fox_keen_bite", "กัดแม่นคม", "physical", 1.15, 0, "FIRE", "melee", 4, 2, { accuracyBonusPct: 15, critBonusPct: 15 }), "skill:fox_mark_bite"),
   variant(innate("skill:fox_innate_kill_haste", "กำจัดเป้าหมายmarkแล้วเร็วขึ้น", [{ on: "kill", otherHas: "mark", then: [{ kind: "status", target: "self", statuses: [{ statusId: "spd_up", chancePct: 100, turns: 2 }] }] }]), "skill:fox_innate_kill_heal"),
   variant(innate("skill:fox_innate_kill_mp", "กำจัดเป้าหมายmarkแล้วคืนMP", [{ on: "kill", otherHas: "mark", then: [{ kind: "restore_mp", target: "self", amount: 8 }] }]), "skill:fox_innate_kill_heal"),
-  variant(dmg("skill:fox_final_blaze", "ปิดฉากเพลิง", "physical", 1.5, 0, "FIRE", "melee", 10, 2, { execute: { belowHpPct: 35, bonusPct: 60 } }), "skill:fox_consume_mark"),
-  variant(dmg("skill:fox_reckless_dash", "พุ่งเสี่ยงตาย", "physical", 2.2, 0, "FIRE", "melee", 10, 2, { recoilPct: 20 }), "skill:fox_consume_mark"),
+  variant(dmg("skill:fox_final_blaze", "ปิดฉากเพลิง", "physical", 1.5, 0, "FIRE", "melee", 10, 4, { execute: { belowHpPct: 35, bonusPct: 60 } }), "skill:fox_consume_mark"),
+  variant(dmg("skill:fox_reckless_dash", "พุ่งเสี่ยงตาย", "physical", 2.2, 0, "FIRE", "melee", 10, 4, { recoilPct: 20 }), "skill:fox_consume_mark"),
   // Crystal crab lord (เจ้ากระดองผลึก), the field boss of chapter 07 §5's example
-  dmg("skill:lord_crystal_claw", "ก้ามผลึก", "physical", 1.4, 0, "WATER", "melee", 6, 0, { statuses: [{ statusId: "def_down", chancePct: 40, turns: 2 }] }),
+  dmg("skill:lord_crystal_claw", "ก้ามผลึก", "physical", 1.4, 0, "WATER", "melee", 6, 2, { statuses: [{ statusId: "def_down", chancePct: 40, turns: 2 }] }),
   // Its telegraphed move: hits every unit, so the answer is guard, shields or breaking the shell first.
   { ...dmg("skill:lord_shockwave", "คลื่นกระแทก", "physical", 1.5, 0, "WATER", "ranged", 12, 0), targetRule: "all_enemies" },
-  support("skill:lord_crystal_shell", "เกราะผลึก", 10, { statusId: "shield", chancePct: 100, turns: 2, shieldPct: 15 }, "self"),
+  support("skill:lord_crystal_shell", "เกราะผลึก", 10, { statusId: "shield", chancePct: 100, turns: 2, shieldPct: 15 }, "self", 4),
   innate("skill:lord_innate_last_stand", "กระดองสุดท้าย", [{ on: "hp_below", hpBelowPct: 50, oncePerBattle: true, then: [{ kind: "status", target: "self", statuses: [{ statusId: "def_up", chancePct: 100, turns: 2 }] }] }]),
   // Player prototype skill
-  dmg("skill:player_power_strike", "ฟันแรง", "physical", 1.6, 0, "NEUTRAL", "melee", 8, 0),
+  dmg("skill:player_power_strike", "ฟันแรง", "physical", 1.6, 0, "NEUTRAL", "melee", 8, 3),
+  // Revive example (O15, Nut 2026-10-07): a fallen ally back with 25% HP, from the round after it fell.
+  {
+    id: "skill:player_rally",
+    ...meta,
+    name: { th: "ปลุกขวัญ" },
+    kind: "active",
+    ownerKind: "player",
+    targetRule: "single_ally",
+    range: "ranged",
+    mpCost: 12,
+    cooldown: 5,
+    effectSequence: [{ kind: "revive", hpPct: 25 }],
+    tags: [],
+  },
   // Area example (Nut 2026-10-04): hits the whole row of the chosen enemy, each with its own roll.
-  { ...dmg("skill:player_sweep", "กวาดแถว", "physical", 0.7, 0, "NEUTRAL", "melee", 10, 0), targetRule: "enemy_row" },
+  { ...dmg("skill:player_sweep", "กวาดแถว", "physical", 0.7, 0, "NEUTRAL", "melee", 10, 4), targetRule: "enemy_row" },
 ];
 
 export const EXAMPLE_SPECIES: SpeciesDefinition[] = [
@@ -223,7 +237,7 @@ export const EXAMPLE_SIGILS: SigilDefinition[] = [
 
 export const EXAMPLE_ITEMS: ItemDefinition[] = [
   { id: "item:small_potion", ...meta, name: { th: "ยาเล็ก", en: "Small Potion" }, kind: "heal", healHp: 150, vendorPrice: 10 },
-  { id: "item:phoenix_feather", ...meta, name: { th: "ขนนกชุบ" }, kind: "revive", vendorPrice: 200 },
+  { id: "item:phoenix_feather", ...meta, name: { th: "ขนนกชุบ" }, kind: "revive", reviveHpPct: 30, vendorPrice: 200 },
   ...EXAMPLE_SPECIES.map(
     (s): ItemDefinition => ({
       id: s.captureItemId as ItemDefinition["id"],
@@ -360,7 +374,7 @@ function dmg(
 }
 
 /** A status-only skill on one ally (EXAMPLE): buffs, protect, cleanse. */
-function support(id: string, th: string, mpCost: number, status: StatusApplication, targetRule: SkillDefinition["targetRule"] = "single_ally"): SkillDefinition {
+function support(id: string, th: string, mpCost: number, status: StatusApplication, targetRule: SkillDefinition["targetRule"] = "single_ally", cooldown = 0): SkillDefinition {
   return {
     id,
     ...meta,
@@ -370,13 +384,13 @@ function support(id: string, th: string, mpCost: number, status: StatusApplicati
     targetRule,
     range: "ranged",
     mpCost,
-    cooldown: 0,
+    cooldown,
     effectSequence: [{ kind: "status", statuses: [status] }],
     tags: [],
   };
 }
 
-function heal(id: string, th: string, coefficient: number, flat: number, mpCost: number): SkillDefinition {
+function heal(id: string, th: string, coefficient: number, flat: number, mpCost: number, cooldown = 0): SkillDefinition {
   return {
     id,
     ...meta,
@@ -386,7 +400,7 @@ function heal(id: string, th: string, coefficient: number, flat: number, mpCost:
     targetRule: "single_ally",
     range: "ranged",
     mpCost,
-    cooldown: 0,
+    cooldown,
     effectSequence: [{ kind: "heal", coefficient, flat }],
     tags: [],
   };

@@ -66,6 +66,8 @@ export interface BattleUnit {
   /** Once-per-battle passives already used ("skillId#trigger index"). */
   passivesUsed?: string[];
   ko: boolean;
+  /** The round this unit fell in (0 = it started the fight down). Revive works from the next round (O15). */
+  downRound?: number;
   /** Captured enemies leave the fight without kill loot. */
   retired: boolean;
   /** Tower floors: a fallen or captured enemy whose cell a reinforcement took (the unit that came in). */
@@ -247,6 +249,10 @@ export type BattleEventBody =
   | { type: "EnemyDefeated"; unitId: string; speciesId: string }
   /** Tower floors: a pre-rolled replacement entered a fallen enemy's cell (frontier.ts). */
   | { type: "ReinforcementArrived"; unitId: string; speciesId: string; element: Element; row: Row; slot: number; replaces: string; left: number }
+  /** A flee try (O15): the chance in % it was rolled at. */
+  | { type: "FleeResolved"; actorId: string; success: boolean; chancePct: number }
+  /** A fallen ally is back (O15); it acts again from the next round. `sourceId`: the skill or item. */
+  | { type: "UnitRevived"; unitId: string; byId: string; sourceId: string; hp: number }
   | { type: "CaptureResolved"; targetId: string; speciesId: string; success: boolean; probability: number; profileVersion: string }
   | { type: "RewardEntitled"; entitlement: Entitlement }
   | {

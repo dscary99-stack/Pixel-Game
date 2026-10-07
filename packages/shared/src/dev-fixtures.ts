@@ -1,15 +1,13 @@
 /**
  * DEV / TEST ONLY. Values for OPEN rules so the prototype can be exercised end to end.
- * These are not decisions: O15 (cooldown tick) is still OPEN. Capture (O07) is decided and uses
- * RULES.provisional.captureProfile (P18) everywhere, so it has no fixture here.
- * BattleRoom refuses any rules with fixture overrides outside the "dev" environment.
+ * No battle rule is OPEN any more: capture (O07, P18) and cooldown/flee/revive/fight end (O15, decided
+ * 2026-10-07) use the production rules, so this currently overrides nothing. It stays as the one place a
+ * future OPEN rule gets a dev value; BattleRoom refuses any rules with fixture overrides outside "dev".
  */
 import { PRODUCTION_RULES, withFixtureOverrides } from "./rules";
 import type { BattleSetup } from "./battle/types";
 
-export const DEV_FIXTURE_RULES = withFixtureOverrides(PRODUCTION_RULES, {
-  cooldownTick: "owner_turn_start",
-});
+export const DEV_FIXTURE_RULES = withFixtureOverrides(PRODUCTION_RULES, {});
 
 /**
  * DEV ONLY stand-in character. There is no character table yet (Phase D: stats, level, gear and

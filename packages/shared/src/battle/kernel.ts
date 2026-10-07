@@ -17,6 +17,7 @@ import { companionExp, killExp } from "../progression";
 import { Rng, seedRng } from "../rng";
 import type { CaptureProfile, RulesConfig } from "../rules";
 import { captureChance, captureCheck, fightCaptureProfile, type CaptureBreakdown } from "../capture";
+import { fleeChance, reviveBlock, reviveHp } from "../flee";
 import type { BossDefinition, DamageEffect, Element, ItemDefinition, LootTable, Passive, PassiveAction, PassiveEvent, PassiveModifier, SigilDefinition, SkillDefinition, SpeciesDefinition, StatusApplication } from "../schemas";
 import { isAreaRule, targetsEnemies } from "../schemas";
 import { deriveStats, type DerivedStats } from "../stats";
@@ -500,7 +501,8 @@ function beginTurn(ctx: Ctx, u: BattleUnit): void {
   const guardEnded = u.guarding;
   u.guarding = false;
   const ra = roundAction(ctx.s, u);
-  if (ra.first && ctx.rules.unresolved.cooldownTick.value === "owner_turn_start") {
+  // Cooldowns count the owner's turns (O15, Nut 2026-10-07): once per round, even if control takes the turn.
+  if (ra.first && ctx.rules.confirmed.cooldownTick.value === "owner_turn_start") {
     for (const k of Object.keys(u.cooldowns)) u.cooldowns[k] = Math.max(0, (u.cooldowns[k] ?? 0) - 1);
   }
   ctx.emit({ type: "TurnStarted", unitId: u.unitId, guardEnded, ...(ra.of > 1 ? { action: ra.n, actionsThisRound: ra.of } : {}) });
@@ -769,7 +771,7 @@ function firePassives(ctx: Ctx, u: BattleUnit, on: PassiveEvent, info: PassiveIn
       if (tr.action !== undefined && tr.action !== info.action) return;
       const otherStatuses = info.otherStatuses ?? info.other?.statuses ?? [];
       if (tr.otherHas !== undefined && !otherStatuses.some((x) => x.statusId === tr.otherHas)) return;
-      if (tr.skillApplies !== undefined && !(info.skill?.effectSequence ?? []).some((e) => (e.statuses ?? []).some((a) => a.statusId === tr.skillApplies))) return;
+      if (tr.skillApplies !== undefined && !(info.skill?.effectSequence ?? []).some((e) => (("statuses" in e ? e.statuses : undefined) ?? []).some((a) => a.statusId === tr.skillApplies))) return;
       if (tr.hpBelowPct !== undefined) {
         const line = tr.hpBelowPct * u.stats.maxHp;
         if (info.hpBefore === undefined || info.hpBefore * 100 < line || u.hp * 100 >= line) return;
@@ -978,7 +980,7 @@ function redirectedTarget(ctx: Ctx, actor: BattleUnit, target: BattleUnit): Batt
 /** Moves to the next unit able to act. Enemy turns are resolved by the server AI. */
 function advanceToAllyInput(ctx: Ctx): void {
   const s = ctx.s;
-  // Safety bound only; a real stalemate rule is O15.
+  // Safety bound per call only: there is no forced end, the fight goes on until one side loses (O15).
   for (let guard = 0; guard < 10_000 && s.status === "active"; guard++) {
     if (s.turnIndex >= s.turnOrder.length) startRound(ctx);
     const u = ctx.unit(s.turnOrder[s.turnIndex]!);
@@ -1136,9 +1138,6 @@ function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUni
   const { mods } = cost;
   const mpCost = free ? 0 : cost.mpCost;
   const cooldown = free ? 0 : cost.cooldown;
-  if (cooldown > 0 && ctx.rules.unresolved.cooldownTick.value === null) {
-    reject("UNRESOLVED_RULE", "skill cooldown tick point is OPEN (O15)");
-  }
   if ((actor.cooldowns[skillId] ?? 0) > 0) reject("ON_COOLDOWN", `${skillId} ready in ${actor.cooldowns[skillId]} turns`);
   if (actor.mp < mpCost) reject("INSUFFICIENT_RESOURCE", `needs ${mpCost} MP`);
   const effect = skill.effectSequence[0]!;
@@ -1149,15 +1148,26 @@ function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUni
   if (onEnemy) {
     // An area skill still names one target: any enemy it can reach (enemy_row: that enemy's row).
     requireEnemyTarget(ctx, actor, target, skill.range);
+  } else if (effect.kind === "revive") {
+    // Checked before anything is spent: a fallen ally, down for a full turn (O15).
+    const block = reviveBlock(ctx.rules, ctx.s, actor, target);
+    if (block !== null) reject(block.code, block.message);
   } else {
     const allowed = skill.targetRule === "self" ? target.unitId === actor.unitId : skill.targetRule === "single_ally" || skill.targetRule === "all_allies";
     if (!allowed || target.side !== actor.side) reject("INVALID_TARGET", "this skill needs an ally target");
-    if (!active(target)) reject("INVALID_TARGET", "heals do not revive (chapter 03 §6)");
+    if (!active(target)) reject("INVALID_TARGET", "only revive skills or items bring a fallen ally back (O15)");
   }
 
   actor.mp -= mpCost;
   if (cooldown > 0) actor.cooldowns[skillId] = cooldown;
   actor.lastSkillId = skillId;
+
+  if (effect.kind === "revive") {
+    actionEvent(ctx, actor, "skill", target, { skillId });
+    revive(ctx, actor, target, effect.hpPct, skillId);
+    if (active(actor)) firePassives(ctx, actor, "used_skill", { other: target, skill });
+    return;
+  }
 
   const coefficient = effect.kind === "status" ? 0 : (effect.coefficient * (100 + mods.powerPercent)) / 100;
   // Extra targets from the skill's level: the chosen target first, then more of the same side, each
@@ -1340,6 +1350,7 @@ function strike(ctx: Ctx, actor: BattleUnit, chosen: BattleUnit, action: "attack
 
 function knockOut(ctx: Ctx, u: BattleUnit): void {
   u.ko = true;
+  u.downRound = ctx.s.round;
   u.guarding = false;
   u.statuses = [];
   if (u.kind === "companion") u.fell = true;
@@ -1385,7 +1396,14 @@ function consumeItem(ctx: Ctx, itemId: string): void {
 function doItem(ctx: Ctx, actor: BattleUnit, itemId: string, target: BattleUnit): void {
   requirePlayerActor(actor, "use items");
   const item = ctx.content.items.get(itemId) ?? reject("MISSING_REFERENCE", `item ${itemId}`);
-  if (item.kind === "revive") reject("UNRESOLVED_RULE", "revive timeline is OPEN (O15)");
+  if (item.kind === "revive") {
+    const block = reviveBlock(ctx.rules, ctx.s, actor, target);
+    if (block !== null) reject(block.code, block.message);
+    if ((ctx.s.bag[itemId] ?? 0) <= 0) reject("INSUFFICIENT_RESOURCE", `no ${itemId} in the combat bag`);
+    consumeItem(ctx, itemId);
+    actionEvent(ctx, actor, "item", target, {});
+    return revive(ctx, actor, target, item.reviveHpPct ?? 1, itemId);
+  }
   if (item.kind !== "heal") reject("INVALID_COMMAND", `${item.kind} items are not usable in Phase A`);
   if (target.side !== "ally" || !active(target)) reject("INVALID_TARGET", "heal items need a living ally");
   if ((ctx.s.bag[itemId] ?? 0) <= 0) reject("INSUFFICIENT_RESOURCE", `no ${itemId} in the combat bag`);
@@ -1393,6 +1411,18 @@ function doItem(ctx: Ctx, actor: BattleUnit, itemId: string, target: BattleUnit)
   // Anti-heal and zombie work on potions too.
   const gained = receiveHeal(ctx, target, item.healHp ?? 0);
   actionEvent(ctx, actor, "item", target, gained >= 0 ? { heal: gained, targetHpAfter: target.hp } : { hit: true, damage: -gained, targetHpAfter: target.hp });
+}
+
+/**
+ * Brings a fallen ally back with `pct`% of its max HP (O15). Its statuses went when it fell; it is not
+ * in this round's order, so it acts again from the next round. A companion that fell still counts as
+ * having fallen for Bond (bondLossOnFall).
+ */
+function revive(ctx: Ctx, by: BattleUnit, target: BattleUnit, pct: number, sourceId: string): void {
+  target.ko = false;
+  target.hp = Math.min(target.stats.maxHp, reviveHp(target.stats.maxHp, pct));
+  delete target.downRound;
+  ctx.emit({ type: "UnitRevived", unitId: target.unitId, byId: by.unitId, sourceId, hp: target.hp });
 }
 
 /** Capture chance for this fight (capture.ts), or the reason it cannot be tried. */
@@ -1459,10 +1489,13 @@ function doMove(ctx: Ctx, actor: BattleUnit, row: Row, slot: number): void {
 
 function doFlee(ctx: Ctx, actor: BattleUnit): void {
   requirePlayerActor(actor, "flee");
-  const chance = ctx.rules.unresolved.fleeChance.value;
-  if (chance === null) reject("UNRESOLVED_RULE", "flee formula is OPEN (O15)");
-  const ok = ctx.rng.chance(chance!);
+  // From SPD and the monsters' own flee values (O15, Nut 2026-10-07; numbers P19). A refusal spends nothing.
+  const f = fleeChance(ctx.rules, ctx.content.species, ctx.s, actor.unitId);
+  if (!f.ok) reject(f.code, f.message);
+  const chancePct = (f as Extract<typeof f, { ok: true }>).chancePct;
+  const ok = ctx.rng.chance(chancePct / 100);
   actionEvent(ctx, actor, "flee", null, { hit: ok });
+  ctx.emit({ type: "FleeResolved", actorId: actor.unitId, success: ok, chancePct });
   if (ok) endBattle(ctx, "fled");
 }
 
@@ -1752,7 +1785,6 @@ function skillOptions(rules: RulesConfig, content: Pick<BattleContent, "skills">
     const skill = content.skills.get(skillId);
     if (skill === undefined || skill.kind !== "active" || skill.effectSequence.length !== 1) continue;
     const { mpCost, cooldown } = skillCost(rules, u, skill);
-    if (cooldown > 0 && rules.unresolved.cooldownTick.value === null) continue;
     if ((u.cooldowns[skillId] ?? 0) > 0 || u.mp < mpCost) continue;
     if (mpCost > 0 && statusBlocks(st, "mp_skills") !== undefined) continue;
     if (st.some((x) => x.statusId === "skill_lock" && x.skillId === skillId)) continue;

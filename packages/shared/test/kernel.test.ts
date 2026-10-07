@@ -180,30 +180,29 @@ describe("actions", () => {
     expect(heal.heal).toBe(Math.min(150, before.stats.maxHp - before.hp));
   });
 
-  it("rejects a skill with a cooldown while O15 is open, and runs it with a fixture override", () => {
+  it("a skill with cooldown N used on the owner's turn T is ready again on its turn T+N (O15)", () => {
     const fox = { instance: companion("m1", "species:ember_fox", "FIRE"), row: "front" as const, slot: 0 };
     const setup = baseSetup({ companions: [fox] });
-    const findFoxTurn = (r: RulesConfig) => {
-      let s = ok(createBattle(r, c, setup)).state;
-      for (let i = 0; i < 20 && currentActor(s)?.unitId !== "ally:m1"; i++) s = ok(applyCommand(r, c, s, chooseAutoCommand(s)!, { source: "player" })).state;
+    const foxTurn = (s: BattleState) => {
+      for (let i = 0; i < 40 && s.status === "active" && currentActor(s)?.unitId !== "ally:m1"; i++) s = ok(applyCommand(rules, c, s, { type: "guard", actorId: currentActor(s)!.unitId }, { source: "player" })).state;
       return s;
     };
     const cmd = { type: "skill" as const, actorId: "ally:m1", skillId: "skill:fox_consume_mark", targetId: "e1" };
-    const s0 = findFoxTurn(rules);
-    expect(applyCommand(rules, c, s0, cmd, { source: "player" })).toMatchObject({ ok: false, code: "UNRESOLVED_RULE" });
-    const s1 = findFoxTurn(fixtureRules);
-    const r = ok(applyCommand(fixtureRules, c, s1, cmd, { source: "player" }));
-    const fox1 = r.state.units.find((u) => u.unitId === "ally:m1")!;
-    expect(fox1.mp).toBe(s1.units.find((u) => u.unitId === "ally:m1")!.mp - 10);
-  });
-
-  it("flee and revive stay UNRESOLVED_RULE until O15 is decided", () => {
-    const s = untilPlayerTurn(rules, c, ok(createBattle(rules, c, baseSetup({ bag: { "item:phoenix_feather": 1 } }))).state);
-    expect(applyCommand(rules, c, s, { type: "flee", actorId: "player" }, { source: "player" })).toMatchObject({ ok: false, code: "UNRESOLVED_RULE" });
-    expect(applyCommand(rules, c, s, { type: "item", actorId: "player", itemId: "item:phoenix_feather", targetId: "player" }, { source: "player" })).toMatchObject({
-      ok: false,
-      code: "UNRESOLVED_RULE",
-    });
+    const cd = c.skills.get(cmd.skillId)!.cooldown;
+    expect(cd).toBeGreaterThan(1);
+    let s = foxTurn(ok(createBattle(rules, c, setup)).state);
+    const before = s.units.find((u) => u.unitId === "ally:m1")!.mp;
+    s = ok(applyCommand(rules, c, s, cmd, { source: "player" })).state;
+    expect(s.units.find((u) => u.unitId === "ally:m1")!.mp).toBe(before - 10);
+    // Turns T+1 .. T+N-1: still cooling down (the counter drops at the start of each of its turns).
+    for (let k = 1; k < cd; k++) {
+      s = foxTurn(s);
+      expect(applyCommand(rules, c, s, cmd, { source: "player" })).toMatchObject({ ok: false, code: "ON_COOLDOWN" });
+      s = ok(applyCommand(rules, c, s, { type: "guard", actorId: "ally:m1" }, { source: "player" })).state;
+    }
+    s = foxTurn(s);
+    expect(s.units.find((u) => u.unitId === "ally:m1")!.cooldowns[cmd.skillId] ?? 0).toBe(0);
+    expect(applyCommand(rules, c, s, cmd, { source: "player" }).ok).toBe(true);
   });
 
   it("lets a unit be moved at most once per round", () => {
@@ -362,7 +361,10 @@ describe("party bonus in a fight (P02)", () => {
     const plain = run();
     const party = run(partyBonus(rules, 3));
     expect(party.partyBonus?.expPercent).toBe(15);
-    const exp = (s: typeof plain) => s.entitlements.map((e) => e.exp ?? 0);
-    expect(exp(party)).toEqual(exp(plain).map((x) => Math.floor((x * 115) / 100)));
+    // The loot rolls use the RNG too, so the two fights can part ways: compare the kills both made.
+    const byId = new Map(plain.entitlements.map((e) => [e.entitlementId, e.exp ?? 0]));
+    const shared = party.entitlements.filter((e) => byId.has(e.entitlementId));
+    expect(shared.length).toBeGreaterThan(0);
+    for (const e of shared) expect(e.exp ?? 0).toBe(Math.floor((byId.get(e.entitlementId)! * 115) / 100));
   });
 });

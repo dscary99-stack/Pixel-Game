@@ -54,10 +54,19 @@ export interface CaptureProfile {
 }
 
 /**
- * When a skill cooldown counter goes down. O15 has not decided this.
- * "owner_turn_start": the counter drops by 1 when the owner's turn starts, before it acts.
+ * When a skill cooldown counter goes down (O15, Nut 2026-10-07: cooldowns count turns).
+ * "owner_turn_start": the counter drops by 1 when the owner's turn starts, before it acts, so a skill
+ * with cooldown N used on turn T is ready again on the owner's turn T+N.
  */
 export type CooldownTickPolicy = "owner_turn_start";
+
+/** Flee chance (O15 decided 2026-10-07, numbers P19): from SPD and each monster's own flee value. */
+export interface FleeProfile {
+  /** A species without its own `fleeBasePct` uses this by its rank; an Elite unit is never above ELITE. 0 = no fleeing. */
+  readonly rankDefaultPct: Readonly<Record<Rank, number>>;
+  readonly minPct: number;
+  readonly maxPct: number;
+}
 
 export const RULES = {
   rulesVersion: "design-1.0/phase-b",
@@ -108,6 +117,13 @@ export const RULES = {
       "O15",
       "Nut 2026-10-04: effect hit offsets effect resistance, never above the skill's chance: chance = skill × (1 − max(0, res − hit)/100)",
     ),
+    // The rest of O15 (Nut 2026-10-07): per-skill cooldowns, flee, revive, no forced end.
+    cooldownTick: confirmed<CooldownTickPolicy>("owner_turn_start", "O15", "Nut 2026-10-07: each skill has its own cooldown in turns, set by its impact"),
+    fleeFromSpeedAndMonster: confirmed(true, "O15", "Nut 2026-10-07: the flee % comes from SPD plus the flee chance of those monsters"),
+    reviveAfterDownRounds: confirmed(1, "O15", "Nut 2026-10-07: a fallen unit can be revived after it has been down 1 turn (read as: from the next round)"),
+    reviveHpFromSource: confirmed(true, "O15", "Nut 2026-10-07: the HP % a revive gives depends on the skill or item"),
+    reviveLimitPerFight: confirmed(false, "O15", "Nut 2026-10-07: no limit on revives in a fight"),
+    forcedFightEnd: confirmed(false, "O15", "Nut 2026-10-07: no forced loss or draw; the fight goes on until one side loses"),
     // Refining / ตีบวก (refine.ts; Nut's REFINEMENT_DESIGN v2.1, 2026-10-07). These parts are CONFIRMED there.
     refineRiskySuccessBp: confirmed(
       [6000, 5000, 4000, 2000, 1000] as const,
@@ -582,13 +598,14 @@ export const RULES = {
       "v2.1: ward recipe per target; coins use the tier's top level (49/99/149/200) in the fee formula",
     ),
     refineWardConsumedOnSuccess: provisional(true, "P07", "v2.1 proposal: a ward is used up whether the attempt succeeds or fails"),
+    flee: provisional<FleeProfile>(
+      { rankDefaultPct: { NORMAL: 60, ELITE: 40, BOSS: 0 }, minPct: 5, maxPct: 95 },
+      "P19",
+      "decides O15 flee: chance = clamp(lowest flee value among living enemies × player SPD / fastest enemy SPD, 5%, 95%); bosses 0 = cannot flee; Claude's numbers",
+    ),
   },
   unresolved: {
     tradeLevelGap: open<number>("O01", "user range 20–40; proposal +30"),
-    cooldownTick: open<CooldownTickPolicy>("O15", "cooldown counter tick point; Nut 2026-10-04: must be per skill, details to review"),
-    fleeChance: open<number>("O15", "flee formula"),
-    reviveRules: open<true>("O15", "revive timeline"),
-    stalemateResolution: open<true>("O15"),
     /** Chapter 09: what happens to a weekly reward nobody claimed before the week ended. */
     weeklyExpiredClaim: open<true>("chapter09", "expired unclaimed weekly reward policy; must never let two periods be claimed twice"),
   },

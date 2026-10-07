@@ -94,7 +94,7 @@ function previewSetup(seed: string): BattleSetup {
       element: "FIRE",
       primaryStats: { STR: 25, VIT: 18, INT: 10, DEX: 14, AGI: 14, SPI: 10 },
       gear: { PATK: 30 },
-      skillIds: ["skill:player_power_strike"],
+      skillIds: ["skill:player_power_strike", "skill:player_rally"],
       basicAttackRange: "melee",
       row: "front",
       slot: 1,
@@ -108,6 +108,6 @@ function previewSetup(seed: string): BattleSetup {
       { unitId: "e2", speciesId: "species:armor_crab", element: "WATER", row: "front", slot: 3 },
       { unitId: "e3", speciesId: "species:lantern_snail", element: "LIGHT", row: "back", slot: 2 },
     ],
-    bag: { "item:small_potion": 5, "item:ember_fox_capture": 3, "item:armor_crab_capture": 3, "item:lantern_snail_capture": 3 },
+    bag: { "item:small_potion": 5, "item:phoenix_feather": 2, "item:ember_fox_capture": 3, "item:armor_crab_capture": 3, "item:lantern_snail_capture": 3 },
   };
 }

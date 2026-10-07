@@ -177,7 +177,7 @@ export class LocalWorldTransport implements WorldTransport {
       player: devPlayer("acct:preview", "ฉัน"),
       companions: [],
       enemies: packEnemies(pack),
-      bag: { "item:small_potion": 5, "item:ember_fox_capture": 3, "item:armor_crab_capture": 3, "item:lantern_snail_capture": 3 },
+      bag: { "item:small_potion": 5, "item:phoenix_feather": 2, "item:ember_fox_capture": 3, "item:armor_crab_capture": 3, "item:lantern_snail_capture": 3 },
     });
     this.fought.add(pack.packId);
     this.fight = { battleId, transport };

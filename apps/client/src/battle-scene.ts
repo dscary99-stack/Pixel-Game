@@ -8,6 +8,7 @@ import { DEV_FIXTURE_RULES, ELITE_MODIFIER_TH, EXAMPLE_FRONTIER, FRONTIER_MODIFI
 import type { BattleTransport, Snapshot } from "./transport";
 import { savedAutoPolicy } from "./character-ui";
 import { capturePreview, pct2 } from "./capture-ui";
+import { fleePreview, refusalTh, reviveRefusal, skillButtonLine } from "./command-ui";
 
 const CONTENT = exampleContentMaps();
 /** Display name for a loot line: item or equipment, falling back to the id. */
@@ -91,17 +92,20 @@ export class BattleScene extends Phaser.Scene {
     this.add.text(12, 8, this.transport.label, { fontFamily: "sans-serif", fontSize: "13px", color: "#f2c94c" });
     this.turnText = this.add.text(12, 28, "", { fontFamily: "sans-serif", fontSize: "15px", color: "#ffffff" });
     this.infoText = this.add.text(12, 56, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#f2c94c", wordWrap: { width: 520 } });
-    this.logText = this.add.text(560, 456, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#d8d4ea", wordWrap: { width: 390 } });
+    this.logText = this.add.text(576, 456, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#d8d4ea", wordWrap: { width: 374 } });
 
     const buttons: [string, () => void][] = [
       ["โจมตี", () => this.act("attack")],
       ["สกิล", () => this.act("skill")],
       ["ป้องกัน", () => this.act("guard")],
       ["ยา", () => this.act("item")],
+      ["ชุบ", () => this.act("revive")],
       ["จับ", () => this.act("capture")],
+      ["หนี", () => this.act("flee")],
     ];
-    buttons.forEach(([label, fn], i) => this.button(16 + i * 92, 470, label, fn));
-    this.autoButton = this.button(16 + 5 * 92, 470, "Auto: ปิด", () => this.toggleAuto());
+    // Eight buttons and Auto left of the log: 62px wide, 48px tall (P10 touch target height).
+    buttons.forEach(([label, fn], i) => this.button(16 + i * 68, 470, label, fn));
+    this.autoButton = this.button(16 + buttons.length * 68, 470, "Auto: ปิด", () => this.toggleAuto(), 76);
 
     // Auto only runs while this page is open and visible (C14: no offline farming).
     // The server holds Auto to one action per autoBattleActionMs, the same as Auto Hunt.
@@ -154,10 +158,10 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  private button(x: number, y: number, label: string, fn: () => void) {
-    // 84x48 touch target for mobile landscape (P10).
+  private button(x: number, y: number, label: string, fn: () => void, width = 62) {
+    // 48px tall touch targets for mobile landscape (P10).
     const t = this.add
-      .text(x, y, label, { fontFamily: "sans-serif", fontSize: "16px", color: "#ffffff", backgroundColor: "#463f6b", padding: { x: 12, y: 14 }, fixedWidth: 84, align: "center" })
+      .text(x, y, label, { fontFamily: "sans-serif", fontSize: "15px", color: "#ffffff", backgroundColor: "#463f6b", padding: { x: 4, y: 14 }, fixedWidth: width, align: "center" })
       .setInteractive({ useHandCursor: true });
     t.on("pointerdown", fn);
     return t;
@@ -194,8 +198,10 @@ export class BattleScene extends Phaser.Scene {
     actor.skillIds.forEach((id, i) => {
       const sk = CONTENT.skills.get(id);
       const area = sk && ["all_enemies", "enemy_row", "all_allies"].includes(sk.targetRule) ? " (หมู่)" : "";
+      // Cooldowns count the unit's own turns (O15): "ทุก N ตา", or how long until it is ready.
+      const left = actor.cooldowns[id] ?? 0;
       const b = this.add
-        .text(16 + i * 132, 410, `${sk?.name.th ?? id}${area}\n${sk?.mpCost ?? 0} MP`, { fontFamily: "sans-serif", fontSize: "12px", color: "#ffffff", backgroundColor: "#2f6b5a", padding: { x: 6, y: 6 }, fixedWidth: 124, align: "center" })
+        .text(16 + i * 132, 410, `${sk?.name.th ?? id}${area}\n${skillButtonLine(sk, left)}`, { fontFamily: "sans-serif", fontSize: "12px", color: left > 0 ? "#b8b4c8" : "#ffffff", backgroundColor: left > 0 ? "#3a3a46" : "#2f6b5a", padding: { x: 6, y: 6 }, fixedWidth: 124, align: "center" })
         .setInteractive({ useHandCursor: true });
       b.on("pointerdown", () => {
         this.closeSkillMenu();
@@ -209,12 +215,21 @@ export class BattleScene extends Phaser.Scene {
     const rule = CONTENT.skills.get(skillId)?.targetRule ?? "single_enemy";
     const sel = this.selectedTarget === null ? undefined : this.unit(this.selectedTarget);
     if (rule === "self") return actor.unitId;
+    // Revive skills (O15): the selected fallen ally, else the first one.
+    if (CONTENT.skills.get(skillId)?.effectSequence[0]?.kind === "revive") return sel !== undefined && sel.side === actor.side && sel.ko ? sel.unitId : this.firstFallen(actor.side);
     if (rule === "single_ally" || rule === "all_allies") return sel !== undefined && sel.side === actor.side ? sel.unitId : actor.unitId;
     return sel !== undefined && sel.side !== actor.side ? sel.unitId : this.firstEnemy();
+  }
+  private firstFallen(side: BattleUnit["side"]): string | null {
+    return this.snap.state.units.find((u) => u.side === side && u.ko && !u.retired)?.unitId ?? null;
   }
   private async useSkill(actor: BattleUnit, skillId: string) {
     const target = this.skillTarget(actor, skillId);
     if (target === null) return this.pushLog("ไม่มีเป้าหมายสำหรับสกิลนี้");
+    if (CONTENT.skills.get(skillId)?.effectSequence[0]?.kind === "revive") {
+      const why = reviveRefusal(DEV_FIXTURE_RULES, this.snap.state, actor.unitId, target);
+      if (why !== null) return this.pushLog(why);
+    }
     await this.send({ type: "skill", actorId: actor.unitId, skillId, targetId: target });
   }
 
@@ -225,18 +240,23 @@ export class BattleScene extends Phaser.Scene {
     this.capturePanel = [];
   }
   private openCapturePreview(actorId: string, targetId: string) {
-    this.closeCapturePreview();
-    this.closeSkillMenu();
     // Capture is a manual command only (C15): Auto goes off before the player decides.
     if (this.autoOn) {
       this.toggleAuto();
       this.pushLog("ปิด Auto แล้ว: การจับต้องสั่งเอง");
     }
     const pv = capturePreview(DEV_FIXTURE_RULES, this.snap.state, CONTENT, actorId, targetId);
+    const itemId = pv.itemId;
+    this.showConfirm(pv.lines, pv.ok && itemId !== null, "ยืนยันจับ", () => void this.send({ type: "capture", actorId, targetId, itemId: itemId! }));
+  }
+
+  /** A preview panel with confirm/cancel, shared by capture and flee. */
+  private showConfirm(lines: string[], ok: boolean, confirmLabel: string, onConfirm: () => void) {
+    this.closeCapturePreview();
+    this.closeSkillMenu();
     const text = this.add
-      .text(16, 300, pv.lines.join("\n"), { fontFamily: "sans-serif", fontSize: "12px", color: pv.ok ? "#ffffff" : "#ffb3b3", backgroundColor: "#1d1a2e", padding: { x: 8, y: 6 }, lineSpacing: 5, wordWrap: { width: 520 } })
-      .setDepth(20)
-      .setData("capture-preview", pv.ok ? "ok" : "refused");
+      .text(16, 300, lines.join("\n"), { fontFamily: "sans-serif", fontSize: "12px", color: ok ? "#ffffff" : "#ffb3b3", backgroundColor: "#1d1a2e", padding: { x: 8, y: 6 }, lineSpacing: 5, wordWrap: { width: 520 } })
+      .setDepth(20);
     this.capturePanel.push(text);
     const btn = (x: number, label: string, color: string, fn: () => void) => {
       const b = this.add
@@ -246,17 +266,15 @@ export class BattleScene extends Phaser.Scene {
       b.on("pointerdown", fn);
       this.capturePanel.push(b);
     };
-    if (pv.ok && pv.itemId !== null) {
-      const itemId = pv.itemId;
-      btn(16, "ยืนยันจับ", "#2f6b5a", () => {
+    if (ok)
+      btn(16, confirmLabel, "#2f6b5a", () => {
         this.closeCapturePreview();
-        void this.send({ type: "capture", actorId, targetId, itemId });
+        onConfirm();
       });
-    }
-    btn(pv.ok ? 120 : 16, pv.ok ? "ยกเลิก" : "ปิด", "#4a4560", () => this.closeCapturePreview());
+    btn(ok ? 120 : 16, ok ? "ยกเลิก" : "ปิด", "#4a4560", () => this.closeCapturePreview());
   }
 
-  private async act(kind: "attack" | "skill" | "guard" | "item" | "capture") {
+  private async act(kind: "attack" | "skill" | "guard" | "item" | "capture" | "flee" | "revive") {
     if (this.watching) return this.pushLog("กำลังล่าอัตโนมัติ: กด หยุดล่า ก่อนสั่งเอง");
     if (this.busy || this.snap.state.status !== "active" || this.snap.actor === null) return;
     const actor = this.unit(this.snap.actor)!;
@@ -264,7 +282,7 @@ export class BattleScene extends Phaser.Scene {
     const target = sel !== undefined && sel.side === "enemy" ? sel.unitId : this.firstEnemy();
     let cmd: BattleCommand | null = null;
     if (kind !== "skill") this.closeSkillMenu();
-    if (kind !== "capture") this.closeCapturePreview();
+    if (kind !== "capture" && kind !== "flee") this.closeCapturePreview();
     switch (kind) {
       case "attack":
         if (target) cmd = { type: "attack", actorId: actor.unitId, targetId: target };
@@ -280,6 +298,20 @@ export class BattleScene extends Phaser.Scene {
       case "capture":
         if (target) return this.openCapturePreview(actor.unitId, target);
         break;
+      case "flee": {
+        // Flee chance from SPD and the monsters' flee values (O15); the server rolls.
+        const pv = fleePreview(DEV_FIXTURE_RULES, this.snap.state, CONTENT.species, actor.unitId, (id) => this.name(id));
+        return this.showConfirm(pv.lines, pv.ok, "ยืนยันหนี", () => void this.send({ type: "flee", actorId: actor.unitId }));
+      }
+      case "revive": {
+        // Revive item on the selected fallen ally, else the first one (O15: from the round after it fell).
+        const t = sel !== undefined && sel.side === "ally" && sel.ko ? sel.unitId : this.firstFallen("ally");
+        if (t === null) return this.pushLog("ไม่มีพวกที่ล้มให้ชุบ");
+        const why = reviveRefusal(DEV_FIXTURE_RULES, this.snap.state, actor.unitId, t);
+        if (why !== null) return this.pushLog(why);
+        cmd = { type: "item", actorId: actor.unitId, itemId: "item:phoenix_feather", targetId: t };
+        break;
+      }
     }
     if (cmd === null) return this.pushLog("ไม่มีเป้าหมาย/สกิลสำหรับคำสั่งนี้");
     await this.send(cmd);
@@ -300,7 +332,7 @@ export class BattleScene extends Phaser.Scene {
     this.snap = snapshot;
     // A preview made for an older state is out of date (HP, statuses, bag may have moved).
     if (events.length > 0) this.closeCapturePreview();
-    if (response?.status === "rejected") this.pushLog(`ปฏิเสธ: ${response.reasonCode} ${response.message ?? ""}`);
+    if (response?.status === "rejected") this.pushLog(`ปฏิเสธ: ${refusalTh(response.reasonCode, response.message)}`);
     for (const e of events) {
       // Polls can overlap with command responses: show each event once.
       if (e.seq <= this.cursor) continue;
@@ -370,6 +402,13 @@ export class BattleScene extends Phaser.Scene {
       }
       case "CaptureResolved":
         return this.pushLog(`จับ ${this.name(e.targetId)}: ${e.success ? "สำเร็จ (ได้ Lv1)" : "ไม่สำเร็จ (เครื่องจับถูกใช้ไป 1 ชิ้น)"} โอกาส ${pct2(e.probability)}`);
+      case "FleeResolved":
+        return this.pushLog(`หนี: ${e.success ? "สำเร็จ" : "ไม่สำเร็จ (เสียตานี้)"} โอกาส ${pct2(e.chancePct / 100)}`);
+      case "UnitRevived": {
+        const via = CONTENT.skills.get(e.sourceId)?.name.th ?? CONTENT.items.get(e.sourceId)?.name.th ?? e.sourceId;
+        this.popup(e.unitId, "ฟื้น!", "#7dff9b");
+        return this.pushLog(`${this.name(e.byId)} ใช้${via} ชุบ ${this.name(e.unitId)} กลับมา HP ${e.hp} (ลงมือได้ตั้งแต่รอบหน้า)`);
+      }
       case "EnemyDefeated":
         return this.pushLog(`${this.name(e.unitId)} ถูกกำจัด`);
       case "ReinforcementArrived":
@@ -460,7 +499,8 @@ export class BattleScene extends Phaser.Scene {
         const body = this.add.rectangle(x, y, 48, bh, ELEMENT_COLOR[u.element]).setStrokeStyle(3, 0x0b0a12).setInteractive({ useHandCursor: true });
         body.on("pointerdown", () => {
           // Enemies for attacks and enemy skills; allies for heals, buffs and shields.
-          if (!u.ko && !u.retired) this.selectedTarget = u.unitId;
+          // A fallen ally can be picked too, as the target of a revive (O15).
+          if ((!u.ko || u.side === "ally") && !u.retired) this.selectedTarget = u.unitId;
           this.render(this.snap.state);
         });
         if (u.cosmetic !== undefined) this.drawCosmetic(body, u.cosmetic);

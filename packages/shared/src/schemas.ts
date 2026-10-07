@@ -127,6 +127,17 @@ export const StatusEffectSchema = z
   })
   .strict();
 
+/**
+ * Brings a fallen ally back (O15, Nut 2026-10-07) with this % of its max HP. Only after the ally has
+ * been down 1 turn (from the next round); no limit per fight.
+ */
+export const ReviveEffectSchema = z
+  .object({
+    kind: z.literal("revive"),
+    hpPct: z.number().int().min(1).max(100),
+  })
+  .strict();
+
 // ---------------------------------------------------------------- passives (catalog §4)
 
 /** Who a passive's effect lands on: the owner, the other unit of the event, or the owner's side. */
@@ -254,7 +265,7 @@ export const SkillDefinitionSchema = z
     mpCost: z.number().int().min(0),
     /** Owner turns before reuse. Tick point is O15. */
     cooldown: z.number().int().min(0),
-    effectSequence: z.array(z.discriminatedUnion("kind", [DamageEffectSchema, HealEffectSchema, StatusEffectSchema])),
+    effectSequence: z.array(z.discriminatedUnion("kind", [DamageEffectSchema, HealEffectSchema, StatusEffectSchema, ReviveEffectSchema])),
     tags: z.array(z.string()),
     /** One step per level 2–10 when present; absent = the default power step (rules). */
     levelSteps: z.array(SkillLevelStepSchema).optional(),
@@ -272,12 +283,15 @@ export const SkillDefinitionSchema = z
       const sum = (k: SkillLevelStep["kind"]) => s.levelSteps!.filter((x) => x.kind === k).reduce((n, x) => n + x.value, 0);
       if (s.mpCost + sum("mp_cost") < 0) ctx.addIssue({ code: "custom", message: "levelSteps would take MP cost below 0" });
       if (s.cooldown + sum("cooldown") < 0) ctx.addIssue({ code: "custom", message: "levelSteps would take cooldown below 0" });
+      if (s.cooldown + sum("cooldown") === 1) ctx.addIssue({ code: "custom", message: "levelSteps would leave cooldown 1 (ready every turn; use 0)" });
       for (const x of s.levelSteps) {
         const ok = x.kind === "power" || x.kind === "extra_targets" ? x.value > 0 : x.value < 0;
         if (!ok) ctx.addIssue({ code: "custom", message: `level ${x.atLevel} ${x.kind} step must ${x.kind === "power" || x.kind === "extra_targets" ? "add" : "reduce"}` });
       }
       if (sum("extra_targets") > 4) ctx.addIssue({ code: "custom", message: "at most 4 extra targets" });
     }
+    // Cooldown N: used on the owner's turn T, ready again on its turn T+N (O15), so 1 would be every turn.
+    if (s.cooldown === 1) ctx.addIssue({ code: "custom", message: "cooldown 1 is ready every turn; use 0 or 2+" });
     if (s.kind === "passive" && (s.effectSequence.length > 0 || s.mpCost > 0)) {
       ctx.addIssue({ code: "custom", message: "passive skills have no direct effect sequence or MP cost in Phase A" });
     }
@@ -285,8 +299,9 @@ export const SkillDefinitionSchema = z
       const onEnemy = targetsEnemies(s.targetRule);
       if (s.kind === "active" && e.kind === "damage" && !onEnemy) ctx.addIssue({ code: "custom", message: "damage skills aim at enemies" });
       if (s.kind === "active" && e.kind === "heal" && onEnemy) ctx.addIssue({ code: "custom", message: "heal skills aim at allies" });
+      if (s.kind === "active" && e.kind === "revive" && s.targetRule !== "single_ally") ctx.addIssue({ code: "custom", message: "revive skills aim at one ally" });
       if (s.kind === "active" && s.targetRule === "none") ctx.addIssue({ code: "custom", message: "an active skill needs a target rule" });
-      for (const a of e.statuses ?? []) {
+      for (const a of ("statuses" in e ? e.statuses : undefined) ?? []) {
         if (STATUS_DEFINITIONS[a.statusId].harmful !== onEnemy) {
           ctx.addIssue({ code: "custom", message: `${a.statusId} is ${onEnemy ? "helpful" : "harmful"} and cannot go on ${onEnemy ? "an enemy" : "an ally"}` });
         }
@@ -338,8 +353,10 @@ export const SpeciesDefinitionSchema = z
     skillIds: z.array(SkillId).length(C.speciesSkillCount.value),
     innatePassiveId: SkillId,
     captureItemId: ItemId,
-    /** Base capture rate before HP/status/item factors (O07 table still open). */
+    /** Base capture rate before HP/status/item factors (capture.ts, P18). */
     captureBaseRate: z.number().min(0).max(1),
+    /** This monster's flee value in % (O15, P19); without it the rank default applies. 0 = cannot be fled from. */
+    fleeBasePct: z.number().int().min(0).max(100).optional(),
     lootTableId: LootTableId,
     sigilId: SigilId,
     petEquipmentPoolId: z.string().min(1),
@@ -484,6 +501,8 @@ export const ItemDefinitionSchema = z
     kind: z.enum(["heal", "capture", "support", "attack", "revive", "material", "sigil"]),
     /** heal: flat HP restored. */
     healHp: z.number().int().min(0).optional(),
+    /** revive: % of max HP the fallen ally comes back with (O15). */
+    reviveHpPct: z.number().int().min(1).max(100).optional(),
     /** capture: the one species this item captures (species-specific capture items, chapter 04 §3). */
     captureSpeciesId: SpeciesId.optional(),
     captureQuality: z.number().positive().optional(),
@@ -502,6 +521,9 @@ export const ItemDefinitionSchema = z
     }
     if (it.kind === "heal" && it.healHp === undefined) {
       ctx.addIssue({ code: "custom", message: "heal item needs healHp" });
+    }
+    if ((it.kind === "revive") !== (it.reviveHpPct !== undefined)) {
+      ctx.addIssue({ code: "custom", message: "revive items, and only they, set reviveHpPct" });
     }
   });
 export type ItemDefinition = z.infer<typeof ItemDefinitionSchema>;

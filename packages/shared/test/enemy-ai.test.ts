@@ -86,11 +86,11 @@ describe("wild enemies use their species' skills (P15 enemyAi)", () => {
     expect(d.enemyTurn(edit(d.s, (e) => (e.statuses = [st("disarm"), st("silence")]))).acts[0]).toMatchObject({ action: "guard" });
   });
 
-  it("never pick a skill the validator would refuse: cooldown skills wait for the OPEN tick rule", () => {
+  it("never pick a skill the validator would refuse: a skill on cooldown or without the MP waits", () => {
     const prod = duel(withAi(productionRules, 100), "species:ember_fox", ["skill:fox_consume_mark"]);
-    expect(prod.enemyTurn(prod.s).acts[0]).toMatchObject({ action: "attack" });
-    const dev = duel(withAi(fixtureRules, 100), "species:ember_fox", ["skill:fox_consume_mark"]);
-    expect(dev.enemyTurn(dev.s).acts[0]).toMatchObject({ action: "skill", skillId: "skill:fox_consume_mark" });
+    expect(prod.enemyTurn(prod.s).acts[0]).toMatchObject({ action: "skill", skillId: "skill:fox_consume_mark" });
+    const cooling = duel(withAi(productionRules, 100), "species:ember_fox", ["skill:fox_consume_mark"]);
+    expect(cooling.enemyTurn(edit(cooling.s, (e) => (e.cooldowns["skill:fox_consume_mark"] = 3))).acts[0]).toMatchObject({ action: "attack" });
     const broke = duel(withAi(productionRules, 100), "species:armor_crab");
     expect(broke.enemyTurn(edit(broke.s, (e) => (e.mp = 0))).acts[0]).toMatchObject({ action: "attack" });
   });
