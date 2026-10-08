@@ -32,7 +32,7 @@ import {
 import { ELEMENT_COLOR, type BattleScene } from "./battle-scene";
 import type { CharacterApi, CharacterBundle } from "./character-api";
 import { autoHuntPanel, craftPanel, refinePanel, frontierPanel, journalPanel, ordersPanel, questPanel, titleName, equipmentPanel, partyPanel, rebirthPanel, secretQuestPanel, shopPanel, skillPanel, statsPanel, teamPanel, vitals } from "./character-ui";
-import { marketPanel, tradePanel } from "./market-ui";
+import { marketPanel, tradePanel, vaultPanel } from "./market-ui";
 import type { WorldTransport } from "./world-transport";
 
 const W = 960;
@@ -55,6 +55,7 @@ const NPC_SERVICE_TH: Record<Exclude<NpcService, "talk">, string> = {
   journal: "สมุดบันทึก / ฉายา",
   market: "ตลาดโลก",
   trade: "แลกเปลี่ยนกับผู้เล่น",
+  vault: "คลังของบัญชี",
 };
 
 const TILE_COLOR: Record<(typeof TILE_LEGEND)[TileChar]["kind"], number> = {
@@ -158,7 +159,7 @@ export class WorldScene extends Phaser.Scene {
         this.huntBox.setVisible(false);
       });
     this.add
-      .text(W - 8, 8, `ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · C สเตตัส · T ทีม · E อุปกรณ์ · B ร้าน / F สร้างของ / O งานสั่ง / G หอคอย / R จุติคู่ใจ (ในเมือง) · K สกิล/Bond · H ล่าอัตโนมัติ · P ปาร์ตี้ · Q เควส · J สมุด · L เควสลับ" : ""}`, style)
+      .text(W - 8, 8, `ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · C สเตตัส · T ทีม · E อุปกรณ์ · B ร้าน / F สร้างของ / O งานสั่ง / G หอคอย / R จุติคู่ใจ (ในเมือง) · K สกิล/Bond · H ล่าอัตโนมัติ · P ปาร์ตี้ · Q เควส · J สมุด · L เควสลับ · M ตลาด · V คลัง" : ""}`, style)
       .setOrigin(1, 0)
       .setScrollFactor(0)
       .setDepth(100);
@@ -182,6 +183,8 @@ export class WorldScene extends Phaser.Scene {
     kb.on("keydown-O", () => void this.openOrders());
     kb.on("keydown-G", () => void this.openFrontier());
     kb.on("keydown-L", () => void this.openSecretQuests());
+    kb.on("keydown-M", () => void this.openMarket());
+    kb.on("keydown-V", () => void this.openVault());
     if (this.api !== null) {
       const button = (x: number, label: string, open: () => Promise<void>) =>
         this.add
@@ -210,6 +213,8 @@ export class WorldScene extends Phaser.Scene {
         ["เควส (Q)", () => this.openQuests()],
         ["สมุด (J)", () => this.openJournal()],
         ["เควสลับ (L)", () => this.openSecretQuests()],
+        ["ตลาด (M)", () => this.openMarket()],
+        ["คลัง (V)", () => this.openVault()],
       ];
       let x = 8;
       let lift = 0;
@@ -666,10 +671,20 @@ export class WorldScene extends Phaser.Scene {
     await this.reloadCharacter();
   }
 
-  /** World Market at the harbour; browsing works anywhere, listing and buying in town (the server checks). */
-  private async openMarket() {
+  /**
+   * World Market: browse and buy anywhere (M); list and take back only when opened at the harbour NPC
+   * in town (Nut 2026-10-08; the server checks the town).
+   */
+  private async openMarket(atNpc = false) {
     return this.withPanel("ตลาดเปิดนอกไฟต์เท่านั้น", async (api, bundle) => {
-      await marketPanel(api, bundle);
+      await marketPanel(api, bundle, atNpc && this.map?.kind === "town");
+    });
+  }
+
+  /** Account vault: look anywhere (V); put in and take out at the NPC in town (the server checks the town). */
+  private async openVault(atNpc = false) {
+    return this.withPanel("ดูคลังได้นอกไฟต์", async (api, bundle) => {
+      await vaultPanel(api, bundle, atNpc && this.map?.kind === "town");
     });
   }
 
@@ -766,8 +781,9 @@ export class WorldScene extends Phaser.Scene {
       party: () => this.openParty(),
       team: () => this.openTeam(),
       journal: () => this.openJournal(),
-      market: () => this.openMarket(),
+      market: () => this.openMarket(true),
       trade: () => this.openTrade(),
+      vault: () => this.openVault(true),
     };
     const services = n.services.filter((s): s is Exclude<NpcService, "talk"> => s !== "talk");
     if (this.api === null || services.length === 0) return;

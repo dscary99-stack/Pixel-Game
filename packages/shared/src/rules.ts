@@ -248,10 +248,15 @@ export const RULES = {
      * town-only are Claude's numbers (chapter 06 left listing limits OPEN).
      */
     market: provisional(
-      { listingFeeBps: 50, minListingFee: 1, saleTaxBps: 300, listingHours: 72, maxActiveListings: 20, minPrice: 1, maxPrice: 1_000_000_000, pageSize: 20 } as const,
+      { listingFeeBps: 500, minListingFee: 1, saleTaxBps: 700, listingHours: 72, maxActiveListings: 50, minPrice: 1, maxPrice: 1_000_000_000, pageSize: 20 } as const,
       "P23",
-      "fee 0.5% (min 1) kept on cancel/expiry, sale tax 3% from the seller; 72 h listings; 20 active per character; list/buy/cancel in town",
+      "Nut 2026-10-08: fee 5% (min 1) kept on cancel/expiry, sale tax 7% from the seller, 72 h listings, 50 active per character; list and take back at the NPC in town, buy and browse anywhere",
     ),
+    /**
+     * Account vault shared by the characters of one login (Nut 2026-10-08). Items, gear and coins; some
+     * things are ห้ามฝากคลัง (noStore). Put in and take out at the town NPC, look anywhere.
+     */
+    vault: provisional({ slots: 100, maxLines: 20 } as const, "P25", "100 slots per account (one per item kind held, one per piece; coins take none); up to 20 lines per request"),
     /**
      * Direct trade between players (Nut 2026-10-07: item trade and companion trade are separate).
      * The proposer's side is held in escrow; the other player's side is checked when they accept.

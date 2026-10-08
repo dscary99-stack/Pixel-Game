@@ -3,7 +3,7 @@
  * what it gets back. Identity uses the dev header until O11 picks auth.
  */
 import { authHeaders, type Identity } from "./identity";
-import type { AssetSnapshot, CharacterView, CreateCharacterRequest, MarketBrowseQuery, MarketKind, MarketView, TradeKind, TradeSide, TradeView, DisposeQuote, EquipSlot, EquipmentView, FrontierView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RefineResult, RolledAffix, SecretQuestView } from "@pmrpg/shared";
+import type { AssetSnapshot, CharacterView, CreateCharacterRequest, MarketBrowseQuery, MarketKind, MarketView, TradeKind, TradeSide, TradeView, VaultView, DisposeQuote, EquipSlot, EquipmentView, FrontierView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RefineResult, RolledAffix, SecretQuestView } from "@pmrpg/shared";
 
 export type StoredCompanion = MonsterInstance & { hp: number | null; mp: number | null };
 
@@ -248,6 +248,17 @@ export class CharacterApi {
   }
   tradeRespond(how: "accept" | "decline" | "cancel", offerId: string) {
     return this.call<{ coins: number; result: { offerId: string; status: string } }>("POST", `/trade/${how}`, { operationId: opId(`t${how}`), offerId });
+  }
+
+  /** The account vault (shared by this login's characters); look anywhere, move at the town NPC. */
+  vault() {
+    return this.call<VaultView>("GET", "/vault");
+  }
+  vaultDeposit(move: { items?: { itemId: string; quantity: number }[]; equipmentIds?: string[]; coins?: number }) {
+    return this.call<{ coins: number }>("POST", "/vault/deposit", { operationId: opId("vin"), ...move });
+  }
+  vaultWithdraw(move: { items?: { itemId: string; quantity: number }[]; equipmentIds?: string[]; coins?: number }) {
+    return this.call<{ coins: number }>("POST", "/vault/withdraw", { operationId: opId("vout"), ...move });
   }
 
   private async call<T>(method: string, path: string, body?: unknown): Promise<T> {

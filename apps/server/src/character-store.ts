@@ -116,6 +116,7 @@ interface EquipmentRow {
   id: string;
   no_sell?: number;
   no_trade?: number;
+  no_store?: number;
   definition_id: string;
   refine_level: number;
   lock_state: EquipmentView["lockState"];
@@ -395,10 +396,10 @@ export class CharacterStore {
   async equipment(accountId: string): Promise<EquipmentView[]> {
     const { results } = await this.db
       .prepare(
-        `SELECT e.id, e.definition_id, e.refine_level, e.lock_state, e.sigil_sockets_json, e.rarity, e.affixes_json, e.affix_pending_json, e.protected, e.no_sell, e.no_trade, e.version, ce.slot
+        `SELECT e.id, e.definition_id, e.refine_level, e.lock_state, e.sigil_sockets_json, e.rarity, e.affixes_json, e.affix_pending_json, e.protected, e.no_sell, e.no_trade, e.no_store, e.version, ce.slot
          FROM equipment_instances e
          LEFT JOIN character_equipment ce ON ce.equipment_instance_id = e.id
-         WHERE e.owner_id = ? ORDER BY e.definition_id, e.id`,
+         WHERE e.owner_id = ? AND e.id NOT IN (SELECT equipment_id FROM vault_equipment) ORDER BY e.definition_id, e.id`,
       )
       .bind(accountId)
       .all<EquipmentRow>();
@@ -408,6 +409,7 @@ export class CharacterStore {
       ...(r.protected === 1 ? { protected: true } : {}),
       ...(r.no_sell === 1 || this.content.equipment.get(r.definition_id)?.noSell === true ? { noSell: true } : {}),
       ...(r.no_trade === 1 || this.content.equipment.get(r.definition_id)?.noTrade === true ? { noTrade: true } : {}),
+      ...(r.no_store === 1 || this.content.equipment.get(r.definition_id)?.noStore === true ? { noStore: true } : {}),
       version: r.version,
     }));
   }

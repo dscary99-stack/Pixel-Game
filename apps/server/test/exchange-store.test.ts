@@ -112,8 +112,9 @@ describe("World Market", () => {
     expect(await buy(B, "buy_00001", id, 1000)).toMatchObject({ status: "done", replayed: true });
     expect(bag(B)).toBe(14);
     expect(coins(B)).toBe(before.b - 1000);
-    // 3% tax burned; the 0.5% fee was paid at listing.
-    expect(coins(A)).toBe(before.a - 5 + 970);
+    // 7% tax burned; the 5% fee was paid at listing (Nut 2026-10-08).
+    expect(marketFee(R, 1000)).toBe(50);
+    expect(coins(A)).toBe(before.a - 50 + 930);
     expect(await buy(C, "buy_00002", id, 1000)).toMatchObject({ status: "rejected", reason: "CLOSED" });
   });
 
@@ -140,7 +141,7 @@ describe("World Market", () => {
     now = "2026-10-11T00:00:00.000Z";
     expect(await buy(B, "buy_00003", id, 100)).toMatchObject({ status: "rejected", reason: "EXPIRED" });
     const v = await market.view(A, {});
-    expect("mine" in v && v.mine[0]).toMatchObject({ status: "expired", proceeds: 97 });
+    expect("mine" in v && v.mine[0]).toMatchObject({ status: "expired", proceeds: 93 });
     expect("listings" in v && v.listings).toEqual([]);
     expect(await market.cancel(A, { operationId: "cancel_0002", listingId: id })).toMatchObject({ status: "done" });
     expect(await market.cancel(A, { operationId: "cancel_0002", listingId: id })).toMatchObject({ status: "done", replayed: true });
@@ -148,20 +149,25 @@ describe("World Market", () => {
     expect(await market.cancel(B, { operationId: "cancel_0003", listingId: id })).toMatchObject({ status: "rejected", reason: "NOT_FOUND" });
   });
 
-  it("refuses: own listing, outside town, wrong fee or price, not enough coins, too many listings", async () => {
+  it("refuses: own listing, listing or taking back outside town, wrong fee or price, not enough coins, too many listings; buys anywhere", async () => {
     const id = listingOf(await list(A, "list_00005", "item", POTION, 100));
     expect(await buy(A, "buy_00004", id, 100)).toMatchObject({ status: "rejected", reason: "OWN_LISTING" });
     expect(await buy(B, "buy_00005", id, 99)).toMatchObject({ status: "rejected", reason: "COST_CHANGED" });
     expect(await market.list(A, { operationId: "list_00006", kind: "item", assetId: POTION, quantity: 1, price: 1000, expectedFee: 1 })).toMatchObject({ status: "rejected", reason: "COST_CHANGED" });
+    // Listing and taking back are at the NPC in town; buying works anywhere (Nut 2026-10-08).
+    at(A, FIELD);
+    expect(await list(A, "list_00009", "item", POTION, 100)).toMatchObject({ status: "rejected", reason: "NOT_IN_TOWN" });
+    expect(await market.cancel(A, { operationId: "cancel_f001", listingId: id })).toMatchObject({ status: "rejected", reason: "NOT_IN_TOWN" });
+    at(A, TOWN);
     at(B, FIELD);
-    expect(await buy(B, "buy_00006", id, 100)).toMatchObject({ status: "rejected", reason: "NOT_IN_TOWN" });
+    expect(await buy(B, "buy_00006", id, 100)).toMatchObject({ status: "done" });
     at(B, TOWN);
+    await town.devGrantCoins("more:a", A, 100_000);
+    await eco.devGrant("more:a", A, { [POTION]: 60 });
     const big = listingOf(await list(A, "list_00007", "item", POTION, 1_000_000));
     expect(await buy(B, "buy_00007", big, 1_000_000)).toMatchObject({ status: "rejected", reason: "NOT_ENOUGH_COINS" });
-    expect(await list(A, "list_00008", "item", POTION, 100, 50)).toMatchObject({ status: "rejected", reason: "NOT_ENOUGH_ITEMS" });
-    await town.devGrantCoins("more:a", A, 100_000);
-    await eco.devGrant("more:a", A, { [POTION]: 30 });
-    for (let i = 0; i < R.provisional.market.value.maxActiveListings - 2; i++) expect((await list(A, `list_m_${String(i).padStart(4, "0")}`, "item", POTION, 10)).status).toBe("done");
+    expect(await list(A, "list_00008", "item", POTION, 100, 500)).toMatchObject({ status: "rejected", reason: "NOT_ENOUGH_ITEMS" });
+    for (let i = 0; i < R.provisional.market.value.maxActiveListings - 1; i++) expect((await list(A, `list_m_${String(i).padStart(4, "0")}`, "item", POTION, 10)).status).toBe("done");
     expect(await list(A, "list_m_9999", "item", POTION, 10)).toMatchObject({ status: "rejected", reason: "TOO_MANY_LISTINGS" });
   });
 

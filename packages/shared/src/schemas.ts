@@ -517,6 +517,8 @@ export const ItemDefinitionSchema = z
     noSell: z.boolean().optional(),
     /** ห้ามเทรด (Nut 2026-10-07): never given in a direct trade between players. */
     noTrade: z.boolean().optional(),
+    /** ห้ามฝากคลัง (Nut 2026-10-08): never put into the account vault. */
+    noStore: z.boolean().optional(),
   })
   .strict()
   .superRefine((it, ctx) => {
@@ -606,9 +608,10 @@ export const EquipmentDefinitionSchema = z
     maxSigilSlots: z.number().int().min(0),
     affixPoolId: z.string().min(1),
     visualSetId: z.string().min(1),
-    /** ห้ามขาย / ห้ามเทรด for every piece of this kind (a single piece can also carry its own flags). */
+    /** ห้ามขาย / ห้ามเทรด / ห้ามฝากคลัง for every piece of this kind (a single piece can also carry its own flags). */
     noSell: z.boolean().optional(),
     noTrade: z.boolean().optional(),
+    noStore: z.boolean().optional(),
     /**
      * Refining (refine.ts): the fixed cost level that prices refining this piece (server data, never
      * the owner's level or a reduced requirement), and which base stats refining raises. A piece

@@ -300,8 +300,8 @@ export class SecretProgressStore {
         stmts.push(
           this.db
             .prepare(
-              `INSERT INTO equipment_instances (id, definition_id, owner_id, rarity, affixes_json, created_operation_id, created_at, no_sell, no_trade)
-               SELECT ?, ?, ?, 'COMMON', '[]', ?, ?, 1, 1 WHERE ${ours} ON CONFLICT DO NOTHING`,
+              `INSERT INTO equipment_instances (id, definition_id, owner_id, rarity, affixes_json, created_operation_id, created_at, no_sell, no_trade, no_store)
+               SELECT ?, ?, ?, 'COMMON', '[]', ?, ?, 1, 1, 1 WHERE ${ours} ON CONFLICT DO NOTHING`,
             )
             .bind(g.ref, def.baseEquipmentId, accountId, op, at, ...oursArgs),
         );

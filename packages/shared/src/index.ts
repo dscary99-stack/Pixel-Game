@@ -48,3 +48,4 @@ export * from "./flee";
 export * from "./trade";
 export * from "./account";
 export * from "./market";
+export * from "./vault";

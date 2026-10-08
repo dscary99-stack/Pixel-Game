@@ -28,6 +28,10 @@ const T = RULES.provisional.playerTrade.value;
 
 /** Thai for the refusals a player can actually meet here (the code stays for support). */
 const REASON_TH: Record<string, string> = {
+  SAME_ACCOUNT: "ตัวละครในบัญชีเดียวกันซื้อขาย/เทรดกันไม่ได้ ใช้คลังของบัญชีแทน",
+  NOT_STORABLE: "ของชิ้นนี้ห้ามฝากคลัง",
+  NOT_IN_VAULT: "ในคลังไม่มีของนี้แล้ว (ตัวละครอื่นอาจหยิบไปก่อน)",
+  VAULT_FULL: `คลังเต็ม (${RULES.provisional.vault.value.slots} ช่อง)`,
   NOT_IN_TOWN: "ต้องอยู่ในเมือง",
   IN_BATTLE: "ทำไม่ได้ระหว่างไฟต์",
   NOT_SELLABLE: "ของชิ้นนี้ห้ามขาย",
@@ -140,7 +144,11 @@ function tabs(parent: HTMLElement, names: readonly string[], onPick: (i: number)
 
 // ------------------------------------------------------------------ World Market
 
-export function marketPanel(api: CharacterApi, start: CharacterBundle): Promise<CharacterBundle> {
+/**
+ * `atNpc`: opened at the market NPC in town, where listing and taking back happen (Nut 2026-10-08);
+ * anywhere else the panel browses and buys only.
+ */
+export function marketPanel(api: CharacterApi, start: CharacterBundle, atNpc: boolean): Promise<CharacterBundle> {
   return new Promise((resolve) => {
     const { panel, close } = overlay();
     let bundle = start;
@@ -156,7 +164,7 @@ export function marketPanel(api: CharacterApi, start: CharacterBundle): Promise<
     actions.append(done);
     panel.append(
       el("h2", {}, "ตลาดโลก"),
-      el("div", { class: "pm-note" }, `ค่าวางขาย ${M.listingFeeBps / 100}% (ขั้นต่ำ ${M.minListingFee}) จ่ายตอนวาง ไม่คืน · ภาษีเมื่อขายได้ ${M.saleTaxBps / 100}% · วางได้ ${M.listingHours} ชม. · สูงสุด ${M.maxActiveListings} รายการ · ค่าทดลอง P23`),
+      el("div", { class: "pm-note" }, `ค่าวางขาย ${M.listingFeeBps / 100}% (ขั้นต่ำ ${M.minListingFee}) จ่ายตอนวาง ไม่คืน · ภาษีเมื่อขายได้ ${M.saleTaxBps / 100}% · วางได้ ${M.listingHours} ชม. · สูงสุด ${M.maxActiveListings} รายการ · ซื้อได้ทุกที่ วางขายและถอนคืนที่นายท่าเรือบุญ`),
       head,
     );
     const pickTab = tabs(panel, ["ซื้อ", "วางขาย", "ของที่ฉันวาง"], (i) => {
@@ -190,6 +198,8 @@ export function marketPanel(api: CharacterApi, start: CharacterBundle): Promise<
       li.append(el("span", { class: "pm-grow" }, `${assetText(l.asset)} · ${l.price.toLocaleString()} เหรียญ · ${l.mine ? "ของฉัน" : l.sellerName} · ${l.status === "active" ? timeLeft(l.expiresAt) : STATUS_TH[l.status]}${proceeds}`));
       if (l.mine && (l.status === "active" || l.status === "expired")) {
         const b = el("button", { type: "button" }, l.status === "expired" ? "รับคืน" : "ถอนออก");
+        b.disabled = !atNpc;
+        b.title = atNpc ? "" : "ถอนคืนที่นายท่าเรือบุญในเมือง";
         b.addEventListener("click", () => void act(async () => (await api.marketCancel(l.listingId), `ได้คืน: ${assetText(l.asset)} (ค่าวางขายไม่คืน)`)));
         li.append(b);
       } else if (!l.mine && l.status === "active") {
@@ -246,6 +256,7 @@ export function marketPanel(api: CharacterApi, start: CharacterBundle): Promise<
     };
 
     const drawSell = () => {
+      if (!atNpc) return void body.append(el("p", {}, "วางขายได้ที่นายท่าเรือบุญในเมือง (ที่นี่ดูและซื้อได้อย่างเดียว)"));
       const ul = el("ul", { class: "pm-list", "data-section": "sell" });
       for (const o of owned(bundle)) {
         const li = el("li", { "data-own": o.id });
@@ -505,5 +516,135 @@ export function tradePanel(api: CharacterApi, start: CharacterBundle): Promise<C
       }
     };
     pickTab(0);
+  });
+}
+
+// ------------------------------------------------------------------ account vault
+
+/**
+ * Account vault shared by every character of this login (Nut 2026-10-08). `atNpc`: opened at the vault
+ * NPC in town, where things go in and out; anywhere else it only shows what is inside.
+ */
+export function vaultPanel(api: CharacterApi, start: CharacterBundle, atNpc: boolean): Promise<CharacterBundle> {
+  return new Promise((resolve) => {
+    const { panel, close } = overlay();
+    let bundle = start;
+    let busy = false;
+    const head = el("div", { class: "pm-stats" });
+    const body = el("div");
+    const note = el("div", { class: "pm-note", role: "status" });
+    const error = el("div", { class: "pm-error", role: "alert" });
+    const done = el("button", { type: "button", class: "primary" }, "ปิด");
+    const actions = el("div", { class: "pm-actions" });
+    actions.append(done);
+    panel.append(
+      el("h2", {}, "คลังของบัญชี"),
+      el("div", { class: "pm-note" }, `ใช้ร่วมกันทุกตัวละครในบัญชีนี้ · ${RULES.provisional.vault.value.slots} ช่อง (ไอเทมชนิดละ 1 ช่อง อุปกรณ์ชิ้นละ 1 ช่อง เหรียญไม่กินช่อง) · ฝาก/ถอนที่ผู้ใหญ่พิมพ์ในเมือง · คู่ใจยังฝากไม่ได้`),
+      head,
+      body,
+      note,
+      error,
+      actions,
+    );
+    done.addEventListener("click", () => {
+      close();
+      resolve(bundle);
+    });
+    const act = async (f: () => Promise<string>) => {
+      if (busy) return;
+      busy = true;
+      error.textContent = "";
+      try {
+        note.textContent = await f();
+      } catch (e) {
+        error.textContent = errText(e);
+      } finally {
+        bundle = (await api.get().catch(() => null)) ?? bundle;
+        busy = false;
+        await draw();
+      }
+    };
+    const qtyBox = (max: number) => el("input", { type: "number", min: "1", max: String(max), value: String(max), "aria-label": "จำนวน", style: "width:64px" });
+    const clamp = (box: HTMLInputElement, max: number) => Math.max(1, Math.min(max, Math.floor(Number(box.value) || 1)));
+
+    const draw = async () => {
+      body.replaceChildren();
+      try {
+        const v = await api.vault();
+        head.textContent = `ในคลัง ${v.usedSlots}/${v.slots} ช่อง · เหรียญในคลัง ${v.coins.toLocaleString()} · เหรียญติดตัว ${bundle.coins.toLocaleString()}`;
+        if (!atNpc) body.append(el("p", {}, "ดูได้ทุกที่ ฝาก/ถอนที่ผู้ใหญ่พิมพ์ในเมือง"));
+        if (!v.shared) body.append(el("div", { class: "pm-note" }, "ตัวละครทดสอบนี้ไม่ได้อยู่ในบัญชีเข้าสู่ระบบ คลังจึงใช้ได้ตัวเดียว"));
+
+        // Coins in / out.
+        const coinRow = el("div", { class: "pm-choices" });
+        const amount = el("input", { type: "number", min: "1", placeholder: "จำนวนเหรียญ", "aria-label": "จำนวนเหรียญ", style: "width:140px" });
+        const cin = el("button", { type: "button" }, "ฝากเหรียญ");
+        const cout = el("button", { type: "button" }, "ถอนเหรียญ");
+        cin.disabled = cout.disabled = !atNpc;
+        const n = () => Math.max(0, Math.floor(Number(amount.value) || 0));
+        cin.addEventListener("click", () => void act(async () => (await api.vaultDeposit({ coins: n() }), `ฝาก ${n().toLocaleString()} เหรียญแล้ว`)));
+        cout.addEventListener("click", () => void act(async () => (await api.vaultWithdraw({ coins: n() }), `ถอน ${n().toLocaleString()} เหรียญแล้ว`)));
+        coinRow.append(amount, cin, cout);
+        body.append(coinRow);
+
+        // What is inside.
+        const inside = el("ul", { class: "pm-list", "data-section": "vault" });
+        for (const it of v.items) {
+          const li = el("li", { "data-vault-item": it.itemId });
+          li.append(el("span", { class: "pm-grow" }, `${it.name} ×${it.quantity}`));
+          const q = qtyBox(it.quantity);
+          const b = el("button", { type: "button" }, "ถอน");
+          b.disabled = !atNpc;
+          b.addEventListener("click", () => void act(async () => (await api.vaultWithdraw({ items: [{ itemId: it.itemId, quantity: clamp(q, it.quantity) }] }), `ถอน ${it.name} ×${clamp(q, it.quantity)}`)));
+          li.append(q, b);
+          inside.append(li);
+        }
+        for (const p of v.equipment) {
+          const li = el("li", { "data-vault-piece": p.equipmentId });
+          li.append(el("span", { class: "pm-grow" }, assetText(p)));
+          const b = el("button", { type: "button" }, "ถอน");
+          b.disabled = !atNpc;
+          b.addEventListener("click", () => void act(async () => (await api.vaultWithdraw({ equipmentIds: [p.equipmentId] }), `ถอน ${p.name}`)));
+          li.append(b);
+          inside.append(li);
+        }
+        if (v.items.length + v.equipment.length === 0) inside.append(el("li", {}, "คลังว่าง"));
+        body.append(el("h3", {}, "ในคลัง"), inside);
+
+        // What this character carries.
+        const carried = el("ul", { class: "pm-list", "data-section": "carried" });
+        for (const [id, q] of Object.entries(bundle.bag)) {
+          if (q <= 0) continue;
+          const def = itemDefs.get(id);
+          const li = el("li", { "data-item": id });
+          li.append(el("span", { class: "pm-grow" }, `${def?.name.th ?? id} ×${q}${def?.noStore ? " · ห้ามฝากคลัง" : ""}`));
+          if (!def?.noStore) {
+            const box = qtyBox(q);
+            const b = el("button", { type: "button" }, "ฝาก");
+            b.disabled = !atNpc;
+            b.addEventListener("click", () => void act(async () => (await api.vaultDeposit({ items: [{ itemId: id, quantity: clamp(box, q) }] }), `ฝาก ${def?.name.th ?? id} ×${clamp(box, q)}`)));
+            li.append(box, b);
+          }
+          carried.append(li);
+        }
+        for (const p of bundle.equipment) {
+          const def = equipmentDefs.get(p.definitionId);
+          const why = p.noStore ? "ห้ามฝากคลัง" : p.slot !== null ? "สวมอยู่" : p.lockState !== "free" ? "วางขาย/รอเทรด/อยู่ในไฟต์" : null;
+          const li = el("li", { "data-piece": p.id });
+          li.append(el("span", { class: "pm-grow" }, `${def?.name.th ?? p.definitionId}${p.refineLevel > 0 ? ` +${p.refineLevel}` : ""} [${RARITY_NAME_TH[p.rarity]}]${why === null ? "" : ` · ${why}`}`));
+          if (why === null) {
+            const b = el("button", { type: "button" }, "ฝาก");
+            b.disabled = !atNpc;
+            b.addEventListener("click", () => void act(async () => (await api.vaultDeposit({ equipmentIds: [p.id] }), `ฝาก ${def?.name.th ?? p.definitionId}`)));
+            li.append(b);
+          }
+          carried.append(li);
+        }
+        body.append(el("h3", {}, "ติดตัวตัวละครนี้"), carried);
+      } catch (e) {
+        error.textContent = errText(e);
+      }
+    };
+    void draw();
   });
 }

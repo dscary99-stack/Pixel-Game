@@ -53,11 +53,13 @@
  *   POST /account/deselect         back to the character screen
  *   GET  /market?kind=&q=&sort=&page=  World Market: open listings (anyone, anywhere) and your own listings
  *   POST /market/list              list an item stack, a piece or a companion (operationId, kind, assetId, quantity, price, expectedFee; in town)
- *   POST /market/buy               buy a listing at the shown price (operationId, listingId, expectedPrice; in town)
- *   POST /market/cancel            take your listing back; the fee is not refunded (operationId, listingId)
+ *   POST /market/buy               buy a listing at the shown price (operationId, listingId, expectedPrice; anywhere but a fight; not from your own account)
+ *   POST /market/cancel            take your listing back; the fee is not refunded (operationId, listingId; in town)
  *   GET  /trade                    your trade code, open offers to and from you, recent closed ones
  *   POST /trade/offer              offer an item trade or a companion trade to a trade code (operationId, kind, toCode, give, want; in town)
  *   POST /trade/accept|decline|cancel  answer an offer to you, or take back your own (operationId, offerId)
+ *   GET  /vault                    the account vault shared by this login's characters (anywhere)
+ *   POST /vault/deposit|withdraw   move items, pieces and coins in or out (operationId, items, equipmentIds, coins; in town)
  *   GET  /world/where              where the caller's character is saved (map + channel)
  *   GET  /world/:mapId/:channel    WebSocket into that Map Channel DO (walking, presence)
  *
@@ -105,6 +107,7 @@ import { JournalStore } from "./journal-store";
 import { NpcOrderStore } from "./npc-order-store";
 import { DisposalStore } from "./disposal-store";
 import { MarketStore, TradeStore } from "./exchange-store";
+import { VaultStore } from "./vault-store";
 import { SecretQuestStore, secretQuestKey } from "./secret-quest-store";
 import { SecretProgressStore } from "./secret-progress-store";
 import { FrontierStore, type FrontierBattlePort } from "./frontier-store";
@@ -133,6 +136,7 @@ const journalFor = (env: Env) => new JournalStore(env.DB, rulesFor(env), CONTENT
 const ordersFor = (env: Env) => new NpcOrderStore(env.DB, rulesFor(env), exampleNpcOrderRegistry());
 const exchangeContent = { items: CONTENT.items, equipment: CONTENT.equipment, species: CONTENT.species };
 const marketFor = (env: Env) => new MarketStore(env.DB, rulesFor(env), exchangeContent, TOWNS, (a) => charactersFor(env).syncLevels(a));
+const vaultFor = (env: Env) => new VaultStore(env.DB, rulesFor(env), exchangeContent, TOWNS);
 const tradeFor = (env: Env) => new TradeStore(env.DB, rulesFor(env), exchangeContent, TOWNS, (a) => charactersFor(env).syncLevels(a));
 const disposalFor = (env: Env) => new DisposalStore(env.DB, rulesFor(env), { equipment: CONTENT.equipment, affixPools: CONTENT.affixPools }, TOWNS);
 /** Floor fights go to their Battle DO like any other fight (create from a D1 reservation). */
@@ -181,7 +185,7 @@ export default {
     if (url.pathname.startsWith("/world/")) return worldRoute(request, env, url);
     if (url.pathname === "/character" || url.pathname.startsWith("/character/") || url.pathname.startsWith("/town/") || url.pathname.startsWith("/quests") || url.pathname === "/journal") return characterRoute(request, env, url);
     if (url.pathname === "/party" || url.pathname.startsWith("/party/")) return partyRoute(request, env, url);
-    if (url.pathname === "/market" || url.pathname.startsWith("/market/") || url.pathname === "/trade" || url.pathname.startsWith("/trade/")) return exchangeRoute(request, env, url);
+    if (url.pathname === "/market" || url.pathname.startsWith("/market/") || url.pathname === "/trade" || url.pathname.startsWith("/trade/") || url.pathname === "/vault" || url.pathname.startsWith("/vault/")) return exchangeRoute(request, env, url);
     if (url.pathname === "/frontier" || url.pathname.startsWith("/frontier/")) return frontierRoute(request, env, url);
     const m = url.pathname.match(/^\/battles\/([a-z0-9_:-]{1,80})(?:\/([a-z-]+))?$/);
     if (m === null) return json(404, { error: "NOT_FOUND" });
@@ -326,6 +330,10 @@ async function exchangeRoute(request: Request, env: Env, url: URL): Promise<Resp
     });
     return "error" in view ? json(400, { error: "INVALID_REQUEST", message: view.error }) : json(200, view);
   }
+  if (request.method === "GET" && url.pathname === "/vault") {
+    const view = await vaultFor(env).view(accountId);
+    return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
+  }
   if (request.method === "GET" && url.pathname === "/trade") {
     const view = await trade.view(accountId);
     return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
@@ -341,6 +349,8 @@ async function exchangeRoute(request: Request, env: Env, url: URL): Promise<Resp
     : url.pathname === "/trade/accept" ? await trade.accept(accountId, body)
     : url.pathname === "/trade/decline" ? await trade.close(accountId, body, "declined")
     : url.pathname === "/trade/cancel" ? await trade.close(accountId, body, "cancelled")
+    : url.pathname === "/vault/deposit" ? await vaultFor(env).deposit(accountId, body)
+    : url.pathname === "/vault/withdraw" ? await vaultFor(env).withdraw(accountId, body)
     : null;
   if (r === null) return json(404, { error: "NOT_FOUND" });
   if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : r.reason === "NO_CHARACTER" ? 404 : 409, { error: r.reason, message: r.message });

@@ -39,7 +39,7 @@ export const EXAMPLE_MAPS: MapDefinition[] = [
     spawns: [],
     // Village people from the story doc (each service has a person); EXAMPLE lines until the dialogue pass.
     npcs: [
-      { id: "npc:elder_pim", at: { x: 8, y: 9 }, name: { th: "ผู้ใหญ่พิมพ์" }, role: { th: "จุดเกิดและพักฟื้น" }, services: ["talk"], line: { th: "พักให้หายเหนื่อยก่อนนะหลาน สมัยข้ายังผูกตรา กวางรุ่งอรุณเคยมาดื่มน้ำที่บ่อนี้ทุกเช้า" } },
+      { id: "npc:elder_pim", at: { x: 8, y: 9 }, name: { th: "ผู้ใหญ่พิมพ์" }, role: { th: "จุดเกิด พักฟื้น และคลังของบัญชี" }, services: ["vault"], line: { th: "พักให้หายเหนื่อยก่อนนะหลาน สมัยข้ายังผูกตรา กวางรุ่งอรุณเคยมาดื่มน้ำที่บ่อนี้ทุกเช้า" } },
       { id: "npc:aunt_bua", at: { x: 5, y: 9 }, name: { th: "ป้าบัว" }, role: { th: "ร้านของใช้ รับซื้อของ" }, services: ["shop"], line: { th: "ยาสดใหม่จากสายไหมจ้ะ ข่าวจากเมืองไหนก็ถามป้าได้" } },
       { id: "npc:uncle_lek", at: { x: 10, y: 5 }, name: { th: "ลุงเหล็ก" }, role: { th: "ช่างอาวุธและเกราะ ตีบวก" }, services: ["refine", "craft", "equipment"], line: { th: "ผลึกแปลกๆ ที่ข้าเจอเมื่อสิบปีก่อน มันเรืองแสงตอนรอยแยกเปิด" } },
       { id: "npc:pi_kaew", at: { x: 15, y: 5 }, name: { th: "พี่แก้ว" }, role: { th: "ช่างเครื่องประดับ สุ่มออปชัน" }, services: ["equipment", "craft"], line: { th: "สักวันฉันจะไปเรียนที่เฮลิออสให้ได้ อย่าบอกพ่อนะ" } },

@@ -61,7 +61,7 @@ export type SpawnPoint = z.infer<typeof SpawnPointSchema>;
  * What a town NPC opens when clicked. Each one is a town service the server already gates to towns;
  * `talk` NPCs only speak (rest point, travel and lore tellers until those systems exist).
  */
-export const NPC_SERVICES = ["shop", "craft", "refine", "orders", "frontier", "rebirth", "skills", "equipment", "quests", "party", "team", "journal", "market", "trade", "talk"] as const;
+export const NPC_SERVICES = ["shop", "craft", "refine", "orders", "frontier", "rebirth", "skills", "equipment", "quests", "party", "team", "journal", "market", "trade", "vault", "talk"] as const;
 export type NpcService = (typeof NPC_SERVICES)[number];
 
 /**

@@ -72,12 +72,16 @@ export type ExchangeRejection =
   | "OWN_LISTING"
   | "NO_SUCH_PLAYER"
   | "SELF_TRADE"
+  | "SAME_ACCOUNT"
+  | "NOT_STORABLE"
+  | "NOT_IN_VAULT"
+  | "VAULT_FULL"
   | "LEVEL_INELIGIBLE"
   | "INVALID_TRADE"
   | "CHANGED";
 
 export type ExchangeResult<T> = { status: "done"; replayed: boolean; result: T } | { status: "rejected"; reason: ExchangeRejection; message: string };
-type Rejected = { status: "rejected"; reason: ExchangeRejection; message: string };
+export type Rejected = { status: "rejected"; reason: ExchangeRejection; message: string };
 
 export interface ListResult {
   listingId: string;
@@ -113,7 +117,7 @@ interface CharRow {
   level: number;
   trade_code: string | null;
 }
-interface PieceRow {
+export interface PieceRow {
   id: string;
   owner_id: string;
   definition_id: string;
@@ -126,6 +130,7 @@ interface PieceRow {
   protected: number;
   no_sell: number;
   no_trade: number;
+  no_store: number;
   worn: number;
 }
 interface PetRow {
@@ -172,14 +177,19 @@ interface OfferRow {
   to_name: string | null;
 }
 
-const OPEN_BATTLE = `EXISTS (SELECT 1 FROM battle_reservations WHERE account_id = ? AND status IN ('reserved', 'active'))`;
-const reject = (reason: ExchangeRejection, message: string): Rejected => ({ status: "rejected", reason, message });
-const marks = (n: number) => Array.from({ length: n }, () => "?").join(", ");
-const issues = (e: { issues: { path: PropertyKey[]; message: string }[] }) => e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
+/** Two play accounts belong to the same login (Nut 2026-10-08: they may not trade with each other). */
+export const SAME_LOGIN = `EXISTS (SELECT 1 FROM user_characters a JOIN user_characters b ON a.user_id = b.user_id WHERE a.account_id = ? AND b.account_id = ?)`;
+export const OPEN_BATTLE = `EXISTS (SELECT 1 FROM battle_reservations WHERE account_id = ? AND status IN ('reserved', 'active'))`;
+export const reject = (reason: ExchangeRejection, message: string): Rejected => ({ status: "rejected", reason, message });
+export const marks = (n: number) => Array.from({ length: n }, () => "?").join(", ");
+export const issues = (e: { issues: { path: PropertyKey[]; message: string }[] }) => e.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
 const addHours = (iso: string, h: number) => new Date(Date.parse(iso) + h * 3_600_000).toISOString();
 
-/** Shared by the market and the trade desk: the anchor, replay, guards and asset reads. */
-class ExchangeBase {
+/** Shared by the market, the trade desk and the vault: the anchor, replay, guards and asset reads. */
+export class ExchangeBase {
+  /** The anchor table of this store's requests. */
+  protected readonly opsTable: string = "exchange_operations";
+
   constructor(
     protected readonly db: SqlDb,
     protected readonly rules: RulesConfig,
@@ -208,6 +218,10 @@ class ExchangeBase {
     return (await this.db.prepare(`SELECT 1 AS x FROM battle_reservations WHERE account_id = ? AND status IN ('reserved', 'active')`).bind(accountId).first()) !== null;
   }
 
+  protected async sameLogin(a: string, b: string): Promise<boolean> {
+    return (await this.db.prepare(`SELECT 1 AS x WHERE ${SAME_LOGIN}`).bind(a, b).first()) !== null;
+  }
+
   protected async whereAndFight(accountId: string): Promise<Rejected | null> {
     if (!(await this.inTown(accountId))) return reject("NOT_IN_TOWN", "go to town first");
     if (await this.fighting(accountId)) return reject("IN_BATTLE", "finish your fight first");
@@ -232,7 +246,7 @@ class ExchangeBase {
     const { results } = await this.db
       .prepare(
         `SELECT e.id, e.owner_id, e.definition_id, e.rarity, e.refine_level, e.affixes_json, e.sigil_sockets_json, e.affix_pending_json,
-           e.lock_state, e.protected, e.no_sell, e.no_trade,
+           e.lock_state, e.protected, e.no_sell, e.no_trade, e.no_store,
            (SELECT COUNT(*) FROM character_equipment ce WHERE ce.equipment_instance_id = e.id) AS worn
          FROM equipment_instances e WHERE e.id IN (${marks(ids.length)})`,
       )
@@ -353,21 +367,21 @@ class ExchangeBase {
   // ------------------------------------------------------------------ anchor / replay
 
   protected ours(accountId: string, operationId: string, token: string) {
-    return { sql: `EXISTS (SELECT 1 FROM exchange_operations WHERE account_id = ? AND operation_id = ? AND token = ?)`, args: [accountId, operationId, token] as unknown[] };
+    return { sql: `EXISTS (SELECT 1 FROM ${this.opsTable} WHERE account_id = ? AND operation_id = ? AND token = ?)`, args: [accountId, operationId, token] as unknown[] };
   }
 
   protected anchor(accountId: string, operationId: string, kind: string, hash: string, token: string, result: unknown, guards: string[], args: unknown[]): SqlBound {
     return this.db
       .prepare(
-        `INSERT INTO exchange_operations (account_id, operation_id, kind, request_hash, token, result_json, created_at)
+        `INSERT INTO ${this.opsTable} (account_id, operation_id, kind, request_hash, token, result_json, created_at)
          SELECT ?, ?, ?, ?, ?, ?, ? WHERE ${guards.length === 0 ? "1" : guards.join(" AND ")} ON CONFLICT DO NOTHING`,
       )
       .bind(accountId, operationId, kind, hash, token, JSON.stringify(result), this.now(), ...args);
   }
 
-  private row(accountId: string, operationId: string) {
+  protected row(accountId: string, operationId: string) {
     return this.db
-      .prepare(`SELECT request_hash, token, result_json FROM exchange_operations WHERE account_id = ? AND operation_id = ?`)
+      .prepare(`SELECT request_hash, token, result_json FROM ${this.opsTable} WHERE account_id = ? AND operation_id = ?`)
       .bind(accountId, operationId)
       .first<{ request_hash: string; token: string; result_json: string }>();
   }
@@ -509,12 +523,24 @@ export class MarketStore extends ExchangeBase {
     const l = await this.listing(listingId);
     if (l === null || l.seller_id !== accountId) return reject("NOT_FOUND", "that listing is not yours");
     if (l.status !== "active") return reject("CLOSED", `that listing is already ${l.status}`);
+    // Taking a listing back is done at the market NPC (Nut 2026-10-08).
+    const where = await this.whereAndFight(accountId);
+    if (where !== null) return where;
 
     const token = crypto.randomUUID();
     const ours = this.ours(accountId, operationId, token);
     const at = this.now();
     const stmts: SqlBound[] = [
-      this.anchor(accountId, operationId, "market_cancel", hash, token, { listingId } satisfies CancelResult, [`EXISTS (SELECT 1 FROM market_listings WHERE id = ? AND seller_id = ? AND status = 'active')`], [listingId, accountId]),
+      this.anchor(
+        accountId,
+        operationId,
+        "market_cancel",
+        hash,
+        token,
+        { listingId } satisfies CancelResult,
+        [this.townGuard(), `NOT ${OPEN_BATTLE}`, `EXISTS (SELECT 1 FROM market_listings WHERE id = ? AND seller_id = ? AND status = 'active')`],
+        [accountId, ...this.townMapIds, accountId, listingId, accountId],
+      ),
       this.db.prepare(`UPDATE market_listings SET status = 'cancelled', closed_at = ? WHERE id = ? AND status = 'active' AND ${ours.sql}`).bind(at, listingId, ...ours.args),
     ];
     if (l.kind === "item") {
@@ -530,6 +556,7 @@ export class MarketStore extends ExchangeBase {
     await this.db.batch(stmts);
     return this.outcome(accountId, operationId, hash, token, async () => {
       const now = await this.listing(listingId);
+      if (now !== null && now.status === "active") return (await this.whereAndFight(accountId)) ?? reject("CHANGED", "something changed; reload and try again");
       return reject("CLOSED", `that listing is already ${now?.status ?? "gone"}`);
     });
   }
@@ -552,8 +579,9 @@ export class MarketStore extends ExchangeBase {
     if (l.expires_at <= at) return reject("EXPIRED", "that listing has expired");
     if (l.seller_id === accountId) return reject("OWN_LISTING", "that is your own listing; cancel it instead");
     if (l.price !== expectedPrice) return reject("COST_CHANGED", "the price is not what you were shown");
-    const where = await this.whereAndFight(accountId);
-    if (where !== null) return where;
+    if (await this.sameLogin(accountId, l.seller_id)) return reject("SAME_ACCOUNT", "characters of the same account cannot buy from each other; use the account vault");
+    // Buying works anywhere (Nut 2026-10-08), just not in the middle of a fight.
+    if (await this.fighting(accountId)) return reject("IN_BATTLE", "finish your fight first");
     if ((await this.coins(accountId)) < l.price) return reject("NOT_ENOUGH_COINS", `you need ${l.price} coins`);
     const asset = JSON.parse(l.snapshot_json) as AssetSnapshot;
     let minLevel = 1;
@@ -568,13 +596,13 @@ export class MarketStore extends ExchangeBase {
     const tax = Math.floor((l.price * l.tax_bps) / 10_000);
     const result: BuyResult = { listingId, price: l.price, asset };
     const guards = [
-      this.townGuard(),
       `NOT ${OPEN_BATTLE}`,
+      `NOT ${SAME_LOGIN}`,
       `EXISTS (SELECT 1 FROM market_listings WHERE id = ? AND status = 'active' AND expires_at > ? AND seller_id <> ? AND price = ?)`,
       `(SELECT COALESCE(SUM(delta), 0) FROM coin_ledger WHERE account_id = ?) >= ?`,
       `EXISTS (SELECT 1 FROM characters WHERE account_id = ? AND level >= ?)`,
     ];
-    const args = [accountId, ...this.townMapIds, accountId, listingId, at, accountId, l.price, accountId, l.price, accountId, minLevel];
+    const args = [accountId, accountId, l.seller_id, listingId, at, accountId, l.price, accountId, l.price, accountId, minLevel];
     const token = crypto.randomUUID();
     const ours = this.ours(accountId, operationId, token);
     const stmts: SqlBound[] = [
@@ -605,7 +633,7 @@ export class MarketStore extends ExchangeBase {
     return this.outcome(accountId, operationId, hash, token, async () => {
       const now = await this.listing(listingId);
       if (now !== null && now.status !== "active") return reject("CLOSED", `that listing is already ${now.status}`);
-      return (await this.whereAndFight(accountId)) ?? reject("CHANGED", "something changed; reload and try again");
+      return (await this.fighting(accountId)) ? reject("IN_BATTLE", "finish your fight first") : reject("CHANGED", "something changed; reload and try again");
     });
   }
 
@@ -729,6 +757,7 @@ export class TradeStore extends ExchangeBase {
     const target = await this.db.prepare(`SELECT account_id, name, level FROM characters WHERE trade_code = ?`).bind(toCode).first<{ account_id: string; name: string; level: number }>();
     if (target === null) return reject("NO_SUCH_PLAYER", "no player has that trade code");
     if (target.account_id === accountId) return reject("SELF_TRADE", "that is your own trade code");
+    if (await this.sameLogin(accountId, target.account_id)) return reject("SAME_ACCOUNT", "characters of the same account cannot trade; use the account vault");
     await this.syncLevels(target.account_id);
     const them = (await this.character(target.account_id))!;
     const where = await this.whereAndFight(accountId);
@@ -747,8 +776,8 @@ export class TradeStore extends ExchangeBase {
     const expiresAt = addHours(at, t.offerHours);
     const result: OfferResult = { offerId, expiresAt };
     const g = this.sideGuards(accountId, give);
-    const guards = [this.townGuard(), `NOT ${OPEN_BATTLE}`, `(SELECT COUNT(*) FROM trade_offers WHERE from_id = ? AND status = 'open') < ?`, ...g.sql];
-    const args = [accountId, ...this.townMapIds, accountId, accountId, t.maxOpenOffers, ...g.args];
+    const guards = [this.townGuard(), `NOT ${OPEN_BATTLE}`, `NOT ${SAME_LOGIN}`, `(SELECT COUNT(*) FROM trade_offers WHERE from_id = ? AND status = 'open') < ?`, ...g.sql];
+    const args = [accountId, ...this.townMapIds, accountId, accountId, target.account_id, accountId, t.maxOpenOffers, ...g.args];
     const token = crypto.randomUUID();
     const ours = this.ours(accountId, operationId, token);
     const view = { give: { coins: give.coins, assets: mine.snaps }, want: { coins: want.coins, assets: theirs.snaps } };
@@ -785,6 +814,7 @@ export class TradeStore extends ExchangeBase {
     const me = await this.character(accountId);
     const proposer = await this.character(o.from_id);
     if (me === null || proposer === null) return reject("NO_CHARACTER", "create a character first");
+    if (await this.sameLogin(accountId, o.from_id)) return reject("SAME_ACCOUNT", "characters of the same account cannot trade; use the account vault");
     const where = await this.whereAndFight(accountId);
     if (where !== null) return where;
     const give = JSON.parse(o.give_json) as TradeSide;
@@ -805,12 +835,13 @@ export class TradeStore extends ExchangeBase {
     const guards = [
       this.townGuard(),
       `NOT ${OPEN_BATTLE}`,
+      `NOT ${SAME_LOGIN}`,
       `EXISTS (SELECT 1 FROM trade_offers WHERE id = ? AND to_id = ? AND status = 'open' AND expires_at > ?)`,
       `EXISTS (SELECT 1 FROM characters WHERE account_id = ? AND level >= ?)`,
       `EXISTS (SELECT 1 FROM characters WHERE account_id = ? AND level >= ?)`,
       ...g.sql,
     ];
-    const args = [accountId, ...this.townMapIds, accountId, offerId, accountId, at, accountId, meNeed, o.from_id, themNeed, ...g.args];
+    const args = [accountId, ...this.townMapIds, accountId, accountId, o.from_id, offerId, accountId, at, accountId, meNeed, o.from_id, themNeed, ...g.args];
     const token = crypto.randomUUID();
     const ours = this.ours(accountId, operationId, token);
     const stmts: SqlBound[] = [

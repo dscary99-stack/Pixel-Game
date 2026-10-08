@@ -2,7 +2,7 @@
 // replays), another player finds and buys it (seller paid less the tax), two buyers race for one piece
 // (one wins), a Lv40 companion is refused to a Lv1 buyer (O01) and taken back, an item trade (potions +
 // a piece for coins) and a companion trade (Bond back to 0) by trade code, an item trade carrying a
-// companion is refused, and listing in the field is refused.
+// companion is refused, and in the field listing and taking back are refused while buying works.
 // Run `npm run db:migrate:local` and `npm run dev:server` first, then `npm run smoke:market`.
 import { PRODUCTION_RULES as R, marketFee, marketTax } from "@pmrpg/shared";
 import { api, connect, run, sleep, toField, type Msg } from "./smoke-lib";
@@ -101,16 +101,23 @@ const foxB = ((await me(b)).companions as Msg[]).find((m) => m.id === fox.id);
 out.companionTrade = { accept: ca.status, bond: foxB?.bond ?? null, owner: foxB === undefined ? "A" : "B" };
 if (foxB === undefined || (foxB.bond ?? 0) !== 0) fail("companion trade did not reset Bond");
 out.selfTrade = (await a("POST", "/trade/offer", { operationId: op("offer"), kind: "item", toCode: (await a("GET", "/trade")).body.myCode, give: { items: [{ itemId: "item:small_potion", quantity: 1 }] }, want: {} })).body.error;
+const fieldListing = (await a("POST", "/market/list", { operationId: op("list"), kind: "item", assetId: "item:small_potion", quantity: 2, price: 40, expectedFee: marketFee(R, 40) })).body.result.listingId as string;
 TA.sock.close();
+TB.sock.close();
 await sleep(300);
 
-// 7. Not in the field.
+// 7. Listing and taking back are in town (the NPC); browsing and buying work in the field (Nut 2026-10-08).
 const F = await toField(A);
 await F.wait((m) => m.t === "packs");
-out.inField = (await a("POST", "/market/list", { operationId: op("list"), kind: "item", assetId: "item:small_potion", quantity: 1, price: 10, expectedFee: marketFee(R, 10) })).body.error;
+out.listInField = (await a("POST", "/market/list", { operationId: op("list"), kind: "item", assetId: "item:small_potion", quantity: 1, price: 10, expectedFee: marketFee(R, 10) })).body.error;
+out.cancelInField = (await a("POST", "/market/cancel", { operationId: op("cancel"), listingId: fieldListing })).body.error;
 out.browseInField = (await a("GET", "/market")).status;
+const FB = await toField(B);
+await FB.wait((m) => m.t === "packs");
+out.buyInField = (await b("POST", "/market/buy", { operationId: op("buy"), listingId: fieldListing, expectedPrice: 40 })).status;
+if (out.listInField !== "NOT_IN_TOWN" || out.cancelInField !== "NOT_IN_TOWN" || out.buyInField !== 200) fail("field rules did not hold");
 F.sock.close();
-TB.sock.close();
+FB.sock.close();
 TC.sock.close();
 console.log(JSON.stringify(out, null, 1));
 process.exit(0);

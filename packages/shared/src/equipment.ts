@@ -168,6 +168,8 @@ export interface EquipmentView {
   /** ห้ามขาย / ห้ามเทรด (market.ts): from the definition or on this piece. */
   noSell?: boolean;
   noTrade?: boolean;
+  /** ห้ามฝากคลัง (vault.ts). */
+  noStore?: boolean;
   /** Bumped by every refine attempt; a refine request names the version it saw. */
   version?: number;
 }
