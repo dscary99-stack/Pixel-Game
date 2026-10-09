@@ -7,11 +7,17 @@
  * - Every listing costs more than the NPC pays back (`vendorPrice`), so buying and selling to the
  *   NPC is never a profit loop (chapter 14 §7). Boss capture items are not sold (chapter 07 §5).
  * - The starter kit is granted once per character, in the same batch that creates it.
+ * - An armory (`gear`) sells plain equipment by level band (Nut 2026-10-09): always an ordinary piece
+ *   with no random options, made when bought; the price is above what the NPC pays back for it and
+ *   what salvaging it gives, so buying is never a profit loop either.
  * Shops, prices and the kit are EXAMPLE content / P12 assumptions.
  */
 import { z } from "zod";
 import { OperationIdSchema } from "./character";
-import { ItemId, type ItemDefinition, type SpeciesDefinition } from "./schemas";
+import { ItemId, type AffixPool, type EquipmentDefinition, type ItemDefinition, type SpeciesDefinition } from "./schemas";
+import { gearSellPrice, salvageYield } from "./disposal";
+import { EXAMPLE_EQUIPMENT, SHOP_EQUIPMENT } from "./content/equipment";
+import type { RulesConfig } from "./rules";
 
 const meta = { version: 1, status: "draft", example: true } as const;
 
@@ -26,9 +32,12 @@ export const ShopDefinitionSchema = z
     name: z.object({ th: z.string().min(1), en: z.string().min(1).optional() }).strict(),
     /** The town map the shop stands in; buying needs the player there. */
     mapId: z.string().regex(/^map:[a-z0-9_]+$/),
-    listings: z.array(z.object({ itemId: ItemId, price: z.number().int().min(1) }).strict()).min(1).max(40),
+    listings: z.array(z.object({ itemId: ItemId, price: z.number().int().min(1) }).strict()).max(40),
+    /** Equipment sold here (an armory): plain pieces, made when bought. */
+    gear: z.array(z.object({ definitionId: z.string().regex(/^equip:[a-z0-9_]+$/), price: z.number().int().min(1) }).strict()).max(80).optional(),
   })
-  .strict();
+  .strict()
+  .refine((s) => s.listings.length + (s.gear?.length ?? 0) > 0, "a shop sells something");
 export type ShopDefinition = z.infer<typeof ShopDefinitionSchema>;
 
 export const BuyRequestSchema = z
@@ -57,6 +66,37 @@ export function buyQuote(shop: ShopDefinition, lines: BuyRequest["lines"]): BuyQ
   return { ok: true, lines: out, total: out.reduce((n, l) => n + l.coins, 0) };
 }
 
+export const GearBuyRequestSchema = z
+  .object({
+    operationId: OperationIdSchema,
+    shopId: ShopId,
+    definitionId: z.string().regex(/^equip:[a-z0-9_]+$/),
+    quantity: z.number().int().min(1).max(5),
+    /** The total the player was shown; a different total now is refused (COST_CHANGED). */
+    expectedTotal: z.number().int().min(0),
+  })
+  .strict();
+export type GearBuyRequest = z.infer<typeof GearBuyRequestSchema>;
+
+export type GearBuyQuote = { ok: true; price: number; total: number } | { ok: false; code: "NOT_SOLD_HERE"; message: string };
+
+export function gearBuyQuote(shop: ShopDefinition, definitionId: string, quantity: number): GearBuyQuote {
+  const listing = shop.gear?.find((g) => g.definitionId === definitionId);
+  if (listing === undefined) return { ok: false, code: "NOT_SOLD_HERE", message: `${shop.name.th} does not sell ${definitionId}` };
+  return { ok: true, price: listing.price, total: listing.price * quantity };
+}
+
+/** The armory's shelf grouped by level band (required level), lowest first. */
+export function gearBands(shop: ShopDefinition, equipment: ReadonlyMap<string, EquipmentDefinition>): { level: number; pieces: { def: EquipmentDefinition; price: number }[] }[] {
+  const by = new Map<number, { def: EquipmentDefinition; price: number }[]>();
+  for (const g of shop.gear ?? []) {
+    const def = equipment.get(g.definitionId);
+    if (def === undefined) continue;
+    by.set(def.requiredLevel, [...(by.get(def.requiredLevel) ?? []), { def, price: g.price }]);
+  }
+  return [...by].sort(([a], [b]) => a - b).map(([level, pieces]) => ({ level, pieces }));
+}
+
 export interface ShopIssue {
   shopId: string;
   message: string;
@@ -68,9 +108,24 @@ export function validateShops(
   items: ReadonlyMap<string, ItemDefinition>,
   species: ReadonlyMap<string, SpeciesDefinition>,
   townMapIds: readonly string[],
+  gear?: { rules: RulesConfig; equipment: ReadonlyMap<string, EquipmentDefinition>; pools: ReadonlyMap<string, AffixPool> },
 ): ShopIssue[] {
   const issues: ShopIssue[] = [];
   for (const s of shops) {
+    for (const g of s.gear ?? []) {
+      const def = gear?.equipment.get(g.definitionId);
+      if (gear === undefined || def === undefined) {
+        issues.push({ shopId: s.id, message: `unknown equipment ${g.definitionId}` });
+        continue;
+      }
+      // Sold ordinary (COMMON): selling back or salvaging it must pay less than it cost.
+      const sell = gearSellPrice(gear.rules, def, "COMMON");
+      const pool = gear.pools.get(def.affixPoolId);
+      const y = pool === undefined ? null : salvageYield(gear.rules, def, pool, "COMMON");
+      const salvage = y === null ? 0 : (items.get(y.itemId)?.vendorPrice ?? 0) * y.quantity;
+      if (g.price <= Math.max(sell, salvage)) issues.push({ shopId: s.id, message: `${g.definitionId} sells for ${g.price} but pays back ${Math.max(sell, salvage)}` });
+    }
+    if (new Set((s.gear ?? []).map((g) => g.definitionId)).size !== (s.gear ?? []).length) issues.push({ shopId: s.id, message: "a piece is listed twice" });
     const parsed = ShopDefinitionSchema.safeParse(s);
     if (!parsed.success) issues.push({ shopId: s.id, message: parsed.error.issues.map((i) => i.message).join("; ") });
     if (!townMapIds.includes(s.mapId)) issues.push({ shopId: s.id, message: `${s.mapId} is not a town` });
@@ -112,6 +167,26 @@ export const EXAMPLE_SHOPS: ShopDefinition[] = [
     ],
   },
 ];
+
+/**
+ * EXAMPLE price for a piece at the armory (P12 draft): weapons and body armour 40 + 15 × level, the
+ * rest 30 + 10 × level. Lv1 sword 55, Lv40 bow 640.
+ */
+export function exampleGearPrice(def: Pick<EquipmentDefinition, "category" | "requiredLevel">): number {
+  const big = def.category === "WEAPON" || def.category === "ARMOR";
+  return big ? 40 + 15 * def.requiredLevel : 30 + 10 * def.requiredLevel;
+}
+
+const ARMORY_LV1 = ["equip:wooden_sword", "equip:training_bow", "equip:apprentice_staff", "equip:cloth_tunic"];
+
+EXAMPLE_SHOPS.push({
+  id: "shop:dawn_armory",
+  ...meta,
+  name: { th: "โรงตีเหล็กลุงเหล็ก" },
+  mapId: "map:dawn_town",
+  listings: [],
+  gear: [...ARMORY_LV1.map((id) => EXAMPLE_EQUIPMENT.find((d) => d.id === id)!), ...SHOP_EQUIPMENT].map((d) => ({ definitionId: d.id, price: exampleGearPrice(d) })),
+});
 
 export const exampleShopRegistry = (): Map<string, ShopDefinition> => new Map(EXAMPLE_SHOPS.map((s) => [s.id, s]));
 

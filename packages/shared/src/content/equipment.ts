@@ -83,5 +83,41 @@ export const EXAMPLE_EQUIPMENT: EquipmentDefinition[] = [
   equip("equip:ember_fang_dagger", "มีดเขี้ยวสะเก็ด", "WEAPON", 5, { PATK: 14, CRIT_PCT: 3 }, 2, { weaponKind: "physical_melee", handedness: "one_hand" }),
 ];
 
+/**
+ * EXAMPLE basic gear sold at the town armory (shop.ts `gear`, Nut 2026-10-09: basic weapons and armor
+ * by level band). One set per band: a weapon of each kind, body armour, a cap, boots and a shield.
+ * Plain on purpose: weaker than drops and crafted pieces of the same level, and always ordinary
+ * (no random options) so the shop never replaces hunting. Bands, stats and prices are P12 drafts.
+ */
+export const SHOP_GEAR_BANDS = [
+  { level: 1, tier: "" },
+  { level: 10, tier: "สำริด" },
+  { level: 20, tier: "เหล็ก" },
+  { level: 30, tier: "เหล็กกล้า" },
+  { level: 40, tier: "เงินยวง" },
+] as const;
+
+function shopSet(level: number, tier: string): EquipmentDefinition[] {
+  const L = level;
+  const slug = (k: string) => `equip:shop_${k}_${L}` as EquipmentDefinition["id"];
+  const pieces: EquipmentDefinition[] = [
+    equip(slug("wand"), tier === "" ? "คทาฝึกหัด" : `คทา${tier}`, "WEAPON", L, { SUPPORT: 5 + L, MP: 5 + L }, 1, { weaponKind: "support", handedness: "one_hand" }),
+    equip(slug("cap"), tier === "" ? "หมวกผ้า" : `หมวก${tier}`, "HEAD_TOP", L, { MDEF: 2 + Math.floor(L / 2) }, 1),
+    equip(slug("boots"), tier === "" ? "รองเท้าผ้า" : `รองเท้า${tier}`, "FEET", L, { PDEF: 2 + Math.floor(L * 0.3), SPD: 1 + Math.floor(L / 20) }, 1),
+    equip(slug("shield"), tier === "" ? "โล่ไม้" : `โล่${tier}`, "OFFHAND", L, { PDEF: 4 + Math.floor(L * 0.6), HP: 20 + 4 * L }, 1, { offhandKind: "shield" }),
+  ];
+  // The Lv1 sword, bow, staff and shirt are the starter pieces already above.
+  if (L === 1) return pieces;
+  return [
+    equip(slug("sword"), `ดาบ${tier}`, "WEAPON", L, { PATK: 6 + L }, 1, { weaponKind: "physical_melee", handedness: "one_hand" }),
+    equip(slug("bow"), `ธนู${tier}`, "WEAPON", L, { PATK: 10 + Math.floor(L * 1.5), ACCURACY_PCT: 3 }, 1, { weaponKind: "physical_ranged", handedness: "two_hand" }),
+    equip(slug("staff"), `ไม้เท้า${tier}`, "WEAPON", L, { MATK: 12 + Math.floor(L * 1.5), MP: 10 + L }, 1, { weaponKind: "magic", handedness: "two_hand" }),
+    equip(slug("armor"), `เสื้อเกราะ${tier}`, "ARMOR", L, { PDEF: 4 + Math.floor(L * 0.8), HP: 30 + 6 * L }, 1),
+    ...pieces,
+  ];
+}
+
+export const SHOP_EQUIPMENT: EquipmentDefinition[] = SHOP_GEAR_BANDS.flatMap((b) => shopSet(b.level, b.tier));
+
 /** DEV ONLY: equipment every dev account starts with. */
 export const DEV_STARTER_EQUIPMENT = ["equip:wooden_sword", "equip:training_bow", "equip:apprentice_staff", "equip:cloth_tunic"] as const;

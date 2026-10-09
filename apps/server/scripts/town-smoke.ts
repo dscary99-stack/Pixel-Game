@@ -45,6 +45,14 @@ const bought = await http("POST", "/town/buy", buyReq);
 out.bought = { total: bought.body.result?.total, coins: bought.body.coins, retry: (await http("POST", "/town/buy", buyReq)).body.replayed };
 out.buyWrongTotal = (await http("POST", "/town/buy", { ...buyReq, operationId: `buy2_${run}`, expectedTotal: 1 })).body.error;
 out.buyNotListed = (await http("POST", "/town/buy", { ...buyReq, operationId: `buy3_${run}`, lines: [{ itemId: "item:crab_shell", quantity: 1 }], expectedTotal: 0 })).body.error;
+// Armory: a plain Lv1 cap (ordinary, no options) for the listed price; a retry makes no second piece.
+const gearReq = { operationId: `gear_${run}`, shopId: "shop:dawn_armory", definitionId: "equip:shop_cap_1", quantity: 1, expectedTotal: 40 };
+const gear1 = await http("POST", "/town/buy-gear", gearReq);
+const gear2 = await http("POST", "/town/buy-gear", gearReq);
+const caps = (await http("GET", "/character")).body.equipment.filter((e: Msg) => e.definitionId === "equip:shop_cap_1");
+out.armory = { ids: gear1.body.result?.equipmentIds, coins: gear1.body.coins, retry: gear2.body.replayed, owned: caps.map((c: Msg) => `${c.rarity} ${c.affixes.length}`) };
+if (caps.length !== 1 || caps[0].rarity !== "COMMON" || caps[0].affixes.length !== 0 || gear2.body.replayed !== true) throw new Error(`armory: ${JSON.stringify(out.armory)}`);
+out.armoryWrongTotal = (await http("POST", "/town/buy-gear", { ...gearReq, operationId: `gear2_${run}`, expectedTotal: 1 })).body.error;
 // Affix reroll (chapter 05 §3): a dev piece with two affixes, pay, see the new roll, keep it.
 await http("POST", "/dev/grant", {
   operationId: `devg_${run}`,

@@ -33,6 +33,7 @@
  *   POST /town/refine              one refine attempt (operationId, equipmentId, expectedLevel, expectedVersion, wardItemId|null, expectedCost)
  *   GET  /town/refine/receipt?operationId=  the stored receipt of one attempt (roll, outcome, paid)
  *   POST /town/buy                 buy from a town shop at the shown total (operationId, shopId, lines, expectedTotal)
+ *   POST /town/buy-gear            buy plain equipment at an armory (operationId, shopId, definitionId, quantity, expectedTotal)
  *   POST /town/rebirth             companion Rebirth at the town NPC (operationId, companionId, expectedStage)
  *   POST /town/rebirth/branch      switch a reached Rebirth stage's variant branch for coins (operationId, companionId, stage, expectedBranch, branch, expectedCost)
  *   POST /town/skill               train one companion skill a level (operationId, companionId, skillId, expectedLevel)
@@ -512,6 +513,7 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
   if (request.method === "POST" && url.pathname === "/character/equipment/affix/choose") return serviceReply(env, accountId, await townFor(env).chooseAffix(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/craft") return serviceReply(env, accountId, await townFor(env).craft(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/buy") return serviceReply(env, accountId, await townFor(env).buy(accountId, body));
+  if (request.method === "POST" && url.pathname === "/town/buy-gear") return serviceReply(env, accountId, await townFor(env).buyGear(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/sell") return serviceReply(env, accountId, await townFor(env).sell(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/rebirth") return serviceReply(env, accountId, await townFor(env).rebirth(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/rebirth/branch") return serviceReply(env, accountId, await townFor(env).changeRebirthBranch(accountId, body));

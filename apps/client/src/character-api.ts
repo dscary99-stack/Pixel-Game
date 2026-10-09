@@ -107,6 +107,11 @@ export class CharacterApi {
     return this.call<{ coins: number; result: { total: number } }>("POST", "/town/sell", { operationId: opId("sell"), lines });
   }
 
+  /** One id per tap, made by the caller, so a retried tap never buys twice. */
+  buyGear(operationId: string, shopId: string, definitionId: string, quantity: number, expectedTotal: number) {
+    return this.call<{ coins: number; result: { definitionId: string; equipmentIds: string[]; total: number } }>("POST", "/town/buy-gear", { operationId, shopId, definitionId, quantity, expectedTotal });
+  }
+
   buy(shopId: string, lines: { itemId: string; quantity: number }[], expectedTotal: number) {
     return this.call<{ coins: number; result: { total: number } }>("POST", "/town/buy", { operationId: opId("buy"), shopId, lines, expectedTotal });
   }

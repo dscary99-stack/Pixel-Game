@@ -89,3 +89,46 @@ describe("buying from the NPC shop", () => {
     expect(await eco.balance(A, "item:armor_crab_capture")).toBe(1);
   });
 });
+
+describe("buying gear at the armory", () => {
+  const ARMORY = "shop:dawn_armory";
+  const pieces = () => db.prepare("SELECT id, definition_id AS d, rarity, affixes_json AS a FROM equipment_instances WHERE owner_id = ? AND id LIKE 'eq:shop:%' ORDER BY id").all(A) as { id: string; d: string; rarity: string; a: string }[];
+  const buyGear = (operationId: string, definitionId: string, quantity: number, expectedTotal: number) => town.buyGear(A, { operationId, shopId: ARMORY, definitionId, quantity, expectedTotal });
+  beforeEach(async () => {
+    await store.create(A, create);
+    at(A, TOWN);
+    db.prepare("INSERT INTO coin_ledger (operation_id, line_no, account_id, delta, reason, created_at) VALUES ('grant', 0, ?, 900, 'test', 't')").run(A);
+  });
+
+  it("makes plain ordinary pieces for the listed price, once per operation id (raced retries included)", async () => {
+    const r = await Promise.all([buyGear("gear_00001", "equip:shop_sword_10", 2, 380), buyGear("gear_00001", "equip:shop_sword_10", 2, 380)]);
+    expect(r.every((x) => x.status === "done")).toBe(true);
+    expect(await buyGear("gear_00001", "equip:shop_sword_10", 2, 380)).toMatchObject({ status: "done", replayed: true, result: { total: 380 } });
+    expect(pieces()).toEqual([
+      expect.objectContaining({ d: "equip:shop_sword_10", rarity: "COMMON", a: "[]" }),
+      expect.objectContaining({ d: "equip:shop_sword_10", rarity: "COMMON", a: "[]" }),
+    ]);
+    expect(await town.coins(A)).toBe(STARTER_KIT.coins + 900 - 380);
+    expect(await buyGear("gear_00001", "equip:shop_sword_10", 1, 190)).toMatchObject({ reason: "PAYLOAD_MISMATCH" });
+  });
+
+  it("refuses a changed total, unlisted pieces, too few coins, outside town and in a fight, writing nothing", async () => {
+    expect(await buyGear("gear_00002", "equip:shop_sword_10", 1, 100)).toMatchObject({ reason: "COST_CHANGED" });
+    expect(await buyGear("gear_00003", "equip:ember_fang_dagger", 1, 0)).toMatchObject({ reason: "NOT_SOLD_HERE" });
+    expect(await buyGear("gear_00004", "equip:shop_bow_40", 2, 1280)).toMatchObject({ reason: "INSUFFICIENT_COINS" });
+    at(A, "map:dawn_field");
+    expect(await buyGear("gear_00005", "equip:shop_cap_1", 1, 40)).toMatchObject({ reason: "NOT_IN_TOWN" });
+    at(A, TOWN);
+    await eco.reserve({ reservationId: "res:x", accountId: A, battleId: "battle:x", bag: {}, companionIds: [] });
+    expect(await buyGear("gear_00006", "equip:shop_cap_1", 1, 40)).toMatchObject({ reason: "IN_BATTLE" });
+    expect(pieces()).toEqual([]);
+    expect(await town.coins(A)).toBe(STARTER_KIT.coins + 900);
+  });
+
+  it("two purchases racing for the same last coins: only one is charged", async () => {
+    const r = await Promise.all(["gear_race1", "gear_race2"].map((op) => buyGear(op, "equip:shop_armor_40", 1, 640)));
+    expect(r.map((x) => x.status).sort()).toEqual(["done", "rejected"]);
+    expect(pieces()).toHaveLength(1);
+    expect(await town.coins(A)).toBe(STARTER_KIT.coins + 900 - 640);
+  });
+});

@@ -24,6 +24,7 @@ import {
   type Profession,
   type Recipe,
   EXAMPLE_SHOPS,
+  gearBands,
   exampleMapRegistry,
   EFFECT_HIT_NAME_TH,
   EFFECT_RES_NAME_TH,
@@ -761,6 +762,80 @@ export function teamPanel(api: CharacterApi, start: CharacterBundle): Promise<Ch
  * item's vendorPrice; the server checks the bag, the location and the price again.
  */
 const SHOP = EXAMPLE_SHOPS[0]!;
+const ARMORY = EXAMPLE_SHOPS.find((x) => x.gear !== undefined)!;
+const WEAPON_KIND_TH: Record<string, string> = { physical_melee: "อาวุธประชิด", physical_ranged: "อาวุธระยะไกล (สองมือ)", magic: "อาวุธเวท (สองมือ)", support: "อาวุธซัพพอร์ต" };
+
+/**
+ * Town armory (Nut 2026-10-09): plain gear by level band, always ordinary with no random options.
+ * The band at or below the character's level opens first; higher bands can be bought ahead.
+ */
+export function armoryPanel(api: CharacterApi, start: CharacterBundle): Promise<CharacterBundle> {
+  return new Promise((resolve) => {
+    const { panel, close } = overlay();
+    let bundle = start;
+    let busy = false;
+    const body = el("div");
+    const note = el("div", { class: "pm-note" });
+    const error = el("div", { class: "pm-error", role: "alert" });
+    const actions = el("div", { class: "pm-actions" });
+    const done = el("button", { type: "button", class: "primary" }, "ปิด");
+    actions.append(done);
+    panel.append(el("h2", {}, ARMORY.name.th), body, note, error, actions);
+    done.addEventListener("click", () => {
+      close();
+      resolve(bundle);
+    });
+    const bands = gearBands(ARMORY, equipmentDefs);
+    const mine = [...bands].reverse().find((b) => b.level <= bundle.character.level)?.level ?? bands[0]?.level ?? 1;
+    let shown = mine;
+    const buy = async (def: EquipmentDefinition, price: number) => {
+      if (busy) return;
+      if (!window.confirm(`ซื้อ${def.name.th} (Lv${def.requiredLevel}) ${price} เหรียญ?
+เป็นของธรรมดา ไม่มีออปชัน`)) return;
+      busy = true;
+      error.textContent = "";
+      try {
+        await api.buyGear(`gear_${crypto.randomUUID().replace(/-/g, "")}`, ARMORY.id, def.id, 1, price);
+        note.textContent = `ซื้อ${def.name.th}แล้ว (−${price} เหรียญ) อยู่ในกระเป๋าอุปกรณ์`;
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+      } finally {
+        bundle = (await api.get().catch(() => null)) ?? bundle;
+        busy = false;
+        draw();
+      }
+    };
+    const draw = () => {
+      body.replaceChildren();
+      body.append(el("div", { class: "pm-stats" }, `เหรียญ ${bundle.coins.toLocaleString()} · เลเวลตัวละคร ${bundle.character.level}`));
+      const tabs = el("div", { class: "pm-actions" });
+      for (const b of bands) {
+        const t = el("button", { type: "button", "data-band": String(b.level), ...(b.level === shown ? { class: "primary" } : {}) }, `Lv${b.level}+`);
+        t.addEventListener("click", () => {
+          shown = b.level;
+          draw();
+        });
+        tabs.append(t);
+      }
+      body.append(tabs);
+      const band = bands.find((b) => b.level === shown);
+      const shelf = el("ul", { class: "pm-list" });
+      for (const { def, price } of band?.pieces ?? []) {
+        const li = el("li", { "data-gear": def.id });
+        const kind = def.weaponKind !== undefined ? WEAPON_KIND_TH[def.weaponKind] ?? def.weaponKind : SLOT_TH[def.category as EquipSlot] ?? def.category;
+        const owned = bundle.equipment.filter((e) => e.definitionId === def.id).length;
+        li.append(el("span", { class: "pm-grow" }, `${def.name.th} · ${kind} · Lv${def.requiredLevel} · ${statLine(def.baseStats)} · ${price} เหรียญ${owned > 0 ? ` · มีแล้ว ${owned}` : ""}`));
+        const b = el("button", { type: "button" }, `ซื้อ (−${price})`);
+        b.disabled = bundle.coins < price;
+        b.addEventListener("click", () => void buy(def, price));
+        li.append(b);
+        shelf.append(li);
+      }
+      body.append(shelf, el("div", { class: "pm-note" }, "ของร้านเป็นของธรรมดา ไม่มีออปชันสุ่ม ใส่ได้เมื่อถึงเลเวล · ราคาเป็นตัวอย่าง (P12)"));
+    };
+    draw();
+  });
+}
 
 export function shopPanel(api: CharacterApi, start: CharacterBundle): Promise<CharacterBundle> {
   return new Promise((resolve) => {

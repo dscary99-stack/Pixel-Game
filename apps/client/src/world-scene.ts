@@ -31,7 +31,7 @@ import {
 } from "@pmrpg/shared";
 import { ELEMENT_COLOR, type BattleScene } from "./battle-scene";
 import type { CharacterApi, CharacterBundle } from "./character-api";
-import { autoHuntPanel, practicePanel, craftPanel, refinePanel, frontierPanel, journalPanel, ordersPanel, questPanel, titleName, equipmentPanel, partyPanel, rebirthPanel, secretQuestPanel, shopPanel, skillPanel, statsPanel, teamPanel, vitals } from "./character-ui";
+import { autoHuntPanel, armoryPanel, practicePanel, craftPanel, refinePanel, frontierPanel, journalPanel, ordersPanel, questPanel, titleName, equipmentPanel, partyPanel, rebirthPanel, secretQuestPanel, shopPanel, skillPanel, statsPanel, teamPanel, vitals } from "./character-ui";
 import { mailPanel, marketPanel, tradePanel, vaultPanel } from "./market-ui";
 import type { WorldTransport } from "./world-transport";
 
@@ -57,6 +57,7 @@ const NPC_SERVICE_TH: Record<Exclude<NpcService, "talk">, string> = {
   trade: "แลกเปลี่ยนกับผู้เล่น",
   vault: "คลังของบัญชี",
   practice: "ลานทดสอบ (ลองสู้บอส)",
+  armory: "ร้านอุปกรณ์",
 };
 
 const TILE_COLOR: Record<(typeof TILE_LEGEND)[TileChar]["kind"], number> = {
@@ -188,6 +189,7 @@ export class WorldScene extends Phaser.Scene {
     kb.on("keydown-V", () => void this.openVault());
     kb.on("keydown-N", () => void this.openMail());
     kb.on("keydown-Y", () => void this.openPractice());
+    kb.on("keydown-U", () => void this.openArmory());
     if (this.api !== null) {
       const button = (x: number, label: string, open: () => Promise<void>) =>
         this.add
@@ -205,6 +207,7 @@ export class WorldScene extends Phaser.Scene {
         ["ทีมคู่ใจ (T)", () => this.openTeam()],
         ["อุปกรณ์ (E)", () => this.openEquipment()],
         ["ร้าน (B)", () => this.openShop()],
+        ["อุปกรณ์ร้าน (U)", () => this.openArmory()],
         ["สร้างของ (F)", () => this.openCraft()],
         ["งานสั่ง (O)", () => this.openOrders()],
         ["หอคอย (G)", () => this.openFrontier()],
@@ -572,6 +575,14 @@ export class WorldScene extends Phaser.Scene {
   }
 
   /** NPC shop; only in town (the server checks the stored position too). */
+  /** Town armory: plain gear by level band; only in town (the server checks the stored position too). */
+  private async openArmory() {
+    if (this.map !== null && this.map.kind !== "town") return this.flash("ร้านอุปกรณ์อยู่ในเมือง");
+    return this.withPanel("ซื้อของได้นอกไฟต์เท่านั้น", async (api, bundle) => {
+      await armoryPanel(api, bundle);
+    });
+  }
+
   private async openShop() {
     if (this.map !== null && this.map.kind !== "town") return this.flash("ร้านอยู่ในเมือง");
     return this.withPanel("ขายของได้นอกไฟต์เท่านั้น", async (api, bundle) => {
@@ -812,6 +823,7 @@ export class WorldScene extends Phaser.Scene {
       trade: () => this.openTrade(),
       vault: () => this.openVault(true),
       practice: () => this.openPractice(),
+      armory: () => this.openArmory(),
     };
     const services = n.services.filter((s): s is Exclude<NpcService, "talk"> => s !== "talk");
     if (this.api === null || services.length === 0) return;

@@ -5,7 +5,7 @@
  * candidate validator: we do not invent 50 placeholder items to pass it (chapter 13 §2).
  */
 import type { z } from "zod";
-import { EXAMPLE_AFFIX_POOLS, EXAMPLE_EQUIPMENT } from "./equipment";
+import { EXAMPLE_AFFIX_POOLS, EXAMPLE_EQUIPMENT, SHOP_EQUIPMENT } from "./equipment";
 import { EXAMPLE_REFINE_ITEMS } from "./refine";
 import { PassiveSchema, type PassiveTriggerSchema } from "../schemas";
 import type {
@@ -489,7 +489,7 @@ export function exampleContentMaps() {
     items: new Map(EXAMPLE_ITEMS.map((s) => [s.id, s])),
     lootTables: new Map([...EXAMPLE_LOOT_TABLES, ...EXAMPLE_FRONTIER_LOOT_TABLES].map((s) => [s.id, s])),
     sigils: new Map(EXAMPLE_SIGILS.map((s) => [s.id, s])),
-    equipment: new Map(EXAMPLE_EQUIPMENT.map((s) => [s.id, s])),
+    equipment: new Map([...EXAMPLE_EQUIPMENT, ...SHOP_EQUIPMENT].map((s) => [s.id, s])),
     affixPools: new Map(EXAMPLE_AFFIX_POOLS.map((s) => [s.id, s])),
     bosses: new Map([...EXAMPLE_BOSSES, ...EXAMPLE_FRONTIER_BOSSES].map((s) => [s.id, s])),
   };

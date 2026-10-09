@@ -36,6 +36,8 @@ import {
   SellRequestSchema,
   BuyRequestSchema,
   buyQuote,
+  GearBuyRequestSchema,
+  gearBuyQuote,
   type ShopDefinition,
   SkillTrainRequestSchema,
   planSigilInstall,
@@ -105,6 +107,11 @@ export type ServiceResult<T> = { status: "done"; replayed: boolean; result: T } 
 
 export interface BuyResult {
   bought: { itemId: string; quantity: number; coins: number }[];
+  total: number;
+}
+export interface GearBuyResult {
+  definitionId: string;
+  equipmentIds: string[];
   total: number;
 }
 export interface SellResult {
@@ -285,6 +292,62 @@ export class TownServices {
            SELECT ?, 0, ?, ?, 'npc_buy', ? WHERE ${ours.sql} ON CONFLICT DO NOTHING`,
         )
         .bind(ledgerId, accountId, -quote.total, at, ...ours.args),
+    ]);
+    return this.outcome(accountId, operationId, hash, async () => {
+      const pos = await this.db.prepare(`SELECT map_id FROM player_positions WHERE account_id = ?`).bind(accountId).first<{ map_id: string }>();
+      if (pos?.map_id !== shop.mapId) return reject("NOT_IN_TOWN", `go to ${shop.name.th} first`);
+      const fight = await this.fighting(accountId);
+      if (fight !== null) return fight;
+      return reject("INSUFFICIENT_COINS", `needs ${quote.total} coins`);
+    });
+  }
+
+  /**
+   * Buy plain equipment at an armory (Nut 2026-10-09): ordinary pieces with no random options, made in
+   * the same batch that takes the coins. Piece ids come from (account, operation), so a retry lands on
+   * the same rows; the anchor kind is npc_buy (its request hash tells gear from goods).
+   */
+  async buyGear(accountId: string, raw: unknown): Promise<ServiceResult<GearBuyResult>> {
+    const parsed = GearBuyRequestSchema.safeParse(raw);
+    if (!parsed.success) return reject("INVALID_REQUEST", issues(parsed.error));
+    const { operationId, shopId, definitionId, quantity, expectedTotal } = parsed.data;
+    const shop = this.content.shops?.get(shopId);
+    if (shop === undefined) return reject("NOT_SOLD_HERE", `no shop ${shopId}`);
+    const hash = await hashJson({ kind: "npc_buy_gear", shopId, definitionId, quantity, expectedTotal });
+    const prior = await this.prior<GearBuyResult>(accountId, operationId, hash);
+    if (prior !== null) return prior;
+    const quote = gearBuyQuote(shop, definitionId, quantity);
+    if (!quote.ok) return reject(quote.code, quote.message);
+    if (!this.content.equipment.has(definitionId)) return reject("NOT_SOLD_HERE", `unknown piece ${definitionId}`);
+    if (quote.total !== expectedTotal) return reject("COST_CHANGED", `the total is now ${quote.total}`);
+
+    const pieceKey = (await hashJson({ armory: accountId, operationId })).slice(0, 32);
+    const equipmentIds = Array.from({ length: quantity }, (_, n) => `eq:shop:${pieceKey}:${n}`);
+    const result: GearBuyResult = { definitionId, equipmentIds, total: quote.total };
+    const guards = [
+      `EXISTS (SELECT 1 FROM player_positions WHERE account_id = ? AND map_id = ?)`,
+      `NOT ${OPEN_BATTLE}`,
+      `(SELECT COALESCE(SUM(delta), 0) FROM coin_ledger WHERE account_id = ?) >= ?`,
+    ];
+    const args: unknown[] = [accountId, shop.mapId, accountId, accountId, quote.total];
+    const at = this.now();
+    const ours = this.ours(accountId, operationId, hash);
+    await this.db.batch([
+      this.anchor(accountId, operationId, "npc_buy", hash, result, guards, args),
+      ...equipmentIds.map((id) =>
+        this.db
+          .prepare(
+            `INSERT INTO equipment_instances (id, definition_id, owner_id, rarity, affixes_json, created_operation_id, created_at)
+             SELECT ?, ?, ?, 'COMMON', '[]', ?, ? WHERE ${ours.sql} ON CONFLICT DO NOTHING`,
+          )
+          .bind(id, definitionId, accountId, id, at, ...ours.args),
+      ),
+      this.db
+        .prepare(
+          `INSERT INTO coin_ledger (operation_id, line_no, account_id, delta, reason, created_at)
+           SELECT ?, 0, ?, ?, 'npc_buy', ? WHERE ${ours.sql} ON CONFLICT DO NOTHING`,
+        )
+        .bind(`svc:${accountId}:${operationId}`, accountId, -quote.total, at, ...ours.args),
     ]);
     return this.outcome(accountId, operationId, hash, async () => {
       const pos = await this.db.prepare(`SELECT map_id FROM player_positions WHERE account_id = ?`).bind(accountId).first<{ map_id: string }>();
