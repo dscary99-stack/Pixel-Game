@@ -4,7 +4,7 @@
  * it never computes damage, loot, capture or ownership itself (chapter 11 §1).
  */
 import Phaser from "phaser";
-import { DEV_FIXTURE_RULES, ELITE_MODIFIER_TH, EXAMPLE_FRONTIER, FRONTIER_MODIFIER_TH, STATUS_DEFINITIONS, exampleContentMaps, type BattleCommand, type BattleEvent, type BattleUnit, type Element, type PublicBattleState } from "@pmrpg/shared";
+import { DEV_FIXTURE_RULES, ELITE_MODIFIER_TH, combatBagOf, EXAMPLE_FRONTIER, FRONTIER_MODIFIER_TH, STATUS_DEFINITIONS, exampleContentMaps, type BattleCommand, type BattleEvent, type BattleUnit, type Element, type PublicBattleState } from "@pmrpg/shared";
 import type { BattleTransport, Snapshot } from "./transport";
 import { savedAutoPolicy } from "./character-ui";
 import { capturePreview, pct2 } from "./capture-ui";
@@ -242,6 +242,30 @@ export class BattleScene extends Phaser.Scene {
       this.skillMenu.push(b);
     });
   }
+  /**
+   * The item menu: heal, mana and support items in this player's combat bag (revive has its own button).
+   * Each is used on the selected living ally, else the character.
+   */
+  private openItemMenu(actor: BattleUnit) {
+    this.closeSkillMenu();
+    const bag = combatBagOf(this.snap.state, actor).bag;
+    const usable = Object.entries(bag).filter(([id, n]) => n > 0 && ["heal", "mana", "support"].includes(CONTENT.items.get(id)?.kind ?? ""));
+    if (usable.length === 0) return this.pushLog("ไม่มียาที่ใช้ได้ในกระเป๋าต่อสู้");
+    usable.forEach(([id, n], i) => {
+      const def = CONTENT.items.get(id)!;
+      const what = def.kind === "heal" ? `HP +${def.healHp}` : def.kind === "mana" ? `MP +${def.restoreMp}` : (def.statuses ?? []).map((a) => STATUS_DEFINITIONS[a.statusId].th).join(", ");
+      const b = this.add
+        .text(16 + i * 132, 410, `${def.name.th} ×${n}\n${what}`, { fontFamily: "sans-serif", fontSize: "12px", color: "#ffffff", backgroundColor: "#2f6b5a", padding: { x: 6, y: 6 }, fixedWidth: 124, align: "center" })
+        .setInteractive({ useHandCursor: true });
+      b.on("pointerdown", () => {
+        this.closeSkillMenu();
+        const sel = this.selectedTarget === null ? undefined : this.unit(this.selectedTarget);
+        const target = sel !== undefined && sel.side === actor.side && !sel.ko ? sel.unitId : actor.unitId;
+        void this.send({ type: "item", actorId: actor.unitId, itemId: id, targetId: target });
+      });
+      this.skillMenu.push(b);
+    });
+  }
   /** Picks the target a skill needs: the selected enemy or ally if it fits, else a sensible default. */
   private skillTarget(actor: BattleUnit, skillId: string): string | null {
     const rule = CONTENT.skills.get(skillId)?.targetRule ?? "single_enemy";
@@ -326,8 +350,7 @@ export class BattleScene extends Phaser.Scene {
         cmd = { type: "guard", actorId: actor.unitId };
         break;
       case "item":
-        cmd = { type: "item", actorId: actor.unitId, itemId: "item:small_potion", targetId: actor.unitId };
-        break;
+        return this.openItemMenu(actor);
       case "capture":
         if (target) return this.openCapturePreview(actor.unitId, target);
         break;

@@ -57,7 +57,7 @@ describe("Auto Hunt settings (chapter 08, PROVISIONAL)", () => {
       stopWhenItemsOut: false,
     });
     expect(AutoHuntSettingsSchema.parse({ itemRules: [{ itemId: "item:small_potion" }] }).itemRules).toEqual([
-      { itemId: "item:small_potion", target: "ally", hpBelowPercent: 40, maxPerFight: 3 },
+      { itemId: "item:small_potion", target: "ally", hpBelowPercent: 40, mpBelowPercent: 30, maxPerFight: 3 },
     ]);
     expect(AutoHuntSettingsSchema.safeParse({ itemRules: [{ itemId: "item:small_potion", maxPerFight: 0 }] }).success).toBe(false);
     expect(AutoHuntSettingsSchema.safeParse({ maxPackSize: 11 }).success).toBe(false);
@@ -151,7 +151,7 @@ describe("autoHuntReadiness (between fights)", () => {
     expect(autoHuntReadiness({ ...defaults, stopBelowHpPercent: 0 }, { ...full, hp: 0 }, [{ ...full, hp: 0 }], {})?.stop).toBe("NEED_REST");
   });
   it("stops when every allowed item has run out, only if asked", () => {
-    const rules = [{ itemId: "item:small_potion", target: "ally" as const, hpBelowPercent: 40, maxPerFight: 3 }];
+    const rules = [{ itemId: "item:small_potion", target: "ally" as const, hpBelowPercent: 40, mpBelowPercent: 30, maxPerFight: 3 }];
     expect(autoHuntReadiness({ ...defaults, itemRules: rules }, full, [], {})).toBeNull();
     expect(autoHuntReadiness({ ...defaults, itemRules: rules, stopWhenItemsOut: true }, full, [], {})?.stop).toBe("ITEMS_OUT");
     expect(autoHuntReadiness({ ...defaults, itemRules: rules, stopWhenItemsOut: true }, full, [], { "item:small_potion": 1 })).toBeNull();

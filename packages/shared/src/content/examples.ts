@@ -238,6 +238,9 @@ export const EXAMPLE_SIGILS: SigilDefinition[] = [
 export const EXAMPLE_ITEMS: ItemDefinition[] = [
   { id: "item:small_potion", ...meta, name: { th: "ยาเล็ก", en: "Small Potion" }, kind: "heal", healHp: 150, vendorPrice: 10 },
   { id: "item:phoenix_feather", ...meta, name: { th: "ขนนกชุบ" }, kind: "revive", reviveHpPct: 30, vendorPrice: 200 },
+  { id: "item:mana_potion", ...meta, name: { th: "ยาฟื้นมานา", en: "Mana Potion" }, kind: "mana", restoreMp: 40, vendorPrice: 15 },
+  { id: "item:cleansing_herb", ...meta, name: { th: "สมุนไพรล้างพิษ" }, kind: "support", statuses: [{ statusId: "cleanse", chancePct: 100, turns: 1 }], vendorPrice: 15 },
+  { id: "item:power_tonic", ...meta, name: { th: "ยาเพิ่มพลัง" }, kind: "support", statuses: [{ statusId: "atk_up", chancePct: 100, turns: 3 }], vendorPrice: 25 },
   ...EXAMPLE_SPECIES.map(
     (s): ItemDefinition => ({
       id: s.captureItemId as ItemDefinition["id"],

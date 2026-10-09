@@ -155,13 +155,16 @@ export function defaultCombatBag(
   rules: RulesConfig,
   owned: Readonly<Record<string, number>>,
   itemKind: (itemId: string) => string | undefined,
+  /** Items packed first, in this order (Auto Hunt packs the items its rules name before the rest). */
+  prefer: readonly string[] = [],
 ): Record<string, number> {
   const caps = rules.provisional.combatBagStackCaps.value as Record<string, number>;
-  const order = ["heal", "capture", "revive", "support", "attack"];
+  const order = ["heal", "mana", "capture", "revive", "support", "attack"];
+  const rank = (id: string) => (prefer.includes(id) ? prefer.indexOf(id) : prefer.length);
   const candidates = Object.entries(owned)
     .map(([id, qty]) => ({ id, qty, kind: itemKind(id) }))
     .filter((c) => c.qty > 0 && c.kind !== undefined && caps[c.kind] !== undefined)
-    .sort((a, b) => order.indexOf(a.kind!) - order.indexOf(b.kind!) || (a.id < b.id ? -1 : 1))
+    .sort((a, b) => rank(a.id) - rank(b.id) || order.indexOf(a.kind!) - order.indexOf(b.kind!) || (a.id < b.id ? -1 : 1))
     .slice(0, rules.provisional.combatBagMaxTypes.value);
   return Object.fromEntries(candidates.map((c) => [c.id, Math.min(c.qty, caps[c.kind!]!)]));
 }

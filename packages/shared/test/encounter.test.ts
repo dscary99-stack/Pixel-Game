@@ -128,6 +128,15 @@ describe("default combat bag", () => {
     const owned = Object.fromEntries(EXAMPLE_ITEMS.map((i) => [i.id, 1]));
     expect(Object.keys(defaultCombatBag(rules, owned, kind)).length).toBeLessThanOrEqual(rules.provisional.combatBagMaxTypes.value);
   });
+
+  it("packs the items Auto Hunt's rules name first, so a full bag still holds them", () => {
+    const owned = Object.fromEntries(EXAMPLE_ITEMS.map((i) => [i.id, 1]));
+    const plain = defaultCombatBag(rules, owned, kind);
+    expect(plain["item:power_tonic"]).toBeUndefined();
+    const auto = defaultCombatBag(rules, owned, kind, ["item:power_tonic", "item:phoenix_feather"]);
+    expect(auto).toMatchObject({ "item:power_tonic": 1, "item:phoenix_feather": 1 });
+    expect(Object.keys(auto).length).toBe(rules.provisional.combatBagMaxTypes.value);
+  });
 });
 
 describe("MapChannel during a fight", () => {

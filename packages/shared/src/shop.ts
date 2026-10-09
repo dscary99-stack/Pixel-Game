@@ -101,6 +101,9 @@ export const EXAMPLE_SHOPS: ShopDefinition[] = [
     listings: [
       { itemId: "item:small_potion", price: 30 },
       { itemId: "item:phoenix_feather", price: 600 },
+      { itemId: "item:mana_potion", price: 45 },
+      { itemId: "item:cleansing_herb", price: 45 },
+      { itemId: "item:power_tonic", price: 75 },
       { itemId: "item:supply_mole_capture", price: 40 },
       { itemId: "item:bell_bird_capture", price: 50 },
       { itemId: "item:lantern_snail_capture", price: 70 },

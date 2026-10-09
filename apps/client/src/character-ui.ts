@@ -1833,9 +1833,15 @@ export function autoHuntPanel(speciesIds: readonly string[]): Promise<AutoHuntSe
     panel.append(el("label", {}, "หยุดเมื่อ HP คู่ใจตัวใดตัวหนึ่งต่ำกว่า"));
     const compHp = choices(panel, [0, 20, 30, 50, 70].map(pct), String(saved.stopBelowCompanionHpPercent));
     // Items Auto may use (chapter 08: allowed items, when, and how many per fight).
-    panel.append(el("label", {}, "ยาที่ให้ Auto ใช้ (ตัวละครเป็นคนใช้ ใช้ได้เมื่อถึงตาตัวละคร)"));
-    const healItems = [...itemDefs.values()].filter((d) => d.kind === "heal");
-    const ruleRows = healItems.map((d) => {
+    panel.append(el("label", {}, "ของที่ให้ Auto ใช้ (ตัวละครเป็นคนใช้ ใช้ได้เมื่อถึงตาตัวละคร เลือกได้สูงสุด 5 ชนิด เรียงตามลำดับที่ใช้ก่อน)"));
+    // Each kind has its own trigger (chapter 08): heal below HP %, mana below MP %, revive a fallen ally,
+    // support (buff/cleanse) when the ally lacks the buff or carries a harmful status.
+    const KIND_ORDER = ["heal", "mana", "revive", "support"] as const;
+    const ruleItems = [...itemDefs.values()]
+      .filter((d) => (KIND_ORDER as readonly string[]).includes(d.kind))
+      .sort((a, b) => KIND_ORDER.indexOf(a.kind as (typeof KIND_ORDER)[number]) - KIND_ORDER.indexOf(b.kind as (typeof KIND_ORDER)[number]));
+    const pctChoices = [20, 30, 40, 50, 70].map((n) => ({ value: String(n), label: `${n}%` }));
+    const ruleRows = ruleItems.map((d) => {
       const prev = saved.itemRules.find((r) => r.itemId === d.id);
       const row = el("div", { class: "pm-item-rule", "data-item": d.id });
       const on = el("input", { type: "checkbox", id: `pm-rule-${d.id}` });
@@ -1843,15 +1849,33 @@ export function autoHuntPanel(speciesIds: readonly string[]): Promise<AutoHuntSe
       const name = el("label", { for: on.id }, ` ${d.name.th}`);
       name.prepend(on);
       row.append(name);
-      row.append(el("div", { class: "pm-note" }, "ใช้กับ"));
-      const target = choices(row, [{ value: "ally", label: "เพื่อนที่ HP ต่ำสุด" }, { value: "self", label: "ตัวเองเท่านั้น" }], prev?.target ?? "ally");
-      row.append(el("div", { class: "pm-note" }, "เมื่อ HP ต่ำกว่า"));
-      const below = choices(row, [20, 30, 40, 50, 70].map((n) => ({ value: String(n), label: `${n}%` })), String(prev?.hpBelowPercent ?? 40));
+      let target = () => "ally";
+      let hpBelow = () => String(prev?.hpBelowPercent ?? 40);
+      let mpBelow = () => String(prev?.mpBelowPercent ?? 30);
+      if (d.kind === "heal") {
+        row.append(el("div", { class: "pm-note" }, "ใช้กับ"));
+        target = choices(row, [{ value: "ally", label: "เพื่อนที่ HP ต่ำสุด" }, { value: "self", label: "ตัวเองเท่านั้น" }], prev?.target ?? "ally");
+        row.append(el("div", { class: "pm-note" }, "เมื่อ HP ต่ำกว่า"));
+        hpBelow = choices(row, pctChoices, hpBelow());
+      } else if (d.kind === "mana") {
+        row.append(el("div", { class: "pm-note" }, "ใช้กับ"));
+        target = choices(row, [{ value: "ally", label: "เพื่อนที่ MP ต่ำสุด" }, { value: "self", label: "ตัวเองเท่านั้น" }], prev?.target ?? "ally");
+        row.append(el("div", { class: "pm-note" }, "เมื่อ MP ต่ำกว่า"));
+        mpBelow = choices(row, pctChoices, mpBelow());
+      } else if (d.kind === "revive") {
+        row.append(el("div", { class: "pm-note" }, "ชุบเพื่อนที่ล้มทันทีที่ชุบได้ (ล้มครบ 1 ตาแล้ว)"));
+      } else {
+        row.append(el("div", { class: "pm-note" }, "ใช้กับ"));
+        target = choices(row, [{ value: "ally", label: "เพื่อนที่ยังไม่มีผลนี้" }, { value: "self", label: "ตัวเองเท่านั้น" }], prev?.target ?? "ally");
+        row.append(el("div", { class: "pm-note" }, "ใช้เมื่อยังไม่มีผลนี้อยู่ (ยาล้างพิษ: เมื่อติดสถานะร้าย)"));
+      }
       row.append(el("div", { class: "pm-note" }, "ไม่เกินต่อไฟต์"));
       const max = choices(row, [1, 2, 3, 5, 10].map((n) => ({ value: String(n), label: `${n} ชิ้น` })), String(prev?.maxPerFight ?? 3));
       panel.append(row);
       return () =>
-        on.checked ? [{ itemId: d.id, target: target() as "ally" | "self", hpBelowPercent: Number(below()), maxPerFight: Number(max()) }] : [];
+        on.checked
+          ? [{ itemId: d.id, target: target() as "ally" | "self", hpBelowPercent: Number(hpBelow()), mpBelowPercent: Number(mpBelow()), maxPerFight: Number(max()) }]
+          : [];
     });
     // Skills Auto may use (chapter 08 rule engine): heal, cleanse, buff, debuff, then damage.
     const useSkills = el("input", { type: "checkbox", id: "pm-use-skills" });
@@ -1877,12 +1901,17 @@ export function autoHuntPanel(speciesIds: readonly string[]): Promise<AutoHuntSe
     const cancel = el("button", { type: "button" }, "ปิด");
     const start = el("button", { type: "button", class: "primary" }, "เริ่มล่า");
     actions.append(cancel, start);
-    panel.append(actions);
+    const huntError = el("div", { class: "pm-error", role: "alert" });
+    panel.append(huntError, actions);
     cancel.addEventListener("click", () => {
       close();
       resolve(null);
     });
     start.addEventListener("click", () => {
+      if (ruleRows.flatMap((r) => r()).length > 5) {
+        huntError.textContent = "เลือกของให้ Auto ใช้ได้สูงสุด 5 ชนิด";
+        return;
+      }
       const settings = AutoHuntSettingsSchema.parse({
         targetSpecies: targets(),
         stopOnSpecies: stops(),

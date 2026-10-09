@@ -432,7 +432,7 @@ export const RULES = {
     /** Combat bag (chapter 03 §2): 8 distinct item types, per-kind stack caps. */
     combatBagMaxTypes: provisional(8, "P15", "chapter 03 §2 proposal"),
     combatBagStackCaps: provisional(
-      { heal: 10, capture: 10, support: 5, attack: 5, revive: 2 } as const,
+      { heal: 10, mana: 10, capture: 10, support: 5, attack: 5, revive: 2 } as const,
       "P15",
       "chapter 03 §2 proposal",
     ),

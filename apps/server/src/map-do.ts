@@ -372,7 +372,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     let bag = prior?.bag;
     if (bag === undefined) {
       const kind = (id: string) => this.content.items.get(id)?.kind;
-      bag = defaultCombatBag(this.rules, await this.economy.balances(account), kind);
+      bag = defaultCombatBag(this.rules, await this.economy.balances(account), kind, a.auto?.settings.itemRules.map((r) => r.itemId) ?? []);
       const reserved = await this.economy.reserve({
         reservationId,
         accountId: account,

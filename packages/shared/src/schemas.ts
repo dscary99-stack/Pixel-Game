@@ -501,9 +501,13 @@ export const ItemDefinitionSchema = z
     id: ItemId,
     ...contentMeta,
     name: LocalizedName,
-    kind: z.enum(["heal", "capture", "support", "attack", "revive", "material", "sigil"]),
+    kind: z.enum(["heal", "mana", "capture", "support", "attack", "revive", "material", "sigil"]),
     /** heal: flat HP restored. */
     healHp: z.number().int().min(0).optional(),
+    /** mana: flat MP restored. */
+    restoreMp: z.number().int().min(1).optional(),
+    /** support: helpful statuses put on the ally it is used on (buffs, cleanse); each rolls its own chance. */
+    statuses: z.array(StatusApplicationSchema).min(1).max(3).optional(),
     /** revive: % of max HP the fallen ally comes back with (O15). */
     reviveHpPct: z.number().int().min(1).max(100).optional(),
     /** capture: the one species this item captures (species-specific capture items, chapter 04 §3). */
@@ -533,6 +537,15 @@ export const ItemDefinitionSchema = z
     }
     if ((it.kind === "revive") !== (it.reviveHpPct !== undefined)) {
       ctx.addIssue({ code: "custom", message: "revive items, and only they, set reviveHpPct" });
+    }
+    if ((it.kind === "mana") !== (it.restoreMp !== undefined)) {
+      ctx.addIssue({ code: "custom", message: "mana items, and only they, set restoreMp" });
+    }
+    if ((it.kind === "support") !== (it.statuses !== undefined)) {
+      ctx.addIssue({ code: "custom", message: "support items, and only they, list statuses" });
+    }
+    if (it.statuses?.some((a) => STATUS_DEFINITIONS[a.statusId].harmful)) {
+      ctx.addIssue({ code: "custom", message: "support items only carry helpful statuses (they are used on allies)" });
     }
   });
 export type ItemDefinition = z.infer<typeof ItemDefinitionSchema>;

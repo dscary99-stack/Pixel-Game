@@ -8,7 +8,7 @@
 import { applyBond, bondBonusPercent, bondTier } from "../bond";
 import { companionCombatProfile } from "../companion-growth";
 import { companionKit, effectiveSkillLevel, masteryForVictory, skillLevelCap, skillLevelMods, trainedSkillLevel } from "../skill-training";
-import { AutoBattlePolicySchema, type AutoBattlePolicyInput } from "./auto-policy";
+import { AutoBattlePolicySchema, type AutoBattlePolicyInput, type AutoItemRule } from "./auto-policy";
 import { computeDamage, computeHeal, critChanceBp, hitChanceBp } from "../damage";
 import { rollLoot } from "../loot";
 import { eliteModifierIssues } from "../elite";
@@ -1459,8 +1459,24 @@ function doItem(ctx: Ctx, actor: BattleUnit, itemId: string, target: BattleUnit)
     actionEvent(ctx, actor, "item", target, {});
     return revive(ctx, actor, target, item.reviveHpPct ?? 1, itemId);
   }
-  if (item.kind !== "heal") reject("INVALID_COMMAND", `${item.kind} items are not usable in Phase A`);
-  if (target.side !== "ally" || !active(target)) reject("INVALID_TARGET", "heal items need a living ally");
+  if (item.kind !== "heal" && item.kind !== "mana" && item.kind !== "support") reject("INVALID_COMMAND", `${item.kind} items are not usable in a fight`);
+  if (target.side !== "ally" || !active(target)) reject("INVALID_TARGET", `${item.kind} items need a living ally`);
+  if (item.kind === "mana") {
+    if ((combatBagOf(ctx.s, actor).bag[itemId] ?? 0) <= 0) reject("INSUFFICIENT_RESOURCE", `no ${itemId} in the combat bag`);
+    consumeItem(ctx, actor, itemId);
+    actionEvent(ctx, actor, "item", target, {});
+    const mp = Math.min(item.restoreMp ?? 0, target.stats.maxMp - target.mp);
+    target.mp += mp;
+    ctx.emit({ type: "ResourceChanged", unitId: target.unitId, source: "restore_mp", hp: 0, mp, hpAfter: target.hp, mpAfter: target.mp });
+    return;
+  }
+  if (item.kind === "support") {
+    if ((combatBagOf(ctx.s, actor).bag[itemId] ?? 0) <= 0) reject("INSUFFICIENT_RESOURCE", `no ${itemId} in the combat bag`);
+    consumeItem(ctx, actor, itemId);
+    actionEvent(ctx, actor, "item", target, {});
+    for (const a of item.statuses ?? []) applyStatus(ctx, actor, target, a);
+    return;
+  }
   if ((combatBagOf(ctx.s, actor).bag[itemId] ?? 0) <= 0) reject("INSUFFICIENT_RESOURCE", `no ${itemId} in the combat bag`);
   consumeItem(ctx, actor, itemId);
   // Anti-heal and zombie work on potions too.
@@ -1956,14 +1972,12 @@ export function chooseAutoCommand(
   const policy = AutoBattlePolicySchema.parse(policyInput);
   if (actor.kind === "player" && content !== undefined) {
     for (const rule of policy.itemRules) {
-      if (content.items.get(rule.itemId)?.kind !== "heal") continue;
+      const item = content.items.get(rule.itemId);
+      if (item === undefined) continue;
       const own = combatBagOf(state, actor);
       if ((own.bag[rule.itemId] ?? 0) <= 0 || (own.consumed[rule.itemId] ?? 0) >= rule.maxPerFight) continue;
-      const pool = rule.target === "self" ? [actor] : state.units.filter((u) => u.side === "ally" && active(u));
-      const low = pool
-        .filter((u) => active(u) && u.hp * 100 < rule.hpBelowPercent * u.stats.maxHp)
-        .sort((a, b) => a.hp / a.stats.maxHp - b.hp / b.stats.maxHp)[0];
-      if (low !== undefined) return { type: "item", actorId: actor.unitId, itemId: rule.itemId, targetId: low.unitId };
+      const pick = autoItemTarget(state, actor, item, rule, rules);
+      if (pick !== undefined) return { type: "item", actorId: actor.unitId, itemId: rule.itemId, targetId: pick.unitId };
     }
   }
   // Skills (chapter 08 rule engine): heal, cleanse, buff, debuff, then damage, while MP stays above
@@ -1984,6 +1998,32 @@ export function chooseAutoCommand(
   const taunter = tauntedBy(state, actor);
   const target = taunter !== undefined && targets.includes(taunter) ? taunter : targets.reduce((best, u) => (u.hp < best.hp ? u : best));
   return { type: "attack", actorId: actor.unitId, targetId: target.unitId };
+}
+
+/**
+ * Who an Auto item rule would use its item on now, if anyone (chapter 08 allowed items). Heal: the
+ * lowest HP share under the rule's HP %; mana: the lowest MP share under its MP %; revive: the first
+ * fallen ally that can be brought back now (needs `rules`); support: the first ally the statuses would
+ * still do something for (a buff it lacks, a harmful status to cleanse). "self" limits it to the
+ * character.
+ */
+function autoItemTarget(state: BattleState, actor: BattleUnit, item: ItemDefinition, rule: AutoItemRule, rules: RulesConfig | undefined): BattleUnit | undefined {
+  const allies = rule.target === "self" ? [actor] : state.units.filter((u) => u.side === "ally");
+  const living = allies.filter(active);
+  const share = (v: number, max: number) => (max <= 0 ? 1 : v / max);
+  switch (item.kind) {
+    case "heal":
+      return living.filter((u) => u.hp * 100 < rule.hpBelowPercent * u.stats.maxHp).sort((a, b) => share(a.hp, a.stats.maxHp) - share(b.hp, b.stats.maxHp))[0];
+    case "mana":
+      return living.filter((u) => u.stats.maxMp > 0 && u.mp * 100 < rule.mpBelowPercent * u.stats.maxMp).sort((a, b) => share(a.mp, a.stats.maxMp) - share(b.mp, b.stats.maxMp))[0];
+    case "revive":
+      if (rules === undefined) return undefined;
+      return allies.find((u) => u.ko && reviveBlock(rules, state, actor, u) === null);
+    case "support":
+      return living.find((u) => (item.statuses ?? []).some((a) => worthApplying(actor, u, a.statusId)));
+    default:
+      return undefined;
+  }
 }
 
 /** What the client may see. The RNG state stays on the server. */
