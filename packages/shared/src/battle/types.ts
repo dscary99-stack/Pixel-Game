@@ -164,6 +164,8 @@ export interface BattleState {
   originMode: OriginMode;
   /** Training ground (P17): nothing earned or lost (BattleSetup.practice). */
   practice?: boolean;
+  /** Class2 trial (BattleSetup.classTrial): the enemy stat % that summons also get. */
+  enemyStatPct?: number;
   ownerAccountId: string;
   stateVersion: number;
   round: number;
@@ -362,6 +364,11 @@ export interface BattleSetup {
    * capture, Bond or mastery; HP/MP and items are not touched (the bag is empty).
    */
   practice?: boolean;
+  /**
+   * The Class2 trial (class-change.ts): a practice boss fight where the boss and everything it calls
+   * get the rules' trial stat % (P28). Needs `practice` and `boss`.
+   */
+  classTrial?: boolean;
   bag: Record<string, number>;
   /** Counted by the server when the fight starts (P02); never from the client. */
   partyBonus?: PartyBonus;

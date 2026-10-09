@@ -678,6 +678,17 @@ export const RULES = {
       "P19",
       "decides O15 flee: chance = clamp(lowest flee value among living enemies × player SPD / fastest enemy SPD, 5%, 95%); bosses 0 = cannot flee; Claude's numbers",
     ),
+    /**
+     * Class change (chapter 02, P16: Class2 trial from Lv50, Class3 from Lv120). The Class2 trial is a
+     * fight at the town training ground rules (nothing earned or lost, full HP, no items, the team may
+     * come) against the trial boss with `trialStatPct` on its HP and ATK/MATK (like a tower floor).
+     * Winning lets the character take one of its two branches, once.
+     */
+    classChange: provisional(
+      { class2Level: 50, class3Level: 120, trialStatPct: 150 } as const,
+      "P28",
+      "P16 levels 50/120; the trial boss at 150%: in a simulation, a Lv50 character with Lv40 shop gear and three Lv45 companions wins every seeded run on plain Auto with 8 of 9 classes; the Bard won 1 of 6 and needs manual play",
+    ),
   },
   // Nut answered the last OPEN rules on 2026-10-07. A new OPEN rule goes here as open<T>(...) with value null.
   unresolved: {} as Readonly<Record<string, Rule<null>>>,

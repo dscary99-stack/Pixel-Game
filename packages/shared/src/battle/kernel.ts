@@ -180,7 +180,8 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
     if (!sp.allowedElements.includes(m.element)) reject("INVALID_COMMAND", `reinforcement ${m.speciesId} element not allowed for species`);
   }
   const setup: BattleSetup = bossDef === undefined ? setup0 : { ...setup0, enemies: withEscorts(bossEnemies(bossDef), tower?.escorts ?? []) };
-  const towerPct = floor === undefined ? 100 : frontierStatPct(rules, floor);
+  if (setup0.classTrial === true && (setup0.practice !== true || bossDef === undefined || tower !== undefined)) reject("INVALID_COMMAND", "a class trial is a practice boss fight");
+  const towerPct = floor !== undefined ? frontierStatPct(rules, floor) : setup0.classTrial === true ? rules.provisional.classChange.value.trialStatPct : 100;
   const bossLoot = bossDef?.lootTableId;
   if (bossLoot !== undefined && !content.lootTables.has(bossLoot)) reject("MISSING_REFERENCE", `loot table ${bossLoot}`);
   if (bossDef !== undefined) {
@@ -232,6 +233,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
     rulesVersion: rules.rulesVersion,
     originMode: setup.originMode,
     ...(setup.practice === true ? { practice: true } : {}),
+    ...(setup.classTrial === true ? { enemyStatPct: towerPct } : {}),
     ownerAccountId: p.accountId,
     // Pinned for the whole fight (capture.ts): a deploy never changes a running fight's odds.
     captureProfile: rules.provisional.captureProfile.value,
@@ -1814,7 +1816,7 @@ function bossSummon(ctx: Ctx, summon: NonNullable<BossDefinition["phases"][numbe
     // Units are only ever added, so this number is new; a tower floor's reinforcements count on from it.
     const n = Math.max(ctx.s.units.length + 1, ctx.s.frontier?.nextUnit ?? 0);
     if (ctx.s.frontier !== undefined) ctx.s.frontier.nextUnit = n + 1;
-    const unit = enemyUnit(ctx.rules, ctx.content, { unitId: `e${n}`, speciesId: add.speciesId, element: add.element, row: add.row, slot, lootEligible: false }, { bossDef: undefined, towerPct: ctx.s.frontier?.statPct ?? 100, modifiers: ctx.s.frontier?.modifiers ?? [] });
+    const unit = enemyUnit(ctx.rules, ctx.content, { unitId: `e${n}`, speciesId: add.speciesId, element: add.element, row: add.row, slot, lootEligible: false }, { bossDef: undefined, towerPct: ctx.s.frontier?.statPct ?? ctx.s.enemyStatPct ?? 100, modifiers: ctx.s.frontier?.modifiers ?? [] });
     unit.summoned = true;
     // A summoned minion cannot be caught (it would be a free extra capture each call).
     unit.captureWindowOpen = false;

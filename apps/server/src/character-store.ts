@@ -16,6 +16,7 @@ import {
   companionPrimaryStats,
   AllocateStatsRequestSchema,
   CreateCharacterRequestSchema,
+  expForLevel,
   levelForExp,
   planAllocation,
   EquipRequestSchema,
@@ -45,6 +46,7 @@ interface CharacterRow {
   account_id: string;
   name: string;
   class_id: string;
+  class2_id?: string | null;
   race_id: string;
   element: CharacterView["element"];
   level: number;
@@ -498,17 +500,25 @@ export class CharacterStore {
       .run();
   }
 
-  /** DEV ONLY: one companion of a species at a level, once per operation id (smoke tests of trade). */
+  /** DEV ONLY: raise the character to at least this level by giving it the EXP for it (smoke tests of Class2). */
+  async devRaiseLevel(accountId: string, level: number): Promise<void> {
+    const xp = expForLevel(this.rules, "player", level);
+    await this.db.prepare(`UPDATE characters SET xp = ? WHERE account_id = ? AND xp < ?`).bind(xp, accountId, xp).run();
+    await this.syncLevels(accountId);
+  }
+
+  /** DEV ONLY: one companion of a species at a level, once per operation id (smoke tests of trade and Class2). */
   async devGrantCompanion(operationId: string, accountId: string, speciesId: string, level: number): Promise<void> {
     const sp = this.content.species.get(speciesId);
     if (sp === undefined) throw new Error(`unknown species ${speciesId}`);
-    const start = this.rules.provisional.primaryStatStart.value;
+    // Stats as if it had grown to this level (companion-growth.ts), with its id as the growth seed.
+    const id = `mon:${operationId}`;
     await this.db
       .prepare(
-        `INSERT INTO monster_instances (id, species_id, owner_id, current_level, element, primary_stats_json, origin_json, created_operation_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`,
+        `INSERT INTO monster_instances (id, species_id, owner_id, current_level, element, primary_stats_json, origin_json, created_operation_id, growth_seed, growth_history_version)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING`,
       )
-      .bind(`mon:${operationId}`, speciesId, accountId, level, sp.allowedElements[0], JSON.stringify({ STR: start, VIT: start, INT: start, DEX: start, AGI: start, SPI: start }), JSON.stringify({ kind: "capture", at: this.now() }), operationId)
+      .bind(id, speciesId, accountId, level, sp.allowedElements[0], JSON.stringify(companionPrimaryStats(this.rules, sp.archetype, id, level, 0)), JSON.stringify({ kind: "capture", at: this.now() }), operationId, id, COMPANION_GROWTH_VERSION)
       .run();
   }
 
@@ -526,6 +536,7 @@ export class CharacterStore {
       id: row.id,
       name: row.name,
       classId: row.class_id,
+      class2Id: row.class2_id ?? null,
       raceId: row.race_id,
       element: row.element,
       level: row.level,

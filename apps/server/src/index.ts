@@ -44,6 +44,10 @@
  *   POST /frontier/leave           step out between floors; the run stays for the week ({ runId })
  *   GET  /practice                 the town training ground: the field bosses it can stage (P17)
  *   POST /practice/start           start or resume a practice fight in town ({ operationId, bossId }); nothing earned or lost
+ *   GET  /class                    Class2: the two branches of this class, the trial level, the latest trial
+ *   POST /class/trial/start        start or resume the Class2 trial in town ({ operationId, branchId }); Lv50+, no branch yet
+ *   POST /class/trial/claim        take the branch of a won trial ({ operationId } of that trial); once per character
+ *   POST /dev/level                (dev only) raise the character to a level ({ level })
  *   POST /dev/frontier/jump        (dev only) move this week's run to a floor ({ floor })
  *   POST /dev/frontier/reset       (dev only) give back this week's entry
  *   GET  /auth/config              which sign-in buttons to show (provider list, public Google/Facebook app ids)
@@ -119,6 +123,7 @@ import { SecretQuestStore, secretQuestKey } from "./secret-quest-store";
 import { SecretProgressStore } from "./secret-progress-store";
 import { FrontierStore, type FrontierBattlePort } from "./frontier-store";
 import { PracticeStore } from "./practice-store";
+import { ClassStore } from "./class-store";
 import { RefineStore } from "./refine-store";
 
 export { BattleDurableObject } from "./battle-do";
@@ -158,6 +163,7 @@ const battlePort = (env: Env): FrontierBattlePort => ({
 const frontierFor = (env: Env) =>
   new FrontierStore(env.DB, rulesFor(env), EXAMPLE_FRONTIER, { ...CONTENT, maps: exampleMapRegistry() }, economyFor(env), charactersFor(env), battlePort(env), journalFor(env));
 const practiceFor = (env: Env) => new PracticeStore(env.DB, { ...CONTENT, maps: exampleMapRegistry() }, economyFor(env), charactersFor(env), battlePort(env), TOWNS);
+const classFor = (env: Env) => new ClassStore(env.DB, rulesFor(env), economyFor(env), charactersFor(env), battlePort(env), TOWNS);
 const questsFor = (env: Env) => new QuestStore(env.DB, rulesFor(env), { ...CONTENT, maps: exampleMapRegistry() }, TOWNS);
 
 /** DEV ONLY: dev accounts appear on first use with a starter bag and starter gear; real account creation waits for O11. */
@@ -198,6 +204,7 @@ export default {
     if (url.pathname === "/market" || url.pathname.startsWith("/market/") || url.pathname === "/trade" || url.pathname.startsWith("/trade/") || url.pathname === "/vault" || url.pathname.startsWith("/vault/") || url.pathname === "/mail" || url.pathname.startsWith("/mail/")) return exchangeRoute(request, env, url);
     if (url.pathname === "/frontier" || url.pathname.startsWith("/frontier/")) return frontierRoute(request, env, url);
     if (url.pathname === "/practice" || url.pathname === "/practice/start") return practiceRoute(request, env, url);
+    if (url.pathname === "/class" || url.pathname.startsWith("/class/")) return classRoute(request, env, url);
     const m = url.pathname.match(/^\/battles\/([a-z0-9_:-]{1,80})(?:\/([a-z-]+))?$/);
     if (m === null) return json(404, { error: "NOT_FOUND" });
     const battleId = m[1]!;
@@ -414,6 +421,24 @@ async function practiceRoute(request: Request, env: Env, url: URL): Promise<Resp
   return json(200, r);
 }
 
+/** Class2 (class-change.ts): the branches, the trial fight in town, and taking the branch after a win. */
+async function classRoute(request: Request, env: Env, url: URL): Promise<Response> {
+  const accountId = await resolveAccount(request, env);
+  if (accountId === null) return json(401, { error: "UNAUTHENTICATED" });
+  await devStarter(env, accountId);
+  const store = classFor(env);
+  if (request.method === "GET" && url.pathname === "/class") {
+    const view = await store.view(accountId);
+    return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
+  }
+  if (request.method !== "POST" || (url.pathname !== "/class/trial/start" && url.pathname !== "/class/trial/claim")) return json(405, { error: "METHOD_NOT_ALLOWED" });
+  const body = await readJson(request);
+  if (body === undefined) return json(400, { error: "INVALID_REQUEST" });
+  const r = url.pathname === "/class/trial/start" ? await store.start(accountId, body) : await store.claim(accountId, body);
+  if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : r.reason === "NO_CHARACTER" || r.reason === "NOT_FOUND" ? 404 : 409, { error: r.reason, message: r.message });
+  return json(200, r);
+}
+
 async function characterRoute(request: Request, env: Env, url: URL): Promise<Response> {
   const accountId = await resolveAccount(request, env);
   if (accountId === null) return json(401, { error: "UNAUTHENTICATED" });
@@ -597,6 +622,13 @@ async function devRoute(request: Request, env: Env, url: URL): Promise<Response>
   if (request.method === "POST" && url.pathname === "/dev/frontier/reset") {
     const view = await frontierFor(env).devReset(accountId);
     return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
+  }
+  // DEV ONLY: EXP up to a level, so smokes can reach the Class2 trial.
+  if (request.method === "POST" && url.pathname === "/dev/level") {
+    const parsed = z.object({ level: z.number().int().min(1).max(200) }).strict().safeParse(await readJson(request));
+    if (!parsed.success) return json(400, { error: "INVALID_REQUEST" });
+    await charactersFor(env).devRaiseLevel(accountId, parsed.data.level);
+    return json(200, { ok: true });
   }
   // DEV ONLY: a piece with set affixes, plus coins and items, so smokes can test rerolls.
   if (request.method === "POST" && url.pathname === "/dev/grant") {

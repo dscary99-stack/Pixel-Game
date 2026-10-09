@@ -52,3 +52,4 @@ export * from "./mail";
 export * from "./vault";
 export * from "./practice";
 export * from "./player-kit";
+export * from "./class-change";

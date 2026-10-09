@@ -35,6 +35,57 @@ export const RACE_PASSIVES: Readonly<Record<string, string>> = {
   "race:veilborn": "skill:race_veilborn_shade",
 };
 
+/**
+ * Class2 branches (chapter 02 table, P16 draft): two per Class1, one picked after the trial at Lv50.
+ * A branch adds its passive and two actives (Class1 4 + Class2 2 = the 6 active slots); the second
+ * active opens 10 levels later. EXAMPLE names and levels (STATUS A142).
+ */
+export interface Class2Branch {
+  id: string;
+  classId: string;
+  name: { th: string; en: string };
+  /** The chapter 02 line: what the branch does and what it gives up. */
+  summary: string;
+  passiveId: string;
+  actives: readonly { skillId: string; level: number }[];
+}
+
+const branch = (id: string, classId: string, th: string, en: string, summary: string, passiveId: string, a1: string, a2: string): Class2Branch => ({
+  id,
+  classId,
+  name: { th, en },
+  summary,
+  passiveId,
+  actives: [
+    { skillId: a1, level: 50 },
+    { skillId: a2, level: 60 },
+  ],
+});
+
+export const CLASS2_BRANCHES: readonly Class2Branch[] = [
+  branch("class2:bastion", "class:guardian", "ปราการ", "Bastion", "โล่หลายเป้าหมายและรับแทน มีจำนวนครั้ง", "skill:c2_bastion_layers", "skill:c2_bastion_wall", "skill:c2_bastion_stand_in"),
+  branch("class2:sentinel", "class:guardian", "ผู้เฝ้ารบ", "Sentinel", "ตั้งรับแล้วสวน ใช้จังหวะก่อนเร่งดาเมจ", "skill:c2_sentinel_riposte", "skill:c2_sentinel_stance", "skill:c2_sentinel_payback"),
+  branch("class2:breaker", "class:striker", "ผู้ทะลวง", "Breaker", "เปิดช่วงเกราะอ่อนให้ทีม ขาดการสนับสนุนด้านอื่น", "skill:c2_breaker_crack", "skill:c2_breaker_shatter", "skill:c2_breaker_wave"),
+  branch("class2:berserker", "class:striker", "นักรบคลั่ง", "Berserker", "ใช้ HP เป็นต้นทุน แรงขึ้นเมื่อเลือดน้อย", "skill:c2_berserker_blood", "skill:c2_berserker_blood_slash", "skill:c2_berserker_fury"),
+  branch("class2:sharpshooter", "class:ranger", "มือยิงแม่น", "Sharpshooter", "เล็งเป้าหมายเดี่ยว แลก action เตรียมตัว", "skill:c2_sharp_steady", "skill:c2_sharp_aim", "skill:c2_sharp_piercer"),
+  branch("class2:trapper", "class:ranger", "นักวางกับดัก", "Trapper", "กับดักทำงานตามเหตุการณ์ ไม่ต้องเดินในฉากสู้", "skill:c2_trapper_snare", "skill:c2_trapper_root_trap", "skill:c2_trapper_spike_field"),
+  branch("class2:elementalist", "class:arcanist", "ผู้ชำนาญธาตุ", "Elementalist", "วางธาตุแล้วต่อปฏิกิริยา แลก MP", "skill:c2_elemental_attune", "skill:c2_elemental_torrent", "skill:c2_elemental_thunder"),
+  branch("class2:spellweaver", "class:arcanist", "ผู้ถักเวท", "Spellweaver", "เตรียมเวทไว้รอบถัดไป มีสัญญาณให้เห็น", "skill:c2_weaver_loom", "skill:c2_weaver_thread", "skill:c2_weaver_star_net"),
+  branch("class2:lifekeeper", "class:warden", "ผู้รักษาชีวิต", "Lifekeeper", "ฮีลต่อเนื่องและกระจาย ดาเมจต่ำ", "skill:c2_life_wellspring", "skill:c2_life_rain", "skill:c2_life_stream"),
+  branch("class2:spiritkeeper", "class:warden", "ผู้พิทักษ์วิญญาณ", "Spiritkeeper", "ป้องกันล้มและชุบ มีต้นทุน ไม่ชุบวน", "skill:c2_spirit_vigil", "skill:c2_spirit_ward", "skill:c2_spirit_recall"),
+  branch("class2:beast_marshal", "class:binder", "ผู้บัญชาการคู่ใจ", "Beast Marshal", "แลก action ตัวเองให้คู่ใจลงมือทันที", "skill:c2_marshal_command", "skill:c2_marshal_charge", "skill:c2_marshal_pack"),
+  branch("class2:soul_linker", "class:binder", "ผู้เชื่อมสายสัมพันธ์", "Soul Linker", "เชื่อมสมาชิกแบ่งการคุ้มกัน ไม่เพิ่มช่องคู่ใจ", "skill:c2_linker_thread", "skill:c2_linker_share", "skill:c2_linker_bind"),
+  branch("class2:assassin", "class:rogue", "นักสังหาร", "Assassin", "เปิดจุดอ่อนและเจาะแนวหลัง ไม่ล่องหนจนบอสทำอะไรไม่ได้", "skill:c2_assassin_vanish", "skill:c2_assassin_shadow_strike", "skill:c2_assassin_death_mark"),
+  branch("class2:saboteur", "class:rogue", "ผู้ก่อกวน", "Saboteur", "ทำลายบัฟและก่อกวน ไม่เพิ่ม loot", "skill:c2_saboteur_meddle", "skill:c2_saboteur_unravel", "skill:c2_saboteur_flashbang"),
+  branch("class2:apothecary", "class:alchemist", "นักปรุงโอสถ", "Apothecary", "ผสมรักษาและต้านสถานะ ไม่ผูกขาดงานคราฟต์", "skill:c2_apothecary_dose", "skill:c2_apothecary_purge", "skill:c2_apothecary_tonic"),
+  branch("class2:transmuter", "class:alchemist", "ผู้แปรสสาร", "Transmuter", "สารตั้งต้นและปฏิกิริยาสนาม (น้ำมันเจอไฟ)", "skill:c2_transmuter_catalyst", "skill:c2_transmuter_oil", "skill:c2_transmuter_ignite"),
+  branch("class2:minstrel", "class:bard", "นักบรรเลง", "Minstrel", "เพลงหลักหนุนทั้งทีม ไม่เพิ่ม EXP/drop", "skill:c2_minstrel_tempo", "skill:c2_minstrel_anthem", "skill:c2_minstrel_refrain"),
+  branch("class2:dirgesinger", "class:bard", "ผู้ขับบทโศก", "Dirgesinger", "บทเพลงกดดันศัตรู มีโอกาสถูกต้าน", "skill:c2_dirge_lament", "skill:c2_dirge_weight", "skill:c2_dirge_last_verse"),
+];
+
+export const class2Branch = (id: string | null | undefined): Class2Branch | undefined => (id == null ? undefined : CLASS2_BRANCHES.find((b) => b.id === id));
+export const class2BranchesOf = (classId: string): Class2Branch[] => CLASS2_BRANCHES.filter((b) => b.classId === classId);
+
 export interface PlayerKit {
   skillIds: string[];
   passiveIds: string[];
@@ -42,13 +93,19 @@ export interface PlayerKit {
   locked: { skillId: string; level: number }[];
 }
 
-/** The kit at this level. An unknown class or race has nothing (the character schema refuses them). */
-export function playerKit(classId: string, raceId: string, level: number): PlayerKit {
+/**
+ * The kit at this level. An unknown class or race has nothing (the character schema refuses them);
+ * a Class2 branch counts only when it belongs to the character's Class1.
+ */
+export function playerKit(classId: string, raceId: string, level: number, class2Id?: string | null): PlayerKit {
   const k = CLASS_KITS[classId];
   const race = RACE_PASSIVES[raceId];
+  const b = class2Branch(class2Id);
+  const c2 = b?.classId === classId ? b : undefined;
+  const actives = [...(k?.actives ?? []), ...(c2?.actives ?? [])];
   return {
-    skillIds: (k?.actives ?? []).filter((a) => a.level <= level).map((a) => a.skillId),
-    passiveIds: [...(k === undefined ? [] : [k.passiveId]), ...(race === undefined ? [] : [race])],
-    locked: (k?.actives ?? []).filter((a) => a.level > level).map((a) => ({ ...a })),
+    skillIds: actives.filter((a) => a.level <= level).map((a) => a.skillId),
+    passiveIds: [...(k === undefined ? [] : [k.passiveId]), ...(c2 === undefined ? [] : [c2.passiveId]), ...(race === undefined ? [] : [race])],
+    locked: actives.filter((a) => a.level > level).map((a) => ({ ...a })),
   };
 }

@@ -31,7 +31,7 @@ import {
 } from "@pmrpg/shared";
 import { ELEMENT_COLOR, type BattleScene } from "./battle-scene";
 import type { CharacterApi, CharacterBundle } from "./character-api";
-import { autoHuntPanel, armoryPanel, practicePanel, craftPanel, refinePanel, frontierPanel, journalPanel, ordersPanel, questPanel, titleName, equipmentPanel, partyPanel, rebirthPanel, secretQuestPanel, shopPanel, skillPanel, statsPanel, teamPanel, vitals } from "./character-ui";
+import { autoHuntPanel, armoryPanel, classPanel, practicePanel, craftPanel, refinePanel, frontierPanel, journalPanel, ordersPanel, questPanel, titleName, equipmentPanel, partyPanel, rebirthPanel, secretQuestPanel, shopPanel, skillPanel, statsPanel, teamPanel, vitals } from "./character-ui";
 import { mailPanel, marketPanel, tradePanel, vaultPanel } from "./market-ui";
 import type { WorldTransport } from "./world-transport";
 
@@ -58,6 +58,7 @@ const NPC_SERVICE_TH: Record<Exclude<NpcService, "talk">, string> = {
   vault: "คลังของบัญชี",
   practice: "ลานทดสอบ (ลองสู้บอส)",
   armory: "ร้านอุปกรณ์",
+  class: "บททดสอบอาชีพขั้นสอง",
 };
 
 const TILE_COLOR: Record<(typeof TILE_LEGEND)[TileChar]["kind"], number> = {
@@ -190,6 +191,7 @@ export class WorldScene extends Phaser.Scene {
     kb.on("keydown-N", () => void this.openMail());
     kb.on("keydown-Y", () => void this.openPractice());
     kb.on("keydown-U", () => void this.openArmory());
+    kb.on("keydown-I", () => void this.openClass());
     if (this.api !== null) {
       const button = (x: number, label: string, open: () => Promise<void>) =>
         this.add
@@ -223,6 +225,7 @@ export class WorldScene extends Phaser.Scene {
         ["คลัง (V)", () => this.openVault()],
         ["จดหมาย (N)", () => this.openMail()],
         ["ลานทดสอบ (Y)", () => this.openPractice()],
+        ["อาชีพขั้นสอง (I)", () => this.openClass()],
       ];
       let x = 8;
       let lift = 0;
@@ -628,6 +631,15 @@ export class WorldScene extends Phaser.Scene {
     if (battleId !== null) this.startHttpBattle(battleId, "เข้าลานทดสอบ!", () => void this.openPractice());
   }
 
+  /** Class2 at ผู้ใหญ่พิมพ์: pick a branch and take its trial in town; coming back reopens the panel to claim it. */
+  private async openClass() {
+    let battleId: string | null = null;
+    await this.withPanel("บททดสอบ: จบไฟต์นี้ก่อน", async (api) => {
+      battleId = await classPanel(api);
+    });
+    if (battleId !== null) this.startHttpBattle(battleId, "เริ่มบททดสอบอาชีพ!", () => void this.openClass());
+  }
+
   /** A tower floor fight: started over HTTP, so coming back reopens the tower instead of asking the map. */
   private startTowerBattle(battleId: string) {
     this.startHttpBattle(battleId, "เข้าไฟต์ในหอคอย!", () => void this.openFrontier());
@@ -824,6 +836,7 @@ export class WorldScene extends Phaser.Scene {
       vault: () => this.openVault(true),
       practice: () => this.openPractice(),
       armory: () => this.openArmory(),
+      class: () => this.openClass(),
     };
     const services = n.services.filter((s): s is Exclude<NpcService, "talk"> => s !== "talk");
     if (this.api === null || services.length === 0) return;

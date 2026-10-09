@@ -112,6 +112,8 @@ export interface CharacterView {
   id: string;
   name: string;
   classId: string;
+  /** The Class2 branch from the trial at Lv50 (class-change.ts); null before it. */
+  class2Id?: string | null;
   raceId: string;
   element: Element;
   level: number;
@@ -209,7 +211,7 @@ export function playerSetup(
     ...(c.mp === null ? {} : { mp: c.mp }),
     // The class kit open at this level and the race passive (player-kit.ts).
     ...(() => {
-      const k = playerKit(c.classId, c.raceId, c.level);
+      const k = playerKit(c.classId, c.raceId, c.level, c.class2Id);
       return { skillIds: k.skillIds, ...(k.passiveIds.length > 0 ? { passiveIds: k.passiveIds } : {}) };
     })(),
     ...(worn.sigilIds !== undefined && worn.sigilIds.length > 0 ? { sigilIds: [...worn.sigilIds] } : {}),

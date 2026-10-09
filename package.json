@@ -34,6 +34,7 @@
     "smoke:market": "vite-node apps/server/scripts/market-smoke.ts",
     "smoke:vault": "vite-node apps/server/scripts/vault-smoke.ts",
     "smoke:mail": "vite-node apps/server/scripts/mail-smoke.ts",
+    "smoke:class": "vite-node apps/server/scripts/class-smoke.ts",
     "db:migrate:local": "cd apps/server && wrangler d1 migrations apply pixel-monster-rpg-dev --local",
     "check": "npm run typecheck && npm test && npm run build:client && npm run build:server"
   },

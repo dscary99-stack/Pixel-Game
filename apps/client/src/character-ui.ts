@@ -25,9 +25,11 @@ import {
   type Recipe,
   EXAMPLE_SHOPS,
   gearBands,
+  class2Branch,
   playerKit,
   STATUS_DEFINITIONS,
   type SkillDefinition,
+  type ClassView,
   exampleMapRegistry,
   EFFECT_HIT_NAME_TH,
   EFFECT_RES_NAME_TH,
@@ -92,7 +94,7 @@ import {
 import { ApiError, type CharacterApi, type CharacterBundle } from "./character-api";
 
 const maps = exampleMapRegistry();
-const { species, equipment: equipmentDefs, items: itemDefs, sigils: sigilDefs, skills: skillDefs, affixPools } = exampleContentMaps();
+const { species, equipment: equipmentDefs, items: itemDefs, sigils: sigilDefs, skills: skillDefs, bosses: bossDefs, affixPools } = exampleContentMaps();
 /** Display only: the client shows socket counts and prices, the server applies its own rules. */
 const RULES = PRODUCTION_RULES;
 
@@ -1964,8 +1966,8 @@ export function statsPanel(api: CharacterApi, start: CharacterBundle): Promise<C
         ),
         el("div", { class: "pm-note" }, "ได้ 3 แต้มต่อเลเวล · ค่า 11–60 ใช้ 1 แต้ม, 61–100 ใช้ 2, 101–150 ใช้ 3 · ลดค่าที่ลงแล้วไม่ได้ · สูตร EXP เป็นค่าชั่วคราว"),
       );
-      // Class1 kit and race passive (player-kit.ts): what is open now and what opens later.
-      const kit = playerKit(c.classId, c.raceId, c.level);
+      // Class1 kit, the Class2 branch once taken, and the race passive (player-kit.ts).
+      const kit = playerKit(c.classId, c.raceId, c.level, c.class2Id);
       const skills = el("ul", { class: "pm-list", "data-class-skills": "" });
       const row = (id: string, note: string) => {
         const sk = skillDefs.get(id);
@@ -1974,7 +1976,7 @@ export function statsPanel(api: CharacterApi, start: CharacterBundle): Promise<C
       for (const id of kit.passiveIds) row(id, "");
       for (const id of kit.skillIds) row(id, "");
       for (const l of kit.locked) row(l.skillId, ` (เปิดที่ Lv${l.level})`);
-      body.append(el("h3", {}, "สกิลอาชีพและเผ่า"), skills, el("div", { class: "pm-note" }, "สกิลที่เปิดแล้วใช้ในไฟต์ได้ทันที (ทั้งสั่งเองและ Auto) · ชุดสกิลและตัวเลขเป็นตัวอย่าง (P16)"));
+      body.append(el("h3", {}, `สกิลอาชีพและเผ่า${class2Branch(c.class2Id) === undefined ? "" : ` (สาย${class2Branch(c.class2Id)!.name.th})`}`), skills, el("div", { class: "pm-note" }, "สกิลที่เปิดแล้วใช้ในไฟต์ได้ทันที (ทั้งสั่งเองและ Auto) · ชุดสกิลและตัวเลขเป็นตัวอย่าง (P16)"));
       const dirty = PRIMARY_STATS.some((k) => draft[k] !== c.primaryStats[k]);
       save.disabled = !dirty;
       reset.disabled = !dirty;
@@ -2440,5 +2442,96 @@ export function partyPanel(api: CharacterApi): Promise<void> {
       body.append(el("p", {}, "รหัสปาร์ตี้ (ให้เพื่อนใส่): "), el("code", { "data-party-code": party.partyId }, party.partyId), ul, leave);
     };
     void run(() => api.party());
+  });
+}
+
+const CLASS_REFUSAL_TH: Record<string, string> = {
+  LEVEL_TOO_LOW: "เลเวลยังไม่ถึง",
+  ALREADY_CHOSEN: "เลือกสายไปแล้ว",
+};
+
+/**
+ * Class2 at ผู้ใหญ่พิมพ์ (class-change.ts, P16/P28): the two branches of this class with what each adds,
+ * the trial (a practice boss fight that gives and takes nothing), and taking the branch after a win.
+ * Resolves with a battle id to open, or null when closed.
+ */
+export function classPanel(api: CharacterApi): Promise<string | null> {
+  return new Promise((resolve) => {
+    const { panel, close } = overlay();
+    let busy = false;
+    const body = el("div", { "data-class": "" });
+    const error = el("div", { class: "pm-error", role: "alert" });
+    const done = el("button", { type: "button" }, "ปิด");
+    const actions = el("div", { class: "pm-actions" });
+    actions.append(done);
+    panel.append(el("h2", {}, "อาชีพขั้นสอง (Class2)"), body, error, actions);
+    const finish = (battleId: string | null) => {
+      close();
+      resolve(battleId);
+    };
+    done.addEventListener("click", () => finish(null));
+    const run = async (fn: () => Promise<void>) => {
+      if (busy) return;
+      busy = true;
+      error.textContent = "";
+      try {
+        await fn();
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+      } finally {
+        busy = false;
+      }
+    };
+    const draw = (v: ClassView) => {
+      body.replaceChildren();
+      const boss = bossDefs.get(v.bossId)?.name.th ?? v.bossId;
+      body.append(
+        el(
+          "div",
+          { class: "pm-note" },
+          `เปิดบททดสอบที่ Lv${v.trialLevel} · สู้${boss}ที่แรงขึ้นเป็น ${v.trialStatPct}% ด้วยทีมปัจจุบัน HP/MP เต็ม ไม่พกไอเทม ไม่ได้และไม่เสียอะไร หนีได้ทุกเมื่อ · ชนะแล้วรับสายที่เลือกไว้ได้ครั้งเดียว (ยังเปลี่ยนสายภายหลังไม่ได้) · ชื่อสาย สกิล และตัวเลขเป็นตัวอย่าง (P16/P28)`,
+        ),
+      );
+      if (v.class2Id !== null) body.append(el("div", { class: "pm-stats", "data-class2": v.class2Id }, `สายของคุณ: ${class2Branch(v.class2Id)?.name.th ?? v.class2Id}`));
+      const t = v.trial;
+      if (t !== null && t.status === "won" && v.class2Id === null) {
+        const claim = el("button", { type: "button", class: "primary", "data-class-claim": t.operationId }, `รับสาย${class2Branch(t.branchId)?.name.th ?? t.branchId}`);
+        claim.addEventListener("click", () =>
+          void run(async () => {
+            await api.classClaim(t.operationId);
+            draw(await api.classView());
+          }),
+        );
+        body.append(el("div", { class: "pm-stats" }, "ผ่านบททดสอบแล้ว!"), claim);
+      } else if (t !== null && t.status === "lost" && v.class2Id === null) {
+        body.append(el("div", { class: "pm-note" }, `บททดสอบสาย${class2Branch(t.branchId)?.name.th ?? ""} ครั้งล่าสุดยังไม่ผ่าน ลองใหม่ได้`));
+      }
+      for (const b of v.branches) {
+        const list = el("ul", { class: "pm-list", "data-class-branch": b.id });
+        const row = (id: string, note: string) => {
+          const sk = skillDefs.get(id);
+          list.append(el("li", { "data-skill": id }, `${sk?.name.th ?? id}${note} — ${sk === undefined ? "" : skillBrief(sk)}`));
+        };
+        row(b.passiveId, "");
+        for (const a of b.skills) row(a.skillId, ` (Lv${a.level})`);
+        body.append(el("h3", {}, `${b.name.th} (${b.name.en})`), el("div", { class: "pm-note" }, b.summary), list);
+        if (v.class2Id === null) {
+          const go = el("button", { type: "button", class: "primary", "data-class-trial": b.id }, "เริ่มบททดสอบสายนี้");
+          if (v.blocked !== null) {
+            go.setAttribute("disabled", "");
+            go.textContent = CLASS_REFUSAL_TH[v.blocked] ?? v.blocked;
+          }
+          go.addEventListener("click", () =>
+            void run(async () => {
+              // A fresh id per tap; a retry of this request resumes the same fight on the server.
+              const r = await api.classTrialStart(`class_${crypto.randomUUID().replace(/-/g, "")}`, b.id);
+              finish(r.battleId);
+            }),
+          );
+          body.append(go);
+        }
+      }
+    };
+    void run(async () => draw(await api.classView()));
   });
 }

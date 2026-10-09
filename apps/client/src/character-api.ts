@@ -3,7 +3,7 @@
  * what it gets back. Identity uses the dev header until O11 picks auth.
  */
 import { authHeaders, type Identity } from "./identity";
-import type { AssetSnapshot, CharacterView, CreateCharacterRequest, MarketBrowseQuery, MarketKind, MarketView, TradeKind, TradeSide, TradeView, VaultView, MailView, DisposeQuote, EquipSlot, EquipmentView, FrontierView, PracticeView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RefineResult, RolledAffix, SecretQuestView } from "@pmrpg/shared";
+import type { AssetSnapshot, CharacterView, CreateCharacterRequest, MarketBrowseQuery, MarketKind, MarketView, TradeKind, TradeSide, TradeView, VaultView, MailView, DisposeQuote, EquipSlot, EquipmentView, FrontierView, PracticeView, ClassView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RefineResult, RolledAffix, SecretQuestView } from "@pmrpg/shared";
 
 export type StoredCompanion = MonsterInstance & { hp: number | null; mp: number | null };
 
@@ -178,6 +178,20 @@ export class CharacterApi {
 
   practiceStart(operationId: string, bossId: string) {
     return this.call<{ battleId: string; resumed: boolean }>("POST", "/practice/start", { operationId, bossId });
+  }
+
+  /** Class2 at ผู้ใหญ่พิมพ์: the branches, the trial level and the latest trial. */
+  classView() {
+    return this.call<ClassView>("GET", "/class");
+  }
+
+  classTrialStart(operationId: string, branchId: string) {
+    return this.call<{ battleId: string; branchId: string; resumed: boolean }>("POST", "/class/trial/start", { operationId, branchId });
+  }
+
+  /** Take the branch of a won trial (keyed by the trial's own operation id, so a retry answers the same). */
+  classClaim(operationId: string) {
+    return this.call<{ status: "claimed"; class2Id: string }>("POST", "/class/trial/claim", { operationId });
   }
 
   frontier() {
