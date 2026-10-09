@@ -13,9 +13,25 @@ import type { SkillDefinition, TargetRule } from "../schemas";
 import type { SkillNode, SkillTree } from "../skill-tree";
 import { D, H, R, S, passive, skill, st, tD, tH, tS, type Growth, type Primary, type Then } from "./skill-builders";
 
-type Entry = { skill: SkillDefinition; max: number; col: number; row: number; req?: [string, number][]; cost?: number };
+type Entry = { skill: SkillDefinition; max: number; col: number; row: number; req?: [string, number][]; cost?: number; capstone?: true };
 
-function build(id: string, tier: JobTier, entries: Entry[]): { tree: SkillTree; skills: SkillDefinition[] } {
+/**
+ * Capstones (Claude's skill pass after Nut 2026-10-09 17:14Z): one per column of a Class1 tree, below
+ * the passives. Max Lv5 at 2 points a level, cooldown 6, and they need the column's deepest active at
+ * Lv5 (or its max), so a build that commits to a line gets its payoff and the tree costs well over the
+ * Class1 points.
+ */
+const CAPSTONE_ROW = 4;
+const CAPSTONE_COST = 2;
+
+function capstoneReq(entries: Entry[], col: number): [string, number][] {
+  const line = entries.filter((e) => e.col === col && !e.capstone && e.skill.kind === "active").sort((a, b) => b.row - a.row);
+  const last = line[0];
+  return last === undefined ? [] : [[last.skill.id, Math.min(5, last.max)]];
+}
+
+function build(id: string, tier: JobTier, given: Entry[]): { tree: SkillTree; skills: SkillDefinition[] } {
+  const entries = given.map((e) => (e.capstone ? { ...e, req: capstoneReq(given, e.col) } : e));
   const nodes: SkillNode[] = entries.map((e) => ({
     skillId: e.skill.id,
     maxLevel: e.max,
@@ -34,6 +50,8 @@ function maker(prefix: string, tier: JobTier) {
 }
 const P = (prefix: string, tier: JobTier) => (key: string, th: string, triggers: Parameters<typeof passive>[2], mods: Parameters<typeof passive>[3] = []) => passive(`skill:${prefix}_${key}`, th, triggers, mods, tier);
 const E = (skill: SkillDefinition, max: number, col: number, row: number, req: [string, number][] = []): Entry => ({ skill, max, col, row, req });
+/** A capstone in column `col` (see CAPSTONE_ROW). */
+const U = (skill: SkillDefinition, col: number): Entry => ({ skill, max: 5, col, row: CAPSTONE_ROW, cost: CAPSTONE_COST, capstone: true });
 
 // ====================================================================== Class1 (tier 1)
 
@@ -52,6 +70,10 @@ function guardian() {
     E(a("daunt", "ข่มขวัญ", "all_enemies", "ranged", 12, 4, "debuff", S(st("atk_down", 50, 2), st("matk_down", 50, 2))), 10, 3, 1, [[id("provoke"), 3]]),
     E(p("heart", "ใจผู้พิทักษ์", [{ on: "protected_ally", then: [{ kind: "restore_mp", target: "self", amount: 4 }] }], [{ kind: "guard_reduction", reductionPct: 15 }]), 1, 2, 3, [[id("cover"), 1]]),
     E(p("steadfast", "ยืนหยัด", [{ on: "hp_below", hpBelowPct: 30, oncePerBattle: true, then: [{ kind: "status", target: "self", statuses: [st("endure", 100, 2), st("dmg_reduction", 100, 2)] }] }]), 1, 3, 3, [[id("provoke"), 1]]),
+    U(a("judgement_crash", "ค้อนโล่พิพากษา", "enemy_row", "melee", 18, 6, "mixed", D("physical", { statuses: [st("stun", 35, 1)] }), [tS("self", st("shield", 100, 2, { shieldPct: 10 }))]), 0),
+    U(a("dawn_guard", "อรุณพิทักษ์", "all_enemies", "ranged", 22, 6, "dmg", D("magic", { own: true }), [tS("all_allies", st("shield", 100, 2, { shieldPct: 6 }))]), 1),
+    U(a("aegis_of_faith", "ปราการศรัทธา", "all_allies", "ranged", 20, 6, "buff", S(st("shield", 100, 2, { shieldPct: 8 }), st("dmg_reduction", 100, 1))), 2),
+    U(a("challenge", "ท้าทายทั้งสนาม", "all_enemies", "ranged", 18, 6, "debuff", S(st("taunt", 80, 2), st("atk_down", 50, 2)), [tS("self", st("def_up", 100, 3), st("counter", 100, 2))]), 3),
   ]);
 }
 
@@ -73,6 +95,10 @@ function striker() {
       { on: "kill", then: [{ kind: "restore_mp", target: "self", amount: 4 }] },
     ]), 1, 0, 3, [[id("heavy_slash"), 1]]),
     E(p("swordcraft", "เพลงดาบ", [], [{ kind: "damage_vs_status", statusId: "def_down", bonusPct: 15 }]), 1, 3, 3, [[id("armor_break"), 3]]),
+    U(a("thousand_edges", "ดาบพันคม", "all_enemies", "melee", 20, 6, "dmg", D("physical", { riders: { critBonusPct: 20 } })), 0),
+    U(a("sky_rend", "ดาบธาตุผ่าฟ้า", "single_enemy", "ranged", 22, 6, "dmg", D("magic", { own: true, riders: { penetrationPct: 30 } }), [tD("all_enemies", "magic", 0.25, { own: true })]), 1),
+    U(a("battle_banner", "ธงรบไม่ถอย", "all_allies", "ranged", 20, 6, "buff", S(st("atk_up", 100, 2), st("crit_up", 100, 2)), [tS("self", st("endure", 100, 1))]), 2),
+    U(a("break_morale", "ทลายขวัญทัพ", "all_enemies", "ranged", 18, 6, "debuff", S(st("def_down", 80, 2), st("atk_down", 70, 2), st("fear", 35, 1))), 3),
   ]);
 }
 
@@ -87,13 +113,17 @@ function ranger() {
     E(a("frost_arrow", "ศรเยือกแข็ง", "single_enemy", "ranged", 12, 3, "mixed", D("magic", { element: "WATER", statuses: [st("spd_down", 60, 2), st("root", 40, 1)] })), 10, 1, 2, [[id("element_arrow"), 5]]),
     E(a("hawk_eye", "สายตาเหยี่ยว", "self", "ranged", 8, 2, "buff", S(st("focus", 100, 2), st("crit_up", 100, 2), st("accuracy_up", 100, 2))), 10, 2, 0),
     E(a("field_remedy", "ยาสมุนไพรป่า", "single_ally", "ranged", 8, 3, "heal", H({ statuses: [st("regen", 100, 2)] })), 10, 2, 1, [[id("hawk_eye"), 3]]),
-    E(a("snare", "กับดักขาตรึง", "enemy_row", "ranged", 8, 3, "debuff", S(st("root", 70, 2), st("spd_down", 50, 2))), 10, 3, 0),
+    E(a("snare", "กับดักขาตรึง", "enemy_row", "ranged", 8, 3, "debuff", S(st("root", 70, 2), st("spd_down", 50, 2))), 5, 3, 0),
     E(a("smoke_veil", "ควันอำพราง", "all_enemies", "ranged", 12, 4, "debuff", S(st("blind", 50, 2))), 10, 3, 1, [[id("snare"), 3]]),
     E(p("hunter_eye", "สายตานักล่า", [], [{ kind: "damage_vs_status", statusId: "mark", bonusPct: 15 }]), 1, 0, 3, [[id("marking_shot"), 1]]),
     E(p("light_step", "ก้าวเบา", [
       { on: "moved", then: [{ kind: "status", target: "self", statuses: [st("evasion_up", 100, 1)] }] },
       { on: "battle_start", then: [{ kind: "status", target: "self", statuses: [st("accuracy_up", 100, 2)] }] },
     ]), 1, 3, 3, [[id("snare"), 1]]),
+    U(a("storm_volley", "ห่าศรล้างแนว", "all_enemies", "ranged", 20, 6, "dmg", D("physical", { riders: { bonusVsStatus: { statusId: "mark", bonusPct: 40, consume: false } } })), 0),
+    U(a("seeker_arrow", "ศรธาตุตามรอย", "single_enemy", "ranged", 20, 6, "mixed", D("magic", { own: true, riders: { accuracyBonusPct: 20, critBonusPct: 20 } }), [tS("all_enemies", st("mark", 50, 2))]), 1),
+    U(a("hunters_path", "เส้นทางนักล่า", "all_allies", "ranged", 20, 6, "buff", S(st("accuracy_up", 100, 2), st("crit_up", 100, 2), st("spd_up", 100, 2))), 2),
+    U(a("wild_net", "ตาข่ายป่า", "all_enemies", "ranged", 18, 6, "debuff", S(st("root", 90, 2), st("spd_down", 100, 3), st("def_down", 60, 2))), 3),
   ]);
 }
 
@@ -109,9 +139,13 @@ function arcanist() {
     E(a("mana_shield", "เกราะมานา", "self", "ranged", 8, 3, "buff", S(st("shield", 100, 2, { shieldPct: 15 }), st("mdef_up", 100, 2))), 10, 2, 0),
     E(a("quicken_spell", "เร่งเวท", "single_ally", "ranged", 10, 4, "buff", S(st("matk_up", 100, 3), st("focus", 100, 2))), 10, 2, 1, [[id("mana_shield"), 3]]),
     E(a("seal", "ผนึกเวท", "single_enemy", "ranged", 8, 3, "debuff", S(st("silence", 50, 2), st("mp_cost_up", 40, 2))), 10, 3, 0),
-    E(a("confusion_mist", "หมอกสับสน", "enemy_row", "ranged", 12, 4, "debuff", S(st("confuse", 30, 1), st("blind", 40, 2))), 10, 3, 1, [[id("seal"), 3]]),
+    E(a("confusion_mist", "หมอกสับสน", "enemy_row", "ranged", 12, 4, "debuff", S(st("confuse", 30, 1), st("blind", 40, 2))), 5, 3, 1, [[id("seal"), 3]]),
     E(p("mana_flow", "กระแสมานา", [{ on: "used_skill", chancePct: 30, then: [{ kind: "restore_mp", target: "self", amount: 4 }] }]), 1, 1, 3, [[id("arcane_bolt"), 1]]),
     E(p("element_weave", "ธาตุสอดประสาน", [], [{ kind: "damage_vs_status", statusId: "wet", bonusPct: 10 }, { kind: "damage_vs_status", statusId: "burn", bonusPct: 10 }]), 1, 3, 3, [[id("seal"), 1]]),
+    U(a("rune_blades", "ดาบอาคมพันเล่ม", "enemy_row", "ranged", 18, 6, "dmg", D("physical"), [tS("self", st("matk_up", 100, 2))]), 0),
+    U(a("meteor", "อุกกาบาตธาตุ", "all_enemies", "ranged", 24, 6, "mixed", D("magic", { own: true, statuses: [st("mdef_down", 30, 2)] })), 1),
+    U(a("mana_tide", "ห้วงมานา", "all_allies", "ranged", 20, 6, "buff", S(st("mp_regen", 100, 3), st("matk_up", 100, 2))), 2),
+    U(a("grand_seal", "ผนึกทั้งสนาม", "all_enemies", "ranged", 18, 6, "debuff", S(st("silence", 70, 2), st("mp_cost_up", 80, 3), st("matk_down", 60, 2))), 3),
   ]);
 }
 
@@ -131,6 +165,10 @@ function warden() {
     E(a("weary_curse", "คำสาปอ่อนล้า", "enemy_row", "ranged", 12, 4, "debuff", S(st("atk_down", 50, 2), st("matk_down", 50, 2))), 10, 3, 1, [[id("purify"), 1]]),
     E(p("grace", "พรแห่งการเยียวยา", [], [{ kind: "heal_low_hp", belowHpPct: 40, bonusPct: 25 }]), 1, 2, 3, [[id("mend"), 1]]),
     E(p("steadfast_faith", "ศรัทธามั่น", [{ on: "ally_down", oncePerBattle: true, then: [{ kind: "status", target: "allies", statuses: [st("res_up", 100, 2), st("def_up", 100, 2)] }] }]), 1, 3, 3, [[id("purify"), 1]]),
+    U(a("dawn_hammer", "ค้อนอรุณ", "enemy_row", "melee", 18, 6, "dmg", D("physical"), [tH("all_allies", 0.3)]), 0),
+    U(a("heavens_verdict", "พิพากษาสวรรค์", "all_enemies", "ranged", 22, 6, "mixed", D("magic", { own: true, statuses: [st("anti_heal", 40, 2)] })), 1),
+    U(a("sanctuary", "เขตศักดิ์สิทธิ์", "all_allies", "ranged", 26, 6, "heal", H({ statuses: [st("regen", 100, 1)] })), 2),
+    U(a("forbidden_seal", "ตราต้องห้าม", "all_enemies", "ranged", 18, 6, "debuff", S(st("unbuffable", 90, 2), st("dispel", 90, 1), st("atk_down", 60, 2))), 3),
   ]);
 }
 
@@ -144,12 +182,16 @@ function binder() {
     E(a("bond_wave", "คลื่นสายใย", "all_enemies", "ranged", 12, 3, "dmg", D("magic", { own: true })), 10, 1, 1, [[id("bond_pulse"), 3]]),
     E(a("beast_sigil", "ตราอสูร", "single_enemy", "ranged", 12, 4, "mixed", D("magic", { own: true, statuses: [st("fear", 30, 1)] })), 10, 1, 2, [[id("bond_pulse"), 5]]),
     E(a("rouse", "ปลุกพลังคู่ใจ", "all_allies", "ranged", 10, 4, "buff", S(st("atk_up", 100, 3), st("matk_up", 100, 3))), 10, 2, 0),
-    E(a("quicken", "เร่งจังหวะ", "single_ally", "ranged", 8, 4, "buff", S(st("advance", 100, 1), st("spd_up", 100, 2))), 10, 2, 1, [[id("rouse"), 3]]),
+    E(a("quicken", "เร่งจังหวะ", "single_ally", "ranged", 8, 4, "buff", S(st("advance", 100, 1), st("spd_up", 100, 2))), 5, 2, 1, [[id("rouse"), 3]]),
     E(a("bond_guard", "ผูกพันคุ้มภัย", "all_allies", "ranged", 12, 4, "buff", S(st("shield", 100, 2, { shieldPct: 8 }))), 10, 2, 2, [[id("quicken"), 3]]),
     E(a("predator_gaze", "สายตาสัตว์ร้าย", "single_enemy", "ranged", 6, 3, "debuff", S(st("def_down", 50, 2), st("evasion_down", 50, 2))), 10, 3, 0),
     E(a("howl", "เสียงหอนข่มขวัญ", "all_enemies", "ranged", 12, 4, "debuff", S(st("fear", 25, 1), st("atk_down", 40, 2))), 10, 3, 1, [[id("predator_gaze"), 3]]),
     E(p("bond_link", "สายใยคู่ใจ", [{ on: "ally_down", then: [{ kind: "status", target: "allies", statuses: [st("atk_up", 100, 2)] }] }]), 1, 2, 3, [[id("rouse"), 1]]),
     E(p("one_heart", "ใจเดียวกัน", [{ on: "battle_start", then: [{ kind: "status", target: "allies", statuses: [st("spd_up", 100, 1)] }] }]), 1, 3, 3, [[id("predator_gaze"), 1]]),
+    U(a("pack_frenzy", "ฝูงคลั่ง", "single_enemy", "melee", 18, 6, "mixed", D("physical", { statuses: [st("vulnerable", 50, 2)] }), [tS("all_allies", st("atk_up", 100, 1))]), 0),
+    U(a("bond_burst", "สายใยแตกพลัง", "all_enemies", "ranged", 22, 6, "dmg", D("magic", { own: true }), [tS("all_allies", st("shield", 100, 1, { shieldPct: 5 }))]), 1),
+    U(a("one_pack", "ใจเดียวทั้งฝูง", "all_allies", "ranged", 20, 6, "buff", S(st("spd_up", 100, 2), st("atk_up", 100, 1), st("matk_up", 100, 1))), 2),
+    U(a("alpha_glare", "สายตาจ้าวฝูง", "all_enemies", "ranged", 18, 6, "debuff", S(st("fear", 45, 1), st("def_down", 80, 2), st("evasion_down", 70, 2))), 3),
   ]);
 }
 
@@ -163,11 +205,15 @@ function rogue() {
     E(a("venom_shade", "พิษเงา", "single_enemy", "ranged", 10, 3, "mixed", D("magic", { own: true, statuses: [st("poison", 50, 3)] })), 10, 1, 1, [[id("shade_knife"), 3]]),
     E(a("toxic_bomb", "ระเบิดควันพิษ", "all_enemies", "ranged", 14, 4, "mixed", D("magic", { own: true, statuses: [st("poison", 25, 2)] })), 10, 1, 2, [[id("shade_knife"), 5]]),
     E(a("shadow_veil", "ซ่อนเงา", "self", "ranged", 6, 4, "buff", S(st("stealth", 100, 1), st("crit_up", 100, 2))), 5, 2, 0),
-    E(a("shadow_step", "ก้าวเงา", "self", "ranged", 8, 4, "buff", S(st("evasion_up", 100, 2), st("spd_up", 100, 2), st("advance", 100, 1))), 10, 2, 1, [[id("shadow_veil"), 3]]),
+    E(a("shadow_step", "ก้าวเงา", "self", "ranged", 8, 4, "buff", S(st("evasion_up", 100, 2), st("spd_up", 100, 2), st("advance", 100, 1))), 5, 2, 1, [[id("shadow_veil"), 3]]),
     E(a("pilfer", "ขโมยบัฟ", "single_enemy", "melee", 8, 3, "mixed", D("physical", { statuses: [st("steal_buff", 60, 1)] })), 10, 3, 0),
     E(a("blinding_dust", "ผงตาบอด", "enemy_row", "ranged", 10, 4, "debuff", S(st("blind", 60, 2))), 10, 3, 1, [[id("pilfer"), 3]]),
     E(p("opportunist", "ฉวยโอกาส", [], [{ kind: "damage_vs_status", statusId: "bleed", bonusPct: 20 }]), 1, 0, 3, [[id("bleeding_stab"), 1]]),
     E(p("quick_hands", "มือไว", [{ on: "kill", then: [{ kind: "status", target: "self", statuses: [st("spd_up", 100, 1)] }] }]), 1, 3, 3, [[id("pilfer"), 1]]),
+    U(a("dance_of_blades", "ร่ายรำพันคม", "enemy_row", "melee", 18, 6, "mixed", D("physical", { riders: { critBonusPct: 20 }, statuses: [st("bleed", 50, 3)] })), 0),
+    U(a("death_shade", "เงามรณะ", "single_enemy", "ranged", 20, 6, "mixed", D("magic", { own: true, riders: { execute: { belowHpPct: 35, bonusPct: 80 } }, statuses: [st("poison", 50, 3)] })), 1),
+    U(a("shadow_curtain", "ม่านเงาคุ้มทีม", "all_allies", "ranged", 20, 6, "buff", S(st("evasion_up", 100, 3), st("spd_up", 100, 2)), [tS("self", st("stealth", 100, 1), st("crit_up", 100, 3))]), 2),
+    U(a("dark_haze", "ม่านพิษมืด", "all_enemies", "ranged", 18, 6, "debuff", S(st("blind", 60, 2), st("poison", 60, 3), st("res_down", 50, 2))), 3),
   ]);
 }
 
@@ -186,6 +232,10 @@ function alchemist() {
     E(a("corrosive", "ยากัดกร่อน", "single_enemy", "ranged", 8, 3, "debuff", S(st("corrode", 70, 3), st("res_down", 50, 2))), 10, 3, 1, [[id("toxic_cloud"), 3]]),
     E(p("brewer", "มือปรุงชำนาญ", [{ on: "used_item", then: [{ kind: "restore_mp", target: "self", amount: 5 }] }]), 1, 2, 3, [[id("quick_remedy"), 1]]),
     E(p("toxin_ward", "ภูมิต้านพิษ", [{ on: "battle_start", then: [{ kind: "status", target: "self", statuses: [st("res_up", 100, 3)] }] }]), 1, 3, 3, [[id("toxic_cloud"), 1]]),
+    U(a("grand_flask", "ระเบิดขวดใหญ่", "all_enemies", "ranged", 20, 6, "mixed", D("physical", { statuses: [st("corrode", 40, 3)] })), 0),
+    U(a("transmute_ruin", "แปรธาตุมหาวิบัติ", "all_enemies", "ranged", 22, 6, "dmg", D("magic", { own: true, riders: { bonusVsStatus: { statusId: "poison", bonusPct: 40, consume: false } } })), 1),
+    U(a("elixir", "ยาอายุวัฒนะ", "all_allies", "ranged", 28, 6, "heal", H({ statuses: [st("res_up", 100, 2)] })), 2),
+    U(a("corrosive_fog", "หมอกกัดกร่อน", "all_enemies", "ranged", 18, 6, "debuff", S(st("corrode", 80, 3), st("def_down", 70, 2), st("anti_heal", 70, 2))), 3),
   ]);
 }
 
@@ -201,10 +251,14 @@ function bard() {
     E(a("war_song", "เพลงปลุกใจ", "all_allies", "ranged", 8, 3, "buff", S(st("atk_up", 100, 2), st("matk_up", 100, 2))), 10, 2, 0),
     E(a("ward_song", "บทเพลงคุ้มกัน", "all_allies", "ranged", 10, 4, "buff", S(st("def_up", 100, 3), st("mdef_up", 100, 3))), 10, 2, 1, [[id("war_song"), 3]]),
     E(a("healing_song", "เพลงฟื้นฟู", "all_allies", "ranged", 14, 4, "heal", H({ statuses: [st("mp_regen", 100, 2)] })), 10, 2, 2, [[id("ward_song"), 3]]),
-    E(a("lullaby", "เพลงกล่อมหลับ", "enemy_row", "ranged", 12, 4, "debuff", S(st("sleep", 35, 2))), 10, 3, 0),
+    E(a("lullaby", "เพลงกล่อมหลับ", "enemy_row", "ranged", 12, 4, "debuff", S(st("sleep", 35, 2))), 5, 3, 0),
     E(a("dirge_of_weariness", "บทเพลงอ่อนล้า", "all_enemies", "ranged", 12, 4, "debuff", S(st("spd_down", 50, 2), st("res_down", 40, 2))), 10, 3, 1, [[id("lullaby"), 3]]),
     E(p("rhythm", "จังหวะเพลง", [{ on: "battle_start", then: [{ kind: "status", target: "allies", statuses: [st("accuracy_up", 100, 2)] }] }]), 1, 2, 3, [[id("war_song"), 1]]),
     E(p("echo", "เสียงก้อง", [{ on: "used_skill", chancePct: 25, then: [{ kind: "restore_mp", target: "self", amount: 5 }] }]), 1, 1, 3, [[id("shrill_note"), 1]]),
+    U(a("war_dance", "ระบำมหาศึก", "all_enemies", "melee", 20, 6, "dmg", D("physical"), [tS("all_allies", st("evasion_up", 100, 1))]), 0),
+    U(a("symphony", "ซิมโฟนีธาตุ", "all_enemies", "ranged", 22, 6, "dmg", D("magic", { own: true }), [tS("all_allies", st("matk_up", 100, 1))]), 1),
+    U(a("anthem", "บทเพลงสรรเสริญ", "all_allies", "ranged", 22, 6, "buff", S(st("atk_up", 100, 2), st("matk_up", 100, 2))), 2),
+    U(a("grand_lullaby", "เพลงกล่อมทั้งสนาม", "all_enemies", "ranged", 18, 6, "debuff", S(st("sleep", 70, 1), st("atk_down", 70, 2), st("res_down", 70, 3))), 3),
   ]);
 }
 

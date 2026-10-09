@@ -123,6 +123,19 @@ describe("skill trees (Nut 2026-10-09)", () => {
     }
   });
 
+  it("every Class1 tree ends each column in a capstone: Lv5 max, 2 points a level, after the column's deepest active", () => {
+    for (const cls of CLASS1_DEFINITIONS) {
+      const t = SKILL_TREES.get(cls.id)!;
+      const caps = t.nodes.filter((n) => n.row === 4);
+      expect(caps.map((n) => n.col).sort(), cls.id).toEqual([0, 1, 2, 3]);
+      for (const n of caps) {
+        expect([n.maxLevel, n.cost, sk(n.skillId).cooldown], n.skillId).toEqual([5, 2, 6]);
+        const line = t.nodes.filter((x) => x.col === n.col && x.row < 4 && sk(x.skillId).kind === "active").sort((a, b) => b.row - a.row);
+        expect(n.requires.map((r) => r.skillId), n.skillId).toEqual([line[0]!.skillId]);
+      }
+    }
+  });
+
   it("every active is worth its cost at Lv1 (P30 budget band)", () => {
     for (const t of SKILL_TREES.values()) {
       for (const n of t.nodes) {
