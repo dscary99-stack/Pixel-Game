@@ -133,6 +133,12 @@ export function combatBagOf<S extends Pick<BattleState, "bag" | "consumed" | "me
   return m ?? state;
 }
 
+/** Companion-box room per player, when the server counted it (P26). */
+function roomOf(players: readonly { accountId: string; companionRoom?: number }[]): { companionRoom?: Record<string, number> } {
+  const known = players.filter((x) => x.companionRoom !== undefined);
+  return known.length === 0 ? {} : { companionRoom: Object.fromEntries(known.map((x) => [x.accountId, x.companionRoom!])) };
+}
+
 /** A unit's stats with its statuses applied (status.ts). Base `stats` never change mid-fight. */
 const eff = (ctx: Ctx, u: BattleUnit): DerivedStats => statsWithStatuses(ctx.rules, u.stats, u.statuses);
 
@@ -227,6 +233,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
     bag: { ...setup.bag },
     consumed: {},
     ...(party.length > 0 ? { members: party.map((m, i) => ({ accountId: m.player.accountId, playerUnitId: `player:${i + 2}`, bag: { ...m.bag }, consumed: {} })) } : {}),
+    ...roomOf([p, ...party.map((m) => m.player)]),
     ...(setup.partyBonus !== undefined && setup.partyBonus.partners > 0 ? { partyBonus: { ...setup.partyBonus } } : {}),
     ...(setup.mapId !== undefined ? { mapId: setup.mapId } : {}),
     rng: seedRng(setup.seed),
@@ -1491,6 +1498,9 @@ function doCapture(ctx: Ctx, actor: BattleUnit, target: BattleUnit, itemId: stri
     inBag: combatBagOf(ctx.s, actor).bag[itemId] ?? 0,
   });
   if (!check.ok) reject(check.code === "QUALITY_NOT_ENABLED" ? "INVALID_COMMAND" : check.code, check.message);
+  const catcherId = controllerOf(ctx.s, actor);
+  const room = ctx.s.companionRoom?.[catcherId];
+  if (room !== undefined && room <= 0) reject("COMPANION_BOX_FULL", `the companion box is full (${ctx.rules.provisional.companionBox.value.capacity}); release or trade one first`);
   const p = (check as CaptureBreakdown).probability;
   const species = ctx.content.species.get(target.speciesId!)!;
 
@@ -1504,8 +1514,9 @@ function doCapture(ctx: Ctx, actor: BattleUnit, target: BattleUnit, itemId: stri
   target.guarding = false;
   if (ctx.s.resolutions[target.unitId] !== undefined) throw new Error(`enemy ${target.unitId} resolved twice`);
   ctx.s.resolutions[target.unitId] = "captured";
+  if (room !== undefined) ctx.s.companionRoom![catcherId] = room - 1;
   // The monster goes to whoever caught it; in a party fight the others get the same EXP, no loot.
-  const catcher = controllerOf(ctx.s, actor);
+  const catcher = catcherId;
   for (const who of fightRecipients(ctx.s)) {
     const id = `${ctx.s.battleId}:${target.unitId}:captured`;
     const awards = expAwards(ctx, target.level, target.elite !== undefined, who);

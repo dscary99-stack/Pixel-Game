@@ -123,6 +123,8 @@ export interface CharacterView {
   mp: number | null;
   version: number;
   team: TeamSlot[];
+  /** Companions outside the team (P26, per character). The server fills it in. */
+  companionBox?: { used: number; capacity: number };
 }
 
 export const PLAYER_POSITION = { row: "front", slot: 1 } as const;
@@ -209,6 +211,7 @@ export function playerSetup(
     skillIds: [...PLACEHOLDER_PLAYER_SKILLS],
     ...(worn.sigilIds !== undefined && worn.sigilIds.length > 0 ? { sigilIds: [...worn.sigilIds] } : {}),
     basicAttackRange: weaponRange(worn.mainHand, cls?.basicAttackRange ?? "melee"),
+    ...(c.companionBox !== undefined ? { companionRoom: Math.max(0, c.companionBox.capacity - c.companionBox.used) } : {}),
     row: PLAYER_POSITION.row,
     slot: PLAYER_POSITION.slot,
   };

@@ -47,6 +47,8 @@ export type ErrorCode =
   /** A taunted unit must target the taunter. */
   | "TAUNTED"
   | "AUTO_CAPTURE_FORBIDDEN"
+  /** The catcher's companion box is full (P26): nothing is spent. */
+  | "COMPANION_BOX_FULL"
   /** No fleeing from this fight (a boss, or a monster whose flee value is 0). */
   | "FLEE_FORBIDDEN"
   /** The fallen ally has not been down a full turn yet (O15). */

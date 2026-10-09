@@ -74,6 +74,7 @@ export type ExchangeRejection =
   | "SELF_TRADE"
   | "SAME_ACCOUNT"
   | "NOT_STORABLE"
+  | "COMPANION_BOX_FULL"
   | "NOT_IN_VAULT"
   | "VAULT_FULL"
   | "LEVEL_INELIGIBLE"
@@ -216,6 +217,23 @@ export class ExchangeBase {
 
   protected async fighting(accountId: string): Promise<boolean> {
     return (await this.db.prepare(`SELECT 1 AS x FROM battle_reservations WHERE account_id = ? AND status IN ('reserved', 'active')`).bind(accountId).first()) !== null;
+  }
+
+  /** SQL: this account's companion box after `net` more companions arrive stays within P26. */
+  protected boxGuard(accountId: string, net: number): { sql: string; args: unknown[] } {
+    return {
+      sql: `(SELECT COUNT(*) FROM monster_instances WHERE owner_id = ?) - (SELECT COUNT(*) FROM character_team t JOIN characters c ON c.id = t.character_id WHERE c.account_id = ?) + ? <= ?`,
+      args: [accountId, accountId, net, this.rules.provisional.companionBox.value.capacity],
+    };
+  }
+
+  /** The companion box (P26) has no room for `net` more companions. */
+  protected async boxIssue(accountId: string, net: number, who = "your"): Promise<Rejected | null> {
+    if (net <= 0) return null;
+    const g = this.boxGuard(accountId, net);
+    const ok = await this.db.prepare(`SELECT 1 AS x WHERE ${g.sql}`).bind(...g.args).first();
+    const cap = this.rules.provisional.companionBox.value.capacity;
+    return ok !== null ? null : reject("COMPANION_BOX_FULL", `${who} companion box is full (${cap}); release one first`);
   }
 
   protected async sameLogin(a: string, b: string): Promise<boolean> {
@@ -591,6 +609,8 @@ export class MarketStore extends ExchangeBase {
       const why = this.levelIssue(me.level, c);
       if (why !== null) return why;
       minLevel = this.minRecipientLevel(c);
+      const full = await this.boxIssue(accountId, 1);
+      if (full !== null) return full;
     }
 
     const tax = Math.floor((l.price * l.tax_bps) / 10_000);
@@ -602,7 +622,12 @@ export class MarketStore extends ExchangeBase {
       `(SELECT COALESCE(SUM(delta), 0) FROM coin_ledger WHERE account_id = ?) >= ?`,
       `EXISTS (SELECT 1 FROM characters WHERE account_id = ? AND level >= ?)`,
     ];
-    const args = [accountId, accountId, l.seller_id, listingId, at, accountId, l.price, accountId, l.price, accountId, minLevel];
+    const args: unknown[] = [accountId, accountId, l.seller_id, listingId, at, accountId, l.price, accountId, l.price, accountId, minLevel];
+    if (l.kind === "companion") {
+      const box = this.boxGuard(accountId, 1);
+      guards.push(box.sql);
+      args.push(...box.args);
+    }
     const token = crypto.randomUUID();
     const ours = this.ours(accountId, operationId, token);
     const stmts: SqlBound[] = [
@@ -770,6 +795,8 @@ export class TradeStore extends ExchangeBase {
     if ("status" in mine) return mine;
     const theirs = await this.checkSide(target.account_id, want, me.level, false);
     if ("status" in theirs) return theirs;
+    const myBox = await this.boxIssue(accountId, want.companionIds.length - give.companionIds.length);
+    if (myBox !== null) return myBox;
 
     const offerId = `to_${(await hashJson({ accountId, operationId })).slice(0, 24)}`;
     const at = this.now();
@@ -827,6 +854,11 @@ export class TradeStore extends ExchangeBase {
       const why = this.levelIssue(me.level, c);
       if (why !== null) return why;
     }
+    const intoMine = give.companionIds.length - want.companionIds.length;
+    const myBox = await this.boxIssue(accountId, intoMine);
+    if (myBox !== null) return myBox;
+    const theirBox = await this.boxIssue(o.from_id, -intoMine, "the other player's");
+    if (theirBox !== null) return theirBox;
     const meNeed = Math.max(1, ...held.map((c) => this.minRecipientLevel(c)));
     const themNeed = Math.max(1, ...(await this.pets(want.companionIds)).map((c) => this.minRecipientLevel(c)));
 
@@ -842,6 +874,15 @@ export class TradeStore extends ExchangeBase {
       ...g.sql,
     ];
     const args = [accountId, ...this.townMapIds, accountId, accountId, o.from_id, offerId, accountId, at, accountId, meNeed, o.from_id, themNeed, ...g.args];
+    for (const [who, net] of [
+      [accountId, intoMine],
+      [o.from_id, -intoMine],
+    ] as const) {
+      if (net <= 0) continue;
+      const box = this.boxGuard(who, net);
+      guards.push(box.sql);
+      args.push(...box.args);
+    }
     const token = crypto.randomUUID();
     const ours = this.ours(accountId, operationId, token);
     const stmts: SqlBound[] = [

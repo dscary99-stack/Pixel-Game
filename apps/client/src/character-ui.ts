@@ -608,6 +608,8 @@ export function teamPanel(api: CharacterApi, start: CharacterBundle): Promise<Ch
       return [...CELLS].sort((x, y) => (x.startsWith("front") === front ? 0 : 1) - (y.startsWith("front") === front ? 0 : 1)).find((c) => !used.has(c));
     };
     panel.append(el("h2", {}, "ทีมคู่ใจ"));
+    const boxOf = bundle.character.companionBox;
+    if (boxOf !== undefined) panel.append(el("div", { class: "pm-note", "data-companion-box": "" }, `คลังคู่ใจ (นอกทีม) ${boxOf.used}/${boxOf.capacity} ตัว · ของตัวละครนี้เท่านั้น ตัวละครอื่นในบัญชีไม่เห็น`));
     const count = el("div", { class: "pm-note" });
     const grid = el("div", { class: "pm-stats", "data-formation": "" });
     panel.append(count, grid);
@@ -746,7 +748,8 @@ export function teamPanel(api: CharacterApi, start: CharacterBundle): Promise<Ch
         close();
         resolve(r.character);
       } catch (e) {
-        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+        error.textContent =
+          e instanceof ApiError && e.code === "COMPANION_BOX_FULL" ? "คลังคู่ใจเต็ม เอาออกจากทีมไม่ได้ ปล่อยตัวอื่นก่อน" : e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
         save.disabled = false;
       }
     });

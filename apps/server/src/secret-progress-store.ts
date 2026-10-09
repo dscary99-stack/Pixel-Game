@@ -79,7 +79,8 @@ export type SecretRejection =
   | "INSUFFICIENT_ITEMS"
   | "PAYLOAD_MISMATCH"
   | "NOT_DONE"
-  | "NO_REWARD";
+  | "NO_REWARD"
+  | "COMPANION_BOX_FULL";
 
 export interface DeliverResult {
   questId: string;
@@ -233,6 +234,15 @@ export class SecretProgressStore {
     if (q === undefined) return reject("NO_SUCH_QUEST", `no quest ${questId}`);
     if (q.rewards === undefined || q.rewards.length === 0) return reject("NO_REWARD", "this quest was rolled before rewards existed");
 
+    // A companion reward goes into the character's box (P26): it must have room first.
+    const pets = q.rewards.filter((r) => r.kind === "companion").length;
+    const cap = this.rules.provisional.companionBox.value.capacity;
+    const boxSql = `(SELECT COUNT(*) FROM monster_instances WHERE owner_id = ?) - (SELECT COUNT(*) FROM character_team t JOIN characters c ON c.id = t.character_id WHERE c.account_id = ?) + ? <= ?`;
+    const boxArgs = [accountId, accountId, pets, cap];
+    if (pets > 0 && (await this.db.prepare(`SELECT 1 AS x WHERE ${boxSql}`).bind(...boxArgs).first()) === null) {
+      return reject("COMPANION_BOX_FULL", `the companion box is full (${cap}); release one before claiming`);
+    }
+
     const at = this.now();
     const token = crypto.randomUUID();
     const ch = set.characterId;
@@ -251,9 +261,10 @@ export class SecretProgressStore {
         .prepare(
           `INSERT INTO secret_quest_claims (character_id, quest_id, token, result_json, created_at)
            SELECT ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM secret_quest_progress WHERE character_id = ? AND quest_id = ? AND completed_at IS NOT NULL)
+             AND ${pets > 0 ? boxSql : "1"}
            ON CONFLICT DO NOTHING`,
         )
-        .bind(ch, questId, token, JSON.stringify(result), at, ch, questId),
+        .bind(ch, questId, token, JSON.stringify(result), at, ch, questId, ...(pets > 0 ? boxArgs : [])),
     ];
     for (const [i, r] of q.rewards.entries()) {
       const g = granted[i]!;
@@ -310,6 +321,7 @@ export class SecretProgressStore {
     await this.db.batch(stmts);
     const row = await this.claimRow(ch, questId);
     if (row !== null) return { status: "done", replayed: row.token !== token, result: JSON.parse(row.result_json) as ClaimResult };
+    if (pets > 0 && (await this.db.prepare(`SELECT 1 AS x WHERE ${boxSql}`).bind(...boxArgs).first()) === null) return reject("COMPANION_BOX_FULL", `the companion box is full (${cap}); release one before claiming`);
     return reject("NOT_DONE", "this quest is not finished yet");
   }
 

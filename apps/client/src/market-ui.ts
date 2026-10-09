@@ -32,6 +32,7 @@ const REASON_TH: Record<string, string> = {
   NOT_STORABLE: "ของชิ้นนี้ห้ามฝากคลัง",
   NOT_IN_VAULT: "ในคลังไม่มีของนี้แล้ว (ตัวละครอื่นอาจหยิบไปก่อน)",
   VAULT_FULL: `คลังเต็ม (${RULES.provisional.vault.value.slots} ช่อง)`,
+  COMPANION_BOX_FULL: `คลังคู่ใจเต็ม (${RULES.provisional.companionBox.value.capacity} ตัวนอกทีม) ปล่อยหรือเทรดออกก่อน`,
   NOT_IN_TOWN: "ต้องอยู่ในเมือง",
   IN_BATTLE: "ทำไม่ได้ระหว่างไฟต์",
   NOT_SELLABLE: "ของชิ้นนี้ห้ามขาย",

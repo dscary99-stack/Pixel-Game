@@ -164,6 +164,8 @@ export interface BattleState {
   consumed: Record<string, number>;
   /** Party boss fights: the other members (up to partyMaxMembers − 1), each with their own bag. */
   members?: PartyMemberState[];
+  /** Free companion-box places per account, counted at fight start and used by captures (P26). Absent = no limit. */
+  companionRoom?: Record<string, number>;
   /** Party bonus locked at fight start (P02). Absent on older states = none. */
   partyBonus?: PartyBonus;
   /** The map the fight started on (field packs and boss lairs); absent for tower floors and dev fights. */
@@ -324,6 +326,8 @@ export interface BattleSetup {
     basicAttackRange: Range;
     /** Every Sigil installed in the worn gear, one entry per copy. */
     sigilIds?: string[];
+    /** Free places in the character's companion box when the fight starts (P26); omitted = no limit. */
+    companionRoom?: number;
   };
   companions: (Position & { instance: MonsterInstance; hp?: number; mp?: number })[];
   enemies: (Position & { unitId: string; speciesId: string; element: Element; captureWindowOpen?: boolean; lootEligible?: boolean; elite?: { modifiers: EliteModifier[] } })[];

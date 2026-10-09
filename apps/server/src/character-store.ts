@@ -135,7 +135,7 @@ export type CreateResult =
 
 export type SetTeamResult =
   | { status: "saved"; character: CharacterView }
-  | { status: "rejected"; reason: "INVALID_REQUEST" | "NO_CHARACTER" | "STALE_VERSION" | "IN_BATTLE" | "NOT_OWNER" | "ASSET_LOCKED" | "TEAM_TOO_LARGE" | "DUPLICATE_SPECIES" | "FORMATION_INVALID"; message: string };
+  | { status: "rejected"; reason: "INVALID_REQUEST" | "NO_CHARACTER" | "STALE_VERSION" | "IN_BATTLE" | "NOT_OWNER" | "ASSET_LOCKED" | "TEAM_TOO_LARGE" | "DUPLICATE_SPECIES" | "FORMATION_INVALID" | "COMPANION_BOX_FULL"; message: string };
 
 const OPEN_BATTLE = `EXISTS (SELECT 1 FROM battle_reservations WHERE account_id = ? AND status IN ('reserved', 'active'))`;
 
@@ -310,6 +310,12 @@ export class CharacterStore {
     const team = members.map((m) => ({ instanceId: m!.id, speciesId: m!.speciesId }));
     const issues = validateTeam(this.rules, team);
     if (issues.length > 0) return { status: "rejected", reason: issues[0]!.code as "TEAM_TOO_LARGE" | "DUPLICATE_SPECIES", message: issues.map((i) => i.message).join("; ") };
+    // Taking companions out of the team puts them in the box (P26): it must have room for them.
+    const cap = this.rules.provisional.companionBox.value.capacity;
+    const teamNow = (await this.view(row)).team.length;
+    if (companionIds.length < teamNow && owned.size - companionIds.length > cap) {
+      return { status: "rejected", reason: "COMPANION_BOX_FULL", message: `the companion box holds ${cap}; release one before taking another out of the team` };
+    }
     if (formation !== undefined) {
       const bad = formationIssues(this.rules, companionIds, formation);
       if (bad.length > 0) return { status: "rejected", reason: "FORMATION_INVALID", message: bad.join("; ") };
@@ -515,6 +521,7 @@ export class CharacterStore {
       .prepare(`SELECT monster_instance_id, species_id, row, slot FROM character_team WHERE character_id = ? ORDER BY position`)
       .bind(row.id)
       .all<{ monster_instance_id: string; species_id: string; row: TeamSlot["row"]; slot: number }>();
+    const owned = (await this.db.prepare(`SELECT COUNT(*) AS n FROM monster_instances WHERE owner_id = ?`).bind(row.account_id).first<{ n: number }>())?.n ?? 0;
     return {
       id: row.id,
       name: row.name,
@@ -528,6 +535,7 @@ export class CharacterStore {
       mp: row.mp,
       version: row.version,
       team: results.map((t) => ({ instanceId: t.monster_instance_id, speciesId: t.species_id, row: t.row, slot: t.slot })),
+      companionBox: { used: Math.max(0, owned - results.length), capacity: this.rules.provisional.companionBox.value.capacity },
     };
   }
 }

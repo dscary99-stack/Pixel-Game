@@ -160,6 +160,22 @@ describe("capture in a fight (kernel, §10)", () => {
     applyCommand(r, c, s, { type: "capture", actorId: "player", targetId: "w", itemId }, { source: "player" });
   const w = (s: BattleState) => s.units.find((u) => u.unitId === "w")!;
 
+  it("a full companion box (P26) refuses before anything is spent; room counts down with each catch", () => {
+    const always = withCaptureProfile(rules, { rankBounds: { NORMAL: [1, 1], ELITE: [1, 1], BOSS: [1, 1] } });
+    const full = fight(always, (x) => (x.companionRoom = { [x.ownerAccountId]: 0 }));
+    const before = JSON.stringify(full);
+    expect(capture(always, full)).toMatchObject({ ok: false, code: "COMPANION_BOX_FULL" });
+    expect(JSON.stringify(full)).toBe(before);
+    const one = fight(always, (x) => (x.companionRoom = { [x.ownerAccountId]: 1 }));
+    const res = ok(capture(always, one));
+    expect(res.state.companionRoom).toEqual({ [one.ownerAccountId]: 0 });
+    // The server's count reaches the fight through the player setup.
+    const setup = baseSetup({ enemies: [{ unitId: "w", speciesId: fox25.id, element: "FIRE", row: "front", slot: 0 }], bag: { "item:fox_lv25_capture": 3 } });
+    const made = ok(createBattle(always, c, { ...setup, player: { ...setup.player, companionRoom: 7 } })).state;
+    expect(made.companionRoom).toEqual({ [setup.player.accountId]: 7 });
+    expect(ok(createBattle(always, c, setup)).state.companionRoom).toBeUndefined();
+  });
+
   it("a refusal spends nothing, takes no action and does not move the RNG", () => {
     const s = fight(rules);
     for (const itemId of ["item:ember_fox_capture", "item:nope_capture"]) {

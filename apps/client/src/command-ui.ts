@@ -58,6 +58,8 @@ export function refusalTh(code: string | undefined, message: string | undefined)
       return "ยังชุบไม่ได้: ต้องล้มครบ 1 ตาก่อน";
     case "NOT_YOUR_TURN":
       return "ยังไม่ถึงตาเรา (ตาของเพื่อนในปาร์ตี้)";
+    case "COMPANION_BOX_FULL":
+      return "จับไม่ได้: คลังคู่ใจเต็ม ปล่อยหรือเทรดออกก่อน (ไม่เสียเครื่องจับ)";
     default:
       return `${code ?? ""} ${message ?? ""}`.trim();
   }

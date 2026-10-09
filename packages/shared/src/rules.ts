@@ -256,6 +256,11 @@ export const RULES = {
      * Account vault shared by the characters of one login (Nut 2026-10-08). Items, gear and coins; some
      * things are ห้ามฝากคลัง (noStore). Put in and take out at the town NPC, look anywhere.
      */
+    /**
+     * Companion box per character (Nut 2026-10-09): companions not in the team, at most 100 per
+     * character, never shared with the account's other characters (the account vault holds no companions).
+     */
+    companionBox: provisional({ capacity: 100 } as const, "P26", "Nut 2026-10-09: 100 companions besides the team, per character, not shared"),
     vault: provisional({ slots: 100, maxLines: 20 } as const, "P25", "100 slots per account (one per item kind held, one per piece; coins take none); up to 20 lines per request"),
     /**
      * Direct trade between players (Nut 2026-10-07: item trade and companion trade are separate).
