@@ -47,7 +47,8 @@
  *   GET  /class                    Class2: the two branches of this class, the trial level, the latest trial
  *   POST /class/trial/start        start or resume the Class2 trial in town ({ operationId, branchId }); Lv50+, no branch yet
  *   POST /class/trial/claim        take the branch of a won trial ({ operationId } of that trial); once per character
- *   POST /dev/level                (dev only) raise the character to a level ({ level })
+ *   POST /character/skills/learn   learn the next level of a tree skill with job points ({ expectedVersion, skillId }; outside fights)
+ *   POST /dev/level                (dev only) raise the character to a level ({ level, job? }; job = the current tier's job level)
  *   POST /dev/frontier/jump        (dev only) move this week's run to a floor ({ floor })
  *   POST /dev/frontier/reset       (dev only) give back this week's entry
  *   GET  /auth/config              which sign-in buttons to show (provider list, public Google/Facebook app ids)
@@ -548,6 +549,11 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
     if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
     return json(200, r);
   }
+  if (request.method === "POST" && url.pathname === "/character/skills/learn") {
+    const r = await store.learnSkill(accountId, body);
+    if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
+    return json(200, r);
+  }
   if (request.method === "PUT" && url.pathname === "/character/equipment") {
     const r = await store.equip(accountId, body);
     if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
@@ -625,9 +631,9 @@ async function devRoute(request: Request, env: Env, url: URL): Promise<Response>
   }
   // DEV ONLY: EXP up to a level, so smokes can reach the Class2 trial.
   if (request.method === "POST" && url.pathname === "/dev/level") {
-    const parsed = z.object({ level: z.number().int().min(1).max(200) }).strict().safeParse(await readJson(request));
+    const parsed = z.object({ level: z.number().int().min(1).max(200), job: z.number().int().min(1).max(60).optional() }).strict().safeParse(await readJson(request));
     if (!parsed.success) return json(400, { error: "INVALID_REQUEST" });
-    await charactersFor(env).devRaiseLevel(accountId, parsed.data.level);
+    await charactersFor(env).devRaiseLevel(accountId, parsed.data.level, parsed.data.job);
     return json(200, { ok: true });
   }
   // DEV ONLY: a piece with set affixes, plus coins and items, so smokes can test rerolls.

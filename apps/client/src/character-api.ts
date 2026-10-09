@@ -62,6 +62,11 @@ export class CharacterApi {
     return this.call<{ character: CharacterView; equipment: EquipmentView[] }>("PUT", "/character/equipment", { expectedVersion, slot, instanceId });
   }
 
+  /** One more level of a tree skill with job points (skill-tree.ts). */
+  learnSkill(expectedVersion: number, skillId: string) {
+    return this.call<{ character: CharacterView }>("POST", "/character/skills/learn", { expectedVersion, skillId });
+  }
+
   allocate(expectedVersion: number, stats: PrimaryStats) {
     return this.call<{ character: CharacterView }>("PUT", "/character/stats", { expectedVersion, stats });
   }

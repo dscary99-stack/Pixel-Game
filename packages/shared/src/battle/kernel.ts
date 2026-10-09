@@ -7,7 +7,7 @@
  */
 import { applyBond, bondBonusPercent, bondTier } from "../bond";
 import { companionCombatProfile } from "../companion-growth";
-import { companionKit, effectiveSkillLevel, masteryForVictory, skillLevelCap, skillLevelMods, trainedSkillLevel } from "../skill-training";
+import { SKILL_MAX_LEVEL, companionKit, effectiveSkillLevel, masteryForVictory, skillLevelCap, skillLevelMods, trainedSkillLevel } from "../skill-training";
 import { AutoBattlePolicySchema, type AutoBattlePolicyInput, type AutoItemRule } from "./auto-policy";
 import { computeDamage, computeHeal, critChanceBp, hitChanceBp } from "../damage";
 import { rollLoot } from "../loot";
@@ -18,7 +18,7 @@ import { Rng, seedRng } from "../rng";
 import type { CaptureProfile, RulesConfig } from "../rules";
 import { captureChance, captureCheck, fightCaptureProfile, type CaptureBreakdown } from "../capture";
 import { fleeChance, reviveBlock, reviveHp } from "../flee";
-import type { BossDefinition, DamageEffect, Element, ItemDefinition, LootTable, Passive, PassiveAction, PassiveEvent, PassiveModifier, SigilDefinition, SkillDefinition, SpeciesDefinition, StatusApplication } from "../schemas";
+import type { BossDefinition, DamageEffect, EffectTarget, Element, ItemDefinition, LootTable, Passive, PassiveAction, PassiveEvent, PassiveModifier, SigilDefinition, SkillDefinition, SpeciesDefinition, StatusApplication } from "../schemas";
 import { isAreaRule, targetsEnemies } from "../schemas";
 import { deriveStats, type DerivedStats } from "../stats";
 import {
@@ -278,6 +278,10 @@ function allyUnits(rules: RulesConfig, content: BattleContent, p: BattleSetup["p
   const pStats = deriveStats(p.level, p.primaryStats, p.gear);
   for (const sid of p.skillIds) requireActiveSkill(content, sid);
   for (const pid of p.passiveIds ?? []) if (content.skills.get(pid)?.passive === undefined) reject("MISSING_REFERENCE", `passive ${pid}`);
+  for (const [sid, lv] of Object.entries(p.skillLevels ?? {})) {
+    if (!p.skillIds.includes(sid)) reject("INVALID_COMMAND", `skill level for ${sid}, which the player does not have`);
+    if (!Number.isInteger(lv) || lv < 1 || lv > SKILL_MAX_LEVEL) reject("INVALID_COMMAND", `skill level ${lv} for ${sid}`);
+  }
   const sigils: Record<string, number> = {};
   for (const id of p.sigilIds ?? []) {
     if (content.sigils?.has(id) !== true) reject("MISSING_REFERENCE", `sigil ${id}`);
@@ -300,6 +304,7 @@ function allyUnits(rules: RulesConfig, content: BattleContent, p: BattleSetup["p
     hp: clampResource(p.hp, pStats.maxHp),
     mp: clampResource(p.mp, pStats.maxMp),
     skillIds: [...p.skillIds],
+    ...(p.skillLevels !== undefined && Object.keys(p.skillLevels).length > 0 ? { skillLevels: { ...p.skillLevels } } : {}),
     ...(p.passiveIds !== undefined && p.passiveIds.length > 0 ? { passiveIds: [...p.passiveIds] } : {}),
     ...(Object.keys(sigils).length > 0 ? { sigils } : {}),
     basicAttackRange: p.basicAttackRange,
@@ -1215,7 +1220,6 @@ function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUni
   if ((actor.cooldowns[skillId] ?? 0) > 0) reject("ON_COOLDOWN", `${skillId} ready in ${actor.cooldowns[skillId]} turns`);
   if (actor.mp < mpCost) reject("INSUFFICIENT_RESOURCE", `needs ${mpCost} MP`);
   const effect = skill.effectSequence[0]!;
-  if (skill.effectSequence.length !== 1) reject("UNRESOLVED_RULE", "multi-effect skills wait for O15 (multi-hit, chains)");
 
   const onEnemy = targetsEnemies(skill.targetRule);
   const area = isAreaRule(skill.targetRule);
@@ -1243,13 +1247,13 @@ function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUni
     return;
   }
 
-  const coefficient = effect.kind === "status" ? 0 : (effect.coefficient * (100 + mods.powerPercent)) / 100;
   // Extra targets from the skill's level: the chosen target first, then more of the same side, each
   // resolved on its own (its own hit and crit). Picked by the server, never by the client: enemies in
   // formation order (front row first), allies by lowest HP share. Self-only skills never spread.
   // Area skills cover their whole area instead (front row first, then slot order).
   const formation = (a: BattleUnit, b: BattleUnit) => (a.row === b.row ? a.slot - b.slot : a.row === "front" ? -1 : 1);
   const foes: Side = actor.side === "ally" ? "enemy" : "ally";
+  const byHpShare = (a: BattleUnit, b: BattleUnit) => a.hp / a.stats.maxHp - b.hp / b.stats.maxHp || (a.unitId < b.unitId ? -1 : 1);
   const extra = area
     ? (onEnemy
         ? validTargets(ctx.s, foes, reach(actor, skill.range)).filter((u) => skill.targetRule !== "enemy_row" || u.row === target.row)
@@ -1260,37 +1264,67 @@ function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUni
     : mods.extraTargets <= 0 || skill.targetRule === "self"
       ? []
       : onEnemy
-        ? validTargets(ctx.s, actor.side === "ally" ? "enemy" : "ally", reach(actor, skill.range))
+        ? validTargets(ctx.s, foes, reach(actor, skill.range))
             .filter((u) => u.unitId !== target.unitId)
-            .sort((a, b) => (a.row === b.row ? a.slot - b.slot : a.row === "front" ? -1 : 1))
-        : ctx.s.units
-            .filter((u) => u.side === actor.side && active(u) && u.unitId !== target.unitId)
-            .sort((a, b) => a.hp / a.stats.maxHp - b.hp / b.stats.maxHp || (a.unitId < b.unitId ? -1 : 1));
-  for (const t of [target, ...(area ? extra : extra.slice(0, mods.extraTargets))]) {
-    if (!active(t)) continue;
-    if (effect.kind === "damage") {
-      // Protect covers single-target hits only: an area hit lands on everyone it covers.
-      strike(ctx, actor, redirectedTarget(ctx, actor, t), "skill", skillId, { ...effect, coefficient }, false, area);
-    } else if (effect.kind === "status") {
-      // No damage and no hit roll: each status rolls its own chance (O15, Nut 2026-10-04).
-      actionEvent(ctx, actor, "skill", t, { skillId });
-      for (const a of effect.statuses) applyStatus(ctx, actor, t, a);
-    } else {
-      let amount = computeHeal(actor.stats.support, coefficient, effect.flat);
-      for (const m of passiveModifiers(ctx, actor)) {
-        if (m.kind === "heal_low_hp" && t.hp * 100 < m.belowHpPct * t.stats.maxHp) amount = Math.floor((amount * (100 + m.bonusPct)) / 100);
-      }
-      const gained = receiveHeal(ctx, t, amount);
-      actionEvent(ctx, actor, "skill", t, gained >= 0 ? { skillId, heal: gained, targetHpAfter: t.hp } : { skillId, hit: true, damage: -gained, targetHpAfter: t.hp });
-      if (!active(t)) continue;
-      const mp = Math.min(effect.restoreMp ?? 0, t.stats.maxMp - t.mp);
-      if (mp > 0) {
-        t.mp += mp;
-        ctx.emit({ type: "ResourceChanged", unitId: t.unitId, source: "restore_mp", hp: 0, mp, hpAfter: t.hp, mpAfter: t.mp });
-      }
-      for (const a of effect.statuses ?? []) applyStatus(ctx, actor, t, a);
+            .sort(formation)
+        : ctx.s.units.filter((u) => u.side === actor.side && active(u) && u.unitId !== target.unitId).sort(byHpShare);
+  const primary = [target, ...(area ? extra : extra.slice(0, mods.extraTargets))];
+  // A later effect of a multi-effect skill names where it lands (schemas.ts EFFECT_TARGETS).
+  const targetsOf = (spec: EffectTarget | undefined): { list: BattleUnit[]; area: boolean } => {
+    const own = () => ctx.s.units.filter((u) => u.side === actor.side && active(u));
+    switch (spec) {
+      case undefined:
+      case "primary":
+        return { list: primary, area };
+      case "self":
+        return { list: [actor], area: false };
+      case "all_allies":
+        return { list: own().sort(formation), area: true };
+      case "lowest_ally":
+        return { list: own().sort(byHpShare).slice(0, 1), area: false };
+      case "all_enemies":
+        return { list: validTargets(ctx.s, foes, reach(actor, skill.range)).sort(formation), area: true };
     }
-  }
+  };
+  // Skill levels (player trees): more status chance and turns, and power also grows shields.
+  const levelled = (a: StatusApplication): StatusApplication => ({
+    ...a,
+    chancePct: Math.min(100, a.chancePct + mods.statusChance),
+    turns: Math.min(10, a.turns + mods.statusTurns),
+    ...(a.shieldPct !== undefined ? { shieldPct: Math.min(100, Math.floor((a.shieldPct * (100 + mods.powerPercent)) / 100)) } : {}),
+  });
+  skill.effectSequence.forEach((eff, i) => {
+    if (eff.kind === "revive") return;
+    const { list, area: spread } = targetsOf(i === 0 ? undefined : eff.target);
+    const coefficient = eff.kind === "status" ? 0 : (eff.coefficient * (100 + mods.powerPercent)) / 100;
+    for (const t of list) {
+      if (!active(t) || !active(actor)) continue;
+      if (eff.kind === "damage") {
+        const element = eff.ownElement === true ? actor.element : eff.element;
+        const statuses = eff.statuses?.map(levelled);
+        // Protect covers single-target hits only: an area hit lands on everyone it covers.
+        strike(ctx, actor, redirectedTarget(ctx, actor, t), "skill", skillId, { ...eff, element, coefficient, ...(statuses === undefined ? {} : { statuses }) }, false, spread);
+      } else if (eff.kind === "status") {
+        // No damage and no hit roll: each status rolls its own chance (O15, Nut 2026-10-04).
+        actionEvent(ctx, actor, "skill", t, { skillId });
+        for (const a of eff.statuses) applyStatus(ctx, actor, t, levelled(a));
+      } else {
+        let amount = computeHeal(actor.stats.support, coefficient, eff.flat);
+        for (const m of passiveModifiers(ctx, actor)) {
+          if (m.kind === "heal_low_hp" && t.hp * 100 < m.belowHpPct * t.stats.maxHp) amount = Math.floor((amount * (100 + m.bonusPct)) / 100);
+        }
+        const gained = receiveHeal(ctx, t, amount);
+        actionEvent(ctx, actor, "skill", t, gained >= 0 ? { skillId, heal: gained, targetHpAfter: t.hp } : { skillId, hit: true, damage: -gained, targetHpAfter: t.hp });
+        if (!active(t)) continue;
+        const mp = Math.min(eff.restoreMp ?? 0, t.stats.maxMp - t.mp);
+        if (mp > 0) {
+          t.mp += mp;
+          ctx.emit({ type: "ResourceChanged", unitId: t.unitId, source: "restore_mp", hp: 0, mp, hpAfter: t.hp, mpAfter: t.mp });
+        }
+        for (const a of eff.statuses ?? []) applyStatus(ctx, actor, t, levelled(a));
+      }
+    }
+  });
   if (active(actor)) firePassives(ctx, actor, "used_skill", { other: target, skill });
 }
 
@@ -1958,7 +1992,8 @@ function skillOptions(rules: RulesConfig, content: Pick<BattleContent, "skills">
   const out: SkillOption[] = [];
   for (const skillId of u.skillIds) {
     const skill = content.skills.get(skillId);
-    if (skill === undefined || skill.kind !== "active" || skill.effectSequence.length !== 1) continue;
+    // A skill with later effects is chosen by its first one (the rest come along).
+    if (skill === undefined || skill.kind !== "active" || skill.effectSequence.length === 0) continue;
     const { mpCost, cooldown } = skillCost(rules, u, skill);
     if ((u.cooldowns[skillId] ?? 0) > 0 || u.mp < mpCost) continue;
     if (mpCost > 0 && statusBlocks(st, "mp_skills") !== undefined) continue;

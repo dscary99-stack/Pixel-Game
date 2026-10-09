@@ -10,13 +10,13 @@
  * (`class2_id IS NULL`) and records the claiming operation, so a retry answers the same and a second
  * trial (any branch) is refused once one claim landed.
  */
-import { ClassTrialClaimRequestSchema, ClassTrialStartRequestSchema, CLASS2_TRIAL_BOSS_ID, class2Refusal, classView, companionSetups, playerSetup, type BattleSetup, type ClassTrialView, type ClassView, type RulesConfig } from "@pmrpg/shared";
+import { ClassTrialClaimRequestSchema, ClassTrialStartRequestSchema, CLASS2_TRIAL_BOSS_ID, class2Refusal, classView, jobCap, companionSetups, playerSetup, type BattleSetup, type ClassTrialView, type ClassView, type RulesConfig } from "@pmrpg/shared";
 import type { CharacterStore } from "./character-store";
 import type { Economy } from "./economy";
 import type { FrontierBattlePort } from "./frontier-store";
 import { hashJson, type SqlDb } from "./reward-ledger";
 
-export type ClassRejection = "INVALID_REQUEST" | "NO_CHARACTER" | "NOT_FOUND" | "NOT_IN_TOWN" | "IN_BATTLE" | "LEVEL_TOO_LOW" | "ALREADY_CHOSEN" | "NOT_WON" | "ENCOUNTER_REFUSED";
+export type ClassRejection = "INVALID_REQUEST" | "NO_CHARACTER" | "NOT_FOUND" | "NOT_IN_TOWN" | "IN_BATTLE" | "LEVEL_TOO_LOW" | "JOB_TOO_LOW" | "ALREADY_CHOSEN" | "NOT_WON" | "ENCOUNTER_REFUSED";
 type Rejected = { status: "rejected"; reason: ClassRejection; message: string };
 const reject = (reason: ClassRejection, message: string): Rejected => ({ status: "rejected", reason, message });
 
@@ -73,6 +73,7 @@ export class ClassStore {
       if (refusal === "NOT_FOUND") return reject("NOT_FOUND", "your class has no such branch");
       if (refusal === "ALREADY_CHOSEN") return reject("ALREADY_CHOSEN", "this character already took its Class2");
       if (refusal === "LEVEL_TOO_LOW") return reject("LEVEL_TOO_LOW", `the trial opens at Lv${this.rules.provisional.classChange.value.class2Level}`);
+      if (refusal === "JOB_TOO_LOW") return reject("JOB_TOO_LOW", `the trial needs Class1 Job ${jobCap(this.rules, 1)}`);
       if (!(await this.inTown(accountId))) return reject("NOT_IN_TOWN", "the trial is taken in town");
     }
     const battleId = prior?.battle_id ?? `battle:ct_${(await hashJson({ accountId, operationId, kind: "class2" })).slice(0, 32)}`;

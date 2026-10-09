@@ -79,9 +79,22 @@ export const StatusApplicationSchema = z
   });
 export type StatusApplication = z.infer<typeof StatusApplicationSchema>;
 
+/**
+ * Where a later effect of a multi-effect skill lands (Nut 2026-10-09: later class skills reach several
+ * targets on both sides). The first effect always goes to the skill's own targets; each later one names
+ * its own: `primary` = the same targets as the first, `self`, `all_allies`, `lowest_ally` (lowest HP
+ * share on the caster's side), `all_enemies` (every enemy the skill's range reaches).
+ */
+export const EFFECT_TARGETS = ["primary", "self", "all_allies", "lowest_ally", "all_enemies"] as const;
+export const EffectTargetSchema = z.enum(EFFECT_TARGETS);
+export type EffectTarget = z.infer<typeof EffectTargetSchema>;
+
 export const DamageEffectSchema = z
   .object({
     kind: z.literal("damage"),
+    target: EffectTargetSchema.optional(),
+    /** Use the caster's own element instead of `element` (so a player's element choice shapes the skill). */
+    ownElement: z.literal(true).optional(),
     damageType: z.enum(["physical", "magic"]),
     coefficient: z.number().positive(),
     flat: z.number().min(0),
@@ -111,6 +124,7 @@ export type DamageEffect = z.infer<typeof DamageEffectSchema>;
 export const HealEffectSchema = z
   .object({
     kind: z.literal("heal"),
+    target: EffectTargetSchema.optional(),
     coefficient: z.number().positive(),
     flat: z.number().min(0),
     /** Also restores this much MP to each healed target. */
@@ -123,6 +137,7 @@ export const HealEffectSchema = z
 export const StatusEffectSchema = z
   .object({
     kind: z.literal("status"),
+    target: EffectTargetSchema.optional(),
     statuses: z.array(StatusApplicationSchema).min(1).max(3),
   })
   .strict();
@@ -243,7 +258,8 @@ export type Passive = z.infer<typeof PassiveSchema>;
 export const SkillLevelStepSchema = z
   .object({
     atLevel: z.number().int().min(2).max(10),
-    kind: z.enum(["power", "mp_cost", "cooldown", "extra_targets"]),
+    /** status_chance: +points on every status chance of the skill; status_turns: +turns on each. */
+    kind: z.enum(["power", "mp_cost", "cooldown", "extra_targets", "status_chance", "status_turns"]),
     value: z.number().int(),
   })
   .strict();
@@ -291,17 +307,36 @@ export const SkillDefinitionSchema = z
       if (s.cooldown + sum("cooldown") < 0) ctx.addIssue({ code: "custom", message: "levelSteps would take cooldown below 0" });
       if (s.cooldown + sum("cooldown") === 1) ctx.addIssue({ code: "custom", message: "levelSteps would leave cooldown 1 (ready every turn; use 0)" });
       for (const x of s.levelSteps) {
-        const ok = x.kind === "power" || x.kind === "extra_targets" ? x.value > 0 : x.value < 0;
-        if (!ok) ctx.addIssue({ code: "custom", message: `level ${x.atLevel} ${x.kind} step must ${x.kind === "power" || x.kind === "extra_targets" ? "add" : "reduce"}` });
+        const adds = x.kind !== "mp_cost" && x.kind !== "cooldown";
+        const ok = adds ? x.value > 0 : x.value < 0;
+        if (!ok) ctx.addIssue({ code: "custom", message: `level ${x.atLevel} ${x.kind} step must ${adds ? "add" : "reduce"}` });
       }
       if (sum("extra_targets") > 4) ctx.addIssue({ code: "custom", message: "at most 4 extra targets" });
     }
+    // Multi-effect skills (up to 3): the first effect is the skill's own; later ones name their target.
+    if (s.effectSequence.length > 3) ctx.addIssue({ code: "custom", message: "at most 3 effects per skill" });
+    s.effectSequence.forEach((e, i) => {
+      const t = "target" in e ? e.target : undefined;
+      if (i === 0 && t !== undefined) ctx.addIssue({ code: "custom", message: "the first effect goes to the skill's own targets (no target)" });
+      if (i > 0 && t === undefined) ctx.addIssue({ code: "custom", message: `effect ${i + 1} needs a target` });
+      if (e.kind === "revive" && s.effectSequence.length > 1) ctx.addIssue({ code: "custom", message: "a revive skill does only that" });
+      if (i === 0 || t === undefined) return;
+      const onEnemy = t === "primary" ? targetsEnemies(s.targetRule) : t === "all_enemies";
+      if (e.kind === "damage" && !onEnemy) ctx.addIssue({ code: "custom", message: `effect ${i + 1}: damage goes on enemies` });
+      if (e.kind === "heal" && onEnemy) ctx.addIssue({ code: "custom", message: `effect ${i + 1}: heals go on allies` });
+      if (e.kind === "status") {
+        const harmful = e.statuses.map((x) => STATUS_DEFINITIONS[x.statusId].harmful);
+        if (harmful.some((h) => h !== onEnemy)) ctx.addIssue({ code: "custom", message: `effect ${i + 1}: harmful statuses on enemies, helpful ones on allies` });
+      }
+    });
     // Cooldown N: used on the owner's turn T, ready again on its turn T+N (O15), so 1 would be every turn.
     if (s.cooldown === 1) ctx.addIssue({ code: "custom", message: "cooldown 1 is ready every turn; use 0 or 2+" });
     if (s.kind === "passive" && (s.effectSequence.length > 0 || s.mpCost > 0)) {
       ctx.addIssue({ code: "custom", message: "passive skills have no direct effect sequence or MP cost in Phase A" });
     }
     for (const e of s.effectSequence) {
+      // Later effects aimed elsewhere were checked above against their own side.
+      if ("target" in e && e.target !== undefined && e.target !== "primary") continue;
       const onEnemy = targetsEnemies(s.targetRule);
       if (s.kind === "active" && e.kind === "damage" && !onEnemy) ctx.addIssue({ code: "custom", message: "damage skills aim at enemies" });
       if (s.kind === "active" && e.kind === "heal" && onEnemy) ctx.addIssue({ code: "custom", message: "heal skills aim at allies" });

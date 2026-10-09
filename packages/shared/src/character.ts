@@ -126,6 +126,10 @@ export interface CharacterView {
   team: TeamSlot[];
   /** Companions outside the team (P26, per character). The server fills it in. */
   companionBox?: { used: number; capacity: number };
+  /** Job EXP per class tier reached (P29, job.ts; index 0 = Class1). Missing means none yet. */
+  jobExp?: number[];
+  /** Skill levels learned on the skill trees (skill-tree.ts). Missing means none. */
+  skills?: Record<string, number>;
 }
 
 export const PLAYER_POSITION = { row: "front", slot: 1 } as const;
@@ -209,10 +213,14 @@ export function playerSetup(
     gear: gearBonuses(worn.defs, worn.affixes),
     ...(c.hp === null ? {} : { hp: c.hp }),
     ...(c.mp === null ? {} : { mp: c.mp }),
-    // The class kit open at this level and the race passive (player-kit.ts).
+    // The skills learned on the trees and the race passive (player-kit.ts).
     ...(() => {
-      const k = playerKit(c.classId, c.raceId, c.level, c.class2Id);
-      return { skillIds: k.skillIds, ...(k.passiveIds.length > 0 ? { passiveIds: k.passiveIds } : {}) };
+      const k = playerKit(c.classId, c.raceId, c.class2Id, c.skills);
+      return {
+        skillIds: k.skillIds,
+        ...(Object.values(k.skillLevels).some((l) => l > 1) ? { skillLevels: k.skillLevels } : {}),
+        ...(k.passiveIds.length > 0 ? { passiveIds: k.passiveIds } : {}),
+      };
     })(),
     ...(worn.sigilIds !== undefined && worn.sigilIds.length > 0 ? { sigilIds: [...worn.sigilIds] } : {}),
     basicAttackRange: weaponRange(worn.mainHand, cls?.basicAttackRange ?? "melee"),

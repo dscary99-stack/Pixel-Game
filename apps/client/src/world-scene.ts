@@ -31,7 +31,7 @@ import {
 } from "@pmrpg/shared";
 import { ELEMENT_COLOR, type BattleScene } from "./battle-scene";
 import type { CharacterApi, CharacterBundle } from "./character-api";
-import { autoHuntPanel, armoryPanel, classPanel, practicePanel, craftPanel, refinePanel, frontierPanel, journalPanel, ordersPanel, questPanel, titleName, equipmentPanel, partyPanel, rebirthPanel, secretQuestPanel, shopPanel, skillPanel, statsPanel, teamPanel, vitals } from "./character-ui";
+import { autoHuntPanel, armoryPanel, classPanel, practicePanel, craftPanel, refinePanel, frontierPanel, journalPanel, ordersPanel, questPanel, titleName, equipmentPanel, partyPanel, rebirthPanel, secretQuestPanel, shopPanel, skillPanel, statsPanel, skillTreePanel, teamPanel, vitals } from "./character-ui";
 import { mailPanel, marketPanel, tradePanel, vaultPanel } from "./market-ui";
 import type { WorldTransport } from "./world-transport";
 
@@ -192,6 +192,7 @@ export class WorldScene extends Phaser.Scene {
     kb.on("keydown-Y", () => void this.openPractice());
     kb.on("keydown-U", () => void this.openArmory());
     kb.on("keydown-I", () => void this.openClass());
+    kb.on("keydown-X", () => void this.openSkillTree());
     if (this.api !== null) {
       const button = (x: number, label: string, open: () => Promise<void>) =>
         this.add
@@ -214,10 +215,11 @@ export class WorldScene extends Phaser.Scene {
         ["งานสั่ง (O)", () => this.openOrders()],
         ["หอคอย (G)", () => this.openFrontier()],
         ["สเตตัส (C)", () => this.openStats()],
+        ["สกิลอาชีพ (X)", () => this.openSkillTree()],
         ["ล่าอัตโนมัติ (H)", () => this.toggleAutoHunt()],
         ["จุติ (R)", () => this.openRebirth()],
         ["ปาร์ตี้ (P)", () => this.openParty()],
-        ["สกิล (K)", () => this.openSkills()],
+        ["สกิลคู่ใจ (K)", () => this.openSkills()],
         ["เควส (Q)", () => this.openQuests()],
         ["สมุด (J)", () => this.openJournal()],
         ["เควสลับ (L)", () => this.openSecretQuests()],
@@ -574,6 +576,13 @@ export class WorldScene extends Phaser.Scene {
   private openStats() {
     return this.withPanel("ลงแต้มได้นอกไฟต์เท่านั้น", async (api, bundle) => {
       await statsPanel(api, bundle);
+    });
+  }
+
+  /** Skill trees: job points on the class's skills (Nut 2026-10-09). Not during a fight. */
+  private openSkillTree() {
+    return this.withPanel("เรียนสกิลได้นอกไฟต์เท่านั้น", async (api, bundle) => {
+      await skillTreePanel(api, bundle);
     });
   }
 

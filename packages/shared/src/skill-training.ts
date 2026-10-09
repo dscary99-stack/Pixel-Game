@@ -71,16 +71,21 @@ export interface SkillLevelMods {
   mpCost: number;
   cooldown: number;
   extraTargets: number;
+  /** + points on each status chance, + turns on each status (player skill trees). */
+  statusChance: number;
+  statusTurns: number;
 }
 
 /** Everything a skill has gained by this level (Lv1 = nothing). */
 export function skillLevelMods(rules: RulesConfig, skill: Pick<SkillDefinition, "levelSteps">, level: number): SkillLevelMods {
-  const m: SkillLevelMods = { powerPercent: 0, mpCost: 0, cooldown: 0, extraTargets: 0 };
+  const m: SkillLevelMods = { powerPercent: 0, mpCost: 0, cooldown: 0, extraTargets: 0, statusChance: 0, statusTurns: 0 };
   for (let l = 2; l <= Math.min(level, SKILL_MAX_LEVEL); l++) {
     const x = skillLevelStep(rules, skill, l);
     if (x.kind === "power") m.powerPercent += x.value;
     else if (x.kind === "mp_cost") m.mpCost += x.value;
     else if (x.kind === "cooldown") m.cooldown += x.value;
+    else if (x.kind === "status_chance") m.statusChance += x.value;
+    else if (x.kind === "status_turns") m.statusTurns += x.value;
     else m.extraTargets += x.value;
   }
   return m;

@@ -15,6 +15,15 @@ import {
   STARTER_KIT,
   companionPrimaryStats,
   AllocateStatsRequestSchema,
+  LearnSkillRequestSchema,
+  SKILL_TREES,
+  class2Branch,
+  jobExpForLevel,
+  jobState,
+  learnRefusal,
+  treesFor,
+  type JobTier,
+  type LearnRefusal,
   CreateCharacterRequestSchema,
   expForLevel,
   levelForExp,
@@ -56,6 +65,9 @@ interface CharacterRow {
   mp: number | null;
   version: number;
   created_operation_id: string;
+  job1_xp?: number;
+  job2_xp?: number;
+  skills_json?: string;
 }
 
 interface InstanceRow {
@@ -89,6 +101,15 @@ export type StoredInstance = MonsterInstance & { hp: number | null; mp: number |
 export type AllocateResult =
   | { status: "saved"; character: CharacterView }
   | { status: "rejected"; reason: "INVALID_REQUEST" | "NO_CHARACTER" | "STALE_VERSION" | "IN_BATTLE" | "STAT_DECREASE" | "OVER_BUDGET"; message: string };
+
+export type LearnSkillResult =
+  | { status: "saved"; character: CharacterView }
+  | { status: "rejected"; reason: "INVALID_REQUEST" | "NO_CHARACTER" | "STALE_VERSION" | "IN_BATTLE" | LearnRefusal; message: string };
+
+/** The class tier earning job EXP now and the trees the character may spend on. */
+function jobOf(row: CharacterRow): { tier: JobTier; exp: number[] } {
+  return row.class2_id == null ? { tier: 1, exp: [row.job1_xp ?? 0] } : { tier: 2, exp: [row.job1_xp ?? 0, row.job2_xp ?? 0] };
+}
 
 export interface StoreContent {
   species: ReadonlyMap<string, SpeciesDefinition>;
@@ -273,6 +294,35 @@ export class CharacterStore {
     const after = await this.row(accountId);
     if (after?.version === expectedVersion + 1 && after.primary_stats_json === JSON.stringify(stats)) return { status: "saved", character: await this.view(after) };
     if (await this.inBattle(accountId)) return { status: "rejected", reason: "IN_BATTLE", message: "spend points outside fights" };
+    return { status: "rejected", reason: "STALE_VERSION", message: "the character changed; reload and try again" };
+  }
+
+  /**
+   * Learn the next level of one tree skill (skill-tree.ts) with the job points earned (P29), outside
+   * fights. The version guard makes a repeated or stale click a refusal, never a second level.
+   */
+  async learnSkill(accountId: string, raw: unknown): Promise<LearnSkillResult> {
+    const parsed = LearnSkillRequestSchema.safeParse(raw);
+    if (!parsed.success) return { status: "rejected", reason: "INVALID_REQUEST", message: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") };
+    const { expectedVersion, skillId } = parsed.data;
+    const row = await this.row(accountId);
+    if (row === null) return { status: "rejected", reason: "NO_CHARACTER", message: "create a character first" };
+    if (row.version !== expectedVersion) return { status: "rejected", reason: "STALE_VERSION", message: "the character changed; reload and try again" };
+    if (await this.inBattle(accountId)) return { status: "rejected", reason: "IN_BATTLE", message: "learn skills outside fights" };
+    const branch = class2Branch(row.class2_id);
+    const trees = treesFor(SKILL_TREES, row.class_id, branch?.classId === row.class_id ? branch.treeId : null);
+    const learned = JSON.parse(row.skills_json ?? "{}") as Record<string, number>;
+    const job = jobOf(row);
+    const refusal = learnRefusal(trees, learned, jobState(this.rules, job.tier, job.exp).points, skillId);
+    if (refusal !== null) return { status: "rejected", reason: refusal.code, message: refusal.message };
+    const next = JSON.stringify({ ...learned, [skillId]: (learned[skillId] ?? 0) + 1 });
+    await this.db
+      .prepare(`UPDATE characters SET skills_json = ?, version = version + 1 WHERE id = ? AND version = ? AND skills_json = ? AND NOT ${OPEN_BATTLE}`)
+      .bind(next, row.id, expectedVersion, row.skills_json ?? "{}", accountId)
+      .run();
+    const after = await this.row(accountId);
+    if (after?.version === expectedVersion + 1 && after.skills_json === next) return { status: "saved", character: await this.view(after) };
+    if (await this.inBattle(accountId)) return { status: "rejected", reason: "IN_BATTLE", message: "learn skills outside fights" };
     return { status: "rejected", reason: "STALE_VERSION", message: "the character changed; reload and try again" };
   }
 
@@ -500,10 +550,24 @@ export class CharacterStore {
       .run();
   }
 
-  /** DEV ONLY: raise the character to at least this level by giving it the EXP for it (smoke tests of Class2). */
-  async devRaiseLevel(accountId: string, level: number): Promise<void> {
+  /**
+   * DEV ONLY: raise the character to at least this level by giving it the EXP for it, and its current
+   * job tier to at least `job` (smoke tests of Class2 and the skill trees).
+   */
+  async devRaiseLevel(accountId: string, level: number, job?: number): Promise<void> {
     const xp = expForLevel(this.rules, "player", level);
     await this.db.prepare(`UPDATE characters SET xp = ? WHERE account_id = ? AND xp < ?`).bind(xp, accountId, xp).run();
+    if (job !== undefined) {
+      const j1 = jobExpForLevel(this.rules, 1, job);
+      const j2 = jobExpForLevel(this.rules, 2, job);
+      await this.db
+        .prepare(
+          `UPDATE characters SET job1_xp = CASE WHEN class2_id IS NULL THEN MAX(job1_xp, ?) ELSE job1_xp END,
+           job2_xp = CASE WHEN class2_id IS NULL THEN job2_xp ELSE MAX(job2_xp, ?) END WHERE account_id = ?`,
+        )
+        .bind(j1, j2, accountId)
+        .run();
+    }
     await this.syncLevels(accountId);
   }
 
@@ -547,6 +611,8 @@ export class CharacterStore {
       version: row.version,
       team: results.map((t) => ({ instanceId: t.monster_instance_id, speciesId: t.species_id, row: t.row, slot: t.slot })),
       companionBox: { used: Math.max(0, owned - results.length), capacity: this.rules.provisional.companionBox.value.capacity },
+      jobExp: jobOf(row).exp,
+      skills: JSON.parse(row.skills_json ?? "{}") as Record<string, number>,
     };
   }
 }

@@ -340,6 +340,8 @@ export interface BattleSetup {
     hp?: number;
     mp?: number;
     skillIds: string[];
+    /** Learned levels of the skill tree (skill-tree.ts); a skill missing here is Lv1. */
+    skillLevels?: Record<string, number>;
     /** Class and race passives (player-kit.ts). */
     passiveIds?: string[];
     basicAttackRange: Range;

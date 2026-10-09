@@ -679,6 +679,26 @@ export const RULES = {
       "decides O15 flee: chance = clamp(lowest flee value among living enemies × player SPD / fastest enemy SPD, 5%, 95%); bosses 0 = cannot flee; Claude's numbers",
     ),
     /**
+     * Job levels (Nut 2026-10-09: "base level up สำหรับ up status, job level up สำหรับ up skill").
+     * Base level (the EXP table) gives stat points; job level gives skill points for the class's skill
+     * tree. Each class tier has its own job track from Job 1: a kill's EXP also goes to the job track
+     * at `jobExpPct`, and job EXP to Job N follows the base EXP between `baseFrom` and `baseTo`, so a
+     * Class1 character reaches Job 40 at about base Lv49. Job 1 already gives a point.
+     */
+    jobLevels: provisional(
+      {
+        tiers: [
+          { cap: 40, baseFrom: 1, baseTo: 49 },
+          { cap: 50, baseFrom: 50, baseTo: 119 },
+          { cap: 60, baseFrom: 120, baseTo: 199 },
+        ],
+        jobExpPct: 100,
+        pointsPerJobLevel: 1,
+      } as const,
+      "P29",
+      "Claude's first pass on Nut's base/job split: Class1 Job 1–40, Class2 Job 1–50, Class3 Job 1–60 (1 skill point each); the Class2 trial needs Class1 Job 40",
+    ),
+    /**
      * Class change (chapter 02, P16: Class2 trial from Lv50, Class3 from Lv120). The Class2 trial is a
      * fight at the town training ground rules (nothing earned or lost, full HP, no items, the team may
      * come) against the trial boss with `trialStatPct` on its HP and ATK/MATK (like a tower floor).

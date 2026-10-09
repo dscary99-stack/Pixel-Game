@@ -2,7 +2,7 @@
  * EXP through reward receipts, level sync and stat allocation on the D1 migrations (node:sqlite).
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { COMPANION_GROWTH_VERSION, PRODUCTION_RULES, companionPrimaryStats, exampleContentMaps, expCap, expForLevel, type Entitlement } from "@pmrpg/shared";
+import { COMPANION_GROWTH_VERSION, PRODUCTION_RULES, companionPrimaryStats, exampleContentMaps, expCap, expForLevel, jobExpCap, jobExpForLevel, playerSetup, type Entitlement } from "@pmrpg/shared";
 import { CharacterStore } from "../src/character-store";
 import { Economy } from "../src/economy";
 import { SqliteD1, freshDb, type Db } from "./sqlite-d1";
@@ -135,6 +135,65 @@ describe("stat allocation (P03)", () => {
     db.prepare("UPDATE characters SET xp = ? WHERE id = ?").run(expForLevel(PRODUCTION_RULES, "player", 2), charId);
     await eco.reserve({ reservationId: "res:battle:y", accountId: A, battleId: "battle:y", bag: {}, companionIds: [] });
     expect(await store.allocate(A, { expectedVersion: 1, stats: { STR: 13, VIT: 10, INT: 10, DEX: 10, AGI: 10, SPI: 10 } })).toMatchObject({ reason: "IN_BATTLE" });
+  });
+});
+
+describe("job EXP and skill trees (P29, Nut 2026-10-09)", () => {
+  const job = () => db.prepare(`SELECT job1_xp, job2_xp FROM characters WHERE id = ?`).get(charId) as { job1_xp: number; job2_xp: number };
+
+  it("every EXP award also gives job EXP to the tier the character is in, once, up to the tier's cap", async () => {
+    const e = kill("e1", 20);
+    await Promise.all([eco.grant(e, A), eco.grant(e, A)]);
+    await eco.grant(e, A);
+    expect(job()).toEqual({ job1_xp: 20, job2_xp: 0 });
+    db.prepare(`UPDATE characters SET job1_xp = ? WHERE id = ?`).run(jobExpCap(PRODUCTION_RULES, 1) - 5, charId);
+    await eco.grant(kill("e2", 50), A);
+    expect(job().job1_xp).toBe(jobExpCap(PRODUCTION_RULES, 1));
+    // After the Class2 claim the Class2 track earns it and Class1 stays.
+    db.prepare(`UPDATE characters SET class2_id = 'class2:breaker' WHERE id = ?`).run(charId);
+    await eco.grant(kill("e3", 30), A);
+    expect(job()).toEqual({ job1_xp: jobExpCap(PRODUCTION_RULES, 1), job2_xp: 30 });
+    expect((await store.get(A))!.jobExp).toEqual([jobExpCap(PRODUCTION_RULES, 1), 30]);
+  });
+
+  describe("learning", () => {
+    beforeEach(async () => {
+      await eco.settle({ reservationId: `res:${BATTLE}`, battleId: BATTLE, accountId: A, outcome: "victory", unused: {}, allies: [], entitlementIds: [] });
+    });
+
+    it("spends job points one level at a time, in tree order, with a version check", async () => {
+      // Job 1 gives 1 point.
+      expect(await store.learnSkill(A, { expectedVersion: 1, skillId: "skill:striker_cleave" })).toMatchObject({ reason: "NEEDS_SKILL" });
+      expect(await store.learnSkill(A, { expectedVersion: 1, skillId: "skill:guardian_cover" })).toMatchObject({ reason: "NOT_IN_TREE" });
+      const r = await store.learnSkill(A, { expectedVersion: 1, skillId: "skill:striker_heavy_slash" });
+      expect(r).toMatchObject({ status: "saved", character: { version: 2, skills: { "skill:striker_heavy_slash": 1 } } });
+      expect(await store.learnSkill(A, { expectedVersion: 1, skillId: "skill:striker_heavy_slash" })).toMatchObject({ reason: "STALE_VERSION" });
+      expect(await store.learnSkill(A, { expectedVersion: 2, skillId: "skill:striker_heavy_slash" })).toMatchObject({ reason: "NO_POINTS" });
+      db.prepare(`UPDATE characters SET job1_xp = ? WHERE id = ?`).run(jobExpForLevel(PRODUCTION_RULES, 1, 4), charId);
+      for (let v = 2; v <= 4; v++) expect(await store.learnSkill(A, { expectedVersion: v, skillId: "skill:striker_heavy_slash" })).toMatchObject({ status: "saved" });
+      expect(await store.learnSkill(A, { expectedVersion: 5, skillId: "skill:striker_cleave" })).toMatchObject({ reason: "NO_POINTS" });
+      const c = (await store.get(A))!;
+      expect(c.skills).toEqual({ "skill:striker_heavy_slash": 4 });
+      // The fight gets the learned skill at its level, and the race passive.
+      expect(playerSetup(A, c)).toMatchObject({ skillIds: ["skill:striker_heavy_slash"], skillLevels: { "skill:striker_heavy_slash": 4 }, passiveIds: ["skill:race_human_grit"] });
+    });
+
+    it("two learns from the same version: one lands, one point spent", async () => {
+      db.prepare(`UPDATE characters SET job1_xp = ? WHERE id = ?`).run(jobExpForLevel(PRODUCTION_RULES, 1, 5), charId);
+      const [x, y] = await Promise.all([
+        store.learnSkill(A, { expectedVersion: 1, skillId: "skill:striker_heavy_slash" }),
+        store.learnSkill(A, { expectedVersion: 1, skillId: "skill:striker_blade_wave" }),
+      ]);
+      expect([x.status, y.status].sort()).toEqual(["rejected", "saved"]);
+      const c = (await store.get(A))!;
+      expect(Object.values(c.skills ?? {})).toEqual([1]);
+      expect(c.version).toBe(2);
+    });
+
+    it("not during a fight", async () => {
+      await eco.reserve({ reservationId: "res:battle:y", accountId: A, battleId: "battle:y", bag: {}, companionIds: [] });
+      expect(await store.learnSkill(A, { expectedVersion: 1, skillId: "skill:striker_heavy_slash" })).toMatchObject({ reason: "IN_BATTLE" });
+    });
   });
 });
 

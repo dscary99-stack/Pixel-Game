@@ -3,7 +3,9 @@ import {
   CLASS1_DEFINITIONS,
   CLASS2_BRANCHES,
   CLASS2_TRIAL_BOSS_ID,
-  CLASS_KITS,
+  SKILL_TREES,
+  TREE_PASSIVE_IDS,
+  jobExpForLevel,
   class2Refusal,
   RACE_DEFINITIONS,
   RACE_PASSIVES,
@@ -25,6 +27,9 @@ const ok = (r: KernelResult) => {
   if (!r.ok) throw new Error(`${r.code}: ${r.message}`);
   return r;
 };
+/** Every node of the character's trees at its max level. */
+const everything = (classId: string, class2Id?: string): Record<string, number> =>
+  Object.fromEntries([classId, class2Id].flatMap((id) => (id === undefined ? [] : SKILL_TREES.get(id)!.nodes)).map((n) => [n.skillId, n.maxLevel]));
 const triggered = (events: BattleEvent[], sourceId: string) => events.some((e) => e.type === "PassiveTriggered" && e.sourceId === sourceId);
 /** Play the enemies' turns with guard until it is the player's turn again. */
 function toPlayer(s: BattleState): { s: BattleState; events: BattleEvent[] } {
@@ -38,41 +43,39 @@ function toPlayer(s: BattleState): { s: BattleState; events: BattleEvent[] } {
 }
 
 describe("Class1 kits and race passives (chapter 02, P16)", () => {
-  it("every class has a passive and four actives, every race a passive, all valid player skills", () => {
-    expect(Object.keys(CLASS_KITS).sort()).toEqual(CLASS1_DEFINITIONS.map((d) => d.id).sort());
+  it("every class and branch has a tree, every race a passive, all valid player skills", () => {
+    for (const cls of CLASS1_DEFINITIONS) expect(SKILL_TREES.get(cls.id)?.tier, cls.id).toBe(1);
+    for (const b of CLASS2_BRANCHES) expect(SKILL_TREES.get(b.treeId)?.tier, b.id).toBe(2);
     expect(Object.keys(RACE_PASSIVES).sort()).toEqual(RACE_DEFINITIONS.map((d) => d.id).sort());
-    for (const k of Object.values(CLASS_KITS)) {
-      expect(k.actives).toHaveLength(4);
-      const p = c.skills.get(k.passiveId)!;
-      expect(p).toMatchObject({ kind: "passive", ownerKind: "player" });
-      for (const a of k.actives) {
-        const sk = c.skills.get(a.skillId)!;
-        expect(SkillDefinitionSchema.safeParse(sk).success).toBe(true);
-        expect(sk).toMatchObject({ kind: "active", ownerKind: "player" });
+    for (const t of SKILL_TREES.values()) {
+      for (const n of t.nodes) {
+        const sk = c.skills.get(n.skillId)!;
+        expect(SkillDefinitionSchema.safeParse(sk).success, n.skillId).toBe(true);
+        expect(sk.ownerKind).toBe("player");
+        expect(sk.kind === "passive", n.skillId).toBe(TREE_PASSIVE_IDS.has(n.skillId));
       }
     }
     for (const id of Object.values(RACE_PASSIVES)) expect(c.skills.get(id)?.passive).toBeDefined();
   });
 
-  it("opens by level: two actives at Lv1, the third at 8, the fourth at 20", () => {
-    expect(playerKit("class:striker", "race:human", 1)).toEqual({
+  it("the kit is what was learned: actives with their levels, learned passives, the race passive", () => {
+    expect(playerKit("class:striker", "race:human", null)).toEqual({ skillIds: [], skillLevels: {}, passiveIds: ["skill:race_human_grit"] });
+    const k = playerKit("class:striker", "race:human", null, { "skill:striker_heavy_slash": 4, "skill:striker_fighting_blood": 1, "skill:arcanist_storm": 3, "skill:striker_cleave": 99 });
+    expect(k).toEqual({
       skillIds: ["skill:striker_heavy_slash", "skill:striker_cleave"],
+      skillLevels: { "skill:striker_heavy_slash": 4, "skill:striker_cleave": 10 },
       passiveIds: ["skill:striker_fighting_blood", "skill:race_human_grit"],
-      locked: [
-        { skillId: "skill:striker_armor_break", level: 8 },
-        { skillId: "skill:striker_all_in", level: 20 },
-      ],
     });
-    expect(playerKit("class:striker", "race:human", 8).skillIds).toHaveLength(3);
-    expect(playerKit("class:striker", "race:human", 20).locked).toEqual([]);
-    expect(playerKit("class:nope", "race:nope", 50)).toEqual({ skillIds: [], passiveIds: [], locked: [] });
+    expect(playerKit("class:nope", "race:nope", null, { "skill:striker_heavy_slash": 1 })).toEqual({ skillIds: [], skillLevels: {}, passiveIds: [] });
   });
 
-  it("every class's full kit fights through Auto to the end without a refused command", () => {
+  it("every class's full tree fights through Auto to the end without a refused command", () => {
     for (const cls of CLASS1_DEFINITIONS) {
-      const k = playerKit(cls.id, "race:human", 20);
+      const k = playerKit(cls.id, "race:human", null, everything(cls.id));
       const setup = baseSetup({ battleId: `battle:${cls.id}` });
+      setup.player.level = 49;
       setup.player.skillIds = k.skillIds;
+      setup.player.skillLevels = k.skillLevels;
       setup.player.passiveIds = k.passiveIds;
       setup.player.basicAttackRange = cls.basicAttackRange;
       let s = ok(createBattle(rules, c, setup)).state;
@@ -124,32 +127,27 @@ describe("Class1 kits and race passives (chapter 02, P16)", () => {
 });
 
 describe("Class2 branches (chapter 02, P16/P28)", () => {
-  it("two branches per Class1, each a valid passive and two actives", () => {
+  it("two branches per Class1, each with its own tree", () => {
     for (const cls of CLASS1_DEFINITIONS) expect(CLASS2_BRANCHES.filter((b) => b.classId === cls.id), cls.id).toHaveLength(2);
     expect(new Set(CLASS2_BRANCHES.map((b) => b.id)).size).toBe(18);
-    for (const b of CLASS2_BRANCHES) {
-      expect(c.skills.get(b.passiveId)?.passive, b.passiveId).toBeDefined();
-      for (const a of b.actives) {
-        const sk = c.skills.get(a.skillId)!;
-        expect(SkillDefinitionSchema.safeParse(sk).success, a.skillId).toBe(true);
-        expect(sk).toMatchObject({ kind: "active", ownerKind: "player" });
-      }
-    }
   });
 
-  it("joins the kit only for its own class: actives at Lv50 and 60, the passive with them", () => {
-    const k50 = playerKit("class:guardian", "race:human", 50, "class2:bastion");
-    expect(k50.skillIds).toEqual([...playerKit("class:guardian", "race:human", 50).skillIds, "skill:c2_bastion_wall"]);
-    expect(k50.passiveIds).toEqual(["skill:guardian_heart", "skill:c2_bastion_layers", "skill:race_human_grit"]);
-    expect(k50.locked).toEqual([{ skillId: "skill:c2_bastion_stand_in", level: 60 }]);
-    expect(playerKit("class:guardian", "race:human", 60, "class2:bastion").skillIds).toHaveLength(6);
-    expect(playerKit("class:striker", "race:human", 60, "class2:bastion")).toEqual(playerKit("class:striker", "race:human", 60));
+  it("a branch tree counts only for its own class", () => {
+    const learned = { ...everything("class:guardian", "class2:bastion") };
+    const k = playerKit("class:guardian", "race:human", "class2:bastion", learned);
+    expect(k.skillIds).toContain("skill:c2_bastion_wall");
+    expect(k.passiveIds).toContain("skill:c2_bastion_layers");
+    expect(playerKit("class:striker", "race:human", "class2:bastion", learned).skillIds).toEqual([]);
+    expect(playerKit("class:guardian", "race:human", null, learned).skillIds).not.toContain("skill:c2_bastion_wall");
   });
 
-  it("the trial is refused below Lv50, for another class's branch, and once a branch is taken", () => {
-    const g = { classId: "class:guardian", level: 49, class2Id: null };
+  it("the trial is refused below Lv50, below Class1 job cap, for another class's branch, and once a branch is taken", () => {
+    const job40 = [jobExpForLevel(rules, 1, 40)];
+    const g = { classId: "class:guardian", level: 49, class2Id: null, jobExp: job40 };
     expect(class2Refusal(rules, g, "class2:bastion")).toBe("LEVEL_TOO_LOW");
     expect(class2Refusal(rules, { ...g, level: 50 }, "class2:bastion")).toBeNull();
+    expect(class2Refusal(rules, { ...g, level: 50, jobExp: [job40[0]! - 1] }, "class2:bastion")).toBe("JOB_TOO_LOW");
+    expect(class2Refusal(rules, { ...g, level: 50, jobExp: undefined }, "class2:bastion")).toBe("JOB_TOO_LOW");
     expect(class2Refusal(rules, { ...g, level: 50 }, "class2:breaker")).toBe("NOT_FOUND");
     expect(class2Refusal(rules, { ...g, level: 80, class2Id: "class2:sentinel" }, "class2:bastion")).toBe("ALREADY_CHOSEN");
   });
@@ -165,12 +163,12 @@ describe("Class2 branches (chapter 02, P16/P28)", () => {
     expect(scaled.enemyStatPct).toBe(rules.provisional.classChange.value.trialStatPct);
   });
 
-  it("every branch's full kit fights the trial through Auto to the end without a refused command", () => {
+  it("every branch's full tree fights the trial through Auto to the end without a refused command", () => {
     for (const b of CLASS2_BRANCHES) {
       const cls = CLASS1_DEFINITIONS.find((d) => d.id === b.classId)!;
-      const k = playerKit(cls.id, "race:human", 60, b.id);
+      const k = playerKit(cls.id, "race:human", b.id, everything(cls.id, b.id));
       const setup = baseSetup({ battleId: `battle:${b.id}`, enemies: [], boss: { bossId: CLASS2_TRIAL_BOSS_ID }, bag: {}, practice: true, classTrial: true });
-      setup.player = { ...setup.player, level: 60, skillIds: k.skillIds, passiveIds: k.passiveIds, basicAttackRange: cls.basicAttackRange };
+      setup.player = { ...setup.player, level: 60, skillIds: k.skillIds, skillLevels: k.skillLevels, passiveIds: k.passiveIds, basicAttackRange: cls.basicAttackRange };
       let s = ok(createBattle(rules, c, setup)).state;
       for (let i = 0; i < 1500 && s.status === "active"; i++) {
         const actor = currentActor(s)!;

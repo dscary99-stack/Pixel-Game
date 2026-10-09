@@ -27,6 +27,14 @@ import {
   gearBands,
   class2Branch,
   playerKit,
+  SKILL_TREES,
+  jobCap,
+  jobExpForLevel,
+  jobState,
+  learnRefusal,
+  pointsSpent,
+  treesFor,
+  type JobTier,
   STATUS_DEFINITIONS,
   type SkillDefinition,
   type ClassView,
@@ -147,6 +155,16 @@ const CSS = `
 .pm-list[data-section=sigils] li { flex-wrap: wrap; }
 .pm-list li button { min-height: 34px; padding: 4px 10px; font-size: 13px; border-radius: 6px; border: 1px solid #463f6b; background: #2f7a4a; color: #fff; cursor: pointer; }
 .pm-list li button:disabled { background: #322b4d; opacity: 0.6; cursor: default; }
+.pm-tree { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 6px 0 12px; }
+.pm-tree-head { font-size: 12px; color: #a9a3c4; text-align: center; }
+.pm-node { border: 1px solid #463f6b; border-radius: 6px; padding: 6px; font-size: 12px; background: #1b1830; min-height: 64px; display: flex; flex-direction: column; gap: 4px; }
+.pm-node.learned { border-color: #2f7a4a; }
+.pm-node.passive { background: #221b33; }
+.pm-node b { font-size: 12px; }
+.pm-node small { color: #a9a3c4; font-size: 11px; }
+.pm-node button { min-height: 30px; padding: 2px 6px; font-size: 12px; border-radius: 4px; border: 1px solid #463f6b; background: #2f7a4a; color: #fff; cursor: pointer; }
+.pm-node button:disabled { background: #322b4d; opacity: 0.6; cursor: default; }
+.pm-node-info { font-size: 12px; color: #d8d4ea; background: #1b1830; border: 1px solid #463f6b; border-radius: 6px; padding: 8px; min-height: 36px; }
 `;
 
 const ELEMENT_CSS: Record<Element, string> = {
@@ -1866,12 +1884,147 @@ function skillBrief(sk: SkillDefinition): string {
   }
   const parts = [`MP ${sk.mpCost}`, sk.cooldown > 0 ? `คูลดาวน์ ${sk.cooldown} ตา` : "", TARGET_TH[sk.targetRule]];
   for (const e of sk.effectSequence) {
-    if (e.kind === "damage") parts.push(`${e.damageType === "physical" ? "ดาเมจกาย" : "ดาเมจเวท"} ×${e.coefficient}${e.element !== "NEUTRAL" ? ` ธาตุ${e.element}` : ""}`);
+    if ("target" in e && e.target !== undefined && e.target !== "primary") parts.push(`แล้ว${EFFECT_TARGET_TH[e.target]}:`);
+    if (e.kind === "damage") parts.push(`${e.damageType === "physical" ? "ดาเมจกาย" : "ดาเมจเวท"} ×${e.coefficient}${e.ownElement === true ? " ธาตุตัวเอง" : e.element !== "NEUTRAL" ? ` ธาตุ${ELEMENT_TH[e.element]}` : ""}`);
     if (e.kind === "heal") parts.push(`ฮีล ×${e.coefficient}${e.flat > 0 ? ` +${e.flat}` : ""}`);
     if (e.kind === "revive") parts.push(`ชุบชีวิต HP ${e.hpPct}%`);
     for (const a of ("statuses" in e ? e.statuses : undefined) ?? []) parts.push(`${STATUS_DEFINITIONS[a.statusId].th}${a.shieldPct !== undefined ? ` ${a.shieldPct}%` : ""} ${a.chancePct}% ${a.turns} ตา`);
   }
   return parts.filter(Boolean).join(" · ");
+}
+
+const EFFECT_TARGET_TH: Record<string, string> = {
+  self: "ตัวเอง",
+  all_allies: "ฝ่ายเราทุกตัว",
+  lowest_ally: "พวกเดียวกันที่ HP ต่ำสุด",
+  all_enemies: "ศัตรูทุกตัว",
+};
+
+/** Class tier the character earns job EXP in, and its job EXP per tier (job.ts, P29). */
+function jobOf(c: CharacterView): { tier: JobTier; exp: number[] } {
+  return { tier: c.class2Id == null ? 1 : 2, exp: c.jobExp ?? [] };
+}
+
+/** "Job 12/40 (EXP 1,234/2,000)" for each tier reached. */
+function jobLine(c: CharacterView): string {
+  const j = jobOf(c);
+  const st = jobState(RULES, j.tier, j.exp);
+  return st.levels
+    .map((lv, i) => {
+      const tier = (i + 1) as JobTier;
+      const cap = jobCap(RULES, tier);
+      const into = lv >= cap ? "สูงสุด" : `${(st.exp[i]! - jobExpForLevel(RULES, tier, lv)).toLocaleString()}/${(jobExpForLevel(RULES, tier, lv + 1) - jobExpForLevel(RULES, tier, lv)).toLocaleString()}`;
+      return `Class${tier} Job ${lv}/${cap} (EXP ${into})`;
+    })
+    .join(" · ");
+}
+
+const COLUMN_TH = ["กายภาพ", "เวท/ธาตุ", "สนับสนุน", "ก่อกวน"];
+const LEARN_REFUSAL_TH: Record<string, string> = { NOT_IN_TREE: "ไม่อยู่ในต้นไม้", MAX_LEVEL: "เต็มแล้ว", NEEDS_SKILL: "ต้องเรียนสกิลก่อนหน้า", NO_POINTS: "แต้มไม่พอ" };
+
+/**
+ * Skill trees (Nut 2026-10-09; skill-tree.ts, P29/P30): base level gives stat points (สเตตัส panel),
+ * job level gives skill points spent here, one level per tap, outside fights. The server checks
+ * every rule again; this view only greys out what it would refuse.
+ */
+export function skillTreePanel(api: CharacterApi, start: CharacterBundle): Promise<CharacterBundle> {
+  return new Promise((resolve) => {
+    const { panel, close } = overlay();
+    let bundle = start;
+    let busy = false;
+    let focus: string | null = null;
+    const body = el("div");
+    const info = el("div", { class: "pm-node-info", "data-skill-info": "" }, "แตะชื่อสกิลเพื่อดูรายละเอียด");
+    const error = el("div", { class: "pm-error", role: "alert" });
+    const done = el("button", { type: "button", class: "primary" }, "ปิด");
+    const actions = el("div", { class: "pm-actions" });
+    actions.append(done);
+    panel.append(el("h2", {}, "ต้นไม้สกิลอาชีพ"), body, info, error, actions);
+    done.addEventListener("click", () => {
+      close();
+      resolve(bundle);
+    });
+    const learn = async (skillId: string) => {
+      if (busy) return;
+      busy = true;
+      error.textContent = "";
+      try {
+        const r = await api.learnSkill(bundle.character.version, skillId);
+        bundle = { ...bundle, character: r.character };
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${LEARN_REFUSAL_TH[e.code] ?? e.code}: ${e.message}` : String(e);
+        if (e instanceof ApiError && e.code === "STALE_VERSION") bundle = (await api.get()) ?? bundle;
+      } finally {
+        busy = false;
+      }
+      draw();
+    };
+    const draw = () => {
+      body.replaceChildren();
+      const c = bundle.character;
+      const branch = class2Branch(c.class2Id);
+      const trees = treesFor(SKILL_TREES, c.classId, branch?.classId === c.classId ? branch.treeId : null);
+      const learned = c.skills ?? {};
+      const j = jobOf(c);
+      const points = jobState(RULES, j.tier, j.exp).points;
+      const left = points - pointsSpent(trees, learned);
+      body.append(
+        el("div", { class: "pm-stats", "data-skill-points": String(left) }, `Base Lv${c.level} (แต้มสเตตัส) · ${jobLine(c)} · แต้มสกิลเหลือ ${left}/${points}`),
+        el(
+          "div",
+          { class: "pm-note" },
+          "Job Level ได้ EXP เท่ากับ EXP ปกติจากทุกไฟต์ ได้ 1 แต้มสกิลต่อ Job Level · ทุกอาชีพมีสายกาย เวท สนับสนุน และก่อกวน แต้มไม่พอเรียนครบ ต้องเลือกสายตามสเตตัส เผ่า และธาตุที่เล่น · สกิลที่เขียนว่า \"ธาตุตัวเอง\" ใช้ธาตุของตัวละคร · Class2 ต้องได้ Class1 Job เต็มก่อน · ยังรีเซ็ตแต้มไม่ได้ · ชื่อและตัวเลขเป็นตัวอย่าง (P29/P30)",
+        ),
+      );
+      for (const t of trees) {
+        const title = t.tier === 1 ? (CLASS1_DEFINITIONS.find((d) => d.id === c.classId)?.name.th ?? c.classId) : `สาย${branch?.name.th ?? t.id}`;
+        body.append(el("h3", {}, `${title} (Class${t.tier})`));
+        const grid = el("div", { class: "pm-tree", "data-tree": t.id });
+        for (const h of COLUMN_TH) grid.append(el("div", { class: "pm-tree-head" }, h));
+        const rows = Math.max(...t.nodes.map((n) => n.row)) + 1;
+        for (let r = 0; r < rows; r++) {
+          for (let col = 0; col < 4; col++) {
+            const n = t.nodes.find((x) => x.col === col && x.row === r);
+            if (n === undefined) {
+              grid.append(el("div"));
+              continue;
+            }
+            const sk = skillDefs.get(n.skillId);
+            const lv = learned[n.skillId] ?? 0;
+            const node = el("div", { class: `pm-node${lv > 0 ? " learned" : ""}${sk?.kind === "passive" ? " passive" : ""}`, "data-node": n.skillId });
+            const name = el("b", {}, sk?.name.th ?? n.skillId);
+            name.style.cursor = "pointer";
+            name.addEventListener("click", () => {
+              focus = n.skillId;
+              showInfo();
+            });
+            const req = n.requires.map((q) => `${skillDefs.get(q.skillId)?.name.th ?? q.skillId} Lv${q.level}`).join(", ");
+            node.append(name, el("small", {}, `Lv ${lv}/${n.maxLevel}${n.cost > 1 ? ` · ${n.cost} แต้ม/ขั้น` : ""}${req ? ` · ต้อง ${req}` : ""}`));
+            const refusal = learnRefusal(trees, learned, points, n.skillId);
+            const btn = el("button", { type: "button", "data-learn": n.skillId }, refusal === null ? (lv === 0 ? "เรียน" : "+1") : (LEARN_REFUSAL_TH[refusal.code] ?? refusal.code));
+            btn.disabled = refusal !== null;
+            btn.addEventListener("click", () => void learn(n.skillId));
+            node.append(btn);
+            grid.append(node);
+          }
+        }
+        body.append(grid);
+      }
+      const race = playerKit(c.classId, c.raceId, null).passiveIds;
+      if (race.length > 0) body.append(el("div", { class: "pm-note" }, `ติดตัวจากเผ่า: ${race.map((id) => `${skillDefs.get(id)?.name.th ?? id} — ${skillDefs.get(id) === undefined ? "" : skillBrief(skillDefs.get(id)!)}`).join(" · ")}`));
+      showInfo();
+    };
+    const showInfo = () => {
+      if (focus === null) return;
+      const sk = skillDefs.get(focus);
+      if (sk === undefined) return;
+      const lv = bundle.character.skills?.[focus] ?? 0;
+      const mods = sk.kind === "active" && lv > 1 ? skillLevelMods(RULES, sk, lv) : null;
+      const grown = mods === null ? "" : ` · ที่ Lv${lv}: พลัง +${mods.powerPercent}%${mods.mpCost !== 0 ? ` MP ${mods.mpCost}` : ""}${mods.statusChance > 0 ? ` โอกาสติดสถานะ +${mods.statusChance}` : ""}${mods.statusTurns > 0 ? ` สถานะ +${mods.statusTurns} ตา` : ""}`;
+      info.textContent = `${sk.name.th}: ${skillBrief(sk)}${grown}`;
+    };
+    draw();
+  });
 }
 
 const PASSIVE_ON_TH: Partial<Record<string, string>> = {
@@ -1966,17 +2119,21 @@ export function statsPanel(api: CharacterApi, start: CharacterBundle): Promise<C
         ),
         el("div", { class: "pm-note" }, "ได้ 3 แต้มต่อเลเวล · ค่า 11–60 ใช้ 1 แต้ม, 61–100 ใช้ 2, 101–150 ใช้ 3 · ลดค่าที่ลงแล้วไม่ได้ · สูตร EXP เป็นค่าชั่วคราว"),
       );
-      // Class1 kit, the Class2 branch once taken, and the race passive (player-kit.ts).
-      const kit = playerKit(c.classId, c.raceId, c.level, c.class2Id);
+      // Job levels and the skills learned on the trees (skill-tree.ts), and the race passive.
+      const kit = playerKit(c.classId, c.raceId, c.class2Id, c.skills);
       const skills = el("ul", { class: "pm-list", "data-class-skills": "" });
       const row = (id: string, note: string) => {
         const sk = skillDefs.get(id);
         skills.append(el("li", { "data-skill": id }, `${sk?.name.th ?? id}${note} — ${sk === undefined ? "" : skillBrief(sk)}`));
       };
       for (const id of kit.passiveIds) row(id, "");
-      for (const id of kit.skillIds) row(id, "");
-      for (const l of kit.locked) row(l.skillId, ` (เปิดที่ Lv${l.level})`);
-      body.append(el("h3", {}, `สกิลอาชีพและเผ่า${class2Branch(c.class2Id) === undefined ? "" : ` (สาย${class2Branch(c.class2Id)!.name.th})`}`), skills, el("div", { class: "pm-note" }, "สกิลที่เปิดแล้วใช้ในไฟต์ได้ทันที (ทั้งสั่งเองและ Auto) · ชุดสกิลและตัวเลขเป็นตัวอย่าง (P16)"));
+      for (const id of kit.skillIds) row(id, ` Lv${kit.skillLevels[id]}`);
+      body.append(
+        el("h3", {}, `สกิลที่เรียนแล้ว${class2Branch(c.class2Id) === undefined ? "" : ` (สาย${class2Branch(c.class2Id)!.name.th})`}`),
+        el("div", { class: "pm-stats", "data-job": "" }, jobLine(c)),
+        skills,
+        el("div", { class: "pm-note" }, "Base Level ให้แต้มสเตตัส · Job Level ให้แต้มสกิล เรียนที่ต้นไม้สกิล (ปุ่ม X) · สกิลที่เรียนแล้วใช้ในไฟต์ได้ทันที (ทั้งสั่งเองและ Auto)"),
+      );
       const dirty = PRIMARY_STATS.some((k) => draft[k] !== c.primaryStats[k]);
       save.disabled = !dirty;
       reset.disabled = !dirty;
@@ -2447,6 +2604,7 @@ export function partyPanel(api: CharacterApi): Promise<void> {
 
 const CLASS_REFUSAL_TH: Record<string, string> = {
   LEVEL_TOO_LOW: "เลเวลยังไม่ถึง",
+  JOB_TOO_LOW: "Class1 Job ยังไม่เต็ม",
   ALREADY_CHOSEN: "เลือกสายไปแล้ว",
 };
 
@@ -2489,7 +2647,7 @@ export function classPanel(api: CharacterApi): Promise<string | null> {
         el(
           "div",
           { class: "pm-note" },
-          `เปิดบททดสอบที่ Lv${v.trialLevel} · สู้${boss}ที่แรงขึ้นเป็น ${v.trialStatPct}% ด้วยทีมปัจจุบัน HP/MP เต็ม ไม่พกไอเทม ไม่ได้และไม่เสียอะไร หนีได้ทุกเมื่อ · ชนะแล้วรับสายที่เลือกไว้ได้ครั้งเดียว (ยังเปลี่ยนสายภายหลังไม่ได้) · ชื่อสาย สกิล และตัวเลขเป็นตัวอย่าง (P16/P28)`,
+          `เปิดบททดสอบที่ Lv${v.trialLevel} และ Class1 Job ${v.trialJobLevel} · สู้${boss}ที่แรงขึ้นเป็น ${v.trialStatPct}% ด้วยทีมปัจจุบัน HP/MP เต็ม ไม่พกไอเทม ไม่ได้และไม่เสียอะไร หนีได้ทุกเมื่อ · ชนะแล้วรับสายที่เลือกไว้ได้ครั้งเดียว (ยังเปลี่ยนสายภายหลังไม่ได้) เปิดต้นไม้สกิลของสายให้ลงแต้ม Class2 Job · ชื่อสาย สกิล และตัวเลขเป็นตัวอย่าง (P16/P28)`,
         ),
       );
       if (v.class2Id !== null) body.append(el("div", { class: "pm-stats", "data-class2": v.class2Id }, `สายของคุณ: ${class2Branch(v.class2Id)?.name.th ?? v.class2Id}`));
@@ -2512,8 +2670,7 @@ export function classPanel(api: CharacterApi): Promise<string | null> {
           const sk = skillDefs.get(id);
           list.append(el("li", { "data-skill": id }, `${sk?.name.th ?? id}${note} — ${sk === undefined ? "" : skillBrief(sk)}`));
         };
-        row(b.passiveId, "");
-        for (const a of b.skills) row(a.skillId, ` (Lv${a.level})`);
+        for (const a of b.skills) row(a.skillId, ` (สูงสุด Lv${a.maxLevel})`);
         body.append(el("h3", {}, `${b.name.th} (${b.name.en})`), el("div", { class: "pm-note" }, b.summary), list);
         if (v.class2Id === null) {
           const go = el("button", { type: "button", class: "primary", "data-class-trial": b.id }, "เริ่มบททดสอบสายนี้");

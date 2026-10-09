@@ -1,7 +1,8 @@
 // End-to-end Class2 check against `wrangler dev` (class-change.ts, P16/P28): below Lv50 the trial is
 // refused; at Lv50+ in town it starts a practice boss fight with the trial stat %, a retry resumes it,
 // a lost or fled try cannot be claimed, a won one gives the branch once (a retry answers the same),
-// and afterwards the trial is refused and the branch's skills are in the next fight.
+// and afterwards the trial is refused and the branch's skill tree opens: its skills, learned with
+// Class2 job points, are in the next fight. The trial also needs Class1 at its job cap (P29).
 // Run `npm run db:migrate:local` and `npm run dev:server` first, then `npm run smoke:class`.
 import { AUTO_GAP_MS, api, autoToEnd, battleCall, connect, run, sleep, type Msg } from "./smoke-lib";
 
@@ -22,8 +23,26 @@ must(v0.branches.map((b: Msg) => b.id).join() === "class2:breaker,class2:berserk
 out.tooLow = (await call("POST", "/class/trial/start", { operationId: `trial_low_${run}`, branchId: "class2:breaker" })).body.error;
 must(out.tooLow === "LEVEL_TOO_LOW", "refused below Lv50", out.tooLow);
 
+const learn = async (skillId: string, times: number) => {
+  for (let i = 0; i < times; i++) {
+    const cv = (await call("GET", "/character")).body.character;
+    const r = await call("POST", "/character/skills/learn", { expectedVersion: cv.version, skillId });
+    must(r.status === 200, `learn ${skillId}`, r.body);
+  }
+};
+
 // A Lv60 striker with its points in STR/VIT, Lv40 shop gear and three Lv45 companions (dev helpers).
 await call("POST", "/dev/level", { level: 60 });
+out.jobTooLow = (await call("POST", "/class/trial/start", { operationId: `trial_job_${run}`, branchId: "class2:breaker" })).body.error;
+must(out.jobTooLow === "JOB_TOO_LOW", "refused below Class1 Job 40", out.jobTooLow);
+await call("POST", "/dev/level", { level: 60, job: 40 });
+// A physical build: 40 Class1 points.
+await learn("skill:striker_heavy_slash", 10);
+await learn("skill:striker_cleave", 10);
+await learn("skill:striker_all_in", 10);
+await learn("skill:striker_armor_break", 10);
+const noPoint = await call("POST", "/character/skills/learn", { expectedVersion: (await call("GET", "/character")).body.character.version, skillId: "skill:striker_war_cry" });
+must(noPoint.body.error === "NO_POINTS", "Class1 points spent", noPoint.body);
 let c = (await call("GET", "/character")).body.character;
 const pts = 3 * (c.level - 1);
 must((await call("PUT", "/character/stats", { expectedVersion: c.version, stats: { ...c.primaryStats, STR: c.primaryStats.STR + 50, VIT: c.primaryStats.VIT + 50, DEX: c.primaryStats.DEX + 25, AGI: c.primaryStats.AGI + 25 } })).status === 200, "allocate", pts);
@@ -94,12 +113,17 @@ must(out.again === "ALREADY_CHOSEN", "one branch per character", out.again);
 const after = (await call("GET", "/character")).body.character;
 must(after.class2Id === "class2:breaker", "character has the branch", after);
 
+// The branch tree opens for Class2 job points (dev: Class2 Job 10); learn two of its skills.
+await call("POST", "/dev/level", { level: 60, job: 10 });
+await learn("skill:c2_breaker_shatter", 5);
+await learn("skill:c2_breaker_wave", 5);
 // The next fight carries the branch: practice the boss and look at the player unit.
 const p = await call("POST", "/practice/start", { operationId: `practice_${run}`, bossId: "boss:crystal_crab_lord" });
 const pv = await battleCall(account, p.body.battleId)("GET", "");
 const me = pv.state.units.find((u: Msg) => u.unitId === "player");
-must(me.skillIds.includes("skill:c2_breaker_shatter") && me.skillIds.includes("skill:c2_breaker_wave"), "branch actives in the fight", me.skillIds);
-out.kit = me.skillIds;
+must(me.skillIds.includes("skill:c2_breaker_shatter") && me.skillIds.includes("skill:c2_breaker_wave") && me.skillIds.includes("skill:striker_all_in"), "branch actives in the fight", me.skillIds);
+must(me.skillLevels["skill:c2_breaker_shatter"] === 5 && me.skillLevels["skill:striker_heavy_slash"] === 10, "learned levels in the fight", me.skillLevels);
+out.kit = me.skillLevels;
 T.sock.close();
 console.log(JSON.stringify(out, null, 1));
 process.exit(0);

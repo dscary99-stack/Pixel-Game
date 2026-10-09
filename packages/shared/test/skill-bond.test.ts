@@ -114,9 +114,9 @@ describe("per-skill level tables (Nut 2026-10-03: each skill grows its own way)"
   const volley = c.skills.get("skill:fox_light_volley")!;
 
   it("adds what the skill's own table says; other skills get the default power step", () => {
-    expect(skillLevelMods(rules, volley, 1)).toEqual({ powerPercent: 0, mpCost: 0, cooldown: 0, extraTargets: 0 });
-    expect(skillLevelMods(rules, volley, 5)).toEqual({ powerPercent: 15, mpCost: 0, cooldown: 0, extraTargets: 1 });
-    expect(skillLevelMods(rules, volley, 10)).toEqual({ powerPercent: 35, mpCost: -1, cooldown: 0, extraTargets: 2 });
+    expect(skillLevelMods(rules, volley, 1)).toEqual({ powerPercent: 0, mpCost: 0, cooldown: 0, extraTargets: 0, statusChance: 0, statusTurns: 0 });
+    expect(skillLevelMods(rules, volley, 5)).toEqual({ powerPercent: 15, mpCost: 0, cooldown: 0, extraTargets: 1, statusChance: 0, statusTurns: 0 });
+    expect(skillLevelMods(rules, volley, 10)).toEqual({ powerPercent: 35, mpCost: -1, cooldown: 0, extraTargets: 2, statusChance: 0, statusTurns: 0 });
     expect(skillLevelStep(rules, volley, 5)).toEqual({ atLevel: 5, kind: "extra_targets", value: 1 });
     expect(skillLevelMods(rules, c.skills.get("skill:fox_mark_bite")!, 4)).toMatchObject({ powerPercent: 12, extraTargets: 0 });
   });

@@ -22,7 +22,7 @@ import {
   type QuestReward,
   type RulesConfig,
 } from "@pmrpg/shared";
-import type { SqlBound, SqlDb } from "./reward-ledger";
+import { JOB_XP_SET, jobXpArgs, type SqlBound, type SqlDb } from "./reward-ledger";
 
 export type QuestRejection = "INVALID_REQUEST" | "NO_CHARACTER" | "NO_SUCH_QUEST" | "EXPIRED" | "UNRESOLVED_RULE" | "NOT_DONE" | "CLAIM_LIMIT" | "NOT_IN_TOWN" | "INSUFFICIENT_ITEMS";
 export type QuestClaimResult =
@@ -123,8 +123,8 @@ export class QuestStore {
     if (board.reward.exp > 0) {
       stmts.push(
         this.db
-          .prepare(`UPDATE characters SET xp = MIN(xp + ?, ?) WHERE account_id = ? AND ${ours}`)
-          .bind(board.reward.exp, expCap(this.rules, "player"), accountId, ...oursArgs),
+          .prepare(`UPDATE characters SET xp = MIN(xp + ?, ?), ${JOB_XP_SET} WHERE account_id = ? AND ${ours}`)
+          .bind(board.reward.exp, expCap(this.rules, "player"), ...jobXpArgs(this.rules, board.reward.exp), accountId, ...oursArgs),
       );
     }
     await this.db.batch(stmts);

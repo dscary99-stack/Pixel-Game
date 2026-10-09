@@ -12,6 +12,8 @@ import {
   Rng,
   exampleContentMaps,
   expCap,
+  jobExpCap,
+  jobExpFromBase,
   rollGear,
   seedRng,
   type AffixPool,
@@ -35,6 +37,16 @@ export interface SqlBound {
 export interface SqlDb {
   prepare(sql: string): { bind(...values: unknown[]): SqlBound };
   batch(statements: SqlBound[]): Promise<unknown[]>;
+}
+
+/**
+ * Job EXP (P29) rides on every base EXP award: the tier the character is in now earns it (Class1
+ * before the Class2 claim, Class2 after), up to that tier's cap. Use with jobXpArgs in the same order.
+ */
+export const JOB_XP_SET = `job1_xp = CASE WHEN class2_id IS NULL THEN MIN(job1_xp + ?, ?) ELSE job1_xp END, job2_xp = CASE WHEN class2_id IS NULL THEN job2_xp ELSE MIN(job2_xp + ?, ?) END`;
+export function jobXpArgs(rules: RulesConfig, baseExp: number): number[] {
+  const j = jobExpFromBase(rules, baseExp);
+  return [j, jobExpCap(rules, 1), j, jobExpCap(rules, 2)];
 }
 
 /** Grant rows are written only if the receipt in this transaction carries our payload hash. */
@@ -186,8 +198,8 @@ export class RewardLedger {
     if (exp > 0) {
       stmts.push(
         this.db
-          .prepare(`UPDATE characters SET xp = MIN(xp + ?, ?) WHERE account_id = ? AND id = json_extract(${loadout}, '$.characterId') AND ${OWN_RECEIPT}`)
-          .bind(exp, expCap(this.rules, "player"), recipientId, battleId, recipientId, id, recipientId, hash),
+          .prepare(`UPDATE characters SET xp = MIN(xp + ?, ?), ${JOB_XP_SET} WHERE account_id = ? AND id = json_extract(${loadout}, '$.characterId') AND ${OWN_RECEIPT}`)
+          .bind(exp, expCap(this.rules, "player"), ...jobXpArgs(this.rules, exp), recipientId, battleId, recipientId, id, recipientId, hash),
       );
     }
     for (const [companionId, amount] of Object.entries(entitlement.companionExp ?? {})) {
