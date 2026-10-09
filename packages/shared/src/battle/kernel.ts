@@ -275,6 +275,7 @@ function allyUnits(rules: RulesConfig, content: BattleContent, p: BattleSetup["p
   const ctl = controllerId === undefined ? {} : { controllerId };
   const pStats = deriveStats(p.level, p.primaryStats, p.gear);
   for (const sid of p.skillIds) requireActiveSkill(content, sid);
+  for (const pid of p.passiveIds ?? []) if (content.skills.get(pid)?.passive === undefined) reject("MISSING_REFERENCE", `passive ${pid}`);
   const sigils: Record<string, number> = {};
   for (const id of p.sigilIds ?? []) {
     if (content.sigils?.has(id) !== true) reject("MISSING_REFERENCE", `sigil ${id}`);
@@ -297,6 +298,7 @@ function allyUnits(rules: RulesConfig, content: BattleContent, p: BattleSetup["p
     hp: clampResource(p.hp, pStats.maxHp),
     mp: clampResource(p.mp, pStats.maxMp),
     skillIds: [...p.skillIds],
+    ...(p.passiveIds !== undefined && p.passiveIds.length > 0 ? { passiveIds: [...p.passiveIds] } : {}),
     ...(Object.keys(sigils).length > 0 ? { sigils } : {}),
     basicAttackRange: p.basicAttackRange,
     primaryStats: { ...p.primaryStats },
@@ -769,6 +771,7 @@ function applyStatus(ctx: Ctx, source: BattleUnit, target: BattleUnit, a: Status
   if (st.shieldHp !== undefined && shieldHp !== undefined) {
     ctx.emit({ type: "ShieldChanged", unitId: target.unitId, change: "gained", amount: shieldHp, shieldLeft: st.shieldHp });
   }
+  if (d.harmful && source.side !== target.side) firePassives(ctx, target, "debuffed", { other: source });
   // Frostbite at full stacks turns into a short freeze.
   if (a.statusId === "frostbite" && st.stacks >= tuning(ctx).frostbiteFreezeStacks) {
     removeStatus(ctx, target, "frostbite");
@@ -1123,8 +1126,11 @@ function resolveCommand(ctx: Ctx, actor: BattleUnit, cmd: BattleCommand, source:
     case "guard":
       actor.guarding = true;
       return actionEvent(ctx, actor, "guard", null);
-    case "item":
-      return doItem(ctx, actor, cmd.itemId, ctx.unit(cmd.targetId));
+    case "item": {
+      const target = ctx.unit(cmd.targetId);
+      doItem(ctx, actor, cmd.itemId, target);
+      return firePassives(ctx, actor, "used_item", { other: target });
+    }
     case "capture":
       return doCapture(ctx, actor, ctx.unit(cmd.targetId), cmd.itemId, source);
     case "move":
@@ -1588,6 +1594,7 @@ function doMove(ctx: Ctx, actor: BattleUnit, row: Row, slot: number): void {
   actor.slot = slot;
   actor.movedThisRound = true;
   actionEvent(ctx, actor, "move", other ?? null);
+  firePassives(ctx, actor, "moved");
 }
 
 function doFlee(ctx: Ctx, actor: BattleUnit): void {
@@ -1925,8 +1932,8 @@ function worthApplying(caster: BattleUnit, t: BattleUnit, statusId: StatusId): b
 }
 
 /** What an AI considers a skill to be, best first for Auto: heal, cleanse, buff, debuff, damage. */
-type SkillRole = "heal" | "cleanse" | "buff" | "debuff" | "damage";
-const ROLE_ORDER: readonly SkillRole[] = ["heal", "cleanse", "buff", "debuff", "damage"];
+type SkillRole = "revive" | "heal" | "cleanse" | "buff" | "debuff" | "damage";
+const ROLE_ORDER: readonly SkillRole[] = ["revive", "heal", "cleanse", "buff", "debuff", "damage"];
 interface SkillOption {
   skill: SkillDefinition;
   role: SkillRole;
@@ -1965,6 +1972,10 @@ function skillOptions(rules: RulesConfig, content: Pick<BattleContent, "skills">
       if (taunter !== undefined && pool.includes(taunter)) pool = [taunter];
       if (effect.kind === "status") pool = pool.filter((t) => useful(t, effect.statuses));
       role = effect.kind === "damage" ? "damage" : "debuff";
+    } else if (effect.kind === "revive") {
+      // A fallen ally that can be brought back now (O15: from the round after it fell).
+      pool = state.units.filter((x) => x.side === u.side && x.ko && !x.retired && reviveBlock(rules, state, u, x) === null);
+      role = "revive";
     } else {
       pool = (skill.targetRule === "self" ? [u] : state.units.filter((x) => x.side === u.side && active(x))).sort(byHp);
       if (effect.kind === "heal") {

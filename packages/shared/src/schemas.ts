@@ -169,6 +169,12 @@ export const PASSIVE_EVENTS = [
   "used_skill",
   /** A shield this unit put on someone ran out of time without breaking (other = the shielded unit). */
   "shield_expired",
+  /** This unit used an item from the combat bag (other = the item's target). */
+  "used_item",
+  /** This unit changed place with the move command. */
+  "moved",
+  /** A harmful status from the other side landed on this unit (other = who put it on). */
+  "debuffed",
 ] as const;
 export type PassiveEvent = (typeof PASSIVE_EVENTS)[number];
 
@@ -191,11 +197,11 @@ export const PassiveTriggerSchema = z
   .superRefine((t, ctx) => {
     if ((t.on === "hp_below") !== (t.hpBelowPct !== undefined)) ctx.addIssue({ code: "custom", message: "hpBelowPct goes with hp_below only" });
     if (t.skillApplies !== undefined && t.on !== "used_skill") ctx.addIssue({ code: "custom", message: "skillApplies goes with used_skill only" });
-    const noOther = t.on === "battle_start" || t.on === "turn_start" || t.on === "turn_end" || t.on === "hp_below";
+    const noOther = t.on === "battle_start" || t.on === "turn_start" || t.on === "turn_end" || t.on === "hp_below" || t.on === "moved";
     if (noOther && t.otherHas !== undefined) ctx.addIssue({ code: "custom", message: `${t.on} has no other unit` });
     // Harmful statuses only on an enemy "other"; helpful ones, heals and MP only on the owner's side.
     // used_skill's other can be either side: the kernel checks that one when it fires.
-    const enemyOther = t.on === "dealt_damage" || t.on === "took_damage" || t.on === "kill";
+    const enemyOther = t.on === "dealt_damage" || t.on === "took_damage" || t.on === "kill" || t.on === "debuffed";
     const mayBeEnemy = enemyOther || t.on === "used_skill";
     for (const a of t.then) {
       if (noOther && a.target === "other") ctx.addIssue({ code: "custom", message: `${t.on} has no other unit to target` });

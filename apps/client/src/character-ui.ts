@@ -25,6 +25,9 @@ import {
   type Recipe,
   EXAMPLE_SHOPS,
   gearBands,
+  playerKit,
+  STATUS_DEFINITIONS,
+  type SkillDefinition,
   exampleMapRegistry,
   EFFECT_HIT_NAME_TH,
   EFFECT_RES_NAME_TH,
@@ -1839,6 +1842,49 @@ const STAT_NAMES: Record<keyof PrimaryStats, string> = {
  * Stat points (P03): +3 per level, cost 1/2/3 per point by band, cap 150, never down. The preview
  * uses the shared formulas; the server checks the same rules and the version.
  */
+const TARGET_TH: Record<SkillDefinition["targetRule"], string> = {
+  single_enemy: "ศัตรู 1 ตัว",
+  all_enemies: "ศัตรูทั้งหมด",
+  enemy_row: "ศัตรูทั้งแถว",
+  single_ally: "พวกเดียวกัน 1 ตัว",
+  all_allies: "พวกเดียวกันทั้งหมด",
+  self: "ตัวเอง",
+  none: "",
+};
+
+/** One line on what a class skill does, from its definition (numbers as the kernel uses them). */
+function skillBrief(sk: SkillDefinition): string {
+  if (sk.kind === "passive") {
+    const p = sk.passive;
+    const trig = (p?.triggers ?? []).map((t) => `${PASSIVE_ON_TH[t.on] ?? t.on}${t.chancePct < 100 ? ` (${t.chancePct}%)` : ""}`);
+    const mods = (p?.modifiers ?? []).map((m) =>
+      m.kind === "guard_reduction" ? `ป้องกันแล้วรับดาเมจลดอีก ${m.reductionPct}%` : m.kind === "heal_low_hp" ? `ฮีลแรงขึ้น ${m.bonusPct}% กับเป้าหมาย HP ต่ำกว่า ${m.belowHpPct}%` : `ดาเมจ +${m.bonusPct}% กับเป้าหมายที่ติด${STATUS_DEFINITIONS[m.statusId].th}`,
+    );
+    return ["ติดตัว", ...trig.map((t) => `ทำงานเมื่อ${t}`), ...mods].join(" · ");
+  }
+  const parts = [`MP ${sk.mpCost}`, sk.cooldown > 0 ? `คูลดาวน์ ${sk.cooldown} ตา` : "", TARGET_TH[sk.targetRule]];
+  for (const e of sk.effectSequence) {
+    if (e.kind === "damage") parts.push(`${e.damageType === "physical" ? "ดาเมจกาย" : "ดาเมจเวท"} ×${e.coefficient}${e.element !== "NEUTRAL" ? ` ธาตุ${e.element}` : ""}`);
+    if (e.kind === "heal") parts.push(`ฮีล ×${e.coefficient}${e.flat > 0 ? ` +${e.flat}` : ""}`);
+    if (e.kind === "revive") parts.push(`ชุบชีวิต HP ${e.hpPct}%`);
+    for (const a of ("statuses" in e ? e.statuses : undefined) ?? []) parts.push(`${STATUS_DEFINITIONS[a.statusId].th}${a.shieldPct !== undefined ? ` ${a.shieldPct}%` : ""} ${a.chancePct}% ${a.turns} ตา`);
+  }
+  return parts.filter(Boolean).join(" · ");
+}
+
+const PASSIVE_ON_TH: Partial<Record<string, string>> = {
+  battle_start: "เริ่มไฟต์",
+  turn_start: "เริ่มตา",
+  used_skill: "ใช้สกิล",
+  used_item: "ใช้ไอเทม",
+  moved: "สลับตำแหน่ง",
+  debuffed: "ถูกศัตรูติดสถานะ",
+  kill: "ล้มศัตรู",
+  ally_down: "พวกเดียวกันล้ม",
+  hp_below: "HP ต่ำ",
+  protected_ally: "รับแทนพวกเดียวกัน",
+};
+
 export function statsPanel(api: CharacterApi, start: CharacterBundle): Promise<CharacterBundle> {
   return new Promise((resolve) => {
     const { panel, close } = overlay();
@@ -1918,6 +1964,17 @@ export function statsPanel(api: CharacterApi, start: CharacterBundle): Promise<C
         ),
         el("div", { class: "pm-note" }, "ได้ 3 แต้มต่อเลเวล · ค่า 11–60 ใช้ 1 แต้ม, 61–100 ใช้ 2, 101–150 ใช้ 3 · ลดค่าที่ลงแล้วไม่ได้ · สูตร EXP เป็นค่าชั่วคราว"),
       );
+      // Class1 kit and race passive (player-kit.ts): what is open now and what opens later.
+      const kit = playerKit(c.classId, c.raceId, c.level);
+      const skills = el("ul", { class: "pm-list", "data-class-skills": "" });
+      const row = (id: string, note: string) => {
+        const sk = skillDefs.get(id);
+        skills.append(el("li", { "data-skill": id }, `${sk?.name.th ?? id}${note} — ${sk === undefined ? "" : skillBrief(sk)}`));
+      };
+      for (const id of kit.passiveIds) row(id, "");
+      for (const id of kit.skillIds) row(id, "");
+      for (const l of kit.locked) row(l.skillId, ` (เปิดที่ Lv${l.level})`);
+      body.append(el("h3", {}, "สกิลอาชีพและเผ่า"), skills, el("div", { class: "pm-note" }, "สกิลที่เปิดแล้วใช้ในไฟต์ได้ทันที (ทั้งสั่งเองและ Auto) · ชุดสกิลและตัวเลขเป็นตัวอย่าง (P16)"));
       const dirty = PRIMARY_STATS.some((k) => draft[k] !== c.primaryStats[k]);
       save.disabled = !dirty;
       reset.disabled = !dirty;

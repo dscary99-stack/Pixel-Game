@@ -5,14 +5,15 @@
  * stats start at 10 each (P03). HP/MP carry over between fights and come back by resting in town
  * (chapter 03 §3). The team is up to 5 companions with no duplicate species (C04).
  *
- * The class and race lists are the P16 draft (chapter 02): ids and names only. Class and race
- * mechanics (skills, passives) are not built yet, so every class shares one placeholder skill.
+ * The class and race lists are the P16 draft (chapter 02). Each class has its Class1 kit and each race
+ * its passive (player-kit.ts, content/player-skills.ts; EXAMPLE).
  */
 import { z } from "zod";
 import type { RulesConfig } from "./rules";
 import { ElementSchema, type Element, type MonsterInstance, type PrimaryStats, type SpeciesDefinition } from "./schemas";
 import type { BattleSetup, Range } from "./battle/types";
 import { gearBonuses, weaponRange } from "./equipment";
+import { playerKit } from "./player-kit";
 import type { EquipmentDefinition, RolledAffix } from "./schemas";
 
 export interface ClassDefinition {
@@ -40,7 +41,7 @@ export const CLASS1_DEFINITIONS: readonly ClassDefinition[] = [
   { id: "class:bard", name: { th: "นักขับขาน", en: "Bard" }, basicAttackRange: "ranged" },
 ];
 
-/** P16 draft race list (chapter 02). EXAMPLE. Race passives are not built yet. */
+/** P16 draft race list (chapter 02). EXAMPLE. Race passives: player-kit.ts. */
 export const RACE_DEFINITIONS: readonly RaceDefinition[] = [
   { id: "race:human", name: { th: "มนุษย์", en: "Human" } },
   { id: "race:sylvan", name: { th: "ชาวพฤกษ์", en: "Sylvan" } },
@@ -55,8 +56,6 @@ export const RACE_DEFINITIONS: readonly RaceDefinition[] = [
 /** The six elements of chapter 02; a player picks one at creation (NEUTRAL is not a choice). */
 export const PLAYER_ELEMENTS = ["FIRE", "WATER", "EARTH", "WIND", "LIGHT", "SHADOW"] as const satisfies readonly Element[];
 
-/** Placeholder active skill for every class until class kits exist. */
-export const PLACEHOLDER_PLAYER_SKILLS = ["skill:player_power_strike", "skill:player_sweep"];
 
 const classIds = CLASS1_DEFINITIONS.map((c) => c.id) as [string, ...string[]];
 const raceIds = RACE_DEFINITIONS.map((r) => r.id) as [string, ...string[]];
@@ -208,7 +207,11 @@ export function playerSetup(
     gear: gearBonuses(worn.defs, worn.affixes),
     ...(c.hp === null ? {} : { hp: c.hp }),
     ...(c.mp === null ? {} : { mp: c.mp }),
-    skillIds: [...PLACEHOLDER_PLAYER_SKILLS],
+    // The class kit open at this level and the race passive (player-kit.ts).
+    ...(() => {
+      const k = playerKit(c.classId, c.raceId, c.level);
+      return { skillIds: k.skillIds, ...(k.passiveIds.length > 0 ? { passiveIds: k.passiveIds } : {}) };
+    })(),
     ...(worn.sigilIds !== undefined && worn.sigilIds.length > 0 ? { sigilIds: [...worn.sigilIds] } : {}),
     basicAttackRange: weaponRange(worn.mainHand, cls?.basicAttackRange ?? "melee"),
     ...(c.companionBox !== undefined ? { companionRoom: Math.max(0, c.companionBox.capacity - c.companionBox.used) } : {}),

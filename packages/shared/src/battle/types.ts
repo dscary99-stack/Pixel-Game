@@ -338,6 +338,8 @@ export interface BattleSetup {
     hp?: number;
     mp?: number;
     skillIds: string[];
+    /** Class and race passives (player-kit.ts). */
+    passiveIds?: string[];
     basicAttackRange: Range;
     /** Every Sigil installed in the worn gear, one entry per copy. */
     sigilIds?: string[];
