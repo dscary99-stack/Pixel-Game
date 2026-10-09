@@ -3,7 +3,7 @@
  * what it gets back. Identity uses the dev header until O11 picks auth.
  */
 import { authHeaders, type Identity } from "./identity";
-import type { AssetSnapshot, CharacterView, CreateCharacterRequest, MarketBrowseQuery, MarketKind, MarketView, TradeKind, TradeSide, TradeView, VaultView, DisposeQuote, EquipSlot, EquipmentView, FrontierView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RefineResult, RolledAffix, SecretQuestView } from "@pmrpg/shared";
+import type { AssetSnapshot, CharacterView, CreateCharacterRequest, MarketBrowseQuery, MarketKind, MarketView, TradeKind, TradeSide, TradeView, VaultView, MailView, DisposeQuote, EquipSlot, EquipmentView, FrontierView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RefineResult, RolledAffix, SecretQuestView } from "@pmrpg/shared";
 
 export type StoredCompanion = MonsterInstance & { hp: number | null; mp: number | null };
 
@@ -250,6 +250,13 @@ export class CharacterApi {
     return this.call<{ coins: number; result: { offerId: string; status: string } }>("POST", `/trade/${how}`, { operationId: opId(`t${how}`), offerId });
   }
 
+  /** This character's mailbox; claim anywhere outside a fight. */
+  mail() {
+    return this.call<MailView>("GET", "/mail");
+  }
+  mailClaim(mailIds: string[]) {
+    return this.call<{ coins: number }>("POST", "/mail/claim", { operationId: opId("mail"), mailIds });
+  }
   /** The account vault (shared by this login's characters); look anywhere, move at the town NPC. */
   vault() {
     return this.call<VaultView>("GET", "/vault");

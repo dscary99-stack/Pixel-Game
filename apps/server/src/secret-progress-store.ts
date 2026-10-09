@@ -19,7 +19,9 @@ import {
   secretVisitCredit,
   secretVisitWindow,
   COMPANION_GROWTH_VERSION,
+  EMPTY_MAIL,
   type EquipmentDefinition,
+  type MailCompanion,
   type RulesConfig,
   type SecretQuest,
   type SecretQuestReward,
@@ -27,6 +29,7 @@ import {
   type SpeciesDefinition,
 } from "@pmrpg/shared";
 import { hashJson, type SqlBound, type SqlDb } from "./reward-ledger";
+import { mailInsert } from "./mail-insert";
 
 export interface SecretCredit {
   questId: string;
@@ -97,6 +100,8 @@ export interface GrantedReward {
 export interface ClaimResult {
   questId: string;
   rewards: GrantedReward[];
+  /** The companion box was full: the companion reward waits in the mailbox. */
+  mailed?: true;
 }
 export type SecretResult<T> = { status: "done"; replayed: boolean; result: T } | { status: "rejected"; reason: SecretRejection; message: string };
 
@@ -221,7 +226,7 @@ export class SecretProgressStore {
   }
 
   /** Claim a finished quest's rewards. The first claim grants; later ones replay it. */
-  async claim(accountId: string, raw: unknown): Promise<SecretResult<ClaimResult>> {
+  async claim(accountId: string, raw: unknown, viaMail = false): Promise<SecretResult<ClaimResult>> {
     const parsed = SecretClaimRequestSchema.safeParse(raw);
     if (!parsed.success) return reject("INVALID_REQUEST", parsed.error.issues.map((i) => i.message).join("; "));
     const { questId } = parsed.data;
@@ -234,14 +239,14 @@ export class SecretProgressStore {
     if (q === undefined) return reject("NO_SUCH_QUEST", `no quest ${questId}`);
     if (q.rewards === undefined || q.rewards.length === 0) return reject("NO_REWARD", "this quest was rolled before rewards existed");
 
-    // A companion reward goes into the character's box (P26): it must have room first.
+    // A companion reward goes into the character's box (P26); when the box is full it waits in the
+    // mailbox instead (claimed from there once there is room).
     const pets = q.rewards.filter((r) => r.kind === "companion").length;
     const cap = this.rules.provisional.companionBox.value.capacity;
     const boxSql = `(SELECT COUNT(*) FROM monster_instances WHERE owner_id = ?) - (SELECT COUNT(*) FROM character_team t JOIN characters c ON c.id = t.character_id WHERE c.account_id = ?) + ? <= ?`;
     const boxArgs = [accountId, accountId, pets, cap];
-    if (pets > 0 && (await this.db.prepare(`SELECT 1 AS x WHERE ${boxSql}`).bind(...boxArgs).first()) === null) {
-      return reject("COMPANION_BOX_FULL", `the companion box is full (${cap}); release one before claiming`);
-    }
+    const toMail = pets > 0 && (viaMail || (await this.db.prepare(`SELECT 1 AS x WHERE ${boxSql}`).bind(...boxArgs).first()) === null);
+    const boxed = pets > 0 && !toMail;
 
     const at = this.now();
     const token = crypto.randomUUID();
@@ -253,7 +258,7 @@ export class SecretProgressStore {
       if (r.kind === "gear") return { ...base, ref: `eq:secret:${ch}:${questId}:${i}` };
       return { ...base, ref: null };
     });
-    const result: ClaimResult = { questId, rewards: granted };
+    const result: ClaimResult = { questId, rewards: granted, ...(toMail ? { mailed: true } : {}) };
     const ours = `EXISTS (SELECT 1 FROM secret_quest_claims WHERE character_id = ? AND quest_id = ? AND token = ?)`;
     const oursArgs = [ch, questId, token];
     const stmts: SqlBound[] = [
@@ -261,11 +266,12 @@ export class SecretProgressStore {
         .prepare(
           `INSERT INTO secret_quest_claims (character_id, quest_id, token, result_json, created_at)
            SELECT ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM secret_quest_progress WHERE character_id = ? AND quest_id = ? AND completed_at IS NOT NULL)
-             AND ${pets > 0 ? boxSql : "1"}
+             AND ${boxed ? boxSql : "1"}
            ON CONFLICT DO NOTHING`,
         )
-        .bind(ch, questId, token, JSON.stringify(result), at, ch, questId, ...(pets > 0 ? boxArgs : [])),
+        .bind(ch, questId, token, JSON.stringify(result), at, ch, questId, ...(boxed ? boxArgs : [])),
     ];
+    const mailed: MailCompanion[] = [];
     for (const [i, r] of q.rewards.entries()) {
       const g = granted[i]!;
       stmts.push(
@@ -283,6 +289,22 @@ export class SecretProgressStore {
         if (sp === undefined) throw new Error(`reward ${r.rewardId} names unknown species ${def.baseSpeciesId}`);
         const start = this.rules.provisional.primaryStatStart.value;
         const stats = { STR: start, VIT: start, INT: start, DEX: start, AGI: start, SPI: start };
+        const origin = { kind: "secret_reward", at, rewardId: r.rewardId, variantId: r.variantId, innateId: r.innateId ?? null };
+        if (toMail) {
+          mailed.push({
+            id: g.ref!,
+            speciesId: sp.id,
+            level: this.rules.confirmed.capturedInitialLevel.value,
+            element: secretCompanionElement(sp, r.variantId),
+            primaryStats: stats,
+            origin,
+            growthSeed: crypto.randomUUID(),
+            growthVersion: COMPANION_GROWTH_VERSION,
+            noSell: true,
+            noTrade: true,
+          });
+          continue;
+        }
         stmts.push(
           this.db
             .prepare(
@@ -297,7 +319,7 @@ export class SecretProgressStore {
               this.rules.confirmed.capturedInitialLevel.value,
               secretCompanionElement(sp, r.variantId),
               JSON.stringify(stats),
-              JSON.stringify({ kind: "secret_reward", at, rewardId: r.rewardId, variantId: r.variantId, innateId: r.innateId ?? null }),
+              JSON.stringify(origin),
               op,
               crypto.randomUUID(),
               COMPANION_GROWTH_VERSION,
@@ -318,10 +340,16 @@ export class SecretProgressStore {
         );
       }
     }
+    if (mailed.length > 0) {
+      const title = "รางวัลเควสลับ: คลังคู่ใจเต็ม";
+      const body = `คลังคู่ใจเต็ม (${cap} ตัว) คู่ใจรางวัลจึงรออยู่ในกล่องจดหมาย ปล่อยหรือเทรดคู่ใจออกก่อนแล้วกดรับ`;
+      stmts.push(mailInsert(this.db, this.rules, { mailId: `mail:secret:${ch}:${questId}`, accountId, source: "secret_reward", title, body, payload: { ...EMPTY_MAIL, companions: mailed } }, at, { sql: ours, args: oursArgs }));
+    }
     await this.db.batch(stmts);
     const row = await this.claimRow(ch, questId);
     if (row !== null) return { status: "done", replayed: row.token !== token, result: JSON.parse(row.result_json) as ClaimResult };
-    if (pets > 0 && (await this.db.prepare(`SELECT 1 AS x WHERE ${boxSql}`).bind(...boxArgs).first()) === null) return reject("COMPANION_BOX_FULL", `the companion box is full (${cap}); release one before claiming`);
+    // The box filled up between the check and the write: send the companion to the mailbox instead.
+    if (boxed && !viaMail && (await this.db.prepare(`SELECT 1 AS x WHERE ${boxSql}`).bind(...boxArgs).first()) === null) return this.claim(accountId, raw, true);
     return reject("NOT_DONE", "this quest is not finished yet");
   }
 

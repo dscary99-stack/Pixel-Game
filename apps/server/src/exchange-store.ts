@@ -17,6 +17,7 @@ import {
   MarketBuyRequestSchema,
   MarketListRequestSchema,
   MarketListingRefSchema,
+  EMPTY_MAIL,
   TRADE_CODE_ALPHABET,
   TradeOfferRequestSchema,
   TradeRespondRequestSchema,
@@ -46,6 +47,7 @@ import {
   type TradeView,
 } from "@pmrpg/shared";
 import { hashJson, type SqlBound, type SqlDb } from "./reward-ledger";
+import { mailInsert } from "./mail-insert";
 
 export type ExchangeRejection =
   | "INVALID_REQUEST"
@@ -654,6 +656,17 @@ export class MarketStore extends ExchangeBase {
           .bind(`mkt:${listingId}:delivery`, accountId, l.asset_id, l.quantity, at, ...ours.args),
       );
     } else stmts.push(...this.releaseHeld(listingId, ours, accountId));
+    // The seller hears about the sale in the mailbox (a notice: the coins are already paid).
+    const what = asset.kind === "item" ? `${asset.name} ×${asset.quantity}` : asset.name;
+    stmts.push(
+      mailInsert(
+        this.db,
+        this.rules,
+        { mailId: `mail:sale:${listingId}`, accountId: l.seller_id, source: "market_sale", title: `ขายแล้ว: ${what}`, body: `ขายได้ ${l.price} เหรียญ หักภาษี ${tax} ได้รับ ${l.price - tax} เหรียญ (เข้ากระเป๋าแล้ว)`, payload: EMPTY_MAIL },
+        at,
+        ours,
+      ),
+    );
     await this.db.batch(stmts);
     return this.outcome(accountId, operationId, hash, token, async () => {
       const now = await this.listing(listingId);

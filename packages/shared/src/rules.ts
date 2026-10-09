@@ -261,6 +261,7 @@ export const RULES = {
      * character, never shared with the account's other characters (the account vault holds no companions).
      */
     companionBox: provisional({ capacity: 100 } as const, "P26", "Nut 2026-10-09: 100 companions besides the team, per character, not shared"),
+    mail: provisional({ keepDays: 30, listLimit: 100 } as const, "P27", "letters kept 30 days (unclaimed ones are lost, like weekly rewards); the newest 100 are shown"),
     vault: provisional({ slots: 100, maxLines: 20 } as const, "P25", "100 slots per account (one per item kind held, one per piece; coins take none); up to 20 lines per request"),
     /**
      * Direct trade between players (Nut 2026-10-07: item trade and companion trade are separate).

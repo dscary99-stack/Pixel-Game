@@ -60,6 +60,8 @@
  *   POST /trade/accept|decline|cancel  answer an offer to you, or take back your own (operationId, offerId)
  *   GET  /vault                    the account vault shared by this login's characters (anywhere)
  *   POST /vault/deposit|withdraw   move items, pieces and coins in or out (operationId, items, equipmentIds, coins; in town)
+ *   GET  /mail                     this character's mailbox (letters, newest first)
+ *   POST /mail/claim               take everything in some letters (operationId, mailIds; anywhere but a fight)
  *   GET  /world/where              where the caller's character is saved (map + channel)
  *   GET  /world/:mapId/:channel    WebSocket into that Map Channel DO (walking, presence)
  *
@@ -69,6 +71,7 @@
  * whose battle provably never started.
  */
 import {
+  COMPANION_GROWTH_VERSION,
   DEV_FIXTURE_RULES,
   DEV_STARTER_COINS,
   DEV_STARTER_EQUIPMENT,
@@ -108,6 +111,7 @@ import { NpcOrderStore } from "./npc-order-store";
 import { DisposalStore } from "./disposal-store";
 import { MarketStore, TradeStore } from "./exchange-store";
 import { VaultStore } from "./vault-store";
+import { MailStore } from "./mail-store";
 import { SecretQuestStore, secretQuestKey } from "./secret-quest-store";
 import { SecretProgressStore } from "./secret-progress-store";
 import { FrontierStore, type FrontierBattlePort } from "./frontier-store";
@@ -137,6 +141,7 @@ const ordersFor = (env: Env) => new NpcOrderStore(env.DB, rulesFor(env), example
 const exchangeContent = { items: CONTENT.items, equipment: CONTENT.equipment, species: CONTENT.species };
 const marketFor = (env: Env) => new MarketStore(env.DB, rulesFor(env), exchangeContent, TOWNS, (a) => charactersFor(env).syncLevels(a));
 const vaultFor = (env: Env) => new VaultStore(env.DB, rulesFor(env), exchangeContent, TOWNS);
+const mailFor = (env: Env) => new MailStore(env.DB, rulesFor(env), exchangeContent);
 const tradeFor = (env: Env) => new TradeStore(env.DB, rulesFor(env), exchangeContent, TOWNS, (a) => charactersFor(env).syncLevels(a));
 const disposalFor = (env: Env) => new DisposalStore(env.DB, rulesFor(env), { equipment: CONTENT.equipment, affixPools: CONTENT.affixPools }, TOWNS);
 /** Floor fights go to their Battle DO like any other fight (create from a D1 reservation). */
@@ -185,7 +190,7 @@ export default {
     if (url.pathname.startsWith("/world/")) return worldRoute(request, env, url);
     if (url.pathname === "/character" || url.pathname.startsWith("/character/") || url.pathname.startsWith("/town/") || url.pathname.startsWith("/quests") || url.pathname === "/journal") return characterRoute(request, env, url);
     if (url.pathname === "/party" || url.pathname.startsWith("/party/")) return partyRoute(request, env, url);
-    if (url.pathname === "/market" || url.pathname.startsWith("/market/") || url.pathname === "/trade" || url.pathname.startsWith("/trade/") || url.pathname === "/vault" || url.pathname.startsWith("/vault/")) return exchangeRoute(request, env, url);
+    if (url.pathname === "/market" || url.pathname.startsWith("/market/") || url.pathname === "/trade" || url.pathname.startsWith("/trade/") || url.pathname === "/vault" || url.pathname.startsWith("/vault/") || url.pathname === "/mail" || url.pathname.startsWith("/mail/")) return exchangeRoute(request, env, url);
     if (url.pathname === "/frontier" || url.pathname.startsWith("/frontier/")) return frontierRoute(request, env, url);
     const m = url.pathname.match(/^\/battles\/([a-z0-9_:-]{1,80})(?:\/([a-z-]+))?$/);
     if (m === null) return json(404, { error: "NOT_FOUND" });
@@ -334,6 +339,10 @@ async function exchangeRoute(request: Request, env: Env, url: URL): Promise<Resp
     const view = await vaultFor(env).view(accountId);
     return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
   }
+  if (request.method === "GET" && url.pathname === "/mail") {
+    const view = await mailFor(env).view(accountId);
+    return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
+  }
   if (request.method === "GET" && url.pathname === "/trade") {
     const view = await trade.view(accountId);
     return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
@@ -351,6 +360,7 @@ async function exchangeRoute(request: Request, env: Env, url: URL): Promise<Resp
     : url.pathname === "/trade/cancel" ? await trade.close(accountId, body, "cancelled")
     : url.pathname === "/vault/deposit" ? await vaultFor(env).deposit(accountId, body)
     : url.pathname === "/vault/withdraw" ? await vaultFor(env).withdraw(accountId, body)
+    : url.pathname === "/mail/claim" ? await mailFor(env).claim(accountId, body)
     : null;
   if (r === null) return json(404, { error: "NOT_FOUND" });
   if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : r.reason === "NO_CHARACTER" ? 404 : 409, { error: r.reason, message: r.message });
@@ -520,6 +530,30 @@ async function devRoute(request: Request, env: Env, url: URL): Promise<Response>
     return json(200, { balances, reservation });
   }
   if (request.method === "POST" && url.pathname === "/dev/reconcile") return json(200, await reconcile(env, 0));
+  // DEV ONLY: stands in for GM / system mail so smokes can send a letter with items, coins and a companion.
+  if (request.method === "POST" && url.pathname === "/dev/mail") {
+    const parsed = DevMailSchema.safeParse(await readJson(request));
+    if (!parsed.success) return json(400, { error: "INVALID_REQUEST" });
+    const g = parsed.data;
+    const companions = [];
+    for (const [i, c] of g.companions.entries()) {
+      const sp = CONTENT.species.get(c.speciesId);
+      if (sp === undefined) return json(400, { error: "UNKNOWN_SPECIES" });
+      const start = PRODUCTION_RULES.provisional.primaryStatStart.value;
+      companions.push({
+        id: `mon:${g.mailId.slice(5)}:${i}`,
+        speciesId: sp.id,
+        level: 1,
+        element: sp.allowedElements[0]!,
+        primaryStats: { STR: start, VIT: start, INT: start, DEX: start, AGI: start, SPI: start },
+        origin: { kind: "mail", at: new Date().toISOString() },
+        growthSeed: crypto.randomUUID(),
+        growthVersion: COMPANION_GROWTH_VERSION,
+      });
+    }
+    await mailFor(env).send({ mailId: g.mailId, accountId, source: "system", title: g.title, body: g.body, payload: { items: g.items, coins: g.coins, equipment: [], companions } });
+    return json(200, { ok: true });
+  }
   // DEV ONLY: stands in for the Lv200 awakening quest (not built) so the set can be checked.
   if (request.method === "POST" && url.pathname === "/dev/secret-quests/reveal") {
     const view = await secretQuestsFor(env).devReveal(accountId);
@@ -559,6 +593,17 @@ async function devRoute(request: Request, env: Env, url: URL): Promise<Response>
   }
   return json(404, { error: "NOT_FOUND" });
 }
+
+const DevMailSchema = z
+  .object({
+    mailId: z.string().regex(/^mail:dev:[A-Za-z0-9_-]{4,80}$/),
+    title: z.string().min(1).max(80),
+    body: z.string().max(400).default(""),
+    coins: z.number().int().min(0).max(1_000_000).default(0),
+    items: z.record(z.string(), z.number().int().min(1).max(10_000)).default({}),
+    companions: z.array(z.object({ speciesId: z.string() }).strict()).max(5).default([]),
+  })
+  .strict();
 
 const DevGrantSchema = z
   .object({

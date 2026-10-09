@@ -526,6 +526,77 @@ export function tradePanel(api: CharacterApi, start: CharacterBundle): Promise<C
  * Account vault shared by every character of this login (Nut 2026-10-08). `atNpc`: opened at the vault
  * NPC in town, where things go in and out; anywhere else it only shows what is inside.
  */
+/** The mailbox (Nut 2026-10-09): letters newest first; claim one or every letter with things in it. */
+export function mailPanel(api: CharacterApi, start: CharacterBundle): Promise<CharacterBundle> {
+  return new Promise((resolve) => {
+    const { panel, close } = overlay();
+    let bundle = start;
+    let busy = false;
+    const head = el("div", { class: "pm-stats" });
+    const body = el("ul", { class: "pm-list", "data-section": "mail" });
+    const note = el("div", { class: "pm-note", role: "status" });
+    const error = el("div", { class: "pm-error", role: "alert" });
+    const all = el("button", { type: "button" }, "รับทั้งหมด");
+    const done = el("button", { type: "button", class: "primary" }, "ปิด");
+    const actions = el("div", { class: "pm-actions" });
+    actions.append(all, done);
+    panel.append(el("h2", {}, "กล่องจดหมาย"), head, body, note, error, actions);
+    done.addEventListener("click", () => {
+      close();
+      resolve(bundle);
+    });
+    let pending: string[] = [];
+    const claim = async (ids: string[]) => {
+      if (busy || ids.length === 0) return;
+      busy = true;
+      error.textContent = "";
+      try {
+        for (let i = 0; i < ids.length; i += 20) await api.mailClaim(ids.slice(i, i + 20));
+        note.textContent = ids.length === 1 ? "รับของแล้ว" : `รับของจาก ${ids.length} ฉบับแล้ว`;
+      } catch (e) {
+        error.textContent = errText(e);
+      } finally {
+        bundle = (await api.get().catch(() => null)) ?? bundle;
+        busy = false;
+        await draw();
+      }
+    };
+    all.addEventListener("click", () => void claim(pending));
+    const draw = async () => {
+      body.replaceChildren();
+      try {
+        const v = await api.mail();
+        head.textContent = `รอรับ ${v.unclaimed} ฉบับ · จดหมายเก็บไว้ ${v.keepDays} วัน ไม่กดรับภายในนั้นของจะหาย · รับได้ทุกที่ยกเว้นระหว่างไฟต์`;
+        pending = v.letters.filter((l) => l.claimedAt === null && (l.items.length + l.equipment.length + l.companions.length > 0 || l.coins > 0)).map((l) => l.mailId);
+        all.disabled = pending.length === 0;
+        for (const l of v.letters) {
+          const li = el("li", { "data-mail": l.mailId });
+          const things = [
+            ...l.items.map((i) => `${i.name} ×${i.quantity}`),
+            ...(l.coins > 0 ? [`${l.coins.toLocaleString()} เหรียญ`] : []),
+            ...l.equipment.map((e) => `${e.name} [${RARITY_NAME_TH[e.rarity as keyof typeof RARITY_NAME_TH] ?? e.rarity}]`),
+            ...l.companions.map((c) => `คู่ใจ ${c.name} Lv${c.level}`),
+          ];
+          const text = el("span", { class: "pm-grow" }, `${l.claimedAt === null ? "● " : ""}${l.title}`);
+          li.append(text);
+          if (l.body !== "") li.append(el("div", { class: "pm-note" }, l.body));
+          if (things.length > 0) li.append(el("div", { class: "pm-note" }, `แนบ: ${things.join(", ")}${l.claimedAt === null ? ` · หมดอายุ ${l.expiresAt.slice(0, 10)}` : " · รับแล้ว"}`));
+          if (l.claimedAt === null && things.length > 0) {
+            const b = el("button", { type: "button" }, "รับ");
+            b.addEventListener("click", () => void claim([l.mailId]));
+            li.append(b);
+          }
+          body.append(li);
+        }
+        if (v.letters.length === 0) body.append(el("li", {}, "ไม่มีจดหมาย"));
+      } catch (e) {
+        error.textContent = errText(e);
+      }
+    };
+    void draw();
+  });
+}
+
 export function vaultPanel(api: CharacterApi, start: CharacterBundle, atNpc: boolean): Promise<CharacterBundle> {
   return new Promise((resolve) => {
     const { panel, close } = overlay();

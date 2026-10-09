@@ -32,7 +32,7 @@ import {
 import { ELEMENT_COLOR, type BattleScene } from "./battle-scene";
 import type { CharacterApi, CharacterBundle } from "./character-api";
 import { autoHuntPanel, craftPanel, refinePanel, frontierPanel, journalPanel, ordersPanel, questPanel, titleName, equipmentPanel, partyPanel, rebirthPanel, secretQuestPanel, shopPanel, skillPanel, statsPanel, teamPanel, vitals } from "./character-ui";
-import { marketPanel, tradePanel, vaultPanel } from "./market-ui";
+import { mailPanel, marketPanel, tradePanel, vaultPanel } from "./market-ui";
 import type { WorldTransport } from "./world-transport";
 
 const W = 960;
@@ -185,6 +185,7 @@ export class WorldScene extends Phaser.Scene {
     kb.on("keydown-L", () => void this.openSecretQuests());
     kb.on("keydown-M", () => void this.openMarket());
     kb.on("keydown-V", () => void this.openVault());
+    kb.on("keydown-N", () => void this.openMail());
     if (this.api !== null) {
       const button = (x: number, label: string, open: () => Promise<void>) =>
         this.add
@@ -215,6 +216,7 @@ export class WorldScene extends Phaser.Scene {
         ["เควสลับ (L)", () => this.openSecretQuests()],
         ["ตลาด (M)", () => this.openMarket()],
         ["คลัง (V)", () => this.openVault()],
+        ["จดหมาย (N)", () => this.openMail()],
       ];
       let x = 8;
       let lift = 0;
@@ -685,6 +687,13 @@ export class WorldScene extends Phaser.Scene {
   private async openVault(atNpc = false) {
     return this.withPanel("ดูคลังได้นอกไฟต์", async (api, bundle) => {
       await vaultPanel(api, bundle, atNpc && this.map?.kind === "town");
+    });
+  }
+
+  /** Mailbox (N): letters from the game; claim anywhere outside a fight. */
+  private async openMail() {
+    return this.withPanel("เปิดกล่องจดหมายได้นอกไฟต์", async (api, bundle) => {
+      await mailPanel(api, bundle);
     });
   }
 
