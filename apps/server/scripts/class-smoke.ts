@@ -2,7 +2,8 @@
 // refused; at Lv50+ in town it starts a practice boss fight with the trial stat %, a retry resumes it,
 // a lost or fled try cannot be claimed, a won one gives the branch once (a retry answers the same),
 // and afterwards the trial is refused and the branch's skill tree opens: its skills, learned with
-// Class2 job points, are in the next fight. The trial also needs Class1 at its job cap (P29).
+// Class2 job points, are in the next fight. The trial also needs Class1 at its job cap (P29). Last, the
+// reset scrolls: refused in a fight, then a skill scroll and a stat scroll each return all their points.
 // Run `npm run db:migrate:local` and `npm run dev:server` first, then `npm run smoke:class`.
 import { AUTO_GAP_MS, api, autoToEnd, battleCall, connect, run, sleep, type Msg } from "./smoke-lib";
 
@@ -34,13 +35,14 @@ const learn = async (skillId: string, times: number) => {
 // A Lv60 striker with its points in STR/VIT, Lv40 shop gear and three Lv45 companions (dev helpers).
 await call("POST", "/dev/level", { level: 60 });
 out.jobTooLow = (await call("POST", "/class/trial/start", { operationId: `trial_job_${run}`, branchId: "class2:breaker" })).body.error;
-must(out.jobTooLow === "JOB_TOO_LOW", "refused below Class1 Job 40", out.jobTooLow);
-await call("POST", "/dev/level", { level: 60, job: 40 });
-// A physical build: 40 Class1 points.
+must(out.jobTooLow === "JOB_TOO_LOW", "refused below Class1 Job 50", out.jobTooLow);
+await call("POST", "/dev/level", { level: 60, job: 50 });
+// A physical build: 50 Class1 points.
 await learn("skill:striker_heavy_slash", 10);
 await learn("skill:striker_cleave", 10);
 await learn("skill:striker_all_in", 10);
 await learn("skill:striker_armor_break", 10);
+await learn("skill:striker_roar", 10);
 const noPoint = await call("POST", "/character/skills/learn", { expectedVersion: (await call("GET", "/character")).body.character.version, skillId: "skill:striker_war_cry" });
 must(noPoint.body.error === "NO_POINTS", "Class1 points spent", noPoint.body);
 let c = (await call("GET", "/character")).body.character;
@@ -124,6 +126,36 @@ const me = pv.state.units.find((u: Msg) => u.unitId === "player");
 must(me.skillIds.includes("skill:c2_breaker_shatter") && me.skillIds.includes("skill:c2_breaker_wave") && me.skillIds.includes("skill:striker_all_in"), "branch actives in the fight", me.skillIds);
 must(me.skillLevels["skill:c2_breaker_shatter"] === 5 && me.skillLevels["skill:striker_heavy_slash"] === 10, "learned levels in the fight", me.skillLevels);
 out.kit = me.skillLevels;
+
+// Reset scrolls (reset.ts): refused in the fight; after fleeing, a skill scroll returns every job point
+// (Class1 skills included) and a stat scroll every stat point; a retry spends no second scroll.
+await call("POST", "/dev/grant", { operationId: `scrolls_${run}`, items: { "item:stat_reset_scroll": 1, "item:skill_reset_scroll": 1 } });
+const inFight = await call("POST", "/character/reset", { operationId: `reset_fight_${run}`, itemId: "item:skill_reset_scroll" });
+must(inFight.body.error === "IN_BATTLE", "reset refused in a fight", inFight.body);
+const pc = battleCall(account, p.body.battleId);
+const fgen = (await pc("POST", "/session")).sessionGeneration;
+let fv = await pc("GET", "");
+for (let i = 0; i < 20 && fv.state.status === "active"; i++) {
+  if (fv.actor === "player") await pc("POST", "/commands", { commandId: crypto.randomUUID(), sessionGeneration: fgen, expectedStateVersion: fv.state.stateVersion, command: { type: "flee", actorId: "player" } });
+  else {
+    await sleep(AUTO_GAP_MS);
+    await pc("POST", "/auto", { commandId: crypto.randomUUID(), sessionGeneration: fgen, expectedStateVersion: fv.state.stateVersion });
+  }
+  fv = await pc("GET", "");
+}
+for (let i = 0; i < 50 && !(fv.settlement.settled || fv.settlement.failed > 0); i++) {
+  await sleep(200);
+  fv = await pc("GET", "");
+}
+const skillReset = await call("POST", "/character/reset", { operationId: `reset_skill_${run}`, itemId: "item:skill_reset_scroll" });
+must(skillReset.status === 200 && Object.keys(skillReset.body.character.skills).length === 0 && skillReset.body.character.class2Id === "class2:breaker", "skill scroll forgets every tree skill", skillReset.body);
+must((await call("POST", "/character/reset", { operationId: `reset_skill_${run}`, itemId: "item:skill_reset_scroll" })).status === 200, "skill reset retry answers the same");
+const statReset = await call("POST", "/character/reset", { operationId: `reset_stat_${run}`, itemId: "item:stat_reset_scroll" });
+must(statReset.status === 200 && Object.values(statReset.body.character.primaryStats).every((v) => v === statReset.body.character.primaryStats.STR), "stat scroll returns every stat point", statReset.body);
+const again2 = await call("POST", "/character/reset", { operationId: `reset_stat2_${run}`, itemId: "item:stat_reset_scroll" });
+must(again2.body.error === "INSUFFICIENT_ITEMS", "one scroll, one reset", again2.body);
+await learn("skill:striker_heavy_slash", 1);
+out.reset = { inFight: inFight.body.error, afterSkills: skillReset.body.character.skills, stats: statReset.body.character.primaryStats, second: again2.body.error };
 T.sock.close();
 console.log(JSON.stringify(out, null, 1));
 process.exit(0);

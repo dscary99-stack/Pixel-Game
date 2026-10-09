@@ -74,11 +74,11 @@ describe("Class2 trial", () => {
     expect(await classes.start(A, { operationId: "trial_01", branchId: "class2:bastion" })).toMatchObject({ status: "rejected", reason: "LEVEL_TOO_LOW" });
     await chars.devRaiseLevel(A, 50);
     // P29: Class1 must also be at its job cap.
-    expect((await classes.view(A))!).toMatchObject({ blocked: "JOB_TOO_LOW", trialJobLevel: 40 });
+    expect((await classes.view(A))!).toMatchObject({ blocked: "JOB_TOO_LOW", trialJobLevel: 50 });
     expect(await classes.start(A, { operationId: "trial_01", branchId: "class2:bastion" })).toMatchObject({ status: "rejected", reason: "JOB_TOO_LOW" });
-    await chars.devRaiseLevel(A, 50, 39);
+    await chars.devRaiseLevel(A, 50, 49);
     expect((await classes.view(A))!.blocked).toBe("JOB_TOO_LOW");
-    await chars.devRaiseLevel(A, 50, 40);
+    await chars.devRaiseLevel(A, 50, 50);
     expect((await classes.view(A))!.blocked).toBeNull();
     expect(await classes.start(A, { operationId: "trial_01", branchId: "class2:breaker" })).toMatchObject({ status: "rejected", reason: "NOT_FOUND" });
     at("map:dawn_field");
@@ -86,7 +86,7 @@ describe("Class2 trial", () => {
   });
 
   it("is a practice boss fight with the trial stat %; a retry resumes it, another branch on the same id is refused", async () => {
-    await chars.devRaiseLevel(A, 50, 40);
+    await chars.devRaiseLevel(A, 50, 50);
     const r = await started("trial_01", "class2:bastion");
     expect(created[0]!.setup).toMatchObject({ practice: true, classTrial: true, bag: {}, boss: { bossId: "boss:crystal_crab_lord" } });
     const v = await rooms.get(r.battleId)!.view(A);
@@ -103,7 +103,7 @@ describe("Class2 trial", () => {
   });
 
   it("a fled trial cannot be claimed and settles with nothing written", async () => {
-    await chars.devRaiseLevel(A, 50, 40);
+    await chars.devRaiseLevel(A, 50, 50);
     const r = await started("trial_01", "class2:bastion");
     const room = rooms.get(r.battleId)!;
     let v = await room.view(A);
@@ -120,7 +120,7 @@ describe("Class2 trial", () => {
   });
 
   it("a won trial's branch is taken once; a retry answers the same and the branch tree opens", async () => {
-    await chars.devRaiseLevel(A, 50, 40);
+    await chars.devRaiseLevel(A, 50, 50);
     const r = await started("trial_01", "class2:bastion");
     expect(await classes.claim(A, { operationId: "trial_01" })).toMatchObject({ status: "rejected", reason: "NOT_WON" });
     winTrial(r.battleId);
@@ -141,7 +141,7 @@ describe("Class2 trial", () => {
   });
 
   it("two won trials claimed at the same time end with exactly one branch", async () => {
-    await chars.devRaiseLevel(A, 50, 40);
+    await chars.devRaiseLevel(A, 50, 50);
     winTrial((await started("trial_01", "class2:bastion")).battleId);
     winTrial((await started("trial_02", "class2:sentinel")).battleId);
     const [x, y] = await Promise.all([classes.claim(A, { operationId: "trial_01" }), classes.claim(A, { operationId: "trial_02" })]);

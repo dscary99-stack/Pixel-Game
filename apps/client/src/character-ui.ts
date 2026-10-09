@@ -1923,6 +1923,35 @@ const COLUMN_TH = ["กายภาพ", "เวท/ธาตุ", "สนับ
 const LEARN_REFUSAL_TH: Record<string, string> = { NOT_IN_TREE: "ไม่อยู่ในต้นไม้", MAX_LEVEL: "เต็มแล้ว", NEEDS_SKILL: "ต้องเรียนสกิลก่อนหน้า", NO_POINTS: "แต้มไม่พอ" };
 
 /**
+ * A reset scroll button (reset.ts, Nut 2026-10-09): shown only while the bag holds the scroll, asks for a
+ * second tap, and hands back the reset character. The server spends the scroll and checks the fight lock.
+ */
+function resetScrollButton(api: CharacterApi, itemId: string, label: string, get: () => CharacterBundle, set: (b: CharacterBundle) => void, error: HTMLElement): HTMLElement | null {
+  const have = get().bag[itemId] ?? 0;
+  if (have <= 0) return null;
+  const btn = el("button", { type: "button", "data-reset": itemId }, `${label} (มี ${have})`);
+  let armed = false;
+  btn.addEventListener("click", async () => {
+    if (!armed) {
+      armed = true;
+      btn.textContent = `ยืนยัน${label}? ใช้ 1 ม้วน กดอีกครั้ง`;
+      return;
+    }
+    btn.disabled = true;
+    error.textContent = "";
+    try {
+      const r = await api.useReset(itemId);
+      const b = get();
+      set({ ...b, character: r.character, bag: { ...b.bag, [itemId]: Math.max(0, (b.bag[itemId] ?? 0) - 1) } });
+    } catch (e) {
+      error.textContent = e instanceof ApiError ? `${e.code === "IN_BATTLE" ? "ใช้ระหว่างไฟต์ไม่ได้" : e.code === "INSUFFICIENT_ITEMS" ? "ไม่มีคัมภีร์" : e.code}: ${e.message}` : String(e);
+      set(get());
+    }
+  });
+  return btn;
+}
+
+/**
  * Skill trees (Nut 2026-10-09; skill-tree.ts, P29/P30): base level gives stat points (สเตตัส panel),
  * job level gives skill points spent here, one level per tap, outside fights. The server checks
  * every rule again; this view only greys out what it would refuse.
@@ -1973,9 +2002,14 @@ export function skillTreePanel(api: CharacterApi, start: CharacterBundle): Promi
         el(
           "div",
           { class: "pm-note" },
-          "Job Level ได้ EXP เท่ากับ EXP ปกติจากทุกไฟต์ ได้ 1 แต้มสกิลต่อ Job Level · ทุกอาชีพมีสายกาย เวท สนับสนุน และก่อกวน แต้มไม่พอเรียนครบ ต้องเลือกสายตามสเตตัส เผ่า และธาตุที่เล่น · สกิลที่เขียนว่า \"ธาตุตัวเอง\" ใช้ธาตุของตัวละคร · Class2 ต้องได้ Class1 Job เต็มก่อน · ยังรีเซ็ตแต้มไม่ได้ · ชื่อและตัวเลขเป็นตัวอย่าง (P29/P30)",
+          "Job Level ได้ EXP เท่ากับ EXP ปกติจากทุกไฟต์ ได้ 1 แต้มสกิลต่อ Job Level · ทุกอาชีพมีสายกาย เวท สนับสนุน และก่อกวน แต้มไม่พอเรียนครบ ต้องเลือกสายตามสเตตัส เผ่า และธาตุที่เล่น · สกิลที่เขียนว่า \"ธาตุตัวเอง\" ใช้ธาตุของตัวละคร · Class2 ต้องได้ Class1 Job เต็มก่อน · ใช้ได้ทุกสกิลที่เรียน · สกิล Class1 ยังอยู่หลังเปลี่ยนอาชีพ · คืนแต้มทั้งหมดด้วยคัมภีร์ล้างสกิล (ร้านทั่วไป) · ชื่อและตัวเลขเป็นตัวอย่าง (P29/P30)",
         ),
       );
+      const resetBtn = resetScrollButton(api, "item:skill_reset_scroll", "ล้างสกิลทั้งหมด", () => bundle, (b) => {
+        bundle = b;
+        draw();
+      }, error);
+      if (resetBtn !== null) body.append(resetBtn);
       for (const t of trees) {
         const title = t.tier === 1 ? (CLASS1_DEFINITIONS.find((d) => d.id === c.classId)?.name.th ?? c.classId) : `สาย${branch?.name.th ?? t.id}`;
         body.append(el("h3", {}, `${title} (Class${t.tier})`));
@@ -2117,8 +2151,14 @@ export function statsPanel(api: CharacterApi, start: CharacterBundle): Promise<C
           { class: "pm-stats" },
           `ผลหลังลงแต้ม: HP ${d.maxHp} · MP ${d.maxMp} · โจมตีกาย ${d.patk} · โจมตีเวท ${d.matk} · พลังเสริม ${d.support} · ป้องกันกาย ${d.pdef} · ป้องกันเวท ${d.mdef} · ความเร็ว ${d.spd} · แม่นยำ ${d.accuracyPct.toFixed(1)}% · หลบ ${d.evasionPct.toFixed(1)}% · คริ ${d.critPct.toFixed(1)}%`,
         ),
-        el("div", { class: "pm-note" }, "ได้ 3 แต้มต่อเลเวล · ค่า 11–60 ใช้ 1 แต้ม, 61–100 ใช้ 2, 101–150 ใช้ 3 · ลดค่าที่ลงแล้วไม่ได้ · สูตร EXP เป็นค่าชั่วคราว"),
+        el("div", { class: "pm-note" }, "ได้ 3 แต้มต่อเลเวล · ค่า 11–60 ใช้ 1 แต้ม, 61–100 ใช้ 2, 101–150 ใช้ 3 · ลดค่าที่ลงแล้วไม่ได้ ยกเว้นใช้คัมภีร์ล้างสเตตัส (คืนแต้มทั้งหมด ร้านทั่วไป) · สูตร EXP เป็นค่าชั่วคราว"),
       );
+      const resetBtn = resetScrollButton(api, "item:stat_reset_scroll", "ล้างสเตตัส", () => bundle, (b) => {
+        bundle = b;
+        draft = { ...b.character.primaryStats };
+        draw();
+      }, error);
+      if (resetBtn !== null) body.append(resetBtn);
       // Job levels and the skills learned on the trees (skill-tree.ts), and the race passive.
       const kit = playerKit(c.classId, c.raceId, c.class2Id, c.skills);
       const skills = el("ul", { class: "pm-list", "data-class-skills": "" });

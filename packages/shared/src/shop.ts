@@ -164,6 +164,9 @@ export const EXAMPLE_SHOPS: ShopDefinition[] = [
       { itemId: "item:lantern_snail_capture", price: 70 },
       { itemId: "item:armor_crab_capture", price: 80 },
       { itemId: "item:ember_fox_capture", price: 100 },
+      // Reset scrolls (Nut 2026-10-09): a coin sink, EXAMPLE prices (STATUS A144).
+      { itemId: "item:stat_reset_scroll", price: 5000 },
+      { itemId: "item:skill_reset_scroll", price: 5000 },
     ],
   },
 ];

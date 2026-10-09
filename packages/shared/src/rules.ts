@@ -683,20 +683,21 @@ export const RULES = {
      * Base level (the EXP table) gives stat points; job level gives skill points for the class's skill
      * tree. Each class tier has its own job track from Job 1: a kill's EXP also goes to the job track
      * at `jobExpPct`, and job EXP to Job N follows the base EXP between `baseFrom` and `baseTo`, so a
-     * Class1 character reaches Job 40 at about base Lv49. Job 1 already gives a point.
+     * Class1 character reaches Job 50 at about base Lv49. Job 1 already gives a point. Nut 2026-10-09
+     * 17:14Z set the caps 50/70/70; skills learned in an earlier tier stay when the class changes.
      */
     jobLevels: provisional(
       {
         tiers: [
-          { cap: 40, baseFrom: 1, baseTo: 49 },
-          { cap: 50, baseFrom: 50, baseTo: 119 },
-          { cap: 60, baseFrom: 120, baseTo: 199 },
+          { cap: 50, baseFrom: 1, baseTo: 49 },
+          { cap: 70, baseFrom: 50, baseTo: 119 },
+          { cap: 70, baseFrom: 120, baseTo: 199 },
         ],
         jobExpPct: 100,
         pointsPerJobLevel: 1,
       } as const,
       "P29",
-      "Claude's first pass on Nut's base/job split: Class1 Job 1–40, Class2 Job 1–50, Class3 Job 1–60 (1 skill point each); the Class2 trial needs Class1 Job 40",
+      "Nut 2026-10-09 17:14Z: Class1 Job 1–50, Class2 Job 1–70, Class3 Job 1–70 (1 skill point each, Claude's pick); the Class2 trial needs Class1 at its job cap",
     ),
     /**
      * Class change (chapter 02, P16: Class2 trial from Lv50, Class3 from Lv120). The Class2 trial is a

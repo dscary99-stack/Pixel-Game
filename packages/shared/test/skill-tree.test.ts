@@ -64,8 +64,8 @@ describe("job levels (P29)", () => {
   it("points are the job levels of every tier reached", () => {
     expect(jobState(rules, 1, [])).toMatchObject({ tier: 1, levels: [1], points: 1 });
     const s = jobState(rules, 2, [jobExpCap(rules, 1), jobExpForLevel(rules, 2, 10)]);
-    expect(s.levels).toEqual([40, 10]);
-    expect(s.points).toBe(50);
+    expect(s.levels).toEqual([50, 10]);
+    expect(s.points).toBe(60);
   });
 });
 
@@ -115,10 +115,11 @@ describe("skill trees (Nut 2026-10-09)", () => {
     }
   });
 
+  // Job 50 (Nut 2026-10-09 17:14Z): Class1 points buy about half of one tree, so a character still picks a build.
   it("one class tree costs far more than Class1's points, so a character picks a build", () => {
     for (const cls of CLASS1_DEFINITIONS) {
       const t = SKILL_TREES.get(cls.id)!;
-      expect(t.nodes.reduce((n, x) => n + x.maxLevel * x.cost, 0), cls.id).toBeGreaterThan(2 * jobCap(rules, 1));
+      expect(t.nodes.reduce((n, x) => n + x.maxLevel * x.cost, 0), cls.id).toBeGreaterThan(1.8 * jobCap(rules, 1));
     }
   });
 

@@ -16,6 +16,10 @@ import {
   companionPrimaryStats,
   AllocateStatsRequestSchema,
   LearnSkillRequestSchema,
+  UseResetRequestSchema,
+  startingStats,
+  type ResetKind,
+  type ItemDefinition,
   SKILL_TREES,
   class2Branch,
   jobExpForLevel,
@@ -106,6 +110,10 @@ export type LearnSkillResult =
   | { status: "saved"; character: CharacterView }
   | { status: "rejected"; reason: "INVALID_REQUEST" | "NO_CHARACTER" | "STALE_VERSION" | "IN_BATTLE" | LearnRefusal; message: string };
 
+export type UseResetResult =
+  | { status: "saved"; kind: ResetKind; character: CharacterView }
+  | { status: "rejected"; reason: "INVALID_REQUEST" | "NO_CHARACTER" | "NOT_RESET_ITEM" | "IN_BATTLE" | "INSUFFICIENT_ITEMS" | "PAYLOAD_MISMATCH"; message: string };
+
 /** The class tier earning job EXP now and the trees the character may spend on. */
 function jobOf(row: CharacterRow): { tier: JobTier; exp: number[] } {
   return row.class2_id == null ? { tier: 1, exp: [row.job1_xp ?? 0] } : { tier: 2, exp: [row.job1_xp ?? 0, row.job2_xp ?? 0] };
@@ -115,6 +123,7 @@ export interface StoreContent {
   species: ReadonlyMap<string, SpeciesDefinition>;
   equipment: ReadonlyMap<string, EquipmentDefinition>;
   sigils: ReadonlyMap<string, SigilDefinition>;
+  items: ReadonlyMap<string, ItemDefinition>;
 }
 
 export type EquipResult =
@@ -324,6 +333,62 @@ export class CharacterStore {
     if (after?.version === expectedVersion + 1 && after.skills_json === next) return { status: "saved", character: await this.view(after) };
     if (await this.inBattle(accountId)) return { status: "rejected", reason: "IN_BATTLE", message: "learn skills outside fights" };
     return { status: "rejected", reason: "STALE_VERSION", message: "the character changed; reload and try again" };
+  }
+
+  /**
+   * Uses one reset scroll (Nut 2026-10-09): a stat scroll puts every primary stat back to the starting
+   * value, so all stat points return; a skill scroll forgets every tree skill, so all job points return.
+   * Outside fights only. Anchor row, the scroll and the reset land in one batch; a retry with the same
+   * operation id returns the stored result and never spends a second scroll.
+   */
+  async useReset(accountId: string, raw: unknown): Promise<UseResetResult> {
+    const parsed = UseResetRequestSchema.safeParse(raw);
+    if (!parsed.success) return { status: "rejected", reason: "INVALID_REQUEST", message: parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ") };
+    const { operationId, itemId } = parsed.data;
+    const row = await this.row(accountId);
+    if (row === null) return { status: "rejected", reason: "NO_CHARACTER", message: "create a character first" };
+    const item = this.content.items.get(itemId);
+    if (item?.kind !== "reset" || item.resets === undefined) return { status: "rejected", reason: "NOT_RESET_ITEM", message: "that item is not a reset scroll" };
+    const kind = item.resets;
+    const hash = await hashJson({ operationId, itemId });
+    const prior = () => this.db.prepare(`SELECT request_hash FROM character_resets WHERE character_id = ? AND operation_id = ?`).bind(row.id, operationId).first<{ request_hash: string }>();
+    const done = await prior();
+    if (done !== null) {
+      if (done.request_hash !== hash) return { status: "rejected", reason: "PAYLOAD_MISMATCH", message: "this operation id was used for another request" };
+      return { status: "saved", kind, character: await this.view((await this.row(accountId))!) };
+    }
+    const at = this.now();
+    const ours = `EXISTS (SELECT 1 FROM character_resets WHERE character_id = ? AND operation_id = ? AND request_hash = ?)`;
+    const oursArgs = [row.id, operationId, hash];
+    const reset = kind === "stats" ? { col: "primary_stats_json", value: JSON.stringify(startingStats(this.rules)) } : { col: "skills_json", value: "{}" };
+    await this.db.batch([
+      this.db
+        .prepare(
+          `INSERT INTO character_resets (character_id, operation_id, account_id, item_id, kind, request_hash, created_at)
+           SELECT ?, ?, ?, ?, ?, ?, ? WHERE NOT ${OPEN_BATTLE}
+             AND (SELECT COALESCE(SUM(delta), 0) FROM item_ledger WHERE account_id = ? AND item_id = ?) >= 1
+           ON CONFLICT DO NOTHING`,
+        )
+        .bind(row.id, operationId, accountId, itemId, kind, hash, at, accountId, accountId, itemId),
+      this.db
+        .prepare(
+          `INSERT INTO item_ledger (operation_id, line_no, account_id, item_id, delta, reason, created_at)
+           SELECT ?, 0, ?, ?, -1, 'reset', ? WHERE ${ours} ON CONFLICT DO NOTHING`,
+        )
+        .bind(`reset:${row.id}:${operationId}`, accountId, itemId, at, ...oursArgs),
+      this.db
+        .prepare(`UPDATE characters SET ${reset.col} = ?, version = version + 1 WHERE id = ? AND EXISTS (SELECT 1 FROM character_resets WHERE character_id = ? AND operation_id = ? AND request_hash = ? AND applied = 0)`)
+        .bind(reset.value, row.id, ...oursArgs),
+      // Marks the reset applied so the same operation racing itself cannot bump the version twice.
+      this.db.prepare(`UPDATE character_resets SET applied = 1 WHERE character_id = ? AND operation_id = ? AND request_hash = ?`).bind(...oursArgs),
+    ]);
+    const stored = await prior();
+    if (stored !== null) {
+      if (stored.request_hash !== hash) return { status: "rejected", reason: "PAYLOAD_MISMATCH", message: "this operation id was used for another request" };
+      return { status: "saved", kind, character: await this.view((await this.row(accountId))!) };
+    }
+    if (await this.inBattle(accountId)) return { status: "rejected", reason: "IN_BATTLE", message: "use reset scrolls outside fights" };
+    return { status: "rejected", reason: "INSUFFICIENT_ITEMS", message: "you have no such scroll" };
   }
 
   private async inBattle(accountId: string): Promise<boolean> {

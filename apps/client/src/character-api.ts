@@ -67,6 +67,11 @@ export class CharacterApi {
     return this.call<{ character: CharacterView }>("POST", "/character/skills/learn", { expectedVersion, skillId });
   }
 
+  /** Use a reset scroll (reset.ts): stats back to the start, or every tree skill forgotten. */
+  useReset(itemId: string) {
+    return this.call<{ character: CharacterView }>("POST", "/character/reset", { operationId: opId("reset"), itemId });
+  }
+
   allocate(expectedVersion: number, stats: PrimaryStats) {
     return this.call<{ character: CharacterView }>("PUT", "/character/stats", { expectedVersion, stats });
   }

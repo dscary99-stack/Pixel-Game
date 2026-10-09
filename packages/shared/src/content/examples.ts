@@ -255,6 +255,9 @@ export const EXAMPLE_ITEMS: ItemDefinition[] = [
   { id: "item:phoenix_feather", ...meta, name: { th: "ขนนกชุบ" }, kind: "revive", reviveHpPct: 30, vendorPrice: 200 },
   { id: "item:mana_potion", ...meta, name: { th: "ยาฟื้นมานา", en: "Mana Potion" }, kind: "mana", restoreMp: 40, vendorPrice: 15 },
   { id: "item:cleansing_herb", ...meta, name: { th: "สมุนไพรล้างพิษ" }, kind: "support", statuses: [{ statusId: "cleanse", chancePct: 100, turns: 1 }], vendorPrice: 15 },
+  // Reset items (Nut 2026-10-09): give back every stat point or every skill point; sold in town (EXAMPLE price).
+  { id: "item:stat_reset_scroll", ...meta, name: { th: "คัมภีร์ล้างสเตตัส", en: "Stat Reset Scroll" }, kind: "reset", resets: "stats", vendorPrice: 0 },
+  { id: "item:skill_reset_scroll", ...meta, name: { th: "คัมภีร์ล้างสกิล", en: "Skill Reset Scroll" }, kind: "reset", resets: "skills", vendorPrice: 0 },
   { id: "item:power_tonic", ...meta, name: { th: "ยาเพิ่มพลัง" }, kind: "support", statuses: [{ statusId: "atk_up", chancePct: 100, turns: 3 }], vendorPrice: 25 },
   ...EXAMPLE_SPECIES.map(
     (s): ItemDefinition => ({

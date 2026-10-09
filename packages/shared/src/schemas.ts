@@ -585,7 +585,9 @@ export const ItemDefinitionSchema = z
     id: ItemId,
     ...contentMeta,
     name: LocalizedName,
-    kind: z.enum(["heal", "mana", "capture", "support", "attack", "revive", "material", "sigil"]),
+    kind: z.enum(["heal", "mana", "capture", "support", "attack", "revive", "material", "sigil", "reset"]),
+    /** reset (Nut 2026-10-09): what using it outside a fight puts back — stat points or skill points. */
+    resets: z.enum(["stats", "skills"]).optional(),
     /** heal: flat HP restored. */
     healHp: z.number().int().min(0).optional(),
     /** mana: flat MP restored. */
@@ -618,6 +620,9 @@ export const ItemDefinitionSchema = z
     }
     if (it.kind === "heal" && it.healHp === undefined) {
       ctx.addIssue({ code: "custom", message: "heal item needs healHp" });
+    }
+    if ((it.kind === "reset") !== (it.resets !== undefined)) {
+      ctx.addIssue({ code: "custom", message: "reset items, and only they, say what they reset" });
     }
     if ((it.kind === "revive") !== (it.reviveHpPct !== undefined)) {
       ctx.addIssue({ code: "custom", message: "revive items, and only they, set reviveHpPct" });

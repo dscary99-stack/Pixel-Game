@@ -142,7 +142,7 @@ describe("Class2 branches (chapter 02, P16/P28)", () => {
   });
 
   it("the trial is refused below Lv50, below Class1 job cap, for another class's branch, and once a branch is taken", () => {
-    const job40 = [jobExpForLevel(rules, 1, 40)];
+    const job40 = [jobExpForLevel(rules, 1, 50)];
     const g = { classId: "class:guardian", level: 49, class2Id: null, jobExp: job40 };
     expect(class2Refusal(rules, g, "class2:bastion")).toBe("LEVEL_TOO_LOW");
     expect(class2Refusal(rules, { ...g, level: 50 }, "class2:bastion")).toBeNull();
