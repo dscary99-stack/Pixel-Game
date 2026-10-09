@@ -15,6 +15,7 @@ const proxy = {
   "/trade": "http://127.0.0.1:8787",
   "/vault": "http://127.0.0.1:8787",
   "/mail": "http://127.0.0.1:8787",
+  "/practice": "http://127.0.0.1:8787",
   "/world": { target: "http://127.0.0.1:8787", ws: true },
 };
 

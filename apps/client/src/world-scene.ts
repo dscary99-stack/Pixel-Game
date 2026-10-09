@@ -31,7 +31,7 @@ import {
 } from "@pmrpg/shared";
 import { ELEMENT_COLOR, type BattleScene } from "./battle-scene";
 import type { CharacterApi, CharacterBundle } from "./character-api";
-import { autoHuntPanel, craftPanel, refinePanel, frontierPanel, journalPanel, ordersPanel, questPanel, titleName, equipmentPanel, partyPanel, rebirthPanel, secretQuestPanel, shopPanel, skillPanel, statsPanel, teamPanel, vitals } from "./character-ui";
+import { autoHuntPanel, practicePanel, craftPanel, refinePanel, frontierPanel, journalPanel, ordersPanel, questPanel, titleName, equipmentPanel, partyPanel, rebirthPanel, secretQuestPanel, shopPanel, skillPanel, statsPanel, teamPanel, vitals } from "./character-ui";
 import { mailPanel, marketPanel, tradePanel, vaultPanel } from "./market-ui";
 import type { WorldTransport } from "./world-transport";
 
@@ -56,6 +56,7 @@ const NPC_SERVICE_TH: Record<Exclude<NpcService, "talk">, string> = {
   market: "ตลาดโลก",
   trade: "แลกเปลี่ยนกับผู้เล่น",
   vault: "คลังของบัญชี",
+  practice: "ลานทดสอบ (ลองสู้บอส)",
 };
 
 const TILE_COLOR: Record<(typeof TILE_LEGEND)[TileChar]["kind"], number> = {
@@ -186,6 +187,7 @@ export class WorldScene extends Phaser.Scene {
     kb.on("keydown-M", () => void this.openMarket());
     kb.on("keydown-V", () => void this.openVault());
     kb.on("keydown-N", () => void this.openMail());
+    kb.on("keydown-Y", () => void this.openPractice());
     if (this.api !== null) {
       const button = (x: number, label: string, open: () => Promise<void>) =>
         this.add
@@ -217,6 +219,7 @@ export class WorldScene extends Phaser.Scene {
         ["ตลาด (M)", () => this.openMarket()],
         ["คลัง (V)", () => this.openVault()],
         ["จดหมาย (N)", () => this.openMail()],
+        ["ลานทดสอบ (Y)", () => this.openPractice()],
       ];
       let x = 8;
       let lift = 0;
@@ -604,13 +607,28 @@ export class WorldScene extends Phaser.Scene {
     if (battleId !== null) this.startTowerBattle(battleId);
   }
 
+  /** Town training ground (P17): pick a field boss and try the team on it; nothing is earned or lost. */
+  private async openPractice() {
+    if (this.map !== null && this.map.kind !== "town") return this.flash("ลานทดสอบอยู่ในเมือง");
+    let battleId: string | null = null;
+    await this.withPanel("ลานทดสอบ: จบไฟต์นี้ก่อน", async (api) => {
+      battleId = await practicePanel(api);
+    });
+    if (battleId !== null) this.startHttpBattle(battleId, "เข้าลานทดสอบ!", () => void this.openPractice());
+  }
+
   /** A tower floor fight: started over HTTP, so coming back reopens the tower instead of asking the map. */
   private startTowerBattle(battleId: string) {
+    this.startHttpBattle(battleId, "เข้าไฟต์ในหอคอย!", () => void this.openFrontier());
+  }
+
+  /** A fight started over HTTP (tower, training ground): coming back reopens its panel instead of asking the map. */
+  private startHttpBattle(battleId: string, flash: string, reopen: () => void) {
     this.path = [];
     this.pendingEngage = null;
     this.inBattle = true;
     if (this.scene.isActive("battle")) return;
-    this.flash("เข้าไฟต์ในหอคอย!");
+    this.flash(flash);
     this.scene.launch("battle", {
       transport: this.transport.battle(battleId),
       watch: false,
@@ -620,7 +638,7 @@ export class WorldScene extends Phaser.Scene {
         this.scene.wake();
         this.inBattle = false;
         void this.reloadCharacter();
-        void this.openFrontier();
+        reopen();
       },
     });
     this.scene.sleep();
@@ -793,6 +811,7 @@ export class WorldScene extends Phaser.Scene {
       market: () => this.openMarket(true),
       trade: () => this.openTrade(),
       vault: () => this.openVault(true),
+      practice: () => this.openPractice(),
     };
     const services = n.services.filter((s): s is Exclude<NpcService, "talk"> => s !== "talk");
     if (this.api === null || services.length === 0) return;

@@ -234,7 +234,7 @@ export function rollFrontierFloor(
     const bossId = frontierBossFor(rules, def, floor);
     const boss = content.bosses.get(bossId);
     if (boss === undefined) throw new Error(`unknown guardian ${bossId}`);
-    const escorts = Array.from({ length: Math.max(0, per - 1 - boss.adds.length) }, monster);
+    const escorts = Array.from({ length: Math.max(0, per - 1 - boss.adds.length - (boss.parts?.length ?? 0)) }, monster);
     const reinforcements = Array.from({ length: frontierReinforcementCount(rules, floor, fd.modifiers) }, monster);
     return { ...base, kind: "boss", bossId, escorts, reinforcements };
   }

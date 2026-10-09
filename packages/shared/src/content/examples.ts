@@ -144,6 +144,30 @@ export const EXAMPLE_SPECIES: SpeciesDefinition[] = [
   ], "skill:lord_innate_last_stand", 0.1, { STR: 18, VIT: 24, INT: 8, DEX: 12, AGI: 10, SPI: 12 }, "melee", { rank: "BOSS", bossActionsPerRound: 2 }),
 ];
 
+// The crab lord's two phases (the tower guardians use them as they are).
+const CRAB_PHASES: BossDefinition["phases"] = [
+  {
+    id: "shell",
+    name: { th: "กระดองผลึก" },
+    enterWhen: [],
+    onEnter: [{ statusId: "shield", chancePct: 100, turns: 10, shieldPct: 30 }],
+    removeStatuses: [],
+    telegraph: { skillId: "skill:lord_shockwave", everyRounds: 3, hint: { th: "ป้องกันหรือใส่โล่ไว้ก่อนรอบหน้า หรือทุบกระดองให้แตกเพื่อยกเลิก" } },
+  },
+  {
+    id: "broken",
+    name: { th: "กระดองแตก" },
+    enterWhen: [{ kind: "shield_broken" }, { kind: "hp_below", pct: 50 }],
+    onEnter: [
+      { statusId: "vulnerable", chancePct: 100, turns: 10 },
+      { statusId: "atk_up", chancePct: 100, turns: 10 },
+    ],
+    removeStatuses: ["shield"],
+    telegraph: { skillId: "skill:lord_shockwave", everyRounds: 2, hint: { th: "ป้องกันหรือใส่โล่ไว้ก่อนรอบหน้า" } },
+    captureBelowHpPct: 30,
+  },
+];
+
 /**
  * EXAMPLE boss (chapter 07 §5): the crystal crab lord with two lantern snails that re-shield it.
  * Phase 1 teaches the pattern (a crystal shell, a shockwave warned a round ahead); breaking the shell
@@ -162,26 +186,15 @@ export const EXAMPLE_BOSSES: BossDefinition[] = [
       { speciesId: "species:lantern_snail", element: "WATER", row: "back", lootEligible: true },
       { speciesId: "species:lantern_snail", element: "LIGHT", row: "back", lootEligible: true },
     ],
+    // A claw part shields the shell (armor 25%) until it is broken; breaking it, the shell or half HP
+    // starts phase 2, where the lord calls a lantern snail in every 3 rounds (2 at most per fight).
+    parts: [{ id: "claw", name: { th: "ก้ามผลึก" }, row: "front", effect: "armor", pct: 25, hpPct: 35 }],
     phases: [
+      CRAB_PHASES[0]!,
       {
-        id: "shell",
-        name: { th: "กระดองผลึก" },
-        enterWhen: [],
-        onEnter: [{ statusId: "shield", chancePct: 100, turns: 10, shieldPct: 30 }],
-        removeStatuses: [],
-        telegraph: { skillId: "skill:lord_shockwave", everyRounds: 3, hint: { th: "ป้องกันหรือใส่โล่ไว้ก่อนรอบหน้า หรือทุบกระดองให้แตกเพื่อยกเลิก" } },
-      },
-      {
-        id: "broken",
-        name: { th: "กระดองแตก" },
-        enterWhen: [{ kind: "shield_broken" }, { kind: "hp_below", pct: 50 }],
-        onEnter: [
-          { statusId: "vulnerable", chancePct: 100, turns: 10 },
-          { statusId: "atk_up", chancePct: 100, turns: 10 },
-        ],
-        removeStatuses: ["shield"],
-        telegraph: { skillId: "skill:lord_shockwave", everyRounds: 2, hint: { th: "ป้องกันหรือใส่โล่ไว้ก่อนรอบหน้า" } },
-        captureBelowHpPct: 30,
+        ...CRAB_PHASES[1]!,
+        enterWhen: [{ kind: "shield_broken" }, { kind: "part_broken", partId: "claw" }, { kind: "hp_below", pct: 50 }],
+        summon: { everyRounds: 3, adds: [{ speciesId: "species:lantern_snail", element: "LIGHT", row: "back" }], maxPerFight: 2 },
       },
     ],
   },
@@ -204,7 +217,7 @@ export const EXAMPLE_FRONTIER_BOSSES: BossDefinition[] = [
       { speciesId: "species:armor_crab", element: "EARTH", row: "front", lootEligible: true },
       { speciesId: "species:lantern_snail", element: "WATER", row: "back", lootEligible: true },
     ],
-    phases: EXAMPLE_BOSSES[0]!.phases,
+    phases: CRAB_PHASES,
     lootTableId: "loot:rift_spire_guardian",
   },
   {
@@ -220,7 +233,7 @@ export const EXAMPLE_FRONTIER_BOSSES: BossDefinition[] = [
       { speciesId: "species:bell_bird", element: "WIND", row: "back", lootEligible: true },
       { speciesId: "species:lantern_snail", element: "LIGHT", row: "back", lootEligible: true },
     ],
-    phases: EXAMPLE_BOSSES[0]!.phases,
+    phases: CRAB_PHASES,
     lootTableId: "loot:rift_spire_guardian",
   },
 ];

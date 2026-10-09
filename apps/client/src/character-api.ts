@@ -3,7 +3,7 @@
  * what it gets back. Identity uses the dev header until O11 picks auth.
  */
 import { authHeaders, type Identity } from "./identity";
-import type { AssetSnapshot, CharacterView, CreateCharacterRequest, MarketBrowseQuery, MarketKind, MarketView, TradeKind, TradeSide, TradeView, VaultView, MailView, DisposeQuote, EquipSlot, EquipmentView, FrontierView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RefineResult, RolledAffix, SecretQuestView } from "@pmrpg/shared";
+import type { AssetSnapshot, CharacterView, CreateCharacterRequest, MarketBrowseQuery, MarketKind, MarketView, TradeKind, TradeSide, TradeView, VaultView, MailView, DisposeQuote, EquipSlot, EquipmentView, FrontierView, PracticeView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RefineResult, RolledAffix, SecretQuestView } from "@pmrpg/shared";
 
 export type StoredCompanion = MonsterInstance & { hp: number | null; mp: number | null };
 
@@ -167,6 +167,14 @@ export class CharacterApi {
   }
 
   /** The weekly tower: entry used, current and best floor (the server settles a finished floor first). */
+  practice() {
+    return this.call<PracticeView>("GET", "/practice");
+  }
+
+  practiceStart(operationId: string, bossId: string) {
+    return this.call<{ battleId: string; resumed: boolean }>("POST", "/practice/start", { operationId, bossId });
+  }
+
   frontier() {
     return this.call<FrontierView>("GET", "/frontier");
   }

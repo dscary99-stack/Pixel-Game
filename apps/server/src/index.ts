@@ -41,6 +41,8 @@
  *   POST /frontier/enter           use this week's entry at the town NPC (operationId; once a week, in town)
  *   POST /frontier/floor/start     start or resume the next floor fight ({ runId, floor }); answers the battle id
  *   POST /frontier/leave           step out between floors; the run stays for the week ({ runId })
+ *   GET  /practice                 the town training ground: the field bosses it can stage (P17)
+ *   POST /practice/start           start or resume a practice fight in town ({ operationId, bossId }); nothing earned or lost
  *   POST /dev/frontier/jump        (dev only) move this week's run to a floor ({ floor })
  *   POST /dev/frontier/reset       (dev only) give back this week's entry
  *   GET  /auth/config              which sign-in buttons to show (provider list, public Google/Facebook app ids)
@@ -115,6 +117,7 @@ import { MailStore } from "./mail-store";
 import { SecretQuestStore, secretQuestKey } from "./secret-quest-store";
 import { SecretProgressStore } from "./secret-progress-store";
 import { FrontierStore, type FrontierBattlePort } from "./frontier-store";
+import { PracticeStore } from "./practice-store";
 import { RefineStore } from "./refine-store";
 
 export { BattleDurableObject } from "./battle-do";
@@ -153,6 +156,7 @@ const battlePort = (env: Env): FrontierBattlePort => ({
 });
 const frontierFor = (env: Env) =>
   new FrontierStore(env.DB, rulesFor(env), EXAMPLE_FRONTIER, { ...CONTENT, maps: exampleMapRegistry() }, economyFor(env), charactersFor(env), battlePort(env), journalFor(env));
+const practiceFor = (env: Env) => new PracticeStore(env.DB, { ...CONTENT, maps: exampleMapRegistry() }, economyFor(env), charactersFor(env), battlePort(env), TOWNS);
 const questsFor = (env: Env) => new QuestStore(env.DB, rulesFor(env), { ...CONTENT, maps: exampleMapRegistry() }, TOWNS);
 
 /** DEV ONLY: dev accounts appear on first use with a starter bag and starter gear; real account creation waits for O11. */
@@ -192,6 +196,7 @@ export default {
     if (url.pathname === "/party" || url.pathname.startsWith("/party/")) return partyRoute(request, env, url);
     if (url.pathname === "/market" || url.pathname.startsWith("/market/") || url.pathname === "/trade" || url.pathname.startsWith("/trade/") || url.pathname === "/vault" || url.pathname.startsWith("/vault/") || url.pathname === "/mail" || url.pathname.startsWith("/mail/")) return exchangeRoute(request, env, url);
     if (url.pathname === "/frontier" || url.pathname.startsWith("/frontier/")) return frontierRoute(request, env, url);
+    if (url.pathname === "/practice" || url.pathname === "/practice/start") return practiceRoute(request, env, url);
     const m = url.pathname.match(/^\/battles\/([a-z0-9_:-]{1,80})(?:\/([a-z-]+))?$/);
     if (m === null) return json(404, { error: "NOT_FOUND" });
     const battleId = m[1]!;
@@ -390,6 +395,21 @@ async function frontierRoute(request: Request, env: Env, url: URL): Promise<Resp
           : null;
   if (r === null) return json(404, { error: "NOT_FOUND" });
   if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : r.reason === "NO_CHARACTER" ? 404 : 409, { error: r.reason, message: r.message });
+  return json(200, r);
+}
+
+/** The town training ground (P17): the bosses on offer, and a practice fight that gives and takes nothing. */
+async function practiceRoute(request: Request, env: Env, url: URL): Promise<Response> {
+  const accountId = await resolveAccount(request, env);
+  if (accountId === null) return json(401, { error: "UNAUTHENTICATED" });
+  await devStarter(env, accountId);
+  const store = practiceFor(env);
+  if (request.method === "GET" && url.pathname === "/practice") return json(200, store.view());
+  if (request.method !== "POST" || url.pathname !== "/practice/start") return json(405, { error: "METHOD_NOT_ALLOWED" });
+  const body = await readJson(request);
+  if (body === undefined) return json(400, { error: "INVALID_REQUEST" });
+  const r = await store.start(accountId, body);
+  if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : r.reason === "NO_CHARACTER" || r.reason === "NOT_FOUND" ? 404 : 409, { error: r.reason, message: r.message });
   return json(200, r);
 }
 

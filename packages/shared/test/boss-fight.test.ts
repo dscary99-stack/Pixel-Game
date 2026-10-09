@@ -72,6 +72,7 @@ describe("boss definitions (chapter 07 §5)", () => {
       { unitId: "e1", speciesId: "species:crystal_crab_lord", element: "WATER", row: "front", slot: 2 },
       { unitId: "e2", speciesId: "species:lantern_snail", element: "WATER", row: "back", slot: 2, lootEligible: true },
       { unitId: "e3", speciesId: "species:lantern_snail", element: "LIGHT", row: "back", slot: 1, lootEligible: true },
+      { unitId: "e4", speciesId: "species:crystal_crab_lord", element: "WATER", row: "front", slot: 1, lootEligible: false, part: { partId: "claw", name: "ก้ามผลึก", effect: "armor", pct: 25, hpPct: 35 } },
     ]);
   });
 });
@@ -171,6 +172,111 @@ describe("boss fights", () => {
     const kill = of(r.events, "RewardEntitled").map((e) => e.entitlement).find((e) => e.kind === "kill" && e.enemyUnitId === "e2");
     expect(kill).toMatchObject({ kind: "kill", items: [] });
     expect(kill!.exp).toBeGreaterThan(0);
+  });
+});
+
+describe("boss parts, summons and practice (P17)", () => {
+  const bare = (s: BattleState) => {
+    const c = structuredClone(s);
+    unit(c, "e1").statuses = [];
+    return c;
+  };
+  const hitOn = (w: ReturnType<typeof world>, s: BattleState) => of(w.run(s, { type: "attack", actorId: "player", targetId: "e1" }).events, "ActionResolved")[0]!.damage!;
+
+  it("a part is its own target that never acts; the claw takes 25% off the boss's damage while it stands", () => {
+    const w = world();
+    const claw = unit(w.start.state, "e4");
+    expect(claw).toMatchObject({ name: "ก้ามผลึก", part: { partId: "claw", effect: "armor", pct: 25 }, captureWindowOpen: false });
+    expect(claw.stats.maxHp).toBe(Math.floor((unit(w.start.state, "e1").stats.maxHp * 35) / 100));
+    const { events } = w.until(w.start.state, 5);
+    expect(events.some((e) => e.type === "ActionResolved" && e.actorId === "e4")).toBe(false);
+    expect(events.some((e) => e.type === "TurnStarted" && (e as { unitId?: string }).unitId === "e4")).toBe(false);
+    const armored = hitOn(w, bare(w.start.state));
+    const broken = bare(w.start.state);
+    unit(broken, "e4").ko = true;
+    unit(broken, "e4").hp = 0;
+    const open = hitOn(w, broken);
+    expect(armored).toBeLessThan(open);
+    expect(Math.abs(armored - Math.floor(open * 0.75))).toBeLessThanOrEqual(1);
+  });
+
+  it("breaking the claw starts phase 2, which calls a snail in now and every 3 rounds up to 2; minions give nothing", () => {
+    const w = world((setup) => (setup.player.basicAttackRange = "ranged"));
+    const s = structuredClone(w.start.state);
+    unit(s, "e4").hp = 1;
+    const r = w.run(s, { type: "attack", actorId: "player", targetId: "e4" });
+    expect(of(r.events, "BossPartBroken")).toEqual([expect.objectContaining({ unitId: "e4", partId: "claw" })]);
+    expect(of(r.events, "RewardEntitled")).toEqual([]);
+    expect(of(r.events, "BossPhaseChanged")).toContainEqual(expect.objectContaining({ phase: 1 }));
+    const first = of(r.events, "BossSummoned");
+    expect(first).toEqual([expect.objectContaining({ left: 1 })]);
+    const minion = unit(r.state, first[0]!.unitIds[0]!);
+    expect(minion).toMatchObject({ summoned: true, captureWindowOpen: false, row: "back", slot: 3, speciesId: "species:lantern_snail" });
+    const { s: later, events } = w.until(r.state, r.state.round + 8);
+    const more = of(events, "BossSummoned");
+    expect(more).toEqual([expect.objectContaining({ left: 0 })]);
+    expect(later.boss!.summoned).toBe(2);
+    // Killing a minion gives nothing.
+    const k = structuredClone(r.state);
+    expect(currentActor(k)!.unitId).toBe("player");
+    unit(k, minion.unitId).hp = 1;
+    const killed = w.run(k, { type: "attack", actorId: "player", targetId: minion.unitId });
+    expect(of(killed.events, "EnemyDefeated")).toContainEqual(expect.objectContaining({ unitId: minion.unitId }));
+    expect(of(killed.events, "RewardEntitled")).toEqual([]);
+  });
+
+  it("parts and minions fall with the boss", () => {
+    const w = world();
+    const s = bare(w.start.state);
+    unit(s, "e1").hp = 1;
+    const r = w.run(s, { type: "attack", actorId: "player", targetId: "e1" });
+    expect(unit(r.state, "e1").ko).toBe(true);
+    expect(unit(r.state, "e4").ko).toBe(true);
+    expect(of(r.events, "RewardEntitled").map((e) => e.entitlement.kind === "kill" && e.entitlement.enemyUnitId)).not.toContain("e4");
+  });
+
+  it("a regen part heals the boss at each round's start", () => {
+    const def: BossDefinition = {
+      ...LORD,
+      id: "boss:t_regen",
+      parts: [{ id: "heart", name: { th: "หัวใจ" }, row: "back", effect: "regen", pct: 5, hpPct: 20 }],
+      phases: [LORD.phases[0]!, { ...LORD.phases[1]!, enterWhen: [{ kind: "hp_below", pct: 50 }], summon: undefined }],
+    };
+    expect(BossDefinitionSchema.safeParse(def).success).toBe(true);
+    const w = world(() => {}, def);
+    const s = structuredClone(w.start.state);
+    const boss = unit(s, "e1");
+    boss.hp = Math.floor(boss.stats.maxHp * 0.6);
+    const { events } = w.until(s, s.round + 1);
+    expect(of(events, "ResourceChanged").filter((e) => e.source === "boss_part")).toEqual([expect.objectContaining({ unitId: "e1", hp: Math.floor((boss.stats.maxHp * 5) / 100) })]);
+  });
+
+  it("the schema refuses a trigger on a missing part, duplicate parts, too many units and a phase-1 summon", () => {
+    const [p1, p2] = LORD.phases as [BossDefinition["phases"][number], BossDefinition["phases"][number]];
+    const part = LORD.parts![0]!;
+    expect(BossDefinitionSchema.safeParse({ ...LORD, parts: [] }).success).toBe(false);
+    expect(BossDefinitionSchema.safeParse({ ...LORD, parts: [part, part] }).success).toBe(false);
+    expect(BossDefinitionSchema.safeParse({ ...LORD, phases: [{ ...p1, summon: p2.summon }, p2] }).success).toBe(false);
+    const adds = Array.from({ length: 7 }, () => LORD.adds[0]!);
+    expect(BossDefinitionSchema.safeParse({ ...LORD, adds, parts: [part, { ...part, id: "x" }, { ...part, id: "y" }] }).success).toBe(false);
+  });
+
+  it("a practice fight gives nothing, refuses capture and can always be left", () => {
+    const w = world((setup) => {
+      setup.practice = true;
+      setup.player.basicAttackRange = "ranged";
+    });
+    expect(w.start.state.practice).toBe(true);
+    const s = structuredClone(w.start.state);
+    unit(s, "e2").hp = 1;
+    const r = w.run(s, { type: "attack", actorId: "player", targetId: "e2" });
+    expect(of(r.events, "EnemyDefeated")).toContainEqual(expect.objectContaining({ unitId: "e2" }));
+    expect(of(r.events, "RewardEntitled")).toEqual([]);
+    const low = structuredClone(w.start.state);
+    unit(low, "e1").captureWindowOpen = true;
+    const left = w.run(structuredClone(w.start.state), { type: "flee", actorId: "player" });
+    expect(left.state.status).toBe("fled");
+    expect(applyCommand(rules, w.c, low, { type: "capture", actorId: "player", targetId: "e1", itemId: "item:crystal_crab_lord_capture" }, { source: "player" })).toMatchObject({ ok: false, code: "INVALID_COMMAND" });
   });
 });
 

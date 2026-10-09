@@ -414,6 +414,12 @@ export class BattleScene extends Phaser.Scene {
         }
         return this.pushLog(e.change === "fired" ? `${this.name(e.unitId)} ใช้ ${sk}!` : `${sk} ของ ${this.name(e.unitId)} ถูกยกเลิก`);
       }
+      case "BossPartBroken":
+        this.popup(e.unitId, "แตก!", "#ffe08a");
+        return this.pushLog(`★ ${this.name(e.unitId)} แตกแล้ว!`);
+      case "BossSummoned":
+        for (const id of e.unitIds) this.popup(id, "มาเสริม!", "#ff9b6b");
+        return this.pushLog(`บอสเรียก ${e.unitIds.map((id) => this.name(id)).join(", ")} มาช่วย${e.left > 0 ? ` (เรียกได้อีก ${e.left})` : ""}`);
       case "EliteTrait": {
         const m = ELITE_MODIFIER_TH[e.modifier];
         const who = this.name(e.unitId);
@@ -509,7 +515,7 @@ export class BattleScene extends Phaser.Scene {
       case "ActionRedirected":
         return this.pushLog(`${this.name(e.actorId)} ${STATUS_DEFINITIONS[e.statusId].th} หันไปทำใส่ ${this.name(e.toId)} แทน ${this.name(e.fromId)}`);
       case "ResourceChanged": {
-        const label = { lifesteal: "ดูดเลือด", recoil: "สะท้อนกลับตัวเอง", restore_mp: "ฟื้น MP", leech: "ถูกดูดพลัง", mana_burn: "เผามานา", mp_regen: "ฟื้น MP", passive: "ได้จากความสามารถติดตัว" }[e.source];
+        const label = { lifesteal: "ดูดเลือด", recoil: "สะท้อนกลับตัวเอง", restore_mp: "ฟื้น MP", leech: "ถูกดูดพลัง", mana_burn: "เผามานา", mp_regen: "ฟื้น MP", passive: "ได้จากความสามารถติดตัว", boss_part: "ฟื้นจากชิ้นส่วน" }[e.source];
         const parts = [e.hp !== 0 ? `HP ${e.hp > 0 ? "+" : ""}${e.hp}` : "", e.mp !== 0 ? `MP ${e.mp > 0 ? "+" : ""}${e.mp}` : ""].filter(Boolean).join(" ");
         return parts === "" ? undefined : this.pushLog(`${this.name(e.unitId)} ${label} ${parts}`);
       }
@@ -584,11 +590,13 @@ export class BattleScene extends Phaser.Scene {
       // An elite leader says so, with its modifiers (chapter 07 §3), readable without colour.
       const elite = u.elite === undefined ? "" : `★ชั้นยอด\n${u.elite.modifiers.map((m) => ELITE_MODIFIER_TH[m].name).join(", ")}${u.elite.counterOn !== null ? " ⚠สวน!" : ""}`;
       // A tower reinforcement says so (it took a fallen enemy's cell this fight).
-      const reinforcement = state.units.some((o) => o.replacedBy === u.unitId) ? "▲กำลังเสริม" : "";
-      const name = `${u.name} Lv${u.level}${u.retired ? " (จับแล้ว)" : ""}`;
+      const reinforcement = state.units.some((o) => o.replacedBy === u.unitId) ? "▲กำลังเสริม" : u.summoned === true ? "▲ถูกเรียกมา" : "";
+      // A boss part never acts; it says what standing does for the boss (chapter 07 §5, readable without colour).
+      const part = u.part === undefined ? "" : u.part.effect === "armor" ? `◆ชิ้นส่วน: บอสรับดาเมจ −${u.part.pct}%` : `◆ชิ้นส่วน: บอสฟื้น ${u.part.pct}%/รอบ`;
+      const name = u.part !== undefined ? u.name : `${u.name} Lv${u.level}${u.retired ? " (จับแล้ว)" : ""}`;
       if (enemy) {
         // One name line above; statuses and tags beside the body, inside this cell's band.
-        v.sub.setPosition(x + 30, y).setText([tags, elite, reinforcement].filter(Boolean).join("\n"));
+        v.sub.setPosition(x + 30, y).setText([tags, elite, reinforcement, part].filter(Boolean).join("\n"));
         v.label.setPosition(x, y - bh / 2 - 9).setText(name);
       } else if (partyFight) {
         // Statuses beside the body; our own units' names in gold so they stand out from teammates'.
@@ -620,6 +628,7 @@ export class BattleScene extends Phaser.Scene {
         `\n${EXAMPLE_FRONTIER.name.th} ชั้น ${state.frontier.floor} ${fd?.name.th ?? ""}${state.boss !== undefined ? ` · ★ ชั้นบอส${fd?.guardianTitle ? ` ${fd.guardianTitle.th}` : ""}` : ""}` +
         ` · ศัตรู ×${(state.frontier.statPct / 100).toFixed(2)}${mods ? ` · ลูกเล่น: ${mods}` : ""}${left > 0 ? ` · กำลังเสริมเหลือ ${left}` : ""}`;
     }
+    if (state.practice === true) tower += "\nลานทดสอบ: ไม่ได้และไม่เสียอะไร · หนีออกได้ทุกเมื่อ";
     const party = state.partyBonus ? `ปาร์ตี้ ${state.partyBonus.partners} คน: EXP +${state.partyBonus.expPercent}% วัสดุ +${state.partyBonus.materialDropPercent}%` : "";
     const waiting = state.members !== undefined && !this.myTurn() ? " (เพื่อน · รอเขาสั่ง)" : "";
     this.turnText.setText(

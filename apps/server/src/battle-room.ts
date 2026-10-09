@@ -336,7 +336,8 @@ export class BattleRoom {
           accountId: account,
           outcome: e.outcome,
           unused,
-          allies: e.allies
+          // A practice fight (P17) keeps nothing: no HP/MP written back, no secret-quest progress.
+          allies: state.practice === true ? [] : e.allies
             .filter((a) => {
               const u = state.units.find((x) => x.unitId === a.unitId);
               return u !== undefined && controllerOf(state, u) === account;
@@ -344,7 +345,7 @@ export class BattleRoom {
             .map((a) => (state.units.find((x) => x.unitId === a.unitId)?.kind === "player" ? { ...a, unitId: "player" } : a)),
           entitlementIds: state.entitlements.filter((x) => (x.recipientId ?? state.ownerAccountId) === account).map((x) => x.entitlementId),
           // Secret quests (secret-progress.ts): what this fight did, from the final state only.
-          secret: secretFightFacts(state, isCapture, account),
+          ...(state.practice === true ? {} : { secret: secretFightFacts(state, isCapture, account) }),
         });
         out[K.settle] = { kind: "settle", status: "pending", settlement: settlementFor(state.ownerAccountId, reservationId, e.unusedReserved) };
         const members = (await this.storage.get<Record<string, string>>(K.memberReservations)) ?? {};

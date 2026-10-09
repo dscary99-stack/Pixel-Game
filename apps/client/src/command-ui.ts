@@ -14,6 +14,7 @@ export function fleePreview(
   actorId: string,
   name: (unitId: string) => string,
 ): { ok: boolean; lines: string[] } {
+  if (state.practice === true) return { ok: true, lines: ["ลานทดสอบ: ออกจากไฟต์ได้ทุกเมื่อ (100%) ไม่ได้และไม่เสียอะไร"] };
   const f = fleeChance(rules, species, state, actorId);
   if (!f.ok) {
     if (f.code === "FLEE_FORBIDDEN") return { ok: false, lines: [state.boss !== undefined ? "หนีไม่ได้: ไฟต์บอสหนีไม่ได้" : "หนีไม่ได้: มีศัตรูที่ไม่ยอมให้หนี"] };

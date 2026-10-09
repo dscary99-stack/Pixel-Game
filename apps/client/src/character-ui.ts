@@ -1688,6 +1688,69 @@ export function frontierPanel(api: CharacterApi): Promise<string | null> {
   });
 }
 
+/**
+ * Town training ground (P17): every field boss, fought with the current team at full HP and no items.
+ * Nothing is earned or lost, and the fight can be left at any time. Resolves with the battle id to open.
+ */
+export function practicePanel(api: CharacterApi): Promise<string | null> {
+  return new Promise((resolve) => {
+    const { panel, close } = overlay();
+    let busy = false;
+    const body = el("ul", { class: "pm-list", "data-practice": "" });
+    const error = el("div", { class: "pm-error", role: "alert" });
+    const done = el("button", { type: "button" }, "ปิด");
+    const actions = el("div", { class: "pm-actions" });
+    actions.append(done);
+    panel.append(
+      el("h2", {}, "ลานทดสอบ"),
+      el("div", { class: "pm-note" }, "ลองทีมกับบอสประจำทุ่งได้ไม่จำกัด เริ่มด้วย HP/MP เต็ม ไม่พกไอเทม · ไม่ได้ EXP/ของ/Bond และจับไม่ได้ · HP ไม่ติดตัวออกมา · กดหนีเพื่อออกได้ทุกเมื่อ"),
+      body,
+      error,
+      actions,
+    );
+    const finish = (battleId: string | null) => {
+      close();
+      resolve(battleId);
+    };
+    done.addEventListener("click", () => finish(null));
+    const start = async (bossId: string) => {
+      if (busy) return;
+      busy = true;
+      error.textContent = "";
+      try {
+        // A fresh id per tap: a retry of this request resumes the same fight on the server.
+        const r = await api.practiceStart(`practice_${crypto.randomUUID().replace(/-/g, "")}`, bossId);
+        finish(r.battleId);
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+      } finally {
+        busy = false;
+      }
+    };
+    void api
+      .practice()
+      .then((v) => {
+        for (const b of v.bosses) {
+          const go = el("button", { type: "button", class: "primary", "data-practice-boss": b.bossId }, "ลองสู้");
+          go.addEventListener("click", () => void start(b.bossId));
+          const notes = [
+            `Lv${b.level} · ${b.mapName}`,
+            `${b.phases} ช่วง`,
+            ...(b.adds > 0 ? [`ลูกน้อง ${b.adds}`] : []),
+            ...(b.parts.length > 0 ? [`ชิ้นส่วน: ${b.parts.join(", ")}`] : []),
+            ...(b.summons ? ["เรียกลูกน้องเพิ่มกลางไฟต์"] : []),
+          ];
+          const li = el("li", {});
+          li.append(el("span", {}, `${b.name} (${notes.join(" · ")})`), go);
+          body.append(li);
+        }
+      })
+      .catch((e) => {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+      });
+  });
+}
+
 const STAT_NAMES: Record<keyof PrimaryStats, string> = {
   STR: "STR พลังกาย",
   VIT: "VIT ความทนทาน",

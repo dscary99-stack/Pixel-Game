@@ -50,3 +50,4 @@ export * from "./account";
 export * from "./market";
 export * from "./mail";
 export * from "./vault";
+export * from "./practice";

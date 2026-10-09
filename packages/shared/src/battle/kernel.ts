@@ -69,14 +69,23 @@ export interface BattleContent {
 export function bossEnemies(def: BossDefinition): BattleSetup["enemies"] {
   const order = [2, 1, 3, 0, 4];
   const used = { front: 1, back: 0 };
-  return [
-    { unitId: "e1", speciesId: def.speciesId, element: def.element, row: "front", slot: 2 },
-    ...def.adds.map((a, i) => {
-      const slot = order[used[a.row]++];
-      if (slot === undefined) reject("FORMATION_INVALID", `boss ${def.id}: too many adds in the ${a.row} row`);
-      return { unitId: `e${i + 2}`, speciesId: a.speciesId, element: a.element, row: a.row, slot: slot!, lootEligible: a.lootEligible };
-    }),
-  ];
+  const next = (row: "front" | "back") => {
+    const slot = order[used[row]++];
+    if (slot === undefined) reject("FORMATION_INVALID", `boss ${def.id}: too many units in the ${row} row`);
+    return slot!;
+  };
+  const adds = def.adds.map((a, i) => ({ unitId: `e${i + 2}`, speciesId: a.speciesId, element: a.element, row: a.row, slot: next(a.row), lootEligible: a.lootEligible }));
+  // Parts stand beside the boss after the adds (chapter 07 §5); they are built from the boss's species.
+  const parts = (def.parts ?? []).map((p, i) => ({
+    unitId: `e${def.adds.length + i + 2}`,
+    speciesId: def.speciesId,
+    element: def.element,
+    row: p.row,
+    slot: next(p.row),
+    lootEligible: false,
+    part: { partId: p.id, name: p.name.th, effect: p.effect, pct: p.pct, hpPct: p.hpPct },
+  }));
+  return [{ unitId: "e1", speciesId: def.speciesId, element: def.element, row: "front", slot: 2 }, ...adds, ...parts];
 }
 
 /** Enemy formation: up to 10 units in two rows of 5. Ally formation: front 3 / back 3 (P15). */
@@ -222,6 +231,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
     battleId: setup.battleId,
     rulesVersion: rules.rulesVersion,
     originMode: setup.originMode,
+    ...(setup.practice === true ? { practice: true } : {}),
     ownerAccountId: p.accountId,
     // Pinned for the whole fight (capture.ts): a deploy never changes a running fight's odds.
     captureProfile: rules.provisional.captureProfile.value,
@@ -391,8 +401,11 @@ function enemyUnit(
     if (bad.length > 0) reject("INVALID_COMMAND", `${e.unitId}: ${bad.join("; ")}`);
   }
   const el = rules.provisional.elite.value;
+  if (e.part !== undefined && (bossDef === undefined || e.speciesId !== bossDef.speciesId)) reject("INVALID_COMMAND", `${e.unitId}: a part belongs to the boss`);
   const ranked = isBoss
     ? { ...base, maxHp: Math.floor(base.maxHp * bossDef!.hpMultiplier) }
+    : e.part !== undefined
+      ? { ...base, maxHp: Math.max(1, Math.floor((base.maxHp * bossDef!.hpMultiplier * e.part.hpPct) / 100)) }
     : e.elite !== undefined
       ? scaleWildStats(base, Math.round(el.hpMultiplier * 100), el.powerPct)
       : base;
@@ -404,7 +417,7 @@ function enemyUnit(
   const wildSkillIds = sp.skillIds.filter((id) => content.skills.get(id)?.kind === "active");
   const wildSkillLevel = skillLevelCap(rules, sp.fixedWildLevel);
   const innate = content.skills.get(sp.innatePassiveId);
-  return {
+  const unit: BattleUnit = {
     unitId: e.unitId,
     side: "enemy",
     kind: "enemy",
@@ -437,6 +450,10 @@ function enemyUnit(
       ? { actionsPerRound: Math.min(sp.bossActionsPerRound!, rules.provisional.bossActions.value.maxPerRound) }
       : {}),
   };
+  if (e.part === undefined) return unit;
+  // A part never acts and is not the boss: no skills, no passives, one (unused) action, never capturable.
+  const { actionsPerRound: _a, ...still } = unit;
+  return { ...still, name: e.part.name, skillIds: [], skillLevels: {}, passiveIds: [], captureWindowOpen: false, lootTableId: null, part: { partId: e.part.partId, effect: e.part.effect, pct: e.part.pct } };
 }
 
 /**
@@ -515,8 +532,11 @@ function startRound(ctx: Ctx): void {
   s.round += 1;
   s.turnIndex = 0;
   for (const u of s.units) u.movedThisRound = false;
+  // Boss parts heal the boss, and the phase may call minions in, before the round's order is made.
+  bossRoundStart(ctx);
   // A boss with N actions gets N slots, action k at SPD×(N−k)/N, so its actions spread across the round.
-  const ready = s.units.filter(active).flatMap((u) => {
+  // Boss parts never act (chapter 07 §5).
+  const ready = s.units.filter((u) => active(u) && u.part === undefined).flatMap((u) => {
     const spd = eff(ctx, u).spd;
     const n = u.actionsPerRound ?? 1;
     return Array.from({ length: n }, (_, k) => ({ id: u.unitId, spd: (spd * (n - k)) / n, tie: ctx.rng.nextUint32() }));
@@ -1306,7 +1326,7 @@ function strike(ctx: Ctx, actor: BattleUnit, chosen: BattleUnit, action: "attack
   const breakdown = computeDamage(rules, {
     ...(eff.penetrationPct === undefined ? {} : { defenseModifiers: { penetrationPct: eff.penetrationPct } }),
     ...(outgoing !== 1 ? { outgoingMultiplier: outgoing } : {}),
-    incomingMultiplier: incomingDamageFactor(rules, target.statuses, eff.element) * guardBonusFactor(ctx, target),
+    incomingMultiplier: incomingDamageFactor(rules, target.statuses, eff.element) * guardBonusFactor(ctx, target) * partArmorFactor(ctx, target),
     attackPower: physical ? a.patk : a.matk,
     skillCoefficient: eff.coefficient,
     skillFlat: eff.flat,
@@ -1406,6 +1426,12 @@ function knockOut(ctx: Ctx, u: BattleUnit): void {
   if (ctx.s.resolutions[u.unitId] !== undefined) throw new Error(`enemy ${u.unitId} resolved twice`);
   ctx.s.resolutions[u.unitId] = "defeated";
   ctx.emit({ type: "EnemyDefeated", unitId: u.unitId, speciesId: u.speciesId! });
+  if (u.part !== undefined && ctx.s.boss !== undefined) {
+    (ctx.s.boss.partsBroken ??= []).push(u.part.partId);
+    ctx.emit({ type: "BossPartBroken", unitId: u.unitId, partId: u.part.partId });
+  }
+  // Parts and summoned minions give nothing (no unbounded reward from resummons); a practice fight gives nothing at all.
+  if (u.part !== undefined || u.summoned === true || ctx.s.practice === true) return;
   // Adds without loot eligibility (boss fights) give EXP only. In a party fight every member gets their
   // own loot roll and EXP for the same enemy (owner first, so a solo fight rolls exactly as before).
   const table = u.lootTableId === null ? undefined : ctx.content.lootTables.get(u.lootTableId)!;
@@ -1503,6 +1529,7 @@ export function captureProbability(rules: RulesConfig, species: SpeciesDefinitio
 
 function doCapture(ctx: Ctx, actor: BattleUnit, target: BattleUnit, itemId: string, source: CommandSource): void {
   if (source !== "player") reject("AUTO_CAPTURE_FORBIDDEN", "capture is a manual player command only (C15)");
+  if (ctx.s.practice === true) reject("INVALID_COMMAND", "nothing can be captured in a practice fight");
   requirePlayerActor(actor, "capture");
   // Every check comes before anything is spent or rolled (C09 level gate, window, item, quality, bag).
   const check = captureCheck(ctx.rules, fightCaptureProfile(ctx.rules, ctx.s.captureProfile), {
@@ -1565,6 +1592,12 @@ function doMove(ctx: Ctx, actor: BattleUnit, row: Row, slot: number): void {
 
 function doFlee(ctx: Ctx, actor: BattleUnit): void {
   requirePlayerActor(actor, "flee");
+  // A practice fight can always be left (nothing rides on it).
+  if (ctx.s.practice === true) {
+    actionEvent(ctx, actor, "flee", null, { hit: true });
+    ctx.emit({ type: "FleeResolved", actorId: actor.unitId, success: true, chancePct: 100 });
+    return endBattle(ctx, "fled");
+  }
   // From SPD and the monsters' own flee values (O15, Nut 2026-10-07; numbers P19). A refusal spends nothing.
   const f = fleeChance(ctx.rules, ctx.content.species, ctx.s, actor.unitId);
   if (!f.ok) reject(f.code, f.message);
@@ -1729,6 +1762,61 @@ function enterBossPhase(ctx: Ctx, index: number): void {
   ctx.emit({ type: "BossPhaseChanged", unitId: boss.unitId, phase: index, phaseId: ph.id });
   for (const id of ph.removeStatuses) if (statusOf(boss, id) !== undefined) removeStatus(ctx, boss, id);
   for (const a of ph.onEnter) applyStatus(ctx, boss, boss, a, true);
+  if (ph.summon !== undefined && active(boss)) bossSummon(ctx, ph.summon);
+}
+
+/** Damage taken by the boss while its armor parts stand: each takes off its % (multiplied). */
+function partArmorFactor(ctx: Ctx, target: BattleUnit): number {
+  if (ctx.s.boss?.unitId !== target.unitId) return 1;
+  let f = 1;
+  for (const u of ctx.s.units) if (u.part?.effect === "armor" && active(u)) f *= (100 - u.part.pct) / 100;
+  return f;
+}
+
+/** Round start in a boss fight: regen parts heal the boss; the phase's minions come when due. */
+function bossRoundStart(ctx: Ctx): void {
+  const b = ctx.s.boss;
+  if (b === undefined) return;
+  const boss = ctx.unit(b.unitId);
+  if (!active(boss)) return;
+  for (const u of ctx.s.units) {
+    if (u.part?.effect !== "regen" || !active(u) || boss.hp >= boss.stats.maxHp) continue;
+    const gained = receiveHeal(ctx, boss, Math.max(1, Math.floor((boss.stats.maxHp * u.part.pct) / 100)));
+    if (gained !== 0) ctx.emit({ type: "ResourceChanged", unitId: boss.unitId, source: "boss_part", hp: gained, mp: 0, hpAfter: boss.hp, mpAfter: boss.mp });
+  }
+  const summon = bossDefinition(ctx)?.phases[b.phase]?.summon;
+  if (summon !== undefined && b.lastSummonRound !== undefined && ctx.s.round - b.lastSummonRound >= summon.everyRounds) bossSummon(ctx, summon);
+}
+
+/**
+ * The phase calls its minions in: each takes a free cell of its row (one with no living enemy), while
+ * the fight's budget lasts and never past 10 living enemies (C05). They are wild units without loot or
+ * EXP, and fall with the boss.
+ */
+function bossSummon(ctx: Ctx, summon: NonNullable<BossDefinition["phases"][number]["summon"]>): void {
+  const b = ctx.s.boss!;
+  b.lastSummonRound = ctx.s.round;
+  const order = [2, 1, 3, 0, 4];
+  const came: string[] = [];
+  for (const add of summon.adds) {
+    if ((b.summoned ?? 0) >= summon.maxPerFight) break;
+    const living = ctx.s.units.filter((u) => u.side === "enemy" && active(u));
+    if (living.length >= ctx.rules.confirmed.maxEnemyUnits.value) break;
+    const slot = order.find((sl) => !living.some((u) => u.row === add.row && u.slot === sl));
+    if (slot === undefined) continue;
+    // Units are only ever added, so this number is new; a tower floor's reinforcements count on from it.
+    const n = Math.max(ctx.s.units.length + 1, ctx.s.frontier?.nextUnit ?? 0);
+    if (ctx.s.frontier !== undefined) ctx.s.frontier.nextUnit = n + 1;
+    const unit = enemyUnit(ctx.rules, ctx.content, { unitId: `e${n}`, speciesId: add.speciesId, element: add.element, row: add.row, slot, lootEligible: false }, { bossDef: undefined, towerPct: ctx.s.frontier?.statPct ?? 100, modifiers: ctx.s.frontier?.modifiers ?? [] });
+    unit.summoned = true;
+    // A summoned minion cannot be caught (it would be a free extra capture each call).
+    unit.captureWindowOpen = false;
+    ctx.s.units.push(unit);
+    b.summoned = (b.summoned ?? 0) + 1;
+    came.push(unit.unitId);
+    firePassives(ctx, unit, "battle_start");
+  }
+  if (came.length > 0) ctx.emit({ type: "BossSummoned", unitIds: came, left: summon.maxPerFight - (b.summoned ?? 0) });
 }
 
 /** After every action: later phases whose trigger is met, and the capture window. */
@@ -1742,11 +1830,13 @@ function checkBossPhase(ctx: Ctx): void {
       ctx.emit({ type: "BossTelegraph", unitId: boss.unitId, skillId: b.telegraph.skillId, change: "cancelled", firesRound: b.telegraph.firesRound });
       b.telegraph = null;
     }
+    // Parts and summoned minions fall with the boss (they give nothing).
+    for (const u of ctx.s.units) if (u.side === "enemy" && active(u) && (u.part !== undefined || u.summoned === true)) knockOut(ctx, u);
     return;
   }
   const hpPct = (boss.hp * 100) / boss.stats.maxHp;
   for (let next = b.phase + 1; next < def.phases.length; next++) {
-    const met = def.phases[next]!.enterWhen.some((t) => (t.kind === "hp_below" ? hpPct < t.pct : b.shieldBroken));
+    const met = def.phases[next]!.enterWhen.some((t) => (t.kind === "hp_below" ? hpPct < t.pct : t.kind === "shield_broken" ? b.shieldBroken : (b.partsBroken ?? []).includes(t.partId)));
     if (!met) break;
     enterBossPhase(ctx, next);
   }
@@ -1935,6 +2025,8 @@ function unusedOf(bag: Record<string, number>): Record<string, number> {
  * one that stayed up through a win gains some; nothing else changes it.
  */
 function companionResults(ctx: Ctx, outcome: "victory" | "defeat" | "fled"): void {
+  // Practice (P17): no Bond up or down, no mastery.
+  if (ctx.s.practice === true) return;
   const p = ctx.rules.provisional;
   const won = outcome === "victory";
   const mastery = won ? masteryForVictory(ctx.rules, Object.keys(ctx.s.resolutions).length) : 0;

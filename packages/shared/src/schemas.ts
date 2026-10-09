@@ -386,7 +386,41 @@ export const BossPhaseTriggerSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("hp_below"), pct: z.number().int().min(1).max(99) }).strict(),
   /** A shield on the boss was broken by damage (the crystal shell). */
   z.object({ kind: z.literal("shield_broken") }).strict(),
+  /** One of the boss's parts was broken (BossPartSchema). */
+  z.object({ kind: z.literal("part_broken"), partId: z.string().regex(/^[a-z_]{1,32}$/) }).strict(),
 ]);
+
+/**
+ * A boss part (chapter 07 §5): a separate enemy unit that never acts and gives the boss an effect while
+ * it stands. armor: the boss takes `pct`% less damage; regen: the boss heals `pct`% of max HP at the
+ * start of each round. Breaking it ends the effect and can start a phase (`part_broken`). Parts give no
+ * EXP or loot, cannot be captured, and fall with the boss. HP is `hpPct`% of the boss's max HP.
+ */
+export const BossPartSchema = z
+  .object({
+    id: z.string().regex(/^[a-z_]{1,32}$/),
+    name: LocalizedName,
+    row: z.enum(["front", "back"]),
+    effect: z.enum(["armor", "regen"]),
+    pct: z.number().int().min(1).max(90),
+    hpPct: z.number().int().min(5).max(100),
+  })
+  .strict();
+export type BossPart = z.infer<typeof BossPartSchema>;
+
+/**
+ * Minions a phase calls in (chapter 07 §5): on entering the phase and then every `everyRounds` rounds,
+ * each listed monster takes a free cell of its row, at most `maxPerFight` over the whole fight (no
+ * unbounded reward from resummons: summoned minions give no EXP or loot) and never past 10 enemies.
+ */
+export const BossSummonSchema = z
+  .object({
+    everyRounds: z.number().int().min(2).max(10),
+    adds: z.array(z.object({ speciesId: SpeciesId, element: ElementSchema, row: z.enum(["front", "back"]) }).strict()).min(1).max(4),
+    maxPerFight: z.number().int().min(1).max(20),
+  })
+  .strict();
+export type BossSummon = z.infer<typeof BossSummonSchema>;
 
 /**
  * A heavy move the boss warns about at the start of a round and uses on its first action of the next
@@ -410,6 +444,8 @@ export const BossPhaseSchema = z
     telegraph: BossTelegraphSchema.optional(),
     /** In this phase the boss can be captured once its HP share is below this %. */
     captureBelowHpPct: z.number().int().min(1).max(100).optional(),
+    /** Minions called in during this phase (not in the first phase: the fight starts with `adds`). */
+    summon: BossSummonSchema.optional(),
   })
   .strict();
 export type BossPhase = z.infer<typeof BossPhaseSchema>;
@@ -427,12 +463,19 @@ export const BossDefinitionSchema = z
     adds: z.array(z.object({ speciesId: SpeciesId, element: ElementSchema, row: z.enum(["front", "back"]), lootEligible: z.boolean() }).strict()).max(9),
     /** Early phase teaches the pattern, later ones change it (chapter 07 §5: a low boss needs 2 phases). */
     phases: z.array(BossPhaseSchema).min(1).max(3),
+    /** Parts that stand beside the boss (BossPartSchema); boss + adds + parts ≤ 10 (C05). */
+    parts: z.array(BossPartSchema).max(3).optional(),
     /** The boss's own loot table instead of its species' (tower guardians with rare items); adds keep theirs. */
     lootTableId: LootTableId.optional(),
   })
   .strict()
   .superRefine((b, ctx) => {
+    const parts = b.parts ?? [];
+    if (1 + b.adds.length + parts.length > 10) ctx.addIssue({ code: "custom", path: ["parts"], message: "boss + adds + parts must be at most 10 (C05)" });
+    if (new Set(parts.map((p) => p.id)).size !== parts.length) ctx.addIssue({ code: "custom", path: ["parts"], message: "part ids must differ" });
     b.phases.forEach((ph, i) => {
+      for (const t of ph.enterWhen) if (t.kind === "part_broken" && !parts.some((p) => p.id === t.partId)) ctx.addIssue({ code: "custom", path: ["phases", i, "enterWhen"], message: `no part ${t.partId}` });
+      if (i === 0 && ph.summon !== undefined) ctx.addIssue({ code: "custom", path: ["phases", 0, "summon"], message: "the first phase starts with adds; summons come in later phases" });
       if ((i === 0) !== (ph.enterWhen.length === 0)) {
         ctx.addIssue({ code: "custom", path: ["phases", i, "enterWhen"], message: i === 0 ? "the first phase starts the fight and has no trigger" : "a later phase needs a trigger" });
       }

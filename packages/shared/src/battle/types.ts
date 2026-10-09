@@ -74,6 +74,10 @@ export interface BattleUnit {
   retired: boolean;
   /** Tower floors: a fallen or captured enemy whose cell a reinforcement took (the unit that came in). */
   replacedBy?: string;
+  /** Boss fights: a part of the boss (never acts, no EXP/loot, falls with the boss). */
+  part?: { partId: string; effect: "armor" | "regen"; pct: number };
+  /** Boss fights: a minion the boss called in mid-fight (no EXP/loot, falls with the boss). */
+  summoned?: boolean;
   guarding: boolean;
   cooldowns: Record<string, number>;
   movedThisRound: boolean;
@@ -146,6 +150,11 @@ export interface BossState {
   telegraph: { skillId: string; firesRound: number } | null;
   /** Round of the last announcement, for `everyRounds`. */
   lastTelegraphRound: number;
+  /** Parts broken so far (`part_broken` triggers). */
+  partsBroken?: string[];
+  /** Minions called in so far this fight, and the round of the last call. */
+  summoned?: number;
+  lastSummonRound?: number;
 }
 
 export interface BattleState {
@@ -153,6 +162,8 @@ export interface BattleState {
   rulesVersion: string;
   /** Fixed at encounter start; toggling Auto later never changes reward mode (chapter 11 §5). */
   originMode: OriginMode;
+  /** Training ground (P17): nothing earned or lost (BattleSetup.practice). */
+  practice?: boolean;
   ownerAccountId: string;
   stateVersion: number;
   round: number;
@@ -219,6 +230,10 @@ export type BattleEventBody =
   | { type: "BattleStarted"; originMode: OriginMode; rulesVersion: string; unitIds: string[] }
   | { type: "RoundStarted"; round: number; order: string[] }
   | { type: "BossPhaseChanged"; unitId: string; phase: number; phaseId: string }
+  /** A boss part was broken: its effect on the boss ends. */
+  | { type: "BossPartBroken"; unitId: string; partId: string }
+  /** The boss called minions into free cells; `left` more may come this fight. */
+  | { type: "BossSummoned"; unitIds: string[]; left: number }
   /** announced at a round's start, fired on the boss's first action of `firesRound`, or cancelled (phase change, silence, KO). */
   | { type: "BossTelegraph"; unitId: string; skillId: string; change: "announced" | "fired" | "cancelled"; firesRound: number }
   | { type: "CaptureWindowOpened"; unitId: string }
@@ -242,7 +257,7 @@ export type BattleEventBody =
   | { type: "ItemConsumed"; itemId: string; remaining: number }
   | { type: "UnitKnockedOut"; unitId: string }
   /** A side effect of an action on its user or target (lifesteal, recoil, MP restore). */
-  | { type: "ResourceChanged"; unitId: string; source: "lifesteal" | "recoil" | "restore_mp" | "leech" | "mana_burn" | "mp_regen" | "passive"; hp: number; mp: number; hpAfter: number; mpAfter: number }
+  | { type: "ResourceChanged"; unitId: string; source: "lifesteal" | "recoil" | "restore_mp" | "leech" | "mana_burn" | "mp_regen" | "passive" | "boss_part"; hp: number; mp: number; hpAfter: number; mpAfter: number }
   /** A status landed, was refreshed, missed its roll, met immunity, ran out or was ended early. */
   | {
       type: "StatusChanged";
@@ -330,7 +345,21 @@ export interface BattleSetup {
     companionRoom?: number;
   };
   companions: (Position & { instance: MonsterInstance; hp?: number; mp?: number })[];
-  enemies: (Position & { unitId: string; speciesId: string; element: Element; captureWindowOpen?: boolean; lootEligible?: boolean; elite?: { modifiers: EliteModifier[] } })[];
+  enemies: (Position & {
+    unitId: string;
+    speciesId: string;
+    element: Element;
+    captureWindowOpen?: boolean;
+    lootEligible?: boolean;
+    elite?: { modifiers: EliteModifier[] };
+    /** Boss parts only (bossEnemies builds them from the boss definition). */
+    part?: { partId: string; name: string; effect: "armor" | "regen"; pct: number; hpPct: number };
+  })[];
+  /**
+   * A practice fight at the town training ground (P17): nothing is earned or lost. No EXP, loot,
+   * capture, Bond or mastery; HP/MP and items are not touched (the bag is empty).
+   */
+  practice?: boolean;
   bag: Record<string, number>;
   /** Counted by the server when the fight starts (P02); never from the client. */
   partyBonus?: PartyBonus;
