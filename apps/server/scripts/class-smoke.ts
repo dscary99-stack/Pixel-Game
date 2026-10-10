@@ -169,7 +169,7 @@ must((await call("POST", "/class/trial/start", { operationId: `c3_job_${run}`, b
 await call("POST", "/dev/level", { level: 125, job: 70 });
 must((await call("POST", "/class/trial/start", { operationId: `c3_x_${run}`, branchId: "class3:bloodstorm" })).body.error === "NOT_FOUND", "another branch's Class3");
 const cv3 = (await call("GET", "/class")).body;
-must(cv3.class3?.advance.id === "class3:ruin_champion" && cv3.class3.blocked === null && cv3.class3.trialStatPct === 600, "Class3 offered", cv3.class3);
+must(cv3.class3?.advance.id === "class3:ruin_champion" && cv3.class3.blocked === null && cv3.class3.trialStatPct === 550, "Class3 offered", cv3.class3);
 /** Spend points down a tree in its order, as far as they go (a node whose need is not met yet is skipped). */
 const spend = async (treeId: string) => {
   for (const n of SKILL_TREES.get(treeId)!.nodes) {
@@ -214,7 +214,7 @@ for (let n = 1; n <= 5 && won3 === null; n++) {
   if (n === 1) {
     const tv = await battleCall(account, s.body.battleId)("GET", "");
     const boss = tv.state.units.find((u: Msg) => u.unitId === "e1");
-    must(tv.state.practice === true && tv.state.enemyStatPct === 600 && boss.speciesId !== undefined, "Class3 trial: tyrant at 600%", { pct: tv.state.enemyStatPct });
+    must(tv.state.practice === true && tv.state.enemyStatPct === 550 && boss.speciesId !== undefined, "Class3 trial: tyrant at 550%", { pct: tv.state.enemyStatPct });
     out.class3Boss = { speciesId: boss.speciesId, maxHp: boss.stats.maxHp, statPct: tv.state.enemyStatPct, enemies: tv.state.units.filter((u: Msg) => u.side === "enemy").length };
   }
   const end = await autoToEnd(account, s.body.battleId);
