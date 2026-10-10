@@ -40,9 +40,9 @@ export const LearnSkillRequestSchema = z
 
 export type LearnRefusal = "NOT_IN_TREE" | "MAX_LEVEL" | "NEEDS_SKILL" | "NO_POINTS";
 
-/** The trees a character may spend on: its Class1 tree, and its branch tree once it has one. */
-export function treesFor(trees: ReadonlyMap<string, SkillTree>, classId: string, class2Id: string | null | undefined): SkillTree[] {
-  return [trees.get(classId), class2Id == null ? undefined : trees.get(class2Id)].filter((t): t is SkillTree => t !== undefined);
+/** The trees a character may spend on: its Class1 tree, its branch tree once it has one, and its Class3 tree after that. */
+export function treesFor(trees: ReadonlyMap<string, SkillTree>, classId: string, class2Id: string | null | undefined, class3Id?: string | null): SkillTree[] {
+  return [trees.get(classId), class2Id == null ? undefined : trees.get(class2Id), class2Id == null || class3Id == null ? undefined : trees.get(class3Id)].filter((t): t is SkillTree => t !== undefined);
 }
 
 export function pointsSpent(trees: readonly SkillTree[], learned: Readonly<Record<string, number>>): number {

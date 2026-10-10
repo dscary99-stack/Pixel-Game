@@ -180,8 +180,9 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
     if (!sp.allowedElements.includes(m.element)) reject("INVALID_COMMAND", `reinforcement ${m.speciesId} element not allowed for species`);
   }
   const setup: BattleSetup = bossDef === undefined ? setup0 : { ...setup0, enemies: withEscorts(bossEnemies(bossDef), tower?.escorts ?? []) };
+  if (setup0.classTrialTier !== undefined && setup0.classTrial !== true) reject("INVALID_COMMAND", "a trial tier needs a class trial");
   if (setup0.classTrial === true && (setup0.practice !== true || bossDef === undefined || tower !== undefined)) reject("INVALID_COMMAND", "a class trial is a practice boss fight");
-  const towerPct = floor !== undefined ? frontierStatPct(rules, floor) : setup0.classTrial === true ? rules.provisional.classChange.value.trialStatPct : 100;
+  const towerPct = floor !== undefined ? frontierStatPct(rules, floor) : setup0.classTrial === true ? (setup0.classTrialTier === 3 ? rules.provisional.classChange.value.class3TrialStatPct : rules.provisional.classChange.value.trialStatPct) : 100;
   const bossLoot = bossDef?.lootTableId;
   if (bossLoot !== undefined && !content.lootTables.has(bossLoot)) reject("MISSING_REFERENCE", `loot table ${bossLoot}`);
   if (bossDef !== undefined) {

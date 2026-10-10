@@ -114,6 +114,8 @@ export interface CharacterView {
   classId: string;
   /** The Class2 branch from the trial at Lv50 (class-change.ts); null before it. */
   class2Id?: string | null;
+  /** The Class3 from the trial at Lv120 (class-change.ts); null before it. */
+  class3Id?: string | null;
   raceId: string;
   element: Element;
   level: number;
@@ -215,7 +217,7 @@ export function playerSetup(
     ...(c.mp === null ? {} : { mp: c.mp }),
     // The skills learned on the trees and the race passive (player-kit.ts).
     ...(() => {
-      const k = playerKit(c.classId, c.raceId, c.class2Id, c.skills);
+      const k = playerKit(c.classId, c.raceId, c.class2Id, c.skills, c.class3Id);
       return {
         skillIds: k.skillIds,
         ...(Object.values(k.skillLevels).some((l) => l > 1) ? { skillLevels: k.skillLevels } : {}),

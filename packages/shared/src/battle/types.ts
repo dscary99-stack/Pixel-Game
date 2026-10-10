@@ -371,6 +371,8 @@ export interface BattleSetup {
    * get the rules' trial stat % (P28). Needs `practice` and `boss`.
    */
   classTrial?: boolean;
+  /** 3 for the Class3 trial (its own stat %, P28); a Class2 trial leaves it out. */
+  classTrialTier?: 3;
   bag: Record<string, number>;
   /** Counted by the server when the fight starts (P02); never from the client. */
   partyBonus?: PartyBonus;

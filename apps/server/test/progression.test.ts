@@ -154,6 +154,11 @@ describe("job EXP and skill trees (P29, Nut 2026-10-09)", () => {
     await eco.grant(kill("e3", 30), A);
     expect(job()).toEqual({ job1_xp: jobExpCap(PRODUCTION_RULES, 1), job2_xp: 30 });
     expect((await store.get(A))!.jobExp).toEqual([jobExpCap(PRODUCTION_RULES, 1), 30]);
+    // After the Class3 claim the Class3 track earns it and Class1/Class2 stay.
+    db.prepare(`UPDATE characters SET class3_id = 'class3:ruin_champion' WHERE id = ?`).run(charId);
+    await eco.grant(kill("e4", 40), A);
+    expect(job()).toEqual({ job1_xp: jobExpCap(PRODUCTION_RULES, 1), job2_xp: 30 });
+    expect((await store.get(A))!.jobExp).toEqual([jobExpCap(PRODUCTION_RULES, 1), 30, 40]);
   });
 
   describe("learning", () => {

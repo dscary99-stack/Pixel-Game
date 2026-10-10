@@ -45,7 +45,7 @@
  *   GET  /practice                 the town training ground: the field bosses it can stage (P17)
  *   POST /practice/start           start or resume a practice fight in town ({ operationId, bossId }); nothing earned or lost
  *   GET  /class                    Class2: the two branches of this class, the trial level, the latest trial
- *   POST /class/trial/start        start or resume the Class2 trial in town ({ operationId, branchId }); Lv50+, no branch yet
+ *   POST /class/trial/start        start or resume the Class2 trial in town ({ operationId, branchId }); Lv50+, no branch yet; a Class3 id as branchId starts the Class3 trial (Lv120+, Class2 Job 70)
  *   POST /class/trial/claim        take the branch of a won trial ({ operationId } of that trial); once per character
  *   POST /character/skills/learn   learn the next level of a tree skill with job points ({ expectedVersion, skillId }; outside fights)
  *   POST /character/reset          use a reset scroll: stats back to the start or all tree skills forgotten ({ operationId, itemId }; outside fights; retry-safe)

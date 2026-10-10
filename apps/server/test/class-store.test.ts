@@ -2,10 +2,10 @@
  * Class2 (class-change.ts, P16/P28) on the D1 migrations: the trial starts in town from Lv50 for a
  * branch of the character's own class, runs as a practice boss fight with the trial stat %, and a won
  * trial's branch is taken once: a retried claim answers the same, a second won trial is refused, and
- * two claims racing end with one branch.
+ * two claims racing end with one branch. Class3 (Lv120) the same way with a Class3 id.
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { DEV_FIXTURE_RULES as R, createBattle, exampleContentMaps, playerKit, type BattleSetup } from "@pmrpg/shared";
+import { DEV_FIXTURE_RULES as R, SKILL_TREES, createBattle, exampleContentMaps, playerKit, type BattleSetup } from "@pmrpg/shared";
 import { BattleRoom, MemoryStorage } from "../src/battle-room";
 import { CharacterStore } from "../src/character-store";
 import { ClassStore } from "../src/class-store";
@@ -154,5 +154,63 @@ describe("Class2 trial", () => {
     const loserOp = x.status === "claimed" ? "trial_02" : "trial_01";
     expect(await classes.claim(A, { operationId: loserOp })).toMatchObject({ status: "rejected", reason: "ALREADY_CHOSEN" });
     expect(db.prepare(`SELECT COUNT(*) AS n FROM class_trials WHERE status = 'claimed'`).get()).toEqual({ n: 1 });
+  });
+});
+
+describe("Class3 trial (Lv120)", () => {
+  /** Class2 bastion taken, then Lv120 with Class2 Job at the given level. */
+  const toClass2 = async (job2: number) => {
+    await chars.devRaiseLevel(A, 50, 50);
+    winTrial((await started("trial_c2", "class2:bastion")).battleId);
+    expect(await classes.claim(A, { operationId: "trial_c2" })).toMatchObject({ status: "claimed" });
+    await chars.devRaiseLevel(A, 120, job2);
+  };
+
+  it("needs a branch, Lv120 and Class2 Job 70; only the branch's own Class3", async () => {
+    await chars.devRaiseLevel(A, 120, 50);
+    expect((await classes.view(A))!.class3).toBeNull();
+    expect(await classes.start(A, { operationId: "trial_c3", branchId: "class3:aegis_sovereign" })).toMatchObject({ status: "rejected", reason: "NO_CLASS2" });
+    await toClass2(69);
+    expect((await classes.view(A))!.class3).toMatchObject({ advance: { id: "class3:aegis_sovereign" }, trialLevel: 120, trialJobLevel: 70, blocked: "JOB_TOO_LOW" });
+    expect(await classes.start(A, { operationId: "trial_c3", branchId: "class3:aegis_sovereign" })).toMatchObject({ status: "rejected", reason: "JOB_TOO_LOW" });
+    await chars.devRaiseLevel(A, 120, 70);
+    expect((await classes.view(A))!.class3?.blocked).toBeNull();
+    expect(await classes.start(A, { operationId: "trial_c3", branchId: "class3:dread_bulwark" })).toMatchObject({ status: "rejected", reason: "NOT_FOUND" });
+  });
+
+  it("is the tower tyrant at the Class3 stat %; a won trial is claimed once, Class3 job EXP starts and the Class3 tree opens", async () => {
+    await toClass2(70);
+    const r = await started("trial_c3", "class3:aegis_sovereign");
+    expect(created.at(-1)!.setup).toMatchObject({ practice: true, classTrial: true, classTrialTier: 3, boss: { bossId: "boss:rift_spire_tyrant" } });
+    expect((await rooms.get(r.battleId)!.view(A)).enemyStatPct).toBe(R.provisional.classChange.value.class3TrialStatPct);
+    expect(await classes.claim(A, { operationId: "trial_c3" })).toMatchObject({ status: "rejected", reason: "NOT_WON" });
+    winTrial(r.battleId);
+    expect(await classes.claim(A, { operationId: "trial_c3" })).toEqual({ status: "claimed", class3Id: "class3:aegis_sovereign" });
+    expect(await classes.claim(A, { operationId: "trial_c3" })).toEqual({ status: "claimed", class3Id: "class3:aegis_sovereign" });
+    // The Class2 claim still answers the same; the branch did not change.
+    expect(await classes.claim(A, { operationId: "trial_c2" })).toEqual({ status: "claimed", class2Id: "class2:bastion" });
+    const c = (await chars.get(A))!;
+    expect(c).toMatchObject({ class2Id: "class2:bastion", class3Id: "class3:aegis_sovereign" });
+    expect(c.jobExp).toEqual([expect.any(Number), expect.any(Number), 0]);
+    const first = SKILL_TREES.get("class3:aegis_sovereign")!.nodes.find((n) => n.requires.length === 0 && n.cost === 1)!;
+    const learnt = await chars.learnSkill(A, { expectedVersion: c.version, skillId: first.skillId });
+    expect(learnt).toMatchObject({ status: "saved" });
+    expect((await classes.view(A))!.class3).toMatchObject({ blocked: "ALREADY_CHOSEN" });
+    expect(await classes.start(A, { operationId: "trial_c3b", branchId: "class3:aegis_sovereign" })).toMatchObject({ status: "rejected", reason: "ALREADY_CHOSEN" });
+    // Job EXP now goes to Class3 only (dev raise names the current tier).
+    await chars.devRaiseLevel(A, 120, 5);
+    const after = (await chars.get(A))!;
+    expect(after.jobExp!.slice(0, 2)).toEqual(c.jobExp!.slice(0, 2));
+    expect(after.jobExp![2]).toBeGreaterThan(0);
+  });
+
+  it("two won Class3 trials claimed at the same time end with one Class3", async () => {
+    await toClass2(70);
+    winTrial((await started("trial_c3a", "class3:aegis_sovereign")).battleId);
+    winTrial((await started("trial_c3b", "class3:aegis_sovereign")).battleId);
+    const results = await Promise.all([classes.claim(A, { operationId: "trial_c3a" }), classes.claim(A, { operationId: "trial_c3b" })]);
+    expect(results.filter((x) => x.status === "claimed")).toHaveLength(1);
+    expect(results.filter((x) => x.status === "rejected" && x.reason === "ALREADY_CHOSEN")).toHaveLength(1);
+    expect(db.prepare(`SELECT COUNT(*) AS n FROM class_trials WHERE status = 'claimed'`).get()).toEqual({ n: 2 });
   });
 });

@@ -41,12 +41,13 @@ export interface SqlDb {
 
 /**
  * Job EXP (P29) rides on every base EXP award: the tier the character is in now earns it (Class1
- * before the Class2 claim, Class2 after), up to that tier's cap. Use with jobXpArgs in the same order.
+ * before the Class2 claim, Class2 until the Class3 claim, Class3 after), up to that tier's cap. Use with
+ * jobXpArgs in the same order.
  */
-export const JOB_XP_SET = `job1_xp = CASE WHEN class2_id IS NULL THEN MIN(job1_xp + ?, ?) ELSE job1_xp END, job2_xp = CASE WHEN class2_id IS NULL THEN job2_xp ELSE MIN(job2_xp + ?, ?) END`;
+export const JOB_XP_SET = `job1_xp = CASE WHEN class2_id IS NULL THEN MIN(job1_xp + ?, ?) ELSE job1_xp END, job2_xp = CASE WHEN class2_id IS NOT NULL AND class3_id IS NULL THEN MIN(job2_xp + ?, ?) ELSE job2_xp END, job3_xp = CASE WHEN class3_id IS NOT NULL THEN MIN(job3_xp + ?, ?) ELSE job3_xp END`;
 export function jobXpArgs(rules: RulesConfig, baseExp: number): number[] {
   const j = jobExpFromBase(rules, baseExp);
-  return [j, jobExpCap(rules, 1), j, jobExpCap(rules, 2)];
+  return [j, jobExpCap(rules, 1), j, jobExpCap(rules, 2), j, jobExpCap(rules, 3)];
 }
 
 /** Grant rows are written only if the receipt in this transaction carries our payload hash. */

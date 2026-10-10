@@ -3,7 +3,13 @@ import {
   CLASS1_DEFINITIONS,
   CLASS2_BRANCHES,
   CLASS2_TRIAL_BOSS_ID,
+  CLASS3_ADVANCES,
+  CLASS3_TRIAL_BOSS_ID,
   SKILL_TREES,
+  characterTrees,
+  class3Refusal,
+  classView,
+  companionPrimaryStats,
   TREE_PASSIVE_IDS,
   jobExpForLevel,
   class2Refusal,
@@ -20,7 +26,7 @@ import {
   type BattleState,
   type KernelResult,
 } from "../src/index";
-import { baseSetup, content, rules } from "./fixtures";
+import { baseSetup, companion, content, rules } from "./fixtures";
 
 const c = content();
 const ok = (r: KernelResult) => {
@@ -28,8 +34,8 @@ const ok = (r: KernelResult) => {
   return r;
 };
 /** Every node of the character's trees at its max level. */
-const everything = (classId: string, class2Id?: string): Record<string, number> =>
-  Object.fromEntries([classId, class2Id].flatMap((id) => (id === undefined ? [] : SKILL_TREES.get(id)!.nodes)).map((n) => [n.skillId, n.maxLevel]));
+const everything = (classId: string, class2Id?: string, class3Id?: string): Record<string, number> =>
+  Object.fromEntries([classId, class2Id, class3Id].flatMap((id) => (id === undefined ? [] : SKILL_TREES.get(id)!.nodes)).map((n) => [n.skillId, n.maxLevel]));
 const triggered = (events: BattleEvent[], sourceId: string) => events.some((e) => e.type === "PassiveTriggered" && e.sourceId === sourceId);
 /** Play the enemies' turns with guard until it is the player's turn again. */
 function toPlayer(s: BattleState): { s: BattleState; events: BattleEvent[] } {
@@ -176,6 +182,66 @@ describe("Class2 branches (chapter 02, P16/P28)", () => {
         s = ok(applyCommand(rules, c, s, cmd, { source: "auto" })).state;
       }
       expect(s.status, b.id).not.toBe("active");
+    }
+  });
+});
+
+describe("Class3 (chapter 02, P16/P28)", () => {
+  const job = (tier: 1 | 2, lv: number) => jobExpForLevel(rules, tier, lv);
+  const ready = { classId: "class:guardian", level: 120, class2Id: "class2:bastion", class3Id: null, jobExp: [job(1, 50), job(2, 70), 0] };
+
+  it("the trial is refused without a branch, below Lv120, below Class2 job cap, for another branch's Class3, and once taken", () => {
+    expect(class3Refusal(rules, ready, "class3:aegis_sovereign")).toBeNull();
+    expect(class3Refusal(rules, { ...ready, class2Id: null }, "class3:aegis_sovereign")).toBe("NO_CLASS2");
+    expect(class3Refusal(rules, { ...ready, level: 119 }, "class3:aegis_sovereign")).toBe("LEVEL_TOO_LOW");
+    expect(class3Refusal(rules, { ...ready, jobExp: [job(1, 50), job(2, 70) - 1, 0] }, "class3:aegis_sovereign")).toBe("JOB_TOO_LOW");
+    expect(class3Refusal(rules, ready, "class3:dread_bulwark")).toBe("NOT_FOUND");
+    expect(class3Refusal(rules, ready, "class3:nope")).toBe("NOT_FOUND");
+    expect(class3Refusal(rules, { ...ready, class3Id: "class3:aegis_sovereign" }, "class3:aegis_sovereign")).toBe("ALREADY_CHOSEN");
+  });
+
+  it("the class view offers the branch's Class3 once there is a branch", () => {
+    expect(classView(rules, { ...ready, class2Id: null }, null).class3).toBeNull();
+    const v = classView(rules, ready, null);
+    expect(v.class3).toMatchObject({ advance: { id: "class3:aegis_sovereign" }, trialLevel: 120, trialJobLevel: 70, bossId: CLASS3_TRIAL_BOSS_ID, blocked: null });
+    expect(v.class3!.advance.skills.length).toBe(SKILL_TREES.get("class3:aegis_sovereign")!.nodes.length);
+  });
+
+  it("the Class3 tree counts only with its own branch", () => {
+    const learned = everything("class:guardian", "class2:bastion", "class3:aegis_sovereign");
+    const k = playerKit("class:guardian", "race:human", "class2:bastion", learned, "class3:aegis_sovereign");
+    const c3 = SKILL_TREES.get("class3:aegis_sovereign")!.nodes.map((n) => n.skillId);
+    expect([...k.skillIds, ...k.passiveIds].filter((id) => c3.includes(id)).length).toBe(c3.length);
+    expect(playerKit("class:guardian", "race:human", "class2:sentinel", learned, "class3:aegis_sovereign").skillIds.some((id) => c3.includes(id))).toBe(false);
+    expect(characterTrees("class:guardian", "class2:sentinel", "class3:aegis_sovereign").map((t) => t.id)).toEqual(["class:guardian", "class2:sentinel"]);
+  });
+
+  it("the Class3 trial is the tower tyrant at the Class3 trial stat %, only in a class trial", () => {
+    const trial = (over: Partial<BattleSetup>) => createBattle(rules, c, { ...baseSetup({ enemies: [], boss: { bossId: CLASS3_TRIAL_BOSS_ID }, bag: {}, practice: true, classTrial: true, classTrialTier: 3 }), ...over });
+    expect(trial({ classTrial: undefined })).toMatchObject({ ok: false, code: "INVALID_COMMAND" });
+    const s = ok(trial({})).state;
+    expect(s.enemyStatPct).toBe(rules.provisional.classChange.value.class3TrialStatPct);
+  });
+
+  it("every Class3 full tree fights the trial through Auto to the end without a refused command", () => {
+    for (const a of CLASS3_ADVANCES) {
+      const b = CLASS2_BRANCHES.find((x) => x.id === a.branchId)!;
+      const cls = CLASS1_DEFINITIONS.find((d) => d.id === b.classId)!;
+      const k = playerKit(cls.id, "race:human", b.id, everything(cls.id, b.id, a.id), a.id);
+      const mates = (["species:armor_crab", "species:ember_fox", "species:lantern_snail"] as const).map((sp, i) => {
+        const def = c.species.get(sp)!;
+        const inst = { ...companion(`m${i}`, sp, def.allowedElements[0]!, 115), primaryStats: companionPrimaryStats(rules, def.archetype, `seed${i}`, 115, 0) };
+        return { instance: inst, row: (i === 0 ? "front" : "back") as "front" | "back", slot: i === 0 ? 0 : i };
+      });
+      const setup = baseSetup({ battleId: `battle:${a.id}`, enemies: [], boss: { bossId: CLASS3_TRIAL_BOSS_ID }, bag: {}, practice: true, classTrial: true, classTrialTier: 3, companions: mates });
+      setup.player = { ...setup.player, level: 120, gear: { PATK: 126, MATK: 126, SUPPORT: 120, PDEF: 90, MDEF: 70, HP: 500, MP: 120 }, skillIds: k.skillIds, skillLevels: k.skillLevels, passiveIds: k.passiveIds, basicAttackRange: cls.basicAttackRange };
+      let s = ok(createBattle(rules, c, setup)).state;
+      for (let i = 0; i < 3000 && s.status === "active"; i++) {
+        const actor = currentActor(s)!;
+        const cmd = chooseAutoCommand(s, c, {}, rules) ?? { type: "guard" as const, actorId: actor.unitId };
+        s = ok(applyCommand(rules, c, s, cmd, { source: "auto" })).state;
+      }
+      expect(s.status, a.id).not.toBe("active");
     }
   });
 });

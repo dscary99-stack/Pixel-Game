@@ -58,7 +58,7 @@ const NPC_SERVICE_TH: Record<Exclude<NpcService, "talk">, string> = {
   vault: "คลังของบัญชี",
   practice: "ลานทดสอบ (ลองสู้บอส)",
   armory: "ร้านอุปกรณ์",
-  class: "บททดสอบอาชีพขั้นสอง",
+  class: "บททดสอบเปลี่ยนอาชีพ (Class2/Class3)",
 };
 
 const TILE_COLOR: Record<(typeof TILE_LEGEND)[TileChar]["kind"], number> = {
@@ -227,7 +227,7 @@ export class WorldScene extends Phaser.Scene {
         ["คลัง (V)", () => this.openVault()],
         ["จดหมาย (N)", () => this.openMail()],
         ["ลานทดสอบ (Y)", () => this.openPractice()],
-        ["อาชีพขั้นสอง (I)", () => this.openClass()],
+        ["เปลี่ยนอาชีพ (I)", () => this.openClass()],
       ];
       let x = 8;
       let lift = 0;

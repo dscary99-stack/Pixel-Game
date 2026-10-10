@@ -199,9 +199,9 @@ export class CharacterApi {
     return this.call<{ battleId: string; branchId: string; resumed: boolean }>("POST", "/class/trial/start", { operationId, branchId });
   }
 
-  /** Take the branch of a won trial (keyed by the trial's own operation id, so a retry answers the same). */
+  /** Take the branch (or Class3) of a won trial (keyed by the trial's own operation id, so a retry answers the same). */
   classClaim(operationId: string) {
-    return this.call<{ status: "claimed"; class2Id: string }>("POST", "/class/trial/claim", { operationId });
+    return this.call<{ status: "claimed"; class2Id?: string; class3Id?: string }>("POST", "/class/trial/claim", { operationId });
   }
 
   frontier() {

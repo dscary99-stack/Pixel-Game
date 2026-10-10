@@ -26,14 +26,15 @@ import {
   EXAMPLE_SHOPS,
   gearBands,
   class2Branch,
+  class3Advance,
+  characterTrees,
+  trialTier,
   playerKit,
-  SKILL_TREES,
   jobCap,
   jobExpForLevel,
   jobState,
   learnRefusal,
   pointsSpent,
-  treesFor,
   type JobTier,
   STATUS_DEFINITIONS,
   type SkillDefinition,
@@ -1902,7 +1903,7 @@ const EFFECT_TARGET_TH: Record<string, string> = {
 
 /** Class tier the character earns job EXP in, and its job EXP per tier (job.ts, P29). */
 function jobOf(c: CharacterView): { tier: JobTier; exp: number[] } {
-  return { tier: c.class2Id == null ? 1 : 2, exp: c.jobExp ?? [] };
+  return { tier: c.class2Id == null ? 1 : c.class3Id == null ? 2 : 3, exp: c.jobExp ?? [] };
 }
 
 /** "Job 12/40 (EXP 1,234/2,000)" for each tier reached. */
@@ -1992,7 +1993,7 @@ export function skillTreePanel(api: CharacterApi, start: CharacterBundle): Promi
       body.replaceChildren();
       const c = bundle.character;
       const branch = class2Branch(c.class2Id);
-      const trees = treesFor(SKILL_TREES, c.classId, branch?.classId === c.classId ? branch.treeId : null);
+      const trees = characterTrees(c.classId, c.class2Id, c.class3Id);
       const learned = c.skills ?? {};
       const j = jobOf(c);
       const points = jobState(RULES, j.tier, j.exp).points;
@@ -2011,7 +2012,8 @@ export function skillTreePanel(api: CharacterApi, start: CharacterBundle): Promi
       }, error);
       if (resetBtn !== null) body.append(resetBtn);
       for (const t of trees) {
-        const title = t.tier === 1 ? (CLASS1_DEFINITIONS.find((d) => d.id === c.classId)?.name.th ?? c.classId) : `สาย${branch?.name.th ?? t.id}`;
+        const title =
+          t.tier === 1 ? (CLASS1_DEFINITIONS.find((d) => d.id === c.classId)?.name.th ?? c.classId) : t.tier === 2 ? `สาย${branch?.name.th ?? t.id}` : (class3Advance(c.class3Id)?.name.th ?? t.id);
         body.append(el("h3", {}, `${title} (Class${t.tier})`));
         const grid = el("div", { class: "pm-tree", "data-tree": t.id });
         for (const h of COLUMN_TH) grid.append(el("div", { class: "pm-tree-head" }, h));
@@ -2160,7 +2162,7 @@ export function statsPanel(api: CharacterApi, start: CharacterBundle): Promise<C
       }, error);
       if (resetBtn !== null) body.append(resetBtn);
       // Job levels and the skills learned on the trees (skill-tree.ts), and the race passive.
-      const kit = playerKit(c.classId, c.raceId, c.class2Id, c.skills);
+      const kit = playerKit(c.classId, c.raceId, c.class2Id, c.skills, c.class3Id);
       const skills = el("ul", { class: "pm-list", "data-class-skills": "" });
       const row = (id: string, note: string) => {
         const sk = skillDefs.get(id);
@@ -2169,7 +2171,7 @@ export function statsPanel(api: CharacterApi, start: CharacterBundle): Promise<C
       for (const id of kit.passiveIds) row(id, "");
       for (const id of kit.skillIds) row(id, ` Lv${kit.skillLevels[id]}`);
       body.append(
-        el("h3", {}, `สกิลที่เรียนแล้ว${class2Branch(c.class2Id) === undefined ? "" : ` (สาย${class2Branch(c.class2Id)!.name.th})`}`),
+        el("h3", {}, `สกิลที่เรียนแล้ว${class2Branch(c.class2Id) === undefined ? "" : ` (สาย${class2Branch(c.class2Id)!.name.th}${class3Advance(c.class3Id) === undefined ? "" : ` · ${class3Advance(c.class3Id)!.name.th}`})`}`),
         el("div", { class: "pm-stats", "data-job": "" }, jobLine(c)),
         skills,
         el("div", { class: "pm-note" }, "Base Level ให้แต้มสเตตัส · Job Level ให้แต้มสกิล เรียนที่ต้นไม้สกิล (ปุ่ม X) · สกิลที่เรียนแล้วใช้ในไฟต์ได้ทันที (ทั้งสั่งเองและ Auto)"),
@@ -2647,6 +2649,12 @@ const CLASS_REFUSAL_TH: Record<string, string> = {
   JOB_TOO_LOW: "Class1 Job ยังไม่เต็ม",
   ALREADY_CHOSEN: "เลือกสายไปแล้ว",
 };
+const CLASS3_REFUSAL_TH: Record<string, string> = {
+  NO_CLASS2: "ต้องรับสาย Class2 ก่อน",
+  LEVEL_TOO_LOW: "เลเวลยังไม่ถึง",
+  JOB_TOO_LOW: "Class2 Job ยังไม่เต็ม",
+  ALREADY_CHOSEN: "รับ Class3 แล้ว",
+};
 
 /**
  * Class2 at ผู้ใหญ่พิมพ์ (class-change.ts, P16/P28): the two branches of this class with what each adds,
@@ -2662,7 +2670,7 @@ export function classPanel(api: CharacterApi): Promise<string | null> {
     const done = el("button", { type: "button" }, "ปิด");
     const actions = el("div", { class: "pm-actions" });
     actions.append(done);
-    panel.append(el("h2", {}, "อาชีพขั้นสอง (Class2)"), body, error, actions);
+    panel.append(el("h2", {}, "เปลี่ยนอาชีพ (Class2 / Class3)"), body, error, actions);
     const finish = (battleId: string | null) => {
       close();
       resolve(battleId);
@@ -2691,9 +2699,14 @@ export function classPanel(api: CharacterApi): Promise<string | null> {
         ),
       );
       if (v.class2Id !== null) body.append(el("div", { class: "pm-stats", "data-class2": v.class2Id }, `สายของคุณ: ${class2Branch(v.class2Id)?.name.th ?? v.class2Id}`));
+      if (v.class3Id !== null) body.append(el("div", { class: "pm-stats", "data-class3": v.class3Id }, `Class3 ของคุณ: ${class3Advance(v.class3Id)?.name.th ?? v.class3Id}`));
       const t = v.trial;
-      if (t !== null && t.status === "won" && v.class2Id === null) {
-        const claim = el("button", { type: "button", class: "primary", "data-class-claim": t.operationId }, `รับสาย${class2Branch(t.branchId)?.name.th ?? t.branchId}`);
+      // The latest trial is either tier: a Class3 id or a branch id.
+      const tier3 = t !== null && trialTier(t.branchId) === 3;
+      const open = t !== null && (tier3 ? v.class3Id === null : v.class2Id === null);
+      const trialName = t === null ? "" : tier3 ? (class3Advance(t.branchId)?.name.th ?? t.branchId) : `สาย${class2Branch(t.branchId)?.name.th ?? t.branchId}`;
+      if (t !== null && t.status === "won" && open) {
+        const claim = el("button", { type: "button", class: "primary", "data-class-claim": t.operationId }, `รับ${trialName}`);
         claim.addEventListener("click", () =>
           void run(async () => {
             await api.classClaim(t.operationId);
@@ -2701,8 +2714,37 @@ export function classPanel(api: CharacterApi): Promise<string | null> {
           }),
         );
         body.append(el("div", { class: "pm-stats" }, "ผ่านบททดสอบแล้ว!"), claim);
-      } else if (t !== null && t.status === "lost" && v.class2Id === null) {
-        body.append(el("div", { class: "pm-note" }, `บททดสอบสาย${class2Branch(t.branchId)?.name.th ?? ""} ครั้งล่าสุดยังไม่ผ่าน ลองใหม่ได้`));
+      } else if (t !== null && t.status === "lost" && open) {
+        body.append(el("div", { class: "pm-note" }, `บททดสอบ${trialName} ครั้งล่าสุดยังไม่ผ่าน ลองใหม่ได้`));
+      }
+      const startTrial = (id: string) =>
+        void run(async () => {
+          // A fresh id per tap; a retry of this request resumes the same fight on the server.
+          const r = await api.classTrialStart(`class_${crypto.randomUUID().replace(/-/g, "")}`, id);
+          finish(r.battleId);
+        });
+      const c3 = v.class3;
+      if (c3 !== null) {
+        const boss3 = bossDefs.get(c3.bossId)?.name.th ?? c3.bossId;
+        const list = el("ul", { class: "pm-list", "data-class3-advance": c3.advance.id });
+        for (const a of c3.advance.skills) {
+          const sk = skillDefs.get(a.skillId);
+          list.append(el("li", { "data-skill": a.skillId }, `${sk?.name.th ?? a.skillId} (สูงสุด Lv${a.maxLevel}) — ${sk === undefined ? "" : skillBrief(sk)}`));
+        }
+        body.append(
+          el("h3", {}, `Class3: ${c3.advance.name.th} (${c3.advance.name.en})`),
+          el("div", { class: "pm-note" }, `${c3.advance.summary} · เปิดที่ Lv${c3.trialLevel} และ Class2 Job ${c3.trialJobLevel} · สู้${boss3}ที่แรงขึ้นเป็น ${c3.trialStatPct}% กติกาเดียวกับบททดสอบ Class2 · ชนะแล้วรับได้ครั้งเดียว เปิดต้นไม้สกิล Class3 ให้ลงแต้ม Class3 Job · สกิล Class1/Class2 ที่เรียนแล้วยังอยู่ · ชื่อ สกิล และตัวเลขเป็นตัวอย่าง`),
+          list,
+        );
+        if (v.class3Id === null) {
+          const go = el("button", { type: "button", class: "primary", "data-class-trial": c3.advance.id }, "เริ่มบททดสอบ Class3");
+          if (c3.blocked !== null) {
+            go.setAttribute("disabled", "");
+            go.textContent = CLASS3_REFUSAL_TH[c3.blocked] ?? c3.blocked;
+          }
+          go.addEventListener("click", () => startTrial(c3.advance.id));
+          body.append(go);
+        }
       }
       for (const b of v.branches) {
         const list = el("ul", { class: "pm-list", "data-class-branch": b.id });
@@ -2718,13 +2760,7 @@ export function classPanel(api: CharacterApi): Promise<string | null> {
             go.setAttribute("disabled", "");
             go.textContent = CLASS_REFUSAL_TH[v.blocked] ?? v.blocked;
           }
-          go.addEventListener("click", () =>
-            void run(async () => {
-              // A fresh id per tap; a retry of this request resumes the same fight on the server.
-              const r = await api.classTrialStart(`class_${crypto.randomUUID().replace(/-/g, "")}`, b.id);
-              finish(r.battleId);
-            }),
-          );
+          go.addEventListener("click", () => startTrial(b.id));
           body.append(go);
         }
       }

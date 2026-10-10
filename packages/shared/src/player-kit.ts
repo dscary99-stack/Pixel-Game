@@ -4,7 +4,7 @@
  * come from job levels (job.ts). Every learned skill is usable (no loadout yet).
  */
 import { SKILL_TREES, TREE_PASSIVE_IDS } from "./content/class-trees";
-import { treesFor } from "./skill-tree";
+import { treesFor, type SkillTree } from "./skill-tree";
 
 export const RACE_PASSIVES: Readonly<Record<string, string>> = {
   "race:human": "skill:race_human_grit",
@@ -58,6 +58,55 @@ export const CLASS2_BRANCHES: readonly Class2Branch[] = [
 export const class2Branch = (id: string | null | undefined): Class2Branch | undefined => (id == null ? undefined : CLASS2_BRANCHES.find((b) => b.id === id));
 export const class2BranchesOf = (classId: string): Class2Branch[] => CLASS2_BRANCHES.filter((b) => b.classId === classId);
 
+/**
+ * Class3 (chapter 02 table, P16 draft): one per Class2 branch, taken after the trial at Lv120 with
+ * Class2 at its job cap. It opens its own tree (six actives, two passives and the Class3 signature
+ * move) for Class3 job points. EXAMPLE names from chapter 02 (STATUS A146).
+ */
+export interface Class3Advance {
+  id: string;
+  /** The Class2 branch it continues. */
+  branchId: string;
+  name: { th: string; en: string };
+  summary: string;
+  treeId: string;
+}
+
+const advance = (key: string, branchId: string, th: string, en: string, summary: string): Class3Advance => ({ id: `class3:${key}`, branchId, name: { th, en }, summary, treeId: `class3:${key}` });
+
+export const CLASS3_ADVANCES: readonly Class3Advance[] = [
+  advance("aegis_sovereign", "class2:bastion", "จ้าวโล่พิทักษ์", "Aegis Sovereign", "โล่ทั้งทีมและรับแทน ไม้ตายโล่นิรันดร์"),
+  advance("dread_bulwark", "class2:sentinel", "ปราการโต้กลับ", "Dread Bulwark", "ตั้งรับแล้วสวนกลับทั้งแนว"),
+  advance("ruin_champion", "class2:breaker", "จอมยุทธ์ทลายเกราะ", "Ruin Champion", "ทลายเกราะศัตรูแล้วปลุกทั้งทีมบุก"),
+  advance("bloodstorm", "class2:berserker", "พายุโลหิต", "Bloodstorm", "แลกเลือดเป็นพลัง ดูดเลือดกลับ"),
+  advance("starpiercer", "class2:sharpshooter", "ศรทะลวงดาว", "Starpiercer", "เล็งเป้าเดี่ยวแรงสุด และชี้เป้าให้ทีม"),
+  advance("wild_architect", "class2:trapper", "จ้าวสนามล่า", "Wild Architect", "สนามกับดักคุมศัตรูทั้งหมด"),
+  advance("prismatic_archmage", "class2:elementalist", "มหาจอมเวทปริซึม", "Prismatic Archmage", "ต่อปฏิกิริยาธาตุ แลก MP"),
+  advance("astral_weaver", "class2:spellweaver", "ผู้ถักดารา", "Astral Weaver", "ถักเวลาและผนึก เร่งพวกเราหน่วงศัตรู"),
+  advance("verdant_hierophant", "class2:lifekeeper", "มหาผู้พิทักษ์ชีวิต", "Verdant Hierophant", "ฮีลต่อเนื่องทั้งทีม ดาเมจต่ำ"),
+  advance("soulwarden", "class2:spiritkeeper", "ผู้คุ้มครองวิญญาณ", "Soulwarden", "กันล้มและชุบ มีต้นทุนสูง"),
+  advance("grand_beast_marshal", "class2:beast_marshal", "จอมบัญชาการคู่ใจ", "Grand Beast Marshal", "สั่งทั้งฝูงลงมือพร้อมกัน"),
+  advance("concord_sovereign", "class2:soul_linker", "จ้าวสายสัมพันธ์", "Concord Sovereign", "โยงศัตรูแบ่งดาเมจ ปกป้องทั้งทีม"),
+  advance("night_reaper", "class2:assassin", "ผู้เก็บเกี่ยวรัตติกาล", "Night Reaper", "เปิดจุดตายแล้วปลิดชีพ"),
+  advance("phantom_strategist", "class2:saboteur", "นักกลยุทธ์มายา", "Phantom Strategist", "ทำลายบัฟ ผนึก และภาพลวง"),
+  advance("panacea_sage", "class2:apothecary", "ปราชญ์โอสถ", "Panacea Sage", "ฮีล ล้างสถานะ และภูมิคุ้มกันหมู่"),
+  advance("magnum_artificer", "class2:transmuter", "มหาช่างแปรธาตุ", "Magnum Artificer", "น้ำมันเจอไฟ แปรสภาพเกราะ"),
+  advance("celestial_maestro", "class2:minstrel", "วาทยกรดารา", "Celestial Maestro", "เพลงหลักหนุนทั้งทีม ไม่เพิ่ม EXP/drop"),
+  advance("eclipse_cantor", "class2:dirgesinger", "ผู้ขับขานอุปราคา", "Eclipse Cantor", "บทเพลงกดดันและสาปศัตรู"),
+];
+
+export const class3Advance = (id: string | null | undefined): Class3Advance | undefined => (id == null ? undefined : CLASS3_ADVANCES.find((a) => a.id === id));
+export const class3For = (branchId: string | null | undefined): Class3Advance | undefined => (branchId == null ? undefined : CLASS3_ADVANCES.find((a) => a.branchId === branchId));
+
+/** The trees a character spends on: Class1, its branch when the branch is its class's, and its Class3 when that continues the branch. */
+export function characterTrees(classId: string, class2Id: string | null | undefined, class3Id?: string | null): SkillTree[] {
+  const b = class2Branch(class2Id);
+  const branch = b?.classId === classId ? b : undefined;
+  const a = class3Advance(class3Id);
+  const third = branch !== undefined && a?.branchId === branch.id ? a : undefined;
+  return treesFor(SKILL_TREES, classId, branch?.treeId ?? null, third?.treeId ?? null);
+}
+
 export interface PlayerKit {
   skillIds: string[];
   /** Learned level of each active (only the ones above Lv1 matter to the kernel, all are listed). */
@@ -70,9 +119,8 @@ export interface PlayerKit {
  * them); a Class2 branch counts only when it belongs to the character's Class1, and a learned level
  * above the node's max (a tree that changed) is clipped.
  */
-export function playerKit(classId: string, raceId: string, class2Id: string | null | undefined, learned: Readonly<Record<string, number>> = {}): PlayerKit {
-  const b = class2Branch(class2Id);
-  const trees = treesFor(SKILL_TREES, classId, b?.classId === classId ? b.treeId : null);
+export function playerKit(classId: string, raceId: string, class2Id: string | null | undefined, learned: Readonly<Record<string, number>> = {}, class3Id?: string | null): PlayerKit {
+  const trees = characterTrees(classId, class2Id, class3Id);
   const skillIds: string[] = [];
   const skillLevels: Record<string, number> = {};
   const passiveIds: string[] = [];

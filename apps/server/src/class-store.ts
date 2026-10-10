@@ -9,19 +9,23 @@
  * Claim: the trial's fight was won; one write sets the branch where the character has none
  * (`class2_id IS NULL`) and records the claiming operation, so a retry answers the same and a second
  * trial (any branch) is refused once one claim landed.
+ *
+ * Class3 (Lv120): the same start and claim with a Class3 id in `branchId` (trialTier): the character
+ * needs its branch and Class2 Job at its cap; the boss is the tower tyrant at the Class3 trial stat %,
+ * and the claim sets `class3_id` the same once-only way.
  */
-import { ClassTrialClaimRequestSchema, ClassTrialStartRequestSchema, CLASS2_TRIAL_BOSS_ID, class2Refusal, classView, jobCap, companionSetups, playerSetup, type BattleSetup, type ClassTrialView, type ClassView, type RulesConfig } from "@pmrpg/shared";
+import { ClassTrialClaimRequestSchema, ClassTrialStartRequestSchema, CLASS2_TRIAL_BOSS_ID, CLASS3_TRIAL_BOSS_ID, class2Refusal, class3Refusal, trialTier, classView, jobCap, companionSetups, playerSetup, type BattleSetup, type ClassTrialView, type ClassView, type RulesConfig } from "@pmrpg/shared";
 import type { CharacterStore } from "./character-store";
 import type { Economy } from "./economy";
 import type { FrontierBattlePort } from "./frontier-store";
 import { hashJson, type SqlDb } from "./reward-ledger";
 
-export type ClassRejection = "INVALID_REQUEST" | "NO_CHARACTER" | "NOT_FOUND" | "NOT_IN_TOWN" | "IN_BATTLE" | "LEVEL_TOO_LOW" | "JOB_TOO_LOW" | "ALREADY_CHOSEN" | "NOT_WON" | "ENCOUNTER_REFUSED";
+export type ClassRejection = "INVALID_REQUEST" | "NO_CHARACTER" | "NOT_FOUND" | "NO_CLASS2" | "NOT_IN_TOWN" | "IN_BATTLE" | "LEVEL_TOO_LOW" | "JOB_TOO_LOW" | "ALREADY_CHOSEN" | "NOT_WON" | "ENCOUNTER_REFUSED";
 type Rejected = { status: "rejected"; reason: ClassRejection; message: string };
 const reject = (reason: ClassRejection, message: string): Rejected => ({ status: "rejected", reason, message });
 
 export type ClassTrialStartResult = { status: "started"; battleId: string; branchId: string; resumed: boolean } | Rejected;
-export type ClassClaimResult = { status: "claimed"; class2Id: string } | Rejected;
+export type ClassClaimResult = { status: "claimed"; class2Id: string } | { status: "claimed"; class3Id: string } | Rejected;
 
 interface TrialRow {
   operation_id: string;
@@ -54,11 +58,12 @@ export class ClassStore {
     return classView(this.rules, c, row === null ? null : await this.trialView(row));
   }
 
-  /** Start (or, with the same operation id, resume) the Class2 trial for one branch; in town only. */
+  /** Start (or, with the same operation id, resume) the Class2 trial for one branch, or the Class3 trial; in town only. */
   async start(accountId: string, raw: unknown): Promise<ClassTrialStartResult> {
     const parsed = ClassTrialStartRequestSchema.safeParse(raw);
     if (!parsed.success) return reject("INVALID_REQUEST", parsed.error.issues.map((i) => i.message).join("; "));
     const { operationId, branchId } = parsed.data;
+    const tier = trialTier(branchId);
     const loadout = await this.characters.loadout(accountId);
     if (loadout === null) return reject("NO_CHARACTER", "create a character first");
     const { character, instances, worn, equipmentIds } = loadout;
@@ -69,14 +74,24 @@ export class ClassStore {
       if (res?.status === "released") return reject("ENCOUNTER_REFUSED", "that trial was called off; start a new one");
       if (res?.status === "settled" || prior.status === "claimed") return { status: "started", battleId: prior.battle_id, branchId, resumed: true };
     } else {
-      const refusal = class2Refusal(this.rules, character, branchId);
-      if (refusal === "NOT_FOUND") return reject("NOT_FOUND", "your class has no such branch");
-      if (refusal === "ALREADY_CHOSEN") return reject("ALREADY_CHOSEN", "this character already took its Class2");
-      if (refusal === "LEVEL_TOO_LOW") return reject("LEVEL_TOO_LOW", `the trial opens at Lv${this.rules.provisional.classChange.value.class2Level}`);
-      if (refusal === "JOB_TOO_LOW") return reject("JOB_TOO_LOW", `the trial needs Class1 Job ${jobCap(this.rules, 1)}`);
+      const cc = this.rules.provisional.classChange.value;
+      if (tier === 3) {
+        const refusal = class3Refusal(this.rules, character, branchId);
+        if (refusal === "NOT_FOUND") return reject("NOT_FOUND", "your branch has no such Class3");
+        if (refusal === "NO_CLASS2") return reject("NO_CLASS2", "take your Class2 first");
+        if (refusal === "ALREADY_CHOSEN") return reject("ALREADY_CHOSEN", "this character already took its Class3");
+        if (refusal === "LEVEL_TOO_LOW") return reject("LEVEL_TOO_LOW", `the Class3 trial opens at Lv${cc.class3Level}`);
+        if (refusal === "JOB_TOO_LOW") return reject("JOB_TOO_LOW", `the Class3 trial needs Class2 Job ${jobCap(this.rules, 2)}`);
+      } else {
+        const refusal = class2Refusal(this.rules, character, branchId);
+        if (refusal === "NOT_FOUND") return reject("NOT_FOUND", "your class has no such branch");
+        if (refusal === "ALREADY_CHOSEN") return reject("ALREADY_CHOSEN", "this character already took its Class2");
+        if (refusal === "LEVEL_TOO_LOW") return reject("LEVEL_TOO_LOW", `the trial opens at Lv${cc.class2Level}`);
+        if (refusal === "JOB_TOO_LOW") return reject("JOB_TOO_LOW", `the trial needs Class1 Job ${jobCap(this.rules, 1)}`);
+      }
       if (!(await this.inTown(accountId))) return reject("NOT_IN_TOWN", "the trial is taken in town");
     }
-    const battleId = prior?.battle_id ?? `battle:ct_${(await hashJson({ accountId, operationId, kind: "class2" })).slice(0, 32)}`;
+    const battleId = prior?.battle_id ?? `battle:ct_${(await hashJson({ accountId, operationId, kind: tier === 3 ? "class3" : "class2" })).slice(0, 32)}`;
     const reservationId = `res:${battleId}`;
     if ((await this.economy.reservedBag(reservationId)) === null) {
       const team = character.team.map((t) => t.instanceId);
@@ -102,10 +117,11 @@ export class ClassStore {
       player: playerSetup(accountId, { ...character, hp: null, mp: null }, worn),
       companions: companionSetups(character.team, full),
       enemies: [],
-      boss: { bossId: CLASS2_TRIAL_BOSS_ID },
+      boss: { bossId: tier === 3 ? CLASS3_TRIAL_BOSS_ID : CLASS2_TRIAL_BOSS_ID },
       bag: {},
       practice: true,
       classTrial: true,
+      ...(tier === 3 ? { classTrialTier: 3 as const } : {}),
     };
     // The Battle DO keeps the first setup it was given, so a resumed create is a no-op.
     const created = await this.battles.create(accountId, setup, reservationId);
@@ -113,7 +129,7 @@ export class ClassStore {
     return { status: "started", battleId, branchId, resumed: prior !== null };
   }
 
-  /** Take the branch of a won trial. Idempotent per operation id; one claim per character, ever. */
+  /** Take the branch (or Class3) of a won trial. Idempotent per operation id; one claim per tier per character, ever. */
   async claim(accountId: string, raw: unknown): Promise<ClassClaimResult> {
     const parsed = ClassTrialClaimRequestSchema.safeParse(raw);
     if (!parsed.success) return reject("INVALID_REQUEST", parsed.error.issues.map((i) => i.message).join("; "));
@@ -122,23 +138,24 @@ export class ClassStore {
     if (c === null) return reject("NO_CHARACTER", "create a character first");
     const t = await this.trial(c.id, operationId);
     if (t === null) return reject("NOT_FOUND", "no trial with this operation id");
-    const done = await this.claimedBy(c.id);
-    if (done !== null) {
-      if (done.operationId === operationId) return { status: "claimed", class2Id: done.class2Id };
-      return reject("ALREADY_CHOSEN", "this character already took its Class2");
-    }
+    const tier = trialTier(t.branch_id);
+    const col = tier === 3 ? "class3" : "class2";
+    const answer = (id: string): ClassClaimResult => (tier === 3 ? { status: "claimed", class3Id: id } : { status: "claimed", class2Id: id });
+    const taken = reject("ALREADY_CHOSEN", `this character already took its Class${tier}`);
+    const done = await this.claimedBy(c.id, tier);
+    if (done !== null) return done.operationId === operationId ? answer(done.classId) : taken;
     const res = await this.economy.reservation(t.reservation_id);
     if (res?.status !== "settled" || res.outcome !== "victory") return reject("NOT_WON", "win the trial first");
+    // A Class3 lands only on the branch it continues (the trial start checked it; the branch never changes).
     await this.db.batch([
-      this.db.prepare(`UPDATE characters SET class2_id = ?, class2_operation_id = ? WHERE id = ? AND account_id = ? AND class2_id IS NULL`).bind(t.branch_id, operationId, c.id, accountId),
+      this.db.prepare(`UPDATE characters SET ${col}_id = ?, ${col}_operation_id = ? WHERE id = ? AND account_id = ? AND ${col}_id IS NULL${tier === 3 ? " AND class2_id IS NOT NULL" : ""}`).bind(t.branch_id, operationId, c.id, accountId),
       this.db
-        .prepare(`UPDATE class_trials SET status = 'claimed' WHERE character_id = ? AND operation_id = ? AND EXISTS (SELECT 1 FROM characters WHERE id = ? AND class2_operation_id = ?)`)
+        .prepare(`UPDATE class_trials SET status = 'claimed' WHERE character_id = ? AND operation_id = ? AND EXISTS (SELECT 1 FROM characters WHERE id = ? AND ${col}_operation_id = ?)`)
         .bind(c.id, operationId, c.id, operationId),
     ]);
     // Read back: whoever's claim landed decides the answer.
-    const after = await this.claimedBy(c.id);
-    if (after?.operationId === operationId) return { status: "claimed", class2Id: after.class2Id };
-    return reject("ALREADY_CHOSEN", "this character already took its Class2");
+    const after = await this.claimedBy(c.id, tier);
+    return after?.operationId === operationId ? answer(after.classId) : taken;
   }
 
   private async trialView(row: TrialRow): Promise<ClassTrialView> {
@@ -158,9 +175,10 @@ export class ClassStore {
       .first<TrialRow>();
   }
 
-  private async claimedBy(characterId: string): Promise<{ class2Id: string; operationId: string } | null> {
-    const r = await this.db.prepare(`SELECT class2_id, class2_operation_id FROM characters WHERE id = ?`).bind(characterId).first<{ class2_id: string | null; class2_operation_id: string | null }>();
-    return r?.class2_id == null || r.class2_operation_id == null ? null : { class2Id: r.class2_id, operationId: r.class2_operation_id };
+  private async claimedBy(characterId: string, tier: 2 | 3): Promise<{ classId: string; operationId: string } | null> {
+    const col = tier === 3 ? "class3" : "class2";
+    const r = await this.db.prepare(`SELECT ${col}_id AS id, ${col}_operation_id AS op FROM characters WHERE id = ?`).bind(characterId).first<{ id: string | null; op: string | null }>();
+    return r?.id == null || r.op == null ? null : { classId: r.id, operationId: r.op };
   }
 
   private async inTown(accountId: string): Promise<boolean> {

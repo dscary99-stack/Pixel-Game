@@ -20,12 +20,10 @@ import {
   startingStats,
   type ResetKind,
   type ItemDefinition,
-  SKILL_TREES,
-  class2Branch,
+  characterTrees,
   jobExpForLevel,
   jobState,
   learnRefusal,
-  treesFor,
   type JobTier,
   type LearnRefusal,
   CreateCharacterRequestSchema,
@@ -60,6 +58,7 @@ interface CharacterRow {
   name: string;
   class_id: string;
   class2_id?: string | null;
+  class3_id?: string | null;
   race_id: string;
   element: CharacterView["element"];
   level: number;
@@ -71,6 +70,7 @@ interface CharacterRow {
   created_operation_id: string;
   job1_xp?: number;
   job2_xp?: number;
+  job3_xp?: number;
   skills_json?: string;
 }
 
@@ -116,7 +116,9 @@ export type UseResetResult =
 
 /** The class tier earning job EXP now and the trees the character may spend on. */
 function jobOf(row: CharacterRow): { tier: JobTier; exp: number[] } {
-  return row.class2_id == null ? { tier: 1, exp: [row.job1_xp ?? 0] } : { tier: 2, exp: [row.job1_xp ?? 0, row.job2_xp ?? 0] };
+  if (row.class2_id == null) return { tier: 1, exp: [row.job1_xp ?? 0] };
+  if (row.class3_id == null) return { tier: 2, exp: [row.job1_xp ?? 0, row.job2_xp ?? 0] };
+  return { tier: 3, exp: [row.job1_xp ?? 0, row.job2_xp ?? 0, row.job3_xp ?? 0] };
 }
 
 export interface StoreContent {
@@ -318,8 +320,7 @@ export class CharacterStore {
     if (row === null) return { status: "rejected", reason: "NO_CHARACTER", message: "create a character first" };
     if (row.version !== expectedVersion) return { status: "rejected", reason: "STALE_VERSION", message: "the character changed; reload and try again" };
     if (await this.inBattle(accountId)) return { status: "rejected", reason: "IN_BATTLE", message: "learn skills outside fights" };
-    const branch = class2Branch(row.class2_id);
-    const trees = treesFor(SKILL_TREES, row.class_id, branch?.classId === row.class_id ? branch.treeId : null);
+    const trees = characterTrees(row.class_id, row.class2_id, row.class3_id);
     const learned = JSON.parse(row.skills_json ?? "{}") as Record<string, number>;
     const job = jobOf(row);
     const refusal = learnRefusal(trees, learned, jobState(this.rules, job.tier, job.exp).points, skillId);
@@ -625,12 +626,14 @@ export class CharacterStore {
     if (job !== undefined) {
       const j1 = jobExpForLevel(this.rules, 1, job);
       const j2 = jobExpForLevel(this.rules, 2, job);
+      const j3 = jobExpForLevel(this.rules, 3, job);
       await this.db
         .prepare(
           `UPDATE characters SET job1_xp = CASE WHEN class2_id IS NULL THEN MAX(job1_xp, ?) ELSE job1_xp END,
-           job2_xp = CASE WHEN class2_id IS NULL THEN job2_xp ELSE MAX(job2_xp, ?) END WHERE account_id = ?`,
+           job2_xp = CASE WHEN class2_id IS NOT NULL AND class3_id IS NULL THEN MAX(job2_xp, ?) ELSE job2_xp END,
+           job3_xp = CASE WHEN class3_id IS NOT NULL THEN MAX(job3_xp, ?) ELSE job3_xp END WHERE account_id = ?`,
         )
-        .bind(j1, j2, accountId)
+        .bind(j1, j2, j3, accountId)
         .run();
     }
     await this.syncLevels(accountId);
@@ -666,6 +669,7 @@ export class CharacterStore {
       name: row.name,
       classId: row.class_id,
       class2Id: row.class2_id ?? null,
+      class3Id: row.class3_id ?? null,
       raceId: row.race_id,
       element: row.element,
       level: row.level,

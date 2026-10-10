@@ -4,7 +4,11 @@
 // and afterwards the trial is refused and the branch's skill tree opens: its skills, learned with
 // Class2 job points, are in the next fight. The trial also needs Class1 at its job cap (P29). Last, the
 // reset scrolls: refused in a fight, then a skill scroll and a stat scroll each return all their points.
+// Then Class3 (Lv120): refused below Lv120 and below Class2 Job 70, another branch's Class3 is not
+// found; the trial is the tower tyrant at the Class3 stat %, won on Auto and claimed once; Class3 job
+// points open its tree and a learned Class3 skill is in the next fight.
 // Run `npm run db:migrate:local` and `npm run dev:server` first, then `npm run smoke:class`.
+import { PRODUCTION_RULES, SKILL_TREES, unspentPoints, type PrimaryStats } from "@pmrpg/shared";
 import { AUTO_GAP_MS, api, autoToEnd, battleCall, connect, run, sleep, type Msg } from "./smoke-lib";
 
 const account = `acct:class${run}`;
@@ -156,6 +160,84 @@ const again2 = await call("POST", "/character/reset", { operationId: `reset_stat
 must(again2.body.error === "INSUFFICIENT_ITEMS", "one scroll, one reset", again2.body);
 await learn("skill:striker_heavy_slash", 1);
 out.reset = { inFight: inFight.body.error, afterSkills: skillReset.body.character.skills, stats: statReset.body.character.primaryStats, second: again2.body.error };
+
+// Class3 (Lv120, Class2 Job 70).
+const c3Low = await call("POST", "/class/trial/start", { operationId: `c3_low_${run}`, branchId: "class3:ruin_champion" });
+must(c3Low.body.error === "LEVEL_TOO_LOW", "Class3 refused below Lv120", c3Low.body);
+await call("POST", "/dev/level", { level: 125, job: 69 });
+must((await call("POST", "/class/trial/start", { operationId: `c3_job_${run}`, branchId: "class3:ruin_champion" })).body.error === "JOB_TOO_LOW", "Class3 refused below Class2 Job 70");
+await call("POST", "/dev/level", { level: 125, job: 70 });
+must((await call("POST", "/class/trial/start", { operationId: `c3_x_${run}`, branchId: "class3:bloodstorm" })).body.error === "NOT_FOUND", "another branch's Class3");
+const cv3 = (await call("GET", "/class")).body;
+must(cv3.class3?.advance.id === "class3:ruin_champion" && cv3.class3.blocked === null && cv3.class3.trialStatPct === 600, "Class3 offered", cv3.class3);
+/** Spend points down a tree in its order, as far as they go (a node whose need is not met yet is skipped). */
+const spend = async (treeId: string) => {
+  for (const n of SKILL_TREES.get(treeId)!.nodes) {
+    for (let i = 0; i < n.maxLevel; i++) {
+      const cv = (await call("GET", "/character")).body.character;
+      if ((cv.skills[n.skillId] ?? 0) >= n.maxLevel) break;
+      const r = await call("POST", "/character/skills/learn", { expectedVersion: cv.version, skillId: n.skillId });
+      if (r.status !== 200) break;
+    }
+  }
+};
+// A strong striker build again: Class1 and Class2 points, STR/VIT stats, three Lv115 companions.
+await learn("skill:striker_heavy_slash", 9);
+await learn("skill:striker_cleave", 10);
+await learn("skill:striker_all_in", 10);
+await learn("skill:striker_armor_break", 10);
+await learn("skill:striker_roar", 10);
+await spend("class2:breaker");
+c = (await call("GET", "/character")).body.character;
+// Stat costs rise with the stat (progression.ts): raise STR, VIT, DEX, AGI in a 5:4:2:1 rhythm while points last.
+const st: PrimaryStats = { ...c.primaryStats };
+const rhythm = ["STR", "VIT", "STR", "DEX", "VIT", "STR", "VIT", "AGI", "STR", "DEX", "VIT", "STR"] as const;
+for (let i = 0; ; i++) {
+  const k = rhythm[i % rhythm.length]!;
+  st[k] += 1;
+  if (unspentPoints(PRODUCTION_RULES, c.level, st) < 0) {
+    st[k] -= 1;
+    break;
+  }
+}
+const alloc = await call("PUT", "/character/stats", { expectedVersion: c.version, stats: st });
+must(alloc.status === 200, "allocate Lv125", alloc.body);
+for (const [i, speciesId] of mates.entries()) await call("POST", "/dev/grant", { operationId: `grant115_${run}_${i}`, companion: { speciesId, level: 115 } });
+c = (await call("GET", "/character")).body.character;
+must((await call("PUT", "/character/team", { expectedVersion: c.version, companionIds: mates.map((_, i) => `mon:grant115_${run}_${i}:companion`) })).status === 200, "Lv115 team");
+let won3: string | null = null;
+const tries3: string[] = [];
+for (let n = 1; n <= 5 && won3 === null; n++) {
+  const op = `c3_${n}_${run}`;
+  const s = await call("POST", "/class/trial/start", { operationId: op, branchId: "class3:ruin_champion" });
+  must(s.status === 200, "Class3 trial start", s.body);
+  if (n === 1) {
+    const tv = await battleCall(account, s.body.battleId)("GET", "");
+    const boss = tv.state.units.find((u: Msg) => u.unitId === "e1");
+    must(tv.state.practice === true && tv.state.enemyStatPct === 600 && boss.speciesId !== undefined, "Class3 trial: tyrant at 600%", { pct: tv.state.enemyStatPct });
+    out.class3Boss = { speciesId: boss.speciesId, maxHp: boss.stats.maxHp, statPct: tv.state.enemyStatPct, enemies: tv.state.units.filter((u: Msg) => u.side === "enemy").length };
+  }
+  const end = await autoToEnd(account, s.body.battleId);
+  tries3.push(`${end.state.status} r${end.state.round}`);
+  if (end.state.status === "victory") won3 = op;
+}
+out.class3Tries = tries3;
+must(won3 !== null, "won the Class3 trial on Auto", tries3);
+const claim3 = await call("POST", "/class/trial/claim", { operationId: won3 });
+must(claim3.body.status === "claimed" && claim3.body.class3Id === "class3:ruin_champion", "Class3 claim", claim3.body);
+must((await call("POST", "/class/trial/claim", { operationId: won3 })).body.class3Id === "class3:ruin_champion", "Class3 claim retry answers the same");
+must((await call("POST", "/class/trial/claim", { operationId: won })).body.class2Id === "class2:breaker", "the Class2 claim still answers the same");
+must((await call("POST", "/class/trial/start", { operationId: `c3_again_${run}`, branchId: "class3:ruin_champion" })).body.error === "ALREADY_CHOSEN", "one Class3 per character");
+// Class3 job points open its tree (dev: Class3 Job 10); its first skill is in the next fight.
+await call("POST", "/dev/level", { level: 125, job: 10 });
+const c3first = SKILL_TREES.get("class3:ruin_champion")!.nodes.find((n) => n.requires.length === 0 && n.cost === 1)!.skillId;
+await learn(c3first, 3);
+const ch3 = (await call("GET", "/character")).body.character;
+must(ch3.class3Id === "class3:ruin_champion" && ch3.jobExp.length === 3 && ch3.skills["skill:c2_breaker_shatter"] !== undefined, "character has Class3 and keeps Class2 skills", ch3);
+const p3 = await call("POST", "/practice/start", { operationId: `practice3_${run}`, bossId: "boss:crystal_crab_lord" });
+const me3 = (await battleCall(account, p3.body.battleId)("GET", "")).state.units.find((u: Msg) => u.unitId === "player");
+must(me3.skillIds.includes(c3first) && me3.skillLevels[c3first] === 3, "Class3 skill in the fight", me3.skillIds);
+out.class3 = { claimed: claim3.body.class3Id, skill: c3first, jobExp: ch3.jobExp };
 T.sock.close();
 console.log(JSON.stringify(out, null, 1));
 process.exit(0);

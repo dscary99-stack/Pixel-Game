@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CLASS1_DEFINITIONS,
   CLASS2_BRANCHES,
+  CLASS3_ADVANCES,
   SKILL_TREES,
   STATUS_DEFINITIONS,
   SkillDefinitionSchema,
@@ -107,8 +108,8 @@ describe("skill trees (Nut 2026-10-09)", () => {
     }
   });
 
-  it("branch trees reach both sides: at least three skills per branch act on more than one target group", () => {
-    for (const b of CLASS2_BRANCHES) {
+  it("branch and Class3 trees reach both sides: at least three skills per tree act on more than one target group", () => {
+    for (const b of [...CLASS2_BRANCHES, ...CLASS3_ADVANCES]) {
       const t = SKILL_TREES.get(b.treeId)!;
       const multi = t.nodes.filter((n) => sk(n.skillId).effectSequence.length > 1);
       expect(multi.length, b.id).toBeGreaterThanOrEqual(3);
@@ -146,6 +147,29 @@ describe("skill trees (Nut 2026-10-09)", () => {
       const line = t.nodes.filter((x) => x.col === n.col && x.row < 4 && sk(x.skillId).kind === "active").sort((a, z) => z.row - a.row);
       expect(n.requires.map((r) => r.skillId), n.skillId).toEqual([line[0]!.skillId]);
     }
+  });
+
+  it("every Class2 branch has one Class3, whose tree is tier 3 with one signature capstone", () => {
+    expect(CLASS3_ADVANCES.map((a) => a.branchId).sort()).toEqual(CLASS2_BRANCHES.map((b) => b.id).sort());
+    for (const a of CLASS3_ADVANCES) {
+      const t = SKILL_TREES.get(a.treeId)!;
+      expect(t.tier, a.id).toBe(3);
+      const caps = t.nodes.filter((n) => n.row === 4);
+      expect(caps, a.id).toHaveLength(1);
+      const n = caps[0]!;
+      expect([n.maxLevel, n.cost, sk(n.skillId).cooldown], n.skillId).toEqual([5, 2, 6]);
+      const line = t.nodes.filter((x) => x.col === n.col && x.row < 4 && sk(x.skillId).kind === "active").sort((p, z) => z.row - p.row);
+      expect(n.requires.map((r) => r.skillId), n.skillId).toEqual([line[0]!.skillId]);
+      // Class3 points (Job 70) buy most of its own tree but not all of it.
+      const cost = t.nodes.reduce((x, y) => x + y.maxLevel * y.cost, 0);
+      expect(cost, a.id).toBeGreaterThan(jobCap(rules, 3) * 0.9);
+      expect(cost, a.id).toBeLessThan(jobCap(rules, 3) * 1.2);
+    }
+  });
+
+  it("the Class3 tree counts only after a branch", () => {
+    expect(treesFor(SKILL_TREES, "class:guardian", null, "class3:aegis_sovereign").map((t) => t.id)).toEqual(["class:guardian"]);
+    expect(treesFor(SKILL_TREES, "class:guardian", "class2:bastion", "class3:aegis_sovereign").map((t) => t.id)).toEqual(["class:guardian", "class2:bastion", "class3:aegis_sovereign"]);
   });
 
   it("every active is worth its cost at Lv1 (P30 budget band)", () => {

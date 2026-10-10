@@ -706,9 +706,9 @@ export const RULES = {
      * Winning lets the character take one of its two branches, once.
      */
     classChange: provisional(
-      { class2Level: 50, class3Level: 120, trialStatPct: 150 } as const,
+      { class2Level: 50, class3Level: 120, trialStatPct: 150, class3TrialStatPct: 600 } as const,
       "P28",
-      "P16 levels 50/120; the trial boss at 150%: in a simulation, a Lv50 character with Lv40 shop gear and three Lv45 companions wins every seeded run on plain Auto with 8 of 9 classes; the Bard won 1 of 6 and needs manual play",
+      "P16 levels 50/120; the trial boss at 150%: in a simulation, a Lv50 character with Lv40 shop gear and three Lv45 companions wins every seeded run on plain Auto with 8 of 9 classes; the Bard won 1 of 6 and needs manual play. Class3 at Lv120 against the tyrant at 600%: a Lv120 character with a full Class1+Class2+Class3 tree, gear scaled to Lv120 and three Lv115 companions wins 45 of 54 seeded runs on Auto (at 500% 53/54, at 700% 24/54); the Starpiercer, Prismatic Archmage, Ruin Champion, Soulwarden and Grand Beast Marshal sometimes need manual play",
     ),
   },
   // Nut answered the last OPEN rules on 2026-10-07. A new OPEN rule goes here as open<T>(...) with value null.
