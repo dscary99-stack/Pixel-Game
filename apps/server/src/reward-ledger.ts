@@ -1,21 +1,53 @@
 /**
  * Reward settlement against D1 (chapter 11 §3 steps 6–7).
  *
- * Receipt + item/companion grant go in one D1 batch (a transaction). Every write is keyed so a
- * retry is a no-op: receipt PK (entitlement, recipient), ledger PK (operation, line), monster
- * created_operation_id UNIQUE. Goal: the business effect happens once. The network may still
+ * Receipt + item/equipment/companion grant go in one D1 batch (a transaction). Every write is keyed so a
+ * retry is a no-op: receipt PK (entitlement, recipient), ledger PK (operation, line), monster and
+ * equipment created_operation_id UNIQUE. Goal: the business effect happens once. The network may still
  * deliver twice; that is fine.
  */
-import type { Entitlement, RulesConfig } from "@pmrpg/shared";
+import {
+  BOND_MAX,
+  COMPANION_GROWTH_VERSION,
+  Rng,
+  exampleContentMaps,
+  expCap,
+  jobExpCap,
+  jobExpFromBase,
+  rollGear,
+  seedRng,
+  type AffixPool,
+  type EquipmentDefinition,
+  type Entitlement,
+  type RulesConfig,
+} from "@pmrpg/shared";
+
+/** Gear content the ledger needs to roll a dropped piece's rarity and affixes. */
+export interface GearContent {
+  equipment: ReadonlyMap<string, EquipmentDefinition>;
+  affixPools: ReadonlyMap<string, AffixPool>;
+}
 
 /** The subset of the D1 API we use, so tests can run it on node:sqlite. */
 export interface SqlBound {
   first<T = Record<string, unknown>>(): Promise<T | null>;
   run(): Promise<unknown>;
+  all<T = Record<string, unknown>>(): Promise<{ results: T[] }>;
 }
 export interface SqlDb {
   prepare(sql: string): { bind(...values: unknown[]): SqlBound };
   batch(statements: SqlBound[]): Promise<unknown[]>;
+}
+
+/**
+ * Job EXP (P29) rides on every base EXP award: the tier the character is in now earns it (Class1
+ * before the Class2 claim, Class2 until the Class3 claim, Class3 after), up to that tier's cap. Use with
+ * jobXpArgs in the same order.
+ */
+export const JOB_XP_SET = `job1_xp = CASE WHEN class2_id IS NULL THEN MIN(job1_xp + ?, ?) ELSE job1_xp END, job2_xp = CASE WHEN class2_id IS NOT NULL AND class3_id IS NULL THEN MIN(job2_xp + ?, ?) ELSE job2_xp END, job3_xp = CASE WHEN class3_id IS NOT NULL THEN MIN(job3_xp + ?, ?) ELSE job3_xp END`;
+export function jobXpArgs(rules: RulesConfig, baseExp: number): number[] {
+  const j = jobExpFromBase(rules, baseExp);
+  return [j, jobExpCap(rules, 1), j, jobExpCap(rules, 2), j, jobExpCap(rules, 3)];
 }
 
 /** Grant rows are written only if the receipt in this transaction carries our payload hash. */
@@ -26,8 +58,13 @@ export type GrantResult =
   | { status: "already_granted"; entitlementId: string }
   | { status: "rejected"; entitlementId: string; reason: "PAYLOAD_MISMATCH" };
 
-export async function payloadHash(e: Entitlement): Promise<string> {
-  const bytes = new TextEncoder().encode(stableStringify(e));
+export function payloadHash(e: Entitlement): Promise<string> {
+  return hashJson(e);
+}
+
+/** SHA-256 of a key-order-independent JSON encoding. */
+export async function hashJson(v: unknown): Promise<string> {
+  const bytes = new TextEncoder().encode(stableStringify(v));
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
@@ -49,6 +86,7 @@ export class RewardLedger {
     private readonly db: SqlDb,
     private readonly rules: RulesConfig,
     private readonly now: () => string = () => new Date().toISOString(),
+    private readonly gear: GearContent = exampleContentMaps(),
   ) {}
 
   async grant(entitlement: Entitlement, recipientId: string): Promise<GrantResult> {
@@ -70,6 +108,26 @@ export class RewardLedger {
     ];
     if (entitlement.kind === "kill") {
       entitlement.items.forEach((line, i) => {
+        // Equipment drops are instances, not stackable items (chapter 05 §1): one row per piece,
+        // keyed by entitlement, line and piece number so a retried grant adds nothing. Rarity and
+        // affixes are rolled here from an unguessable seed (like a capture's growth seed); a
+        // replayed grant keeps the first row (ON CONFLICT DO NOTHING).
+        if (line.itemId.startsWith("equip:")) {
+          const def = this.gear.equipment.get(line.itemId);
+          for (let n = 0; n < line.quantity; n++) {
+            const op = `${id}:${i}:${n}`;
+            const rolled = def === undefined ? { rarity: "COMMON", affixes: [] } : rollGear(this.rules, def, this.gear.affixPools.get(def.affixPoolId), new Rng(seedRng(crypto.randomUUID())));
+            stmts.push(
+              this.db
+                .prepare(
+                  `INSERT INTO equipment_instances (id, definition_id, owner_id, rarity, affixes_json, created_operation_id, created_at)
+                   SELECT ?, ?, ?, ?, ?, ?, ? WHERE ${OWN_RECEIPT} ON CONFLICT DO NOTHING`,
+                )
+                .bind(`eq:${op}`, line.itemId, recipientId, rolled.rarity, JSON.stringify(rolled.affixes), op, at, id, recipientId, hash),
+            );
+          }
+          return;
+        }
         stmts.push(
           this.db
             .prepare(
@@ -79,17 +137,40 @@ export class RewardLedger {
             .bind(id, i, recipientId, line.itemId, line.quantity, at, id, recipientId, hash),
         );
       });
-    } else {
-      // Captured companions start at the confirmed initial level with Bond 0 (C09, C11).
-      // Phase A assumption: Lv1 primary stats = the P03 start value; growth weights are still OPEN.
+    }
+    // Quest progress (chapter 09): a kill or capture counts once, when its reward lands.
+    if (entitlement.kind === "kill" || entitlement.kind === "capture") {
+      stmts.push(
+        this.db
+          .prepare(
+            `INSERT INTO quest_activity (account_id, activity_id, kind, subject, quantity, at)
+             SELECT ?, ?, ?, ?, 1, ? WHERE ${OWN_RECEIPT} ON CONFLICT DO NOTHING`,
+          )
+          .bind(recipientId, id, entitlement.kind, entitlement.speciesId, at, id, recipientId, hash),
+      );
+    }
+    if (entitlement.kind === "capture") {
+      // Journal element record (chapter 09): kept even after the companion leaves.
+      stmts.push(
+        this.db
+          .prepare(
+            `INSERT INTO journal_caught (account_id, species_id, element, first_at)
+             SELECT ?, ?, ?, ? WHERE ${OWN_RECEIPT} ON CONFLICT DO NOTHING`,
+          )
+          .bind(recipientId, entitlement.speciesId, entitlement.element, at, id, recipientId, hash),
+      );
+      // Captured companions start at the confirmed initial level with Bond 0 (C09, C11). The server
+      // picks the growth seed here; a replayed grant keeps the first row (ON CONFLICT DO NOTHING).
       const start = this.rules.provisional.primaryStatStart.value;
       const stats = { STR: start, VIT: start, INT: start, DEX: start, AGI: start, SPI: start };
+      const growthSeed = crypto.randomUUID();
       stmts.push(
         this.db
           .prepare(
             `INSERT INTO monster_instances
-               (id, species_id, owner_id, current_level, element, primary_stats_json, origin_json, created_operation_id)
-             SELECT ?, ?, ?, ?, ?, ?, ?, ? WHERE ${OWN_RECEIPT} ON CONFLICT DO NOTHING`,
+               (id, species_id, owner_id, current_level, element, primary_stats_json, origin_json, created_operation_id,
+                growth_seed, growth_history_version)
+             SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${OWN_RECEIPT} ON CONFLICT DO NOTHING`,
           )
           .bind(
             `mon:${id}`,
@@ -100,11 +181,53 @@ export class RewardLedger {
             JSON.stringify(stats),
             JSON.stringify({ kind: "capture", battleId: id.split(":").slice(0, -2).join(":"), at }),
             id,
+            growthSeed,
+            COMPANION_GROWTH_VERSION,
             id,
             recipientId,
             hash,
           ),
       );
+    }
+    // EXP for everyone who started the fight (chapter 04 §4): the character named in the battle's
+    // reservation and each companion listed there, KO'd or not, each with its own award (the kernel
+    // scaled companions by their level at fight start). Captured companions are not in it.
+    // EXP stops at each curve's cap total: nothing is banked toward a level past the cap.
+    const exp = entitlement.exp ?? 0;
+    const battleId = id.split(":").slice(0, -2).join(":");
+    const loadout = `(SELECT loadout_json FROM battle_reservations WHERE battle_id = ? AND account_id = ?)`;
+    if (exp > 0) {
+      stmts.push(
+        this.db
+          .prepare(`UPDATE characters SET xp = MIN(xp + ?, ?), ${JOB_XP_SET} WHERE account_id = ? AND id = json_extract(${loadout}, '$.characterId') AND ${OWN_RECEIPT}`)
+          .bind(exp, expCap(this.rules, "player"), ...jobXpArgs(this.rules, exp), recipientId, battleId, recipientId, id, recipientId, hash),
+      );
+    }
+    for (const [companionId, amount] of Object.entries(entitlement.companionExp ?? {})) {
+      if (amount <= 0) continue;
+      stmts.push(
+        this.db
+          .prepare(
+            `UPDATE monster_instances SET xp = MIN(xp + ?, ?)
+             WHERE owner_id = ? AND id = ? AND id IN (SELECT value FROM json_each(json_extract(${loadout}, '$.companionIds'))) AND ${OWN_RECEIPT}`,
+          )
+          .bind(amount, expCap(this.rules, "companion"), recipientId, companionId, battleId, recipientId, id, recipientId, hash),
+      );
+    }
+    // Bond (up or down, kept within 0–1000) and skill mastery (up to its cap) when a fight ends
+    // (chapter 04 §5–§6), for companions the battle's reservation lists and the recipient still owns.
+    if (entitlement.kind === "fight_result") {
+      for (const [companionId, g] of Object.entries(entitlement.companions)) {
+        if (g.bond === 0 && g.mastery <= 0) continue;
+        stmts.push(
+          this.db
+            .prepare(
+              `UPDATE monster_instances SET bond = MAX(0, MIN(bond + ?, ?)), skill_mastery = MIN(skill_mastery + ?, ?)
+               WHERE owner_id = ? AND id = ? AND id IN (SELECT value FROM json_each(json_extract(${loadout}, '$.companionIds'))) AND ${OWN_RECEIPT}`,
+            )
+            .bind(g.bond, BOND_MAX, g.mastery, this.rules.provisional.skillMasteryCap.value, recipientId, companionId, battleId, recipientId, id, recipientId, hash),
+        );
+      }
     }
     await this.db.batch(stmts);
 

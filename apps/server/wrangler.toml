@@ -11,9 +11,17 @@ DEV_AUTH = "true"
 name = "BATTLE"
 class_name = "BattleDurableObject"
 
+[[durable_objects.bindings]]
+name = "MAP"
+class_name = "MapChannelDurableObject"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["BattleDurableObject"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["MapChannelDurableObject"]
 
 [[d1_databases]]
 binding = "DB"
@@ -22,6 +30,13 @@ database_name = "pixel-monster-rpg-dev"
 database_id = "00000000-0000-0000-0000-000000000000"
 migrations_dir = "migrations"
 
-# Staging/production must override ENVIRONMENT and remove DEV_AUTH.
+# Staging/production must override ENVIRONMENT and remove DEV_AUTH, and set the secret quest seed key:
+# `wrangler secret put SECRET_QUEST_KEY` (character creation fails without it; dev uses a fixed key).
+# Sign-in (O11): set GOOGLE_CLIENT_ID and FACEBOOK_APP_ID as vars and `wrangler secret put FACEBOOK_APP_SECRET`;
+# a provider left unset is hidden on the sign-in screen and its route answers NOT_CONFIGURED.
 [env.staging.vars]
 ENVIRONMENT = "staging"
+
+# Reconciler: releases reservations whose battle never started (src/index.ts `scheduled`).
+[triggers]
+crons = ["* * * * *"]

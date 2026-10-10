@@ -5,7 +5,9 @@ import {
   exampleContentMaps,
   type BattleContent,
   type BattleSetup,
+  type CaptureProfile,
   type MonsterInstance,
+  type RulesConfig,
   type SpeciesDefinition,
 } from "../src/index";
 
@@ -36,7 +38,10 @@ export function companion(id: string, speciesId: string, element: MonsterInstanc
     element,
     primaryStats: { STR: 18, VIT: 16, INT: 12, DEX: 14, AGI: 14, SPI: 14 },
     growthHistoryVersion: 1,
+    growthSeed: "seed:fixture",
     trainedSkillLevels: {},
+    skillMastery: 0,
+    rebirthChoices: {},
     bond: 0,
     originRecord: { kind: "starter", at: "2026-10-03T00:00:00Z" },
     ownershipVersion: 1,
@@ -69,4 +74,10 @@ export function baseSetup(over: Partial<BattleSetup> = {}): BattleSetup {
     bag: { "item:small_potion": 3, "item:armor_crab_capture": 2, "item:ember_fox_capture": 2 },
     ...over,
   };
+}
+
+/** Test-only: a copy of the rules with some capture profile fields replaced (fights pin it at start). */
+export function withCaptureProfile(r: RulesConfig, patch: Partial<CaptureProfile>): RulesConfig {
+  const cp = r.provisional.captureProfile;
+  return { ...r, provisional: { ...r.provisional, captureProfile: { ...cp, value: { ...cp.value, ...patch } } } } as RulesConfig;
 }

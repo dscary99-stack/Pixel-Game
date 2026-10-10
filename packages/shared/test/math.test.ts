@@ -50,12 +50,10 @@ describe("decision register in config", () => {
     expect(PRODUCTION_RULES.fixtureOverrides).toEqual([]);
   });
 
-  it("labels fixture overrides so production can refuse them", () => {
-    const r = withFixtureOverrides(rules, { fleeChance: 0.5 });
-    expect(r.unresolved.fleeChance.value).toBe(0.5);
-    expect(r.unresolved.fleeChance.note).toContain("TEST FIXTURE");
-    expect(r.fixtureOverrides).toEqual(["fleeChance"]);
-    expect(rules.unresolved.fleeChance.value).toBeNull();
+  it("has no OPEN rule left (Nut 2026-10-07), and a fixture can only name an OPEN rule", () => {
+    expect(Object.keys(RULES.unresolved)).toEqual([]);
+    expect(() => withFixtureOverrides(rules, { weeklyExpiredClaim: true as never })).toThrow(/Unknown unresolved rule/);
+    expect(withFixtureOverrides(rules, {}).fixtureOverrides).toEqual([]);
   });
 });
 

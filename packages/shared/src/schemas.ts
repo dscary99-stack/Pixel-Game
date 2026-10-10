@@ -4,6 +4,7 @@
  * Display names are never primary keys.
  */
 import { z } from "zod";
+import { STATUS_DEFINITIONS, STATUS_IDS } from "./status";
 import { RULES } from "./rules";
 
 const C = RULES.confirmed;
@@ -14,6 +15,7 @@ export type Element = z.infer<typeof ElementSchema>;
 export const RankSchema = z.enum(["NORMAL", "ELITE", "BOSS"]);
 export const ContentStatusSchema = z.enum(["draft", "validated", "published", "retired"]);
 export const ArchetypeSchema = z.enum(["tank", "physical", "magic", "support", "control"]);
+export type Archetype = z.infer<typeof ArchetypeSchema>;
 
 const id = (prefix: string) =>
   z.string().regex(new RegExp(`^${prefix}:[a-z0-9_]+$`), `expected id like "${prefix}:snake_case"`);
@@ -24,6 +26,7 @@ export const ItemId = id("item");
 export const SigilId = id("sigil");
 export const LootTableId = id("loot");
 export const EquipmentDefinitionId = id("equip");
+export const BossId = id("boss");
 
 const LocalizedName = z.object({ th: z.string().min(1), en: z.string().min(1).optional() }).strict();
 
@@ -48,19 +51,229 @@ const contentMeta = {
 
 // ---------------------------------------------------------------- skills
 
+/**
+ * A status a skill effect tries to put on its target (status.ts). Harmful statuses go with enemy-target
+ * effects and roll against resistance; helpful ones go with ally effects and use `chancePct` as is.
+ */
+export const StatusApplicationSchema = z
+  .object({
+    statusId: z.enum(STATUS_IDS),
+    /** The skill's own chance (Nut 2026-10-04: a status is not 100% unless the skill says so). */
+    chancePct: z.number().int().min(1).max(100),
+    /** The affected unit's own turns. */
+    turns: z.number().int().min(1).max(10),
+    stacks: z.number().int().min(1).max(5).optional(),
+    /** imbue / element_ward: the element. */
+    element: ElementSchema.optional(),
+    /** shield: its size as a % of the target's max HP. */
+    shieldPct: z.number().int().min(1).max(100).optional(),
+  })
+  .strict()
+  .superRefine((a, ctx) => {
+    if ((STATUS_DEFINITIONS[a.statusId].needsAmount === true) !== (a.shieldPct !== undefined)) {
+      ctx.addIssue({ code: "custom", message: `${a.statusId} ${a.shieldPct === undefined ? "needs" : "takes no"} shieldPct` });
+    }
+    if ((STATUS_DEFINITIONS[a.statusId].needsElement === true) !== (a.element !== undefined)) {
+      ctx.addIssue({ code: "custom", message: `${a.statusId} ${a.element === undefined ? "needs" : "takes no"} element` });
+    }
+  });
+export type StatusApplication = z.infer<typeof StatusApplicationSchema>;
+
+/**
+ * Where a later effect of a multi-effect skill lands (Nut 2026-10-09: later class skills reach several
+ * targets on both sides). The first effect always goes to the skill's own targets; each later one names
+ * its own: `primary` = the same targets as the first, `self`, `all_allies`, `lowest_ally` (lowest HP
+ * share on the caster's side), `all_enemies` (every enemy the skill's range reaches).
+ */
+export const EFFECT_TARGETS = ["primary", "self", "all_allies", "lowest_ally", "all_enemies"] as const;
+export const EffectTargetSchema = z.enum(EFFECT_TARGETS);
+export type EffectTarget = z.infer<typeof EffectTargetSchema>;
+
 export const DamageEffectSchema = z
   .object({
     kind: z.literal("damage"),
+    target: EffectTargetSchema.optional(),
+    /** Use the caster's own element instead of `element` (so a player's element choice shapes the skill). */
+    ownElement: z.literal(true).optional(),
     damageType: z.enum(["physical", "magic"]),
     coefficient: z.number().positive(),
     flat: z.number().min(0),
     element: ElementSchema,
+    // Optional primitives (docs/design/SKILL_PRIMITIVES_CATALOG.md). None needs a status or tick rule.
+    /** Ignore this % of the target's defense (capped by P04 armorPenetrationCapPct). */
+    penetrationPct: z.number().int().min(1).max(100).optional(),
+    /** Added to the hit chance before the clamp. */
+    accuracyBonusPct: z.number().int().min(1).max(100).optional(),
+    /** Added to the crit chance before the clamp. */
+    critBonusPct: z.number().int().min(1).max(100).optional(),
+    /** Extra damage % when the target's HP share before the hit is below `belowHpPct`. */
+    execute: z.object({ belowHpPct: z.number().int().min(1).max(99), bonusPct: z.number().int().min(1).max(200) }).strict().optional(),
+    /** The user heals this % of the damage dealt. */
+    lifestealPct: z.number().int().min(1).max(100).optional(),
+    /** The user loses this % of the damage dealt, never below 1 HP. */
+    recoilPct: z.number().int().min(1).max(100).optional(),
+    /** Tried on the target after a hit that lands. */
+    statuses: z.array(StatusApplicationSchema).max(3).optional(),
+    /** Extra damage % against a target with this status; `consume` removes the status with the hit. */
+    bonusVsStatus: z.object({ statusId: z.enum(STATUS_IDS), bonusPct: z.number().int().min(1).max(200), consume: z.boolean() }).strict().optional(),
   })
   .strict();
 
+export type DamageEffect = z.infer<typeof DamageEffectSchema>;
+
 export const HealEffectSchema = z
-  .object({ kind: z.literal("heal"), coefficient: z.number().positive(), flat: z.number().min(0) })
+  .object({
+    kind: z.literal("heal"),
+    target: EffectTargetSchema.optional(),
+    coefficient: z.number().positive(),
+    flat: z.number().min(0),
+    /** Also restores this much MP to each healed target. */
+    restoreMp: z.number().int().min(1).optional(),
+    statuses: z.array(StatusApplicationSchema).max(3).optional(),
+  })
   .strict();
+
+/** A skill whose whole effect is statuses: debuffs on an enemy (no hit roll) or buffs on an ally/self. */
+export const StatusEffectSchema = z
+  .object({
+    kind: z.literal("status"),
+    target: EffectTargetSchema.optional(),
+    statuses: z.array(StatusApplicationSchema).min(1).max(3),
+  })
+  .strict();
+
+/**
+ * Brings a fallen ally back (O15, Nut 2026-10-07) with this % of its max HP. Only after the ally has
+ * been down 1 turn (from the next round); no limit per fight.
+ */
+export const ReviveEffectSchema = z
+  .object({
+    kind: z.literal("revive"),
+    hpPct: z.number().int().min(1).max(100),
+  })
+  .strict();
+
+// ---------------------------------------------------------------- passives (catalog §4)
+
+/** Who a passive's effect lands on: the owner, the other unit of the event, or the owner's side. */
+export const PassiveTargetSchema = z.enum(["self", "other", "allies", "lowest_ally"]);
+export type PassiveTarget = z.infer<typeof PassiveTargetSchema>;
+
+export const PassiveActionSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("status"), target: PassiveTargetSchema, statuses: z.array(StatusApplicationSchema).min(1).max(3) }).strict(),
+  /** Heals this % of the target's max HP. */
+  z.object({ kind: z.literal("heal"), target: PassiveTargetSchema, pctMaxHp: z.number().int().min(1).max(50) }).strict(),
+  z.object({ kind: z.literal("restore_mp"), target: PassiveTargetSchema, amount: z.number().int().min(1).max(200) }).strict(),
+]);
+export type PassiveAction = z.infer<typeof PassiveActionSchema>;
+
+/**
+ * When a passive fires (catalog §4 triggers). "other" is the unit on the other end of the event: the
+ * target hit, the attacker, the unit knocked out, the ally fallen or protected, the skill's target.
+ */
+export const PASSIVE_EVENTS = [
+  "battle_start",
+  "turn_start",
+  "turn_end",
+  "dealt_damage",
+  "took_damage",
+  "kill",
+  "ally_down",
+  "hp_below",
+  "protected_ally",
+  "used_skill",
+  /** A shield this unit put on someone ran out of time without breaking (other = the shielded unit). */
+  "shield_expired",
+  /** This unit used an item from the combat bag (other = the item's target). */
+  "used_item",
+  /** This unit changed place with the move command. */
+  "moved",
+  /** A harmful status from the other side landed on this unit (other = who put it on). */
+  "debuffed",
+] as const;
+export type PassiveEvent = (typeof PASSIVE_EVENTS)[number];
+
+export const PassiveTriggerSchema = z
+  .object({
+    on: z.enum(PASSIVE_EVENTS),
+    /** dealt_damage / took_damage / kill: only from basic attacks, or only from skills. */
+    action: z.enum(["attack", "skill"]).optional(),
+    /** The other unit had this status at the moment of the event (e.g. a kill on a marked target). */
+    otherHas: z.enum(STATUS_IDS).optional(),
+    /** used_skill: only skills that apply this status (e.g. cleanse). */
+    skillApplies: z.enum(STATUS_IDS).optional(),
+    /** hp_below: fires when the owner's HP drops under this % of max. */
+    hpBelowPct: z.number().int().min(1).max(99).optional(),
+    chancePct: z.number().int().min(1).max(100).default(100),
+    oncePerBattle: z.boolean().default(false),
+    then: z.array(PassiveActionSchema).min(1).max(3),
+  })
+  .strict()
+  .superRefine((t, ctx) => {
+    if ((t.on === "hp_below") !== (t.hpBelowPct !== undefined)) ctx.addIssue({ code: "custom", message: "hpBelowPct goes with hp_below only" });
+    if (t.skillApplies !== undefined && t.on !== "used_skill") ctx.addIssue({ code: "custom", message: "skillApplies goes with used_skill only" });
+    const noOther = t.on === "battle_start" || t.on === "turn_start" || t.on === "turn_end" || t.on === "hp_below" || t.on === "moved";
+    if (noOther && t.otherHas !== undefined) ctx.addIssue({ code: "custom", message: `${t.on} has no other unit` });
+    // Harmful statuses only on an enemy "other"; helpful ones, heals and MP only on the owner's side.
+    // used_skill's other can be either side: the kernel checks that one when it fires.
+    const enemyOther = t.on === "dealt_damage" || t.on === "took_damage" || t.on === "kill" || t.on === "debuffed";
+    const mayBeEnemy = enemyOther || t.on === "used_skill";
+    for (const a of t.then) {
+      if (noOther && a.target === "other") ctx.addIssue({ code: "custom", message: `${t.on} has no other unit to target` });
+      const harmfulList = a.kind === "status" ? a.statuses.map((x) => STATUS_DEFINITIONS[x.statusId].harmful) : [false];
+      if (harmfulList.some((h) => h) && harmfulList.some((h) => !h)) ctx.addIssue({ code: "custom", message: "one action cannot mix harmful and helpful statuses" });
+      if (harmfulList[0] === true && !(a.target === "other" && mayBeEnemy)) ctx.addIssue({ code: "custom", message: "harmful statuses only go on the enemy of the event" });
+      if (harmfulList[0] === false && a.target === "other" && enemyOther) ctx.addIssue({ code: "custom", message: "helpful effects never go on an enemy" });
+      if (a.kind === "status") {
+        for (const x of a.statuses) if ((x.stacks ?? 1) > STATUS_DEFINITIONS[x.statusId].maxStacks) ctx.addIssue({ code: "custom", message: `${x.statusId} stacks above its cap` });
+      }
+    }
+  });
+export type PassiveTrigger = z.infer<typeof PassiveTriggerSchema>;
+
+/** Always-on changes while the passive's owner fights. */
+export const PassiveModifierSchema = z.discriminatedUnion("kind", [
+  /** More damage against a target with this status (e.g. the fox Sigil idea: burned targets). */
+  z.object({ kind: z.literal("damage_vs_status"), statusId: z.enum(STATUS_IDS), bonusPct: z.number().int().min(1).max(100) }).strict(),
+  /** While guarding, takes this % less again (the crab Sigil idea: guard, then a smaller hit). */
+  z.object({ kind: z.literal("guard_reduction"), reductionPct: z.number().int().min(1).max(50) }).strict(),
+  /** Heals more on a target below this HP share (the snail Sigil idea). */
+  z.object({ kind: z.literal("heal_low_hp"), belowHpPct: z.number().int().min(1).max(99), bonusPct: z.number().int().min(1).max(100) }).strict(),
+]);
+export type PassiveModifier = z.infer<typeof PassiveModifierSchema>;
+
+export const PassiveSchema = z
+  .object({
+    triggers: z.array(PassiveTriggerSchema).max(3).default([]),
+    modifiers: z.array(PassiveModifierSchema).max(3).default([]),
+  })
+  .strict();
+export type Passive = z.infer<typeof PassiveSchema>;
+
+/**
+ * What one skill level adds (chapter 04 §5; Nut 2026-10-03: "หลากหลาย ขึ้นอยู่กับ skill ของแต่ละตัว").
+ * power: +% on the coefficient; mp_cost / cooldown: change (negative = cheaper / faster);
+ * extra_targets: more targets of the same side, each resolved on its own.
+ */
+export const SkillLevelStepSchema = z
+  .object({
+    atLevel: z.number().int().min(2).max(10),
+    /** status_chance: +points on every status chance of the skill; status_turns: +turns on each. */
+    kind: z.enum(["power", "mp_cost", "cooldown", "extra_targets", "status_chance", "status_turns"]),
+    value: z.number().int(),
+  })
+  .strict();
+export type SkillLevelStep = z.infer<typeof SkillLevelStepSchema>;
+
+/**
+ * Who a skill can aim at. Area skills (Nut 2026-10-04 "ทำระบบ AOE ได้เลย") hit every unit they
+ * cover, each with its own hit and crit roll: all enemies in reach, the row of the chosen enemy, or the
+ * whole own side. A melee area skill reaches the front row only while it stands (same reach rule).
+ */
+export const TARGET_RULES = ["single_enemy", "all_enemies", "enemy_row", "single_ally", "all_allies", "self", "none"] as const;
+export type TargetRule = (typeof TARGET_RULES)[number];
+export const targetsEnemies = (r: TargetRule) => r === "single_enemy" || r === "all_enemies" || r === "enemy_row";
+export const isAreaRule = (r: TargetRule) => r === "all_enemies" || r === "enemy_row" || r === "all_allies";
 
 export const SkillDefinitionSchema = z
   .object({
@@ -69,19 +282,72 @@ export const SkillDefinitionSchema = z
     name: LocalizedName,
     kind: z.enum(["active", "passive"]),
     ownerKind: z.enum(["player", "companion", "enemy"]),
-    /** Phase A supports single-target actives only; AoE waits for O15 (evade vs AoE). */
-    targetRule: z.enum(["single_enemy", "single_ally", "self", "none"]),
+    targetRule: z.enum(TARGET_RULES),
     range: z.enum(["melee", "ranged"]),
     mpCost: z.number().int().min(0),
     /** Owner turns before reuse. Tick point is O15. */
     cooldown: z.number().int().min(0),
-    effectSequence: z.array(z.discriminatedUnion("kind", [DamageEffectSchema, HealEffectSchema])),
+    effectSequence: z.array(z.discriminatedUnion("kind", [DamageEffectSchema, HealEffectSchema, StatusEffectSchema, ReviveEffectSchema])),
     tags: z.array(z.string()),
+    /** One step per level 2–10 when present; absent = the default power step (rules). */
+    levelSteps: z.array(SkillLevelStepSchema).optional(),
+    /** A Rebirth variant of this base skill (chapter 04 §7): same role, played differently. */
+    variantOf: SkillId.optional(),
+    /** What a passive or innate does (catalog §4); absent = not built yet (waits for shield etc.). */
+    passive: PassiveSchema.optional(),
   })
   .strict()
   .superRefine((s, ctx) => {
+    if (s.passive !== undefined && s.kind !== "passive") ctx.addIssue({ code: "custom", message: "only passive skills carry passive effects" });
+    if (s.levelSteps !== undefined) {
+      const levels = s.levelSteps.map((x) => x.atLevel).sort((a, b) => a - b);
+      if (levels.join(",") !== "2,3,4,5,6,7,8,9,10") ctx.addIssue({ code: "custom", message: "levelSteps needs exactly one step for each level 2–10" });
+      const sum = (k: SkillLevelStep["kind"]) => s.levelSteps!.filter((x) => x.kind === k).reduce((n, x) => n + x.value, 0);
+      if (s.mpCost + sum("mp_cost") < 0) ctx.addIssue({ code: "custom", message: "levelSteps would take MP cost below 0" });
+      if (s.cooldown + sum("cooldown") < 0) ctx.addIssue({ code: "custom", message: "levelSteps would take cooldown below 0" });
+      if (s.cooldown + sum("cooldown") === 1) ctx.addIssue({ code: "custom", message: "levelSteps would leave cooldown 1 (ready every turn; use 0)" });
+      for (const x of s.levelSteps) {
+        const adds = x.kind !== "mp_cost" && x.kind !== "cooldown";
+        const ok = adds ? x.value > 0 : x.value < 0;
+        if (!ok) ctx.addIssue({ code: "custom", message: `level ${x.atLevel} ${x.kind} step must ${adds ? "add" : "reduce"}` });
+      }
+      if (sum("extra_targets") > 4) ctx.addIssue({ code: "custom", message: "at most 4 extra targets" });
+    }
+    // Multi-effect skills (up to 3): the first effect is the skill's own; later ones name their target.
+    if (s.effectSequence.length > 3) ctx.addIssue({ code: "custom", message: "at most 3 effects per skill" });
+    s.effectSequence.forEach((e, i) => {
+      const t = "target" in e ? e.target : undefined;
+      if (i === 0 && t !== undefined) ctx.addIssue({ code: "custom", message: "the first effect goes to the skill's own targets (no target)" });
+      if (i > 0 && t === undefined) ctx.addIssue({ code: "custom", message: `effect ${i + 1} needs a target` });
+      if (e.kind === "revive" && s.effectSequence.length > 1) ctx.addIssue({ code: "custom", message: "a revive skill does only that" });
+      if (i === 0 || t === undefined) return;
+      const onEnemy = t === "primary" ? targetsEnemies(s.targetRule) : t === "all_enemies";
+      if (e.kind === "damage" && !onEnemy) ctx.addIssue({ code: "custom", message: `effect ${i + 1}: damage goes on enemies` });
+      if (e.kind === "heal" && onEnemy) ctx.addIssue({ code: "custom", message: `effect ${i + 1}: heals go on allies` });
+      if (e.kind === "status") {
+        const harmful = e.statuses.map((x) => STATUS_DEFINITIONS[x.statusId].harmful);
+        if (harmful.some((h) => h !== onEnemy)) ctx.addIssue({ code: "custom", message: `effect ${i + 1}: harmful statuses on enemies, helpful ones on allies` });
+      }
+    });
+    // Cooldown N: used on the owner's turn T, ready again on its turn T+N (O15), so 1 would be every turn.
+    if (s.cooldown === 1) ctx.addIssue({ code: "custom", message: "cooldown 1 is ready every turn; use 0 or 2+" });
     if (s.kind === "passive" && (s.effectSequence.length > 0 || s.mpCost > 0)) {
       ctx.addIssue({ code: "custom", message: "passive skills have no direct effect sequence or MP cost in Phase A" });
+    }
+    for (const e of s.effectSequence) {
+      // Later effects aimed elsewhere were checked above against their own side.
+      if ("target" in e && e.target !== undefined && e.target !== "primary") continue;
+      const onEnemy = targetsEnemies(s.targetRule);
+      if (s.kind === "active" && e.kind === "damage" && !onEnemy) ctx.addIssue({ code: "custom", message: "damage skills aim at enemies" });
+      if (s.kind === "active" && e.kind === "heal" && onEnemy) ctx.addIssue({ code: "custom", message: "heal skills aim at allies" });
+      if (s.kind === "active" && e.kind === "revive" && s.targetRule !== "single_ally") ctx.addIssue({ code: "custom", message: "revive skills aim at one ally" });
+      if (s.kind === "active" && s.targetRule === "none") ctx.addIssue({ code: "custom", message: "an active skill needs a target rule" });
+      for (const a of ("statuses" in e ? e.statuses : undefined) ?? []) {
+        if (STATUS_DEFINITIONS[a.statusId].harmful !== onEnemy) {
+          ctx.addIssue({ code: "custom", message: `${a.statusId} is ${onEnemy ? "helpful" : "harmful"} and cannot go on ${onEnemy ? "an enemy" : "an ally"}` });
+        }
+        if ((a.stacks ?? 1) > STATUS_DEFINITIONS[a.statusId].maxStacks) ctx.addIssue({ code: "custom", message: `${a.statusId} stacks above its cap` });
+      }
     }
     if (s.kind === "active" && s.effectSequence.length === 0) {
       ctx.addIssue({ code: "custom", message: "active skill needs at least one effect" });
@@ -90,6 +356,29 @@ export const SkillDefinitionSchema = z
 export type SkillDefinition = z.infer<typeof SkillDefinitionSchema>;
 
 // ---------------------------------------------------------------- species
+
+/** One Rebirth stage's two branches (chapter 04 §7): R1 a skill, R2 the innate, R3 another skill. */
+export const RebirthVariantSchema = z
+  .object({
+    stage: z.number().int().min(1).max(3),
+    replaces: SkillId,
+    options: z.array(z.object({ branch: z.enum(["A", "B"]), skillId: SkillId }).strict()).length(2),
+  })
+  .strict();
+export type RebirthVariant = z.infer<typeof RebirthVariantSchema>;
+export type RebirthBranch = "A" | "B";
+
+/** The stage-3 look (Nut 2026-10-03: with an effect). `effect` is an art key the client draws. */
+export const RebirthCosmeticSchema = z
+  .object({
+    id: z.string().min(1),
+    name: LocalizedName,
+    effect: z.enum(["aura", "sparkle", "flame", "ripple", "leaf"]),
+    /** #rrggbb tint for the effect. */
+    color: z.string().regex(/^#[0-9a-f]{6}$/),
+  })
+  .strict();
+export type RebirthCosmetic = z.infer<typeof RebirthCosmeticSchema>;
 
 export const SpeciesDefinitionSchema = z
   .object({
@@ -105,8 +394,10 @@ export const SpeciesDefinitionSchema = z
     skillIds: z.array(SkillId).length(C.speciesSkillCount.value),
     innatePassiveId: SkillId,
     captureItemId: ItemId,
-    /** Base capture rate before HP/status/item factors (O07 table still open). */
+    /** Base capture rate before HP/status/item factors (capture.ts, P18). */
     captureBaseRate: z.number().min(0).max(1),
+    /** This monster's flee value in % (O15, P19); without it the rank default applies. 0 = cannot be fled from. */
+    fleeBasePct: z.number().int().min(0).max(100).optional(),
     lootTableId: LootTableId,
     sigilId: SigilId,
     petEquipmentPoolId: z.string().min(1),
@@ -114,9 +405,127 @@ export const SpeciesDefinitionSchema = z
     /** Wild combat stat block at fixedWildLevel. Prototype numbers, not balance targets. */
     wildPrimaryStats: PrimaryStatsSchema,
     basicAttackRange: z.enum(["melee", "ranged"]),
+    /** Rebirth variants, one entry per stage that has them (validator checks the kit rules). */
+    rebirthVariants: z.array(RebirthVariantSchema).max(3).optional(),
+    rebirthCosmetic: RebirthCosmeticSchema.optional(),
+    /** Wild bosses only: actions per round (chapter 03 exception). Never used for companions. */
+    bossActionsPerRound: z.number().int().min(2).max(RULES.provisional.bossActions.value.maxPerRound).optional(),
+  })
+  .strict()
+  .superRefine((s, ctx) => {
+    if (s.bossActionsPerRound !== undefined && s.rank !== "BOSS") {
+      ctx.addIssue({ code: "custom", path: ["bossActionsPerRound"], message: "only BOSS species act more than once a round" });
+    }
+  });
+export type SpeciesDefinition = z.infer<typeof SpeciesDefinitionSchema>;
+
+// ---------------------------------------------------------------- bosses (chapter 07 §5, P17)
+
+/** What moves a boss into a phase. Any one of a phase's triggers is enough. */
+export const BossPhaseTriggerSchema = z.discriminatedUnion("kind", [
+  /** The boss's HP share drops below this %. */
+  z.object({ kind: z.literal("hp_below"), pct: z.number().int().min(1).max(99) }).strict(),
+  /** A shield on the boss was broken by damage (the crystal shell). */
+  z.object({ kind: z.literal("shield_broken") }).strict(),
+  /** One of the boss's parts was broken (BossPartSchema). */
+  z.object({ kind: z.literal("part_broken"), partId: z.string().regex(/^[a-z_]{1,32}$/) }).strict(),
+]);
+
+/**
+ * A boss part (chapter 07 §5): a separate enemy unit that never acts and gives the boss an effect while
+ * it stands. armor: the boss takes `pct`% less damage; regen: the boss heals `pct`% of max HP at the
+ * start of each round. Breaking it ends the effect and can start a phase (`part_broken`). Parts give no
+ * EXP or loot, cannot be captured, and fall with the boss. HP is `hpPct`% of the boss's max HP.
+ */
+export const BossPartSchema = z
+  .object({
+    id: z.string().regex(/^[a-z_]{1,32}$/),
+    name: LocalizedName,
+    row: z.enum(["front", "back"]),
+    effect: z.enum(["armor", "regen"]),
+    pct: z.number().int().min(1).max(90),
+    hpPct: z.number().int().min(5).max(100),
   })
   .strict();
-export type SpeciesDefinition = z.infer<typeof SpeciesDefinitionSchema>;
+export type BossPart = z.infer<typeof BossPartSchema>;
+
+/**
+ * Minions a phase calls in (chapter 07 §5): on entering the phase and then every `everyRounds` rounds,
+ * each listed monster takes a free cell of its row, at most `maxPerFight` over the whole fight (no
+ * unbounded reward from resummons: summoned minions give no EXP or loot) and never past 10 enemies.
+ */
+export const BossSummonSchema = z
+  .object({
+    everyRounds: z.number().int().min(2).max(10),
+    adds: z.array(z.object({ speciesId: SpeciesId, element: ElementSchema, row: z.enum(["front", "back"]) }).strict()).min(1).max(4),
+    maxPerFight: z.number().int().min(1).max(20),
+  })
+  .strict();
+export type BossSummon = z.infer<typeof BossSummonSchema>;
+
+/**
+ * A heavy move the boss warns about at the start of a round and uses on its first action of the next
+ * round, so every unit gets a turn to answer it (chapter 07 §5: never warn and fire before anyone can
+ * respond). `hint` tells the player what answers it.
+ */
+export const BossTelegraphSchema = z
+  .object({ skillId: SkillId, everyRounds: z.number().int().min(2).max(10), hint: LocalizedName })
+  .strict();
+
+export const BossPhaseSchema = z
+  .object({
+    id: z.string().min(1),
+    name: LocalizedName,
+    /** Empty for the first phase (the fight starts in it); later phases need at least one trigger. */
+    enterWhen: z.array(BossPhaseTriggerSchema).max(3),
+    /** Put on the boss when the phase starts; they cannot be resisted. */
+    onEnter: z.array(StatusApplicationSchema).max(4),
+    /** Taken off the boss when the phase starts. */
+    removeStatuses: z.array(z.enum(STATUS_IDS)).max(4),
+    telegraph: BossTelegraphSchema.optional(),
+    /** In this phase the boss can be captured once its HP share is below this %. */
+    captureBelowHpPct: z.number().int().min(1).max(100).optional(),
+    /** Minions called in during this phase (not in the first phase: the fight starts with `adds`). */
+    summon: BossSummonSchema.optional(),
+  })
+  .strict();
+export type BossPhase = z.infer<typeof BossPhaseSchema>;
+
+export const BossDefinitionSchema = z
+  .object({
+    id: BossId,
+    ...contentMeta,
+    name: LocalizedName,
+    speciesId: SpeciesId,
+    element: ElementSchema,
+    /** Wild only: the boss's max HP is its species' HP times this. A captured boss never has it (chapter 07 §5). */
+    hpMultiplier: z.number().min(1).max(20),
+    /** Monsters that start the fight with it; boss + adds ≤ 10 (C05). Adds without loot give EXP only. */
+    adds: z.array(z.object({ speciesId: SpeciesId, element: ElementSchema, row: z.enum(["front", "back"]), lootEligible: z.boolean() }).strict()).max(9),
+    /** Early phase teaches the pattern, later ones change it (chapter 07 §5: a low boss needs 2 phases). */
+    phases: z.array(BossPhaseSchema).min(1).max(3),
+    /** Parts that stand beside the boss (BossPartSchema); boss + adds + parts ≤ 10 (C05). */
+    parts: z.array(BossPartSchema).max(3).optional(),
+    /** The boss's own loot table instead of its species' (tower guardians with rare items); adds keep theirs. */
+    lootTableId: LootTableId.optional(),
+  })
+  .strict()
+  .superRefine((b, ctx) => {
+    const parts = b.parts ?? [];
+    if (1 + b.adds.length + parts.length > 10) ctx.addIssue({ code: "custom", path: ["parts"], message: "boss + adds + parts must be at most 10 (C05)" });
+    if (new Set(parts.map((p) => p.id)).size !== parts.length) ctx.addIssue({ code: "custom", path: ["parts"], message: "part ids must differ" });
+    b.phases.forEach((ph, i) => {
+      for (const t of ph.enterWhen) if (t.kind === "part_broken" && !parts.some((p) => p.id === t.partId)) ctx.addIssue({ code: "custom", path: ["phases", i, "enterWhen"], message: `no part ${t.partId}` });
+      if (i === 0 && ph.summon !== undefined) ctx.addIssue({ code: "custom", path: ["phases", 0, "summon"], message: "the first phase starts with adds; summons come in later phases" });
+      if ((i === 0) !== (ph.enterWhen.length === 0)) {
+        ctx.addIssue({ code: "custom", path: ["phases", i, "enterWhen"], message: i === 0 ? "the first phase starts the fight and has no trigger" : "a later phase needs a trigger" });
+      }
+    });
+    if (!b.phases.some((ph) => ph.captureBelowHpPct !== undefined)) {
+      ctx.addIssue({ code: "custom", path: ["phases"], message: "every boss has a capture path (C08): some phase needs captureBelowHpPct" });
+    }
+  });
+export type BossDefinition = z.infer<typeof BossDefinitionSchema>;
 
 /** A map spawn entry. `.strict()` rejects any wildLevel override (C29, chapter 12 validator 6). */
 export const SpawnEntrySchema = z
@@ -140,16 +549,31 @@ export const MonsterInstanceSchema = z
     xp: z.number().int().min(0),
     rebirthStage: z.number().int().min(0),
     element: ElementSchema,
-    /** Server-rolled growth results; the client never picks a seed. */
+    /** Server-rolled growth results at the current level; the client never picks a seed. */
     primaryStats: PrimaryStatsSchema,
+    /** 1 = flat start stats (before growth); 2 = stats from growthSeed (companion-growth.ts). */
     growthHistoryVersion: z.number().int().min(1),
+    /** Picked by the server when the companion is created; the whole growth path follows from it. */
+    growthSeed: z.string().min(1),
+    /** Branch picked per Rebirth stage that has variants ("1" → "A"); changeable at the NPC for coins. */
+    rebirthChoices: z.partialRecord(z.enum(["1", "2", "3"]), z.enum(["A", "B"])),
+    /** Trained level per skill (3 skills + innate); missing = 1. A fight caps it by level (skill-training.ts). */
     trainedSkillLevels: z.record(SkillId, z.number().int().min(1).max(10)),
+    /** Unspent mastery from won fights, spent on the skill the player picks (chapter 04 §5). */
+    skillMastery: z.number().int().min(0),
     bond: z.number().int().min(0).max(1000),
     originRecord: z
-      .object({ kind: z.enum(["capture", "starter", "event"]), battleId: z.string().optional(), at: z.string() })
+      .object({ kind: z.enum(["capture", "starter", "event", "secret_reward"]), battleId: z.string().optional(), at: z.string() })
       .strict(),
     ownershipVersion: z.number().int().min(1),
     lockState: z.enum(["free", "in_battle", "in_escrow"]),
+    /** Cosmetic name the owner picked (disposal.ts); several companions may share one. */
+    nickname: z.string().min(1).optional(),
+    /** Owner-set guard: no release (or future auto action) touches it. */
+    protected: z.boolean().optional(),
+    /** ห้ามขาย / ห้ามเทรด on this one companion (market.ts), e.g. a secret-quest reward. */
+    noSell: z.boolean().optional(),
+    noTrade: z.boolean().optional(),
   })
   .strict();
 export type MonsterInstance = z.infer<typeof MonsterInstanceSchema>;
@@ -161,21 +585,56 @@ export const ItemDefinitionSchema = z
     id: ItemId,
     ...contentMeta,
     name: LocalizedName,
-    kind: z.enum(["heal", "capture", "support", "attack", "revive", "material", "sigil"]),
+    kind: z.enum(["heal", "mana", "capture", "support", "attack", "revive", "material", "sigil", "reset"]),
+    /** reset (Nut 2026-10-09): what using it outside a fight puts back — stat points or skill points. */
+    resets: z.enum(["stats", "skills"]).optional(),
     /** heal: flat HP restored. */
     healHp: z.number().int().min(0).optional(),
+    /** mana: flat MP restored. */
+    restoreMp: z.number().int().min(1).optional(),
+    /** support: helpful statuses put on the ally it is used on (buffs, cleanse); each rolls its own chance. */
+    statuses: z.array(StatusApplicationSchema).min(1).max(3).optional(),
+    /** revive: % of max HP the fallen ally comes back with (O15). */
+    reviveHpPct: z.number().int().min(1).max(100).optional(),
     /** capture: the one species this item captures (species-specific capture items, chapter 04 §3). */
     captureSpeciesId: SpeciesId.optional(),
     captureQuality: z.number().positive().optional(),
+    /** sigil: the Sigil this item installs (chapter 05 §4). */
+    sigilId: SigilId.optional(),
+    /** Coins an NPC pays per unit (chapter 06); 0 = the NPC does not buy it. */
     vendorPrice: z.number().int().min(0),
+    /** ห้ามขาย (Nut 2026-10-07): never on the World Market and never sold to an NPC. */
+    noSell: z.boolean().optional(),
+    /** ห้ามเทรด (Nut 2026-10-07): never given in a direct trade between players. */
+    noTrade: z.boolean().optional(),
+    /** ห้ามฝากคลัง (Nut 2026-10-08): never put into the account vault. */
+    noStore: z.boolean().optional(),
   })
   .strict()
   .superRefine((it, ctx) => {
     if (it.kind === "capture" && (it.captureSpeciesId === undefined || it.captureQuality === undefined)) {
       ctx.addIssue({ code: "custom", message: "capture item needs captureSpeciesId and captureQuality" });
     }
+    if ((it.kind === "sigil") !== (it.sigilId !== undefined)) {
+      ctx.addIssue({ code: "custom", message: "sigil items, and only they, name a sigilId" });
+    }
     if (it.kind === "heal" && it.healHp === undefined) {
       ctx.addIssue({ code: "custom", message: "heal item needs healHp" });
+    }
+    if ((it.kind === "reset") !== (it.resets !== undefined)) {
+      ctx.addIssue({ code: "custom", message: "reset items, and only they, say what they reset" });
+    }
+    if ((it.kind === "revive") !== (it.reviveHpPct !== undefined)) {
+      ctx.addIssue({ code: "custom", message: "revive items, and only they, set reviveHpPct" });
+    }
+    if ((it.kind === "mana") !== (it.restoreMp !== undefined)) {
+      ctx.addIssue({ code: "custom", message: "mana items, and only they, set restoreMp" });
+    }
+    if ((it.kind === "support") !== (it.statuses !== undefined)) {
+      ctx.addIssue({ code: "custom", message: "support items, and only they, list statuses" });
+    }
+    if (it.statuses?.some((a) => STATUS_DEFINITIONS[a.statusId].harmful)) {
+      ctx.addIssue({ code: "custom", message: "support items only carry helpful statuses (they are used on allies)" });
     }
   });
 export type ItemDefinition = z.infer<typeof ItemDefinitionSchema>;
@@ -251,9 +710,25 @@ export const EquipmentDefinitionSchema = z
     maxSigilSlots: z.number().int().min(0),
     affixPoolId: z.string().min(1),
     visualSetId: z.string().min(1),
+    /** ห้ามขาย / ห้ามเทรด / ห้ามฝากคลัง for every piece of this kind (a single piece can also carry its own flags). */
+    noSell: z.boolean().optional(),
+    noTrade: z.boolean().optional(),
+    noStore: z.boolean().optional(),
+    /**
+     * Refining (refine.ts): the fixed cost level that prices refining this piece (server data, never
+     * the owner's level or a reduced requirement), and which base stats refining raises. A piece
+     * without refinable stats cannot be refined.
+     */
+    upgradeCostLevel: z.number().int().min(1).max(C.playerMaxLevel.value).optional(),
+    refinableStats: z.array(z.string()).optional(),
   })
   .strict()
   .superRefine((d, ctx) => {
+    if (d.refinableStats !== undefined && d.refinableStats.length > 0) {
+      if (d.upgradeCostLevel === undefined) ctx.addIssue({ code: "custom", message: "refinable gear needs upgradeCostLevel" });
+      for (const k of d.refinableStats) if (!(k in d.baseStats)) ctx.addIssue({ code: "custom", message: `refinable stat ${k} is not a base stat` });
+      if (new Set(d.refinableStats).size !== d.refinableStats.length) ctx.addIssue({ code: "custom", message: "a refinable stat is listed twice" });
+    }
     const isWeapon = d.category === "WEAPON";
     const cap = isWeapon ? C.maxSigilsPerWeapon.value : C.maxSigilsPerNonWeapon.value;
     if (d.maxSigilSlots > cap) {
@@ -271,13 +746,39 @@ export const EquipmentDefinitionSchema = z
   });
 export type EquipmentDefinition = z.infer<typeof EquipmentDefinitionSchema>;
 
+/** Gear rarity (chapter 05 §2): sets how many random affixes a piece carries. */
+export const RaritySchema = z.enum(["COMMON", "UNCOMMON", "RARE", "EPIC", "LEGENDARY"]);
+export type Rarity = z.infer<typeof RaritySchema>;
+
+/** One rolled option on a piece of gear. */
+export const RolledAffixSchema = z.object({ stat: z.string(), value: z.number() }).strict();
+export type RolledAffix = z.infer<typeof RolledAffixSchema>;
+
+/**
+ * Random option pool for a type of gear (chapter 05 §3): which stats can roll and their range at
+ * item Lv1 (scaled by the piece's level). Never drop, EXP or capture bonuses.
+ */
+export const AffixPoolSchema = z
+  .object({
+    id: z.string().regex(/^affix:[a-z0-9_]+$/),
+    ...contentMeta,
+    /** The material a paid reroll of this type of gear uses (chapter 05 §3). */
+    rerollItemId: ItemId,
+    entries: z
+      .array(z.object({ stat: z.string().min(1), weight: z.number().int().positive(), min: z.number().int().min(1), max: z.number().int().min(1) }).strict())
+      .min(1),
+  })
+  .strict();
+export type AffixPool = z.infer<typeof AffixPoolSchema>;
+
 export const EquipmentInstanceSchema = z
   .object({
     id: z.string().min(1),
     definitionId: EquipmentDefinitionId,
     ownerId: z.string().min(1),
     refineLevel: z.number().int().min(0).max(10),
-    rolledAffixes: z.array(z.object({ stat: z.string(), value: z.number() }).strict()).max(3),
+    rarity: RaritySchema.default("COMMON"),
+    rolledAffixes: z.array(RolledAffixSchema).max(3),
     /** Socket index -> installed sigil definition id, or null for empty. Duplicate ids allowed (C24). */
     sigilSockets: z.array(SigilId.nullable()),
     lockState: z.enum(["free", "in_battle", "in_escrow"]),
@@ -294,6 +795,14 @@ export const SigilDefinitionSchema = z
     equipGroups: z.array(SigilGroupSchema).min(1),
     effectIds: z.array(z.string()).min(1),
     stackingGroup: z.string().min(1),
+    /** Shown before the equipment's name once installed (Nut 2026-10-04), e.g. "กระดอง" ดาบไม้. */
+    prefix: LocalizedName,
+    /**
+     * What it does when worn (catalog §4 passive format). Copies of the same Sigil each add their %
+     * modifiers, multiplied together (Nut 2026-10-04: % on %); a trigger fires once per Sigil kind.
+     * Absent = no effect built yet.
+     */
+    effect: PassiveSchema.optional(),
     scope: z.enum(["global", "weapon_local"]),
     /** Probability 0–1 (0.00005 = 0.005%). Never a percent (chapter 12 §3). */
     baseDropProbability: z.number().min(C.sigilBaseDropRange.value[0]).max(C.sigilBaseDropRange.value[1]),
@@ -305,7 +814,8 @@ export type SigilDefinition = z.infer<typeof SigilDefinitionSchema>;
 
 export const LootEntrySchema = z
   .object({
-    itemId: ItemId,
+    /** A stackable item, or an equipment definition (each drop becomes its own instance). */
+    itemId: z.union([ItemId, EquipmentDefinitionId]),
     weight: z.number().int().positive(),
     minQty: z.number().int().min(1),
     maxQty: z.number().int().min(1),

@@ -2,52 +2,15 @@
  * Runs the D1 migration and RewardLedger SQL on node:sqlite through a tiny D1-shaped adapter.
  * This checks SQL and idempotency logic; it is not a substitute for testing on real D1.
  */
-import { readFileSync } from "node:fs";
-import { createRequire } from "node:module";
 import { beforeEach, describe, expect, it } from "vitest";
 import { PRODUCTION_RULES, type Entitlement } from "@pmrpg/shared";
-import { RewardLedger, type SqlBound, type SqlDb } from "../src/reward-ledger";
-
-const { DatabaseSync } = createRequire(import.meta.url)("node:sqlite") as typeof import("node:sqlite");
-type Db = InstanceType<typeof DatabaseSync>;
-
-class SqliteD1 implements SqlDb {
-  constructor(readonly db: Db) {}
-  prepare(sql: string) {
-    const db = this.db;
-    return {
-      bind(...values: unknown[]): SqlBound & { exec(): void } {
-        const params = values as (string | number | null)[];
-        return {
-          exec: () => void db.prepare(sql).run(...params),
-          run: async () => db.prepare(sql).run(...params),
-          first: async <T>() => (db.prepare(sql).get(...params) ?? null) as T | null,
-        };
-      },
-    };
-  }
-  /** D1 batch semantics: all statements in one transaction, rolled back on any error. */
-  async batch(statements: SqlBound[]): Promise<unknown[]> {
-    this.db.exec("BEGIN");
-    try {
-      for (const s of statements) (s as SqlBound & { exec(): void }).exec();
-      this.db.exec("COMMIT");
-    } catch (e) {
-      this.db.exec("ROLLBACK");
-      throw e;
-    }
-    return [];
-  }
-}
-
-const migration = readFileSync(new URL("../migrations/0001_phase_a_core.sql", import.meta.url), "utf8");
+import { RewardLedger } from "../src/reward-ledger";
+import { SqliteD1, freshDb, type Db } from "./sqlite-d1";
 
 let db: Db;
 let ledger: RewardLedger;
 beforeEach(() => {
-  db = new DatabaseSync(":memory:");
-  db.exec("PRAGMA foreign_keys = ON");
-  db.exec(migration);
+  db = freshDb();
   db.prepare("INSERT INTO accounts (id, created_at) VALUES (?, ?)").run("acct:1", "2026-10-03T00:00:00Z");
   ledger = new RewardLedger(new SqliteD1(db), PRODUCTION_RULES, () => "2026-10-03T00:00:00Z");
 });
