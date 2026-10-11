@@ -3,7 +3,7 @@
  * what it gets back. Identity uses the dev header until O11 picks auth.
  */
 import { authHeaders, type Identity } from "./identity";
-import type { AssetSnapshot, CharacterView, CreateCharacterRequest, MarketBrowseQuery, MarketKind, MarketView, TradeKind, TradeSide, TradeView, VaultView, MailView, DisposeQuote, EquipSlot, EquipmentView, FrontierView, PracticeView, ClassView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RefineResult, RolledAffix, SecretQuestView } from "@pmrpg/shared";
+import type { AssetSnapshot, CharacterView, CreateCharacterRequest, MarketBrowseQuery, MarketKind, MarketView, TradeKind, TradeSide, TradeView, VaultView, MailView, DisposeQuote, EquipSlot, EquipmentView, FrontierView, PracticeView, ClassView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RefineResult, RolledAffix, SecretQuestView, AttainmentView } from "@pmrpg/shared";
 
 export type StoredCompanion = MonsterInstance & { hp: number | null; mp: number | null };
 
@@ -171,6 +171,14 @@ export class CharacterApi {
   /** Secret quests: `{ locked: true }` and nothing else until the server opens the set. */
   secretQuests() {
     return this.call<SecretQuestView>("GET", "/character/secret-quests");
+  }
+  /** The attainment quest (เควสบรรลุ): its steps and whether the report can be made. */
+  attainment() {
+    return this.call<AttainmentView>("GET", "/character/attainment");
+  }
+  /** Report the finished attainment quest in town: opens the secret quests (one id per tap; a retry replays). */
+  attain() {
+    return this.call<{ replayed: boolean; view: SecretQuestView }>("POST", "/character/attainment", { operationId: opId("attain") });
   }
   /** Hand in materials for a deliver quest; one id per tap, so a retry never takes items twice. */
   secretDeliver(questId: string, quantity: number) {

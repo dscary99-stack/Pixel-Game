@@ -7,8 +7,8 @@
  *   missing key makes the roll throw, so character creation fails loudly instead of using a default.
  * - Write: insert-if-absent on the character id, in the create batch (CharacterStore.create) or, for
  *   characters made before this table, on first read. Replays and races never reroll.
- * - Read: `{ locked: true }` and nothing else until revealed. Only the awakening quest (not built) or
- *   the dev route reveals a set.
+ * - Read: `{ locked: true }` and nothing else until revealed. Only the attainment quest
+ *   (SecretProgressStore.attain) or the dev route reveals a set.
  */
 import {
   SecretQuestSetSchema,
@@ -122,7 +122,7 @@ export class SecretQuestStore {
     return row === null ? null : this.toView(row);
   }
 
-  /** DEV ONLY: reveal the set (the awakening quest will do this later) and return it. */
+  /** DEV ONLY: reveal the set (in play the attainment quest does this) and return it. */
   async devReveal(accountId: string): Promise<SecretQuestView | null> {
     const row = await this.ensure(accountId);
     if (row === null) return null;

@@ -10,6 +10,8 @@
  *   GET  /dev/inventory?battle=ID  (dev only) the caller's D1 item balances and that battle's reservation
  *   POST /dev/reconcile            (dev only) run the reconciler now, ignoring reservation age
  *   GET  /character                the caller's character, team and owned companions (404 NO_CHARACTER)
+ *   GET  /character/attainment     the attainment quest (เควสบรรลุ): its steps, whether the report can be made, whether the set is open
+ *   POST /character/attainment {operationId}  report the finished attainment quest in town: opens the secret quests (once; retry replays)
  *   GET  /character/secret-quests  { locked: true } until the set is unlocked (no count, no hints)
  *   POST /character/secret-quests/deliver {operationId, questId, quantity}  hand in materials (town)
  *   POST /character/secret-quests/claim {questId}  claim a finished quest's rewards (once)
@@ -104,6 +106,7 @@ import {
   GoogleLoginRequestSchema,
   RaritySchema,
   RolledAffixSchema,
+  attainmentView,
   type BattleSetup,
 } from "@pmrpg/shared";
 import { z } from "zod";
@@ -462,6 +465,12 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
       bag: await economyFor(env).balances(accountId),
     });
   }
+  if (request.method === "GET" && url.pathname === "/character/attainment") {
+    const c = await store.get(accountId);
+    const view = await secretQuestsFor(env).view(accountId);
+    if (c === null || view === null) return json(404, { error: "NO_CHARACTER" });
+    return json(200, attainmentView(rulesFor(env), c, !view.locked));
+  }
   if (request.method === "GET" && url.pathname === "/character/secret-quests") {
     const view = await secretQuestsFor(env).view(accountId);
     return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
@@ -481,6 +490,13 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
   }
   const body = await readJson(request);
   if (body === undefined) return json(400, { error: "INVALID_REQUEST" });
+  if (request.method === "POST" && url.pathname === "/character/attainment") {
+    // Roll the set first for a character made before secret quests existed.
+    if ((await secretQuestsFor(env).view(accountId)) === null) return json(404, { error: "NO_CHARACTER" });
+    const r = await secretProgressFor(env).attain(accountId, body);
+    if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : r.reason === "NO_CHARACTER" ? 404 : 409, { error: r.reason, message: r.message });
+    return json(200, { ...r, view: await secretQuestsFor(env).view(accountId) });
+  }
   if (request.method === "POST" && (url.pathname === "/character/secret-quests/deliver" || url.pathname === "/character/secret-quests/claim")) {
     const store = secretProgressFor(env);
     const r = url.pathname.endsWith("/deliver") ? await store.deliver(accountId, body) : await store.claim(accountId, body);

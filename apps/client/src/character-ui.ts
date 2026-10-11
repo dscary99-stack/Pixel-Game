@@ -1552,6 +1552,20 @@ export function secretQuestPanel(api: CharacterApi): Promise<void> {
         body.replaceChildren();
         if (v.locked) {
           body.append(el("div", { class: "pm-stats", "data-secret-locked": "" }, "ยังไม่มีใครรู้ว่าเส้นทางของเจ้าซ่อนอะไรไว้… (เปิดหลังเควสบรรลุ)"));
+          // The attainment quest's steps are public; the set itself stays hidden until the report.
+          const a = await api.attainment();
+          const steps = el("ul", { class: "pm-list", "data-attainment": "" });
+          for (const s of a.steps) steps.append(el("li", { "data-attainment-step": s.id }, `${s.done ? "✓" : "○"} ${s.th}`));
+          body.append(el("h3", {}, "เควสบรรลุ"), steps);
+          const go = el("button", { type: "button", class: "primary", "data-attain": "" }, a.ready ? "รายงานความสำเร็จ (ในเมือง) เปิดเควสลับ" : "ยังทำไม่ครบ");
+          go.disabled = !a.ready;
+          go.addEventListener("click", () =>
+            void act(async () => {
+              await api.attain();
+              return "บรรลุแล้ว! เควสลับของเจ้าปรากฏขึ้น";
+            }),
+          );
+          body.append(go);
           return;
         }
         const bag = bundle?.bag ?? {};

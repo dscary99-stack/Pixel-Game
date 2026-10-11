@@ -4,7 +4,8 @@
 // (Stonekin: hits taken) reached; a win short of the goal reads as lost. The claim in town pays
 // coins + materials once (no coins: refused; a retry replays; a second claim is refused), the evolved
 // passive replaces the race passive, and in the next fight the awakening gauge fills from real actions
-// until the character awakens (once a fight). Last, the path switch costs coins and replays on retry.
+// until the character awakens (once a fight). Then the path switch costs coins and replays on retry, and
+// the attainment quest (refused before ascending) opens the secret quests once.
 // Run `npm run db:migrate:local` and `npm run dev:server` first, then `npm run smoke:ascend`.
 import { PRODUCTION_RULES, SKILL_TREES, exampleContentMaps, unspentPoints, type PrimaryStats } from "@pmrpg/shared";
 import { AUTO_GAP_MS, api, autoToEnd, battleCall, connect, run, sleep, type Msg } from "./smoke-lib";
@@ -112,6 +113,10 @@ out.poor = (await claim(`asc_poor_${run}`, "a")).body.error;
 must(out.poor === "INSUFFICIENT_COINS", "no coins: refused", out.poor);
 for (let i = 0; i * 1_000_000 < asc.coins + asc.pathSwitchCoins; i++) await call("POST", "/dev/grant", { operationId: `coins_${run}_${i}`, coins: 1_000_000 });
 await call("POST", "/dev/grant", { operationId: `cores_${run}`, items: { "item:rift_core": 10 } });
+// The attainment quest (เควสบรรลุ): Lv200 and Class3 done, the awakening not yet; the secret set stays shut.
+const att0 = (await call("GET", "/character/attainment")).body;
+must(att0.steps.map((x: Msg) => x.done).join() === "true,true,false" && att0.ready === false, "attainment: two of three steps", att0);
+must((await call("POST", "/character/attainment", { operationId: `attain_early_${run}` })).body.error === "NOT_ASCENDED", "attainment: refused before ascending");
 const before = (await call("GET", "/character")).body.coins;
 const ok = await claim(`asc_claim_${run}`, "a");
 must(ok.status === 200 && ok.body.result.pathId === "ascend:stonekin:a" && ok.body.replayed === false, "claim", ok.body);
@@ -184,6 +189,14 @@ const s1 = await sw(`asc_sw1_${run}`, "a", "b");
 must(s1.status === 200 && s1.body.result.pathId === "ascend:stonekin:b" && s1.body.coins === ok.body.coins - asc.pathSwitchCoins, "switch", s1.body);
 must((await sw(`asc_sw1_${run}`, "a", "b")).body.replayed === true, "switch retry replays");
 must((await call("GET", "/character")).body.character.ascensionId === "ascend:stonekin:b", "path B now");
+// The attainment quest is done now: reporting in town opens the secret quests once.
+must((await call("GET", "/character/secret-quests")).body.locked === true, "secret quests still shut");
+must((await call("GET", "/character/attainment")).body.ready === true, "attainment ready");
+const att = await call("POST", "/character/attainment", { operationId: `attain_${run}` });
+must(att.status === 200 && att.body.replayed === false && att.body.view.locked === false && att.body.view.quests.length > 0, "attainment opens the secret quests", att.body);
+must((await call("POST", "/character/attainment", { operationId: `attain_${run}` })).body.replayed === true, "attainment retry replays");
+must((await call("POST", "/character/attainment", { operationId: `attain2_${run}` })).body.error === "ALREADY_OPEN", "attainment once");
+out.secretQuests = att.body.view.quests.length;
 out.claim = { pathId: ok.body.result.pathId, paid: ok.body.result.paid, switched: s1.body.result.pathId };
 T.sock.close();
 console.log(JSON.stringify(out, null, 1));

@@ -5,12 +5,18 @@
  *   source counts once however often it is replayed or raced. Fights: `Economy.settle` (source =
  *   battle id). Visits: walking into a map through a portal (source = map + visit window). Hand-ins:
  *   materials given at a town (source = the request's operationId).
- * - Everything counts only for a revealed set (the awakening quest; dev reveal for now).
+ * - Everything counts only for a revealed set: the attainment quest (`attain`, attainment.ts) opens it,
+ *   or the dev route.
  * - A claim takes the (character, quest) row under a token and grants the rolled rewards in the same
  *   batch: a title or fashion is recorded as owned, a companion and a piece of gear are created with
  *   ids made from the character and quest, so a raced or replayed claim grants once.
  */
 import {
+  AttainRequestSchema,
+  attainmentLevel,
+  attainmentMissing,
+  expForLevel,
+  levelForExp,
   SecretClaimRequestSchema,
   SecretDeliverRequestSchema,
   SecretQuestSchema,
@@ -83,7 +89,12 @@ export type SecretRejection =
   | "PAYLOAD_MISMATCH"
   | "NOT_DONE"
   | "NO_REWARD"
-  | "COMPANION_BOX_FULL";
+  | "COMPANION_BOX_FULL"
+  | "IN_BATTLE"
+  | "LEVEL_TOO_LOW"
+  | "NO_CLASS3"
+  | "NOT_ASCENDED"
+  | "ALREADY_OPEN";
 
 export interface DeliverResult {
   questId: string;
@@ -112,6 +123,10 @@ interface SetRow {
   quests_json: string;
 }
 
+export interface AttainResult {
+  opened: true;
+}
+
 export class SecretProgressStore {
   constructor(
     private readonly db: SqlDb,
@@ -120,6 +135,55 @@ export class SecretProgressStore {
     private readonly towns: readonly string[],
     private readonly now: () => string = () => new Date().toISOString(),
   ) {}
+
+  /**
+   * The attainment quest's report (attainment.ts): with Lv200, a Class3 and the divine awakening, in
+   * town and outside fights, the character's secret set opens. One conditional UPDATE does it, so two
+   * reports racing open it once; the same operation id replays, another finds it ALREADY_OPEN. The
+   * set row must exist (GET /character/secret-quests rolls it for older characters first).
+   */
+  async attain(accountId: string, raw: unknown): Promise<SecretResult<AttainResult>> {
+    const parsed = AttainRequestSchema.safeParse(raw);
+    if (!parsed.success) return reject("INVALID_REQUEST", parsed.error.issues.map((i) => i.message).join("; "));
+    const { operationId } = parsed.data;
+    const ch = await this.db.prepare(`SELECT id FROM characters WHERE account_id = ?`).bind(accountId).first<{ id: string }>();
+    if (ch === null) return reject("NO_CHARACTER", "create a character first");
+    const before = await this.revealRow(ch.id);
+    if (before === null) return reject("NO_CHARACTER", "the secret set is not rolled yet; open the secret quest page first");
+    if (before.reveal_operation_id === operationId) return { status: "done", replayed: true, result: { opened: true } };
+    if (before.revealed_at !== null) return reject("ALREADY_OPEN", "the secret quests are already open");
+    const towns = this.towns.map(() => "?").join(", ");
+    await this.db
+      .prepare(
+        `UPDATE character_secret_quests SET revealed_at = ?, reveal_operation_id = ?
+         WHERE character_id = ? AND revealed_at IS NULL
+           AND EXISTS (SELECT 1 FROM player_positions WHERE account_id = ? AND map_id IN (${towns}))
+           AND NOT EXISTS (SELECT 1 FROM battle_reservations WHERE account_id = ? AND status IN ('reserved', 'active'))
+           AND EXISTS (SELECT 1 FROM characters WHERE id = ? AND xp >= ? AND class3_id IS NOT NULL AND ascension_id IS NOT NULL)`,
+      )
+      .bind(this.now(), operationId, ch.id, accountId, ...this.towns, accountId, ch.id, expForLevel(this.rules, "player", attainmentLevel(this.rules)))
+      .run();
+    const after = await this.revealRow(ch.id);
+    if (after?.reveal_operation_id === operationId) return { status: "done", replayed: false, result: { opened: true } };
+    if (after?.revealed_at != null) return reject("ALREADY_OPEN", "the secret quests are already open");
+    const pos = await this.db.prepare(`SELECT map_id FROM player_positions WHERE account_id = ?`).bind(accountId).first<{ map_id: string }>();
+    if (pos === null || !this.towns.includes(pos.map_id)) return reject("NOT_IN_TOWN", "report in town");
+    const open = await this.db.prepare(`SELECT 1 AS x FROM battle_reservations WHERE account_id = ? AND status IN ('reserved', 'active')`).bind(accountId).first();
+    if (open !== null) return reject("IN_BATTLE", "finish your fight first");
+    const c = await this.db
+      .prepare(`SELECT xp, class3_id, ascension_id FROM characters WHERE id = ?`)
+      .bind(ch.id)
+      .first<{ xp: number; class3_id: string | null; ascension_id: string | null }>();
+    const missing = c === null ? "LEVEL_TOO_LOW" : attainmentMissing(this.rules, { level: levelForExp(this.rules, "player", c.xp), class3Id: c.class3_id, ascensionId: c.ascension_id });
+    return reject(missing ?? "ALREADY_OPEN", missing === null ? "the secret quests are already open" : `the attainment quest is not done (${missing})`);
+  }
+
+  private revealRow(characterId: string) {
+    return this.db
+      .prepare(`SELECT revealed_at, reveal_operation_id FROM character_secret_quests WHERE character_id = ?`)
+      .bind(characterId)
+      .first<{ revealed_at: string | null; reveal_operation_id: string | null }>();
+  }
 
   /** The account's revealed set, or why not. */
   private async revealed(accountId: string): Promise<{ characterId: string; quests: SecretQuest[] } | "NO_CHARACTER" | "LOCKED"> {
