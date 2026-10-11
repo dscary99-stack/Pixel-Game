@@ -23,6 +23,8 @@
  *   POST /character/equipment/affix/choose  keep the old or the new affix (operationId, equipmentId, rerollOperationId, keep)
  *   GET  /journal                  collection journal: species records, maps, Sigils, earned titles (chapter 09)
  *   PUT  /character/title          show an earned title or none ({ titleId })
+ *   GET  /character/fashion        owned fashion pieces (secret-quest rewards) and the worn looks per layer
+ *   PUT  /character/fashion        wear an owned piece on its layer, or take the layer off ({ layer, rewardId | null })
  *   GET  /town/orders              this week's NPC orders with fills left (chapter 09)
  *   POST /town/order               fill an NPC order once (operationId, orderId)
  *   POST /town/gear/dispose        sell or salvage free, unworn, Sigil-free, unprotected pieces in town (operationId, mode, equipmentIds, expected)
@@ -475,6 +477,11 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
     const view = await secretQuestsFor(env).view(accountId);
     return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
   }
+  if (request.method === "GET" && url.pathname === "/character/fashion") {
+    const c = await store.get(accountId);
+    if (c === null) return json(404, { error: "NO_CHARACTER" });
+    return json(200, { owned: await journalFor(env).ownedFashion(accountId), worn: c.fashion ?? [] });
+  }
   if (request.method === "GET" && url.pathname === "/journal") {
     const view = await journalFor(env).view(accountId);
     return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
@@ -531,6 +538,11 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
   if (request.method === "PUT" && url.pathname === "/character/companion/nickname") {
     const r = await disposalFor(env).nickname(accountId, body);
     if (!r.ok) return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });
+    return json(200, r);
+  }
+  if (request.method === "PUT" && url.pathname === "/character/fashion") {
+    const r = await journalFor(env).setFashion(accountId, body, exampleSecretRewardRegistry());
+    if (!r.ok) return json(r.code === "INVALID_REQUEST" ? 400 : r.code === "NO_CHARACTER" ? 404 : 409, { error: r.code, message: r.message });
     return json(200, r);
   }
   if (request.method === "PUT" && url.pathname === "/character/title") {

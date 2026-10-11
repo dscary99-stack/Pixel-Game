@@ -589,6 +589,7 @@ export class BattleScene extends Phaser.Scene {
           this.render(this.snap.state);
         });
         if (u.cosmetic !== undefined) this.drawCosmetic(body, u.cosmetic);
+        if (u.fashion !== undefined) this.drawFashion(body, u.fashion);
         const ring = this.add.rectangle(x, y, 60, bh + 12).setStrokeStyle(2, 0xffffff).setVisible(false);
         this.add.rectangle(x, y + bh / 2 + 8, 52, 6, 0x0b0a12);
         const hpBar = this.add.rectangle(x - 25, y + bh / 2 + 8, 50, 4, 0x6be36b).setOrigin(0, 0.5);
@@ -678,6 +679,23 @@ export class BattleScene extends Phaser.Scene {
    * Stage-3 Rebirth look (placeholder art until the pixel pass): a pulsing glow in the species' colour
    * plus a small looping effect, drawn where the unit stands when the fight opens.
    */
+  /**
+   * Worn fashion (fashion.ts), placeholder shapes until Codex's layers land (ART_HANDOFF §9): head a
+   * band on top, body the outline colour, back a panel behind, aura the same glow as a Rebirth look.
+   */
+  private drawFashion(body: Phaser.GameObjects.Rectangle, looks: { layer: string; effect: string; color: string }[]) {
+    for (const f of looks) {
+      const color = Number.parseInt(f.color.slice(1), 16);
+      if (f.layer === "aura") this.drawCosmetic(body, f);
+      else if (f.layer === "body") body.setStrokeStyle(3, color);
+      else if (f.layer === "head") this.add.rectangle(body.x, body.y - body.height / 2 + 4, 34, 8, color).setStrokeStyle(1, 0x0b0a12);
+      else if (f.layer === "back") {
+        const cape = this.add.rectangle(body.x - 16, body.y + 4, 24, body.height * 0.9, color, 0.9);
+        this.children.moveBelow(cape, body);
+      }
+    }
+  }
+
   private drawCosmetic(body: Phaser.GameObjects.Rectangle, c: { effect: string; color: string }) {
     const color = Number.parseInt(c.color.slice(1), 16);
     // Same depth as the body but drawn just under it, so the field background stays behind both.

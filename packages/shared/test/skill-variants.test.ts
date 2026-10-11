@@ -49,6 +49,20 @@ describe("Rebirth variants in the kit (chapter 04 §7)", () => {
     expect(kit(1, 200)[2]).toBe("skill:fox_consume_mark");
   });
 
+  it("a secret-quest companion fights with its own innate, at the species innate's trained level; an unlocked Rebirth variant still wins", () => {
+    const own = c.species.get("species:armor_crab")!.innatePassiveId;
+    const origin = { kind: "secret_reward" as const, at: "2026-10-11T00:00:00Z", rewardId: "srw:x", variantId: "v1", innateId: own };
+    const kit = (stage: number, level: number) => companionKit(rules, fox, { rebirthStage: stage, rebirthChoices: { "2": "B" }, originRecord: origin }, level);
+    expect(kit(0, 200)[3]).toEqual({ baseId: fox.innatePassiveId, skillId: own, variantStage: null });
+    expect(kit(2, 100)[3]!.variantStage).toBe(2);
+    expect(companionKit(rules, fox, { rebirthStage: 0, rebirthChoices: {}, originRecord: { ...origin, innateId: null } }, 200)[3]!.skillId).toBe(fox.innatePassiveId);
+    const inst = { ...companion("m1", "species:ember_fox", "FIRE", 30), originRecord: origin, trainedSkillLevels: { [fox.innatePassiveId]: 3 } };
+    const unit = ok(createBattle(rules, c, baseSetup({ companions: [{ instance: inst, row: "front", slot: 0 }] }))).state.units.find((u) => u.unitId === "ally:m1")!;
+    expect(unit.passiveIds).toContain(own);
+    expect(unit.passiveIds).not.toContain(fox.innatePassiveId);
+    expect(unit.skillLevels?.[own]).toBe(3);
+  });
+
   it("in a fight the variant replaces the base skill and keeps its trained level", () => {
     const inst = { ...reborn(1, { "1": "A" }), trainedSkillLevels: { "skill:fox_mark_bite": 4 } };
     const unit = ok(createBattle(rules, c, baseSetup({ companions: [{ instance: inst, row: "front", slot: 0 }] }))).state.units.find((u) => u.unitId === "ally:m1")!;

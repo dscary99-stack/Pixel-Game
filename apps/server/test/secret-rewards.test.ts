@@ -5,6 +5,11 @@
  */
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  DEV_FIXTURE_RULES,
+  createBattle,
+  playerSetup,
+  type BattleSetup,
+  companionKit,
   EXAMPLE_SECRET_QUEST_TEMPLATES as T,
   PRODUCTION_RULES as R,
   exampleContentMaps,
@@ -34,6 +39,20 @@ let secrets: SecretQuestStore;
 let progress: SecretProgressStore;
 let journal: JournalStore;
 let characterId: string;
+
+/** A plain field fight to read the player unit from. */
+const baseFight = (): Omit<BattleSetup, "player"> => ({
+  battleId: "battle:fashion",
+  originMode: "manual",
+  seed: "s",
+  companions: [],
+  enemies: [{ unitId: "e1", speciesId: "species:armor_crab", element: "EARTH", row: "front", slot: 0 }],
+  bag: {},
+});
+const ok = <T extends { ok: boolean }>(r: T) => {
+  if (!r.ok) throw new Error(JSON.stringify(r));
+  return r as Extract<T, { ok: true }>;
+};
 
 const ALL_KINDS = [
   { kind: "title", rewardId: "srw:title_lone_star", variantId: "v0000abcd" },
@@ -145,8 +164,34 @@ describe("claims", () => {
     expect(mon).toHaveLength(1);
     expect(mon[0]).toMatchObject({ species_id: "species:supply_mole", owner_id: A, current_level: R.confirmed.capturedInitialLevel.value });
     expect(JSON.parse(mon[0]!.origin_json)).toMatchObject({ kind: "secret_reward", rewardId: "srw:companion_gilded_mole", innateId: "skill:bird_innate_resist" });
+    // The stored companion carries its rolled innate into fights in place of the species one.
+    const stored = (await new CharacterStore(new SqliteD1(db), R, content, now).companions(A)).find((x) => x.id.startsWith("mon:secret:"))!;
+    const mole = content.species.get("species:supply_mole")!;
+    expect(companionKit(R, mole, stored, 1).map((k) => k.skillId)).toEqual([...mole.skillIds, "skill:bird_innate_resist"]);
     expect(db.prepare("SELECT definition_id, owner_id, rarity FROM equipment_instances WHERE id LIKE 'eq:secret:%'").all()).toEqual([{ definition_id: "equip:wooden_sword", owner_id: A, rarity: "COMMON" }]);
     expect(await secrets.view(A)).toMatchObject({ claimed: ["sq:personal:gift"] });
+  });
+
+  it("a claimed fashion piece can be worn on its layer only, shows in fights and comes off", async () => {
+    const reg = exampleSecretRewardRegistry();
+    expect(await journal.setFashion(A, { layer: "aura", rewardId: "srw:fashion_star_aura" }, reg)).toMatchObject({ ok: false, code: "NOT_OWNED" });
+    await progress.deliver(A, { operationId: "op_give_0008", questId: "sq:personal:gift", quantity: 10 });
+    expect(await progress.claim(A, { questId: "sq:personal:gift" })).toMatchObject({ status: "done" });
+    expect(await journal.ownedFashion(A)).toEqual(["srw:fashion_star_aura"]);
+    expect(await journal.setFashion(A, { layer: "head", rewardId: "srw:fashion_star_aura" }, reg)).toMatchObject({ ok: false, code: "WRONG_LAYER" });
+    expect(await journal.setFashion(A, { layer: "aura", rewardId: "srw:title_lone_star" }, reg)).toMatchObject({ ok: false, code: "NOT_FASHION" });
+    expect(await journal.setFashion(A, { layer: "cape", rewardId: null }, reg)).toMatchObject({ ok: false, code: "INVALID_REQUEST" });
+    const look = { layer: "aura", rewardId: "srw:fashion_star_aura", effect: "sparkle", color: "#f2d45c" };
+    expect(await journal.setFashion(A, { layer: "aura", rewardId: "srw:fashion_star_aura" }, reg)).toEqual({ ok: true, fashion: [look] });
+    const chars = new CharacterStore(new SqliteD1(db), R, content, now);
+    const c = (await chars.get(A))!;
+    expect(c.fashion).toEqual([look]);
+    const unit = ok(createBattle(DEV_FIXTURE_RULES, content, { ...baseFight(), player: playerSetup(A, c) })).state.units.find((u) => u.unitId === "player")!;
+    expect(unit.fashion).toEqual([{ layer: "aura", effect: "sparkle", color: "#f2d45c" }]);
+    // Taking another layer off leaves this one; taking this one off empties it.
+    expect(await journal.setFashion(A, { layer: "head", rewardId: null }, reg)).toEqual({ ok: true, fashion: [look] });
+    expect(await journal.setFashion(A, { layer: "aura", rewardId: null }, reg)).toEqual({ ok: true, fashion: [] });
+    expect((await chars.get(A))!.fashion).toEqual([]);
   });
 
   it("a claimed title can be shown", async () => {

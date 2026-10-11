@@ -1,9 +1,12 @@
 // End-to-end secret quests against `wrangler dev`: locked says nothing → dev reveal → walking into the
 // field through the portal counts an explore quest once → materials handed in at the town (retry
-// replays) → a finished quest's rewards claimed once (retry replays) → a claimed title can be shown.
+// replays) → a finished quest's rewards claimed once (retry replays) → a claimed title can be shown →
+// a claimed fashion piece is worn on its own layer only.
 // Run `npm run db:migrate:local` and `npm run dev:server` first, then `npm run smoke:secret`.
-import { exampleMapRegistry, findPath } from "@pmrpg/shared";
+import { exampleMapRegistry, exampleSecretRewardRegistry, findPath } from "@pmrpg/shared";
 import { api, connect, run, walk, type Msg } from "./smoke-lib";
+
+const REWARDS = exampleSecretRewardRegistry();
 
 const out: Record<string, unknown> = {};
 const fail = (why: string): never => {
@@ -95,5 +98,21 @@ if (thing !== undefined) {
   out.objects = { rewards: k1.body.result.rewards.map((r: Msg) => r.kind), companions: a2.companions.length - b2.companions.length, gear: a2.equipment.length - b2.equipment.length, levels: mons.map((m: Msg) => m.currentLevel) };
   const want = (k: string) => k1.body.result.rewards.filter((r: Msg) => r.kind === k).length;
   if (a2.companions.length - b2.companions.length !== want("companion") || a2.equipment.length - b2.equipment.length !== want("gear") || mons.some((m: Msg) => m.currentLevel !== 1)) fail("object rewards wrong");
+}
+// 5. A fashion reward, when the set has one: owned once claimed, worn on its own layer only.
+const dressed = set.v.quests.find((q: Msg) => q.rewards?.some((r: Msg) => r.kind === "fashion"));
+if (dressed !== undefined) {
+  await call("POST", "/dev/secret-quests/complete", { questId: dressed.id });
+  await call("POST", "/character/secret-quests/claim", { questId: dressed.id });
+  const f = (await call("GET", "/character/fashion")).body;
+  const id = dressed.rewards.find((r: Msg) => r.kind === "fashion").rewardId;
+  if (!f.owned.includes(id)) fail("fashion not owned after the claim");
+  const def = REWARDS.get(id) as Msg;
+  const wrong = (["head", "body", "back", "aura"] as const).find((l) => l !== def.layer)!;
+  if ((await call("PUT", "/character/fashion", { layer: wrong, rewardId: id })).body.error !== "WRONG_LAYER") fail("fashion worn on another layer");
+  const w = await call("PUT", "/character/fashion", { layer: def.layer, rewardId: id });
+  const ch = (await call("GET", "/character")).body.character;
+  if (w.status !== 200 || ch.fashion?.[0]?.rewardId !== id) fail("fashion not worn");
+  out.fashion = { rewardId: id, layer: def.layer, worn: ch.fashion };
 }
 console.log(JSON.stringify(out, null, 1));

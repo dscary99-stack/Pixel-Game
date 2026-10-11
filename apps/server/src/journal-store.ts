@@ -4,7 +4,12 @@
  * chosen title is cosmetic and must be one the journal says was earned.
  */
 import {
+  FashionWearRequestSchema,
   TitleRequestSchema,
+  fashionLookFor,
+  fashionLooks,
+  type FashionLook,
+  type SecretRewardDefinition,
   bondTier,
   earnedTitles,
   levelForExp,
@@ -81,6 +86,51 @@ export class JournalStore {
     if (titleId !== null && !view.titles.includes(titleId)) return { ok: false, code: "NOT_EARNED", message: "that title is not earned yet" };
     await this.db.prepare(`UPDATE characters SET title_id = ? WHERE account_id = ?`).bind(titleId, accountId).run();
     return { ok: true, titleId };
+  }
+
+  /**
+   * Wear an owned fashion piece on its layer, or take the layer off (fashion.ts). One layer per call,
+   * written with json_set/json_remove so changes to different layers never undo each other. A look
+   * only, so no operation id: setting the same piece again is the same result.
+   */
+  async setFashion(
+    accountId: string,
+    raw: unknown,
+    rewards: ReadonlyMap<string, SecretRewardDefinition>,
+  ): Promise<{ ok: true; fashion: FashionLook[] } | { ok: false; code: "INVALID_REQUEST" | "NO_CHARACTER" | "NOT_OWNED" | "NOT_FASHION" | "WRONG_LAYER"; message: string }> {
+    const parsed = FashionWearRequestSchema.safeParse(raw);
+    if (!parsed.success) return { ok: false, code: "INVALID_REQUEST", message: parsed.error.issues.map((i) => i.message).join("; ") };
+    const { layer, rewardId } = parsed.data;
+    const ch = await this.db.prepare(`SELECT id FROM characters WHERE account_id = ?`).bind(accountId).first<{ id: string }>();
+    if (ch === null) return { ok: false, code: "NO_CHARACTER", message: "make a character first" };
+    if (rewardId === null) {
+      await this.db.prepare(`UPDATE characters SET fashion_json = json_remove(COALESCE(fashion_json, '{}'), ?) WHERE id = ?`).bind(`$.${layer}`, ch.id).run();
+    } else {
+      const pick = fashionLookFor(rewards.get(rewardId), layer);
+      if (!pick.ok) return { ok: false, code: pick.code, message: pick.code === "WRONG_LAYER" ? `that piece is not worn on ${layer}` : "that is not a fashion piece" };
+      // Owned rewards are never taken back (no sell, no trade), so checking first is enough.
+      const owned = await this.db
+        .prepare(`SELECT 1 AS x FROM character_secret_rewards WHERE character_id = ? AND kind = 'fashion' AND reward_id = ?`)
+        .bind(ch.id, rewardId)
+        .first();
+      if (owned === null) return { ok: false, code: "NOT_OWNED", message: "that piece is not yours yet" };
+      const { layer: _l, ...look } = pick.look;
+      await this.db.prepare(`UPDATE characters SET fashion_json = json_set(COALESCE(fashion_json, '{}'), ?, json(?)) WHERE id = ?`).bind(`$.${layer}`, JSON.stringify(look), ch.id).run();
+    }
+    const row = await this.db.prepare(`SELECT fashion_json FROM characters WHERE id = ?`).bind(ch.id).first<{ fashion_json: string | null }>();
+    return { ok: true, fashion: fashionLooks(row?.fashion_json) };
+  }
+
+  /** The fashion pieces this character owns (secret-quest rewards). */
+  async ownedFashion(accountId: string): Promise<string[]> {
+    const rows = await this.db
+      .prepare(
+        `SELECT DISTINCT r.reward_id FROM character_secret_rewards r JOIN characters c ON c.id = r.character_id
+          WHERE c.account_id = ? AND r.kind = 'fashion' ORDER BY r.reward_id`,
+      )
+      .bind(accountId)
+      .all<{ reward_id: string }>();
+    return rows.results.map((r) => r.reward_id);
   }
 
   private bossSpecies(): Set<string> {

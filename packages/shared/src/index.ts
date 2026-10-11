@@ -56,6 +56,7 @@ export * from "./player-kit";
 export * from "./class-change";
 export * from "./ascension";
 export * from "./attainment";
+export * from "./fashion";
 export * from "./job";
 export * from "./skill-tree";
 export * from "./skill-budget";

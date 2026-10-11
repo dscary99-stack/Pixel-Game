@@ -29,6 +29,7 @@ import {
   type LearnRefusal,
   CreateCharacterRequestSchema,
   expForLevel,
+  fashionLooks,
   levelForExp,
   planAllocation,
   EquipRequestSchema,
@@ -61,6 +62,7 @@ interface CharacterRow {
   class2_id?: string | null;
   class3_id?: string | null;
   ascension_id?: string | null;
+  fashion_json?: string | null;
   race_id: string;
   element: CharacterView["element"];
   level: number;
@@ -685,6 +687,7 @@ export class CharacterStore {
       class2Id: row.class2_id ?? null,
       class3Id: row.class3_id ?? null,
       ascensionId: row.ascension_id ?? null,
+      fashion: fashionLooks(row.fashion_json),
       raceId: row.race_id,
       element: row.element,
       level: row.level,

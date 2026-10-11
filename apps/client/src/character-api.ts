@@ -3,7 +3,7 @@
  * what it gets back. Identity uses the dev header until O11 picks auth.
  */
 import { authHeaders, type Identity } from "./identity";
-import type { AssetSnapshot, CharacterView, CreateCharacterRequest, MarketBrowseQuery, MarketKind, MarketView, TradeKind, TradeSide, TradeView, VaultView, MailView, DisposeQuote, EquipSlot, EquipmentView, FrontierView, PracticeView, ClassView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RefineResult, RolledAffix, SecretQuestView, AttainmentView } from "@pmrpg/shared";
+import type { AssetSnapshot, CharacterView, CreateCharacterRequest, MarketBrowseQuery, MarketKind, MarketView, TradeKind, TradeSide, TradeView, VaultView, MailView, DisposeQuote, EquipSlot, EquipmentView, FrontierView, PracticeView, ClassView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RefineResult, RolledAffix, SecretQuestView, AttainmentView, FashionLayer, FashionLook } from "@pmrpg/shared";
 
 export type StoredCompanion = MonsterInstance & { hp: number | null; mp: number | null };
 
@@ -155,6 +155,14 @@ export class CharacterApi {
     return this.call<JournalSummary & { titles: string[]; titleId: string | null }>("GET", "/journal");
   }
 
+  /** Owned fashion pieces and what is worn per layer (fashion.ts). */
+  fashion() {
+    return this.call<{ owned: string[]; worn: FashionLook[] }>("GET", "/character/fashion");
+  }
+  /** Wear an owned piece on its layer, or take the layer off (null). */
+  setFashion(layer: FashionLayer, rewardId: string | null) {
+    return this.call<{ fashion: FashionLook[] }>("PUT", "/character/fashion", { layer, rewardId });
+  }
   setTitle(titleId: string | null) {
     return this.call<{ titleId: string | null }>("PUT", "/character/title", { titleId });
   }

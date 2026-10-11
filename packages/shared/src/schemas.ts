@@ -579,7 +579,16 @@ export const MonsterInstanceSchema = z
     skillMastery: z.number().int().min(0),
     bond: z.number().int().min(0).max(1000),
     originRecord: z
-      .object({ kind: z.enum(["capture", "starter", "event", "secret_reward"]), battleId: z.string().optional(), at: z.string() })
+      .object({
+        kind: z.enum(["capture", "starter", "event", "secret_reward"]),
+        battleId: z.string().optional(),
+        at: z.string(),
+        /** secret_reward only (secret-quests.ts): the reward, its variant and the innate it rolled. */
+        rewardId: z.string().optional(),
+        variantId: z.string().optional(),
+        /** Replaces the species innate in fights and on the skill page (skill-training.ts companionKit). */
+        innateId: SkillId.nullable().optional(),
+      })
       .strict(),
     ownershipVersion: z.number().int().min(1),
     lockState: z.enum(["free", "in_battle", "in_escrow"]),

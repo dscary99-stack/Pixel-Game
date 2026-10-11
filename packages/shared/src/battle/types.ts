@@ -46,6 +46,8 @@ export interface BattleUnit {
   bondTier?: number;
   /** Companions only: the stage-3 Rebirth look, drawn by the client (Nut 2026-10-03: with an effect). */
   cosmetic?: { effect: string; color: string };
+  /** The player's worn fashion (fashion.ts), one look per layer; a look only. */
+  fashion?: { layer: string; effect: string; color: string }[];
   /** Companions only: knocked out at some point in this fight (Bond goes down, Nut 2026-10-03). */
   fell?: boolean;
   basicAttackRange: Range;
@@ -363,6 +365,8 @@ export interface BattleSetup {
     companionRoom?: number;
     /** Divine awakening path (ascension.ts): the unit gets an awakening gauge. */
     ascensionId?: string;
+    /** Worn fashion looks (fashion.ts): drawn by the client, never read for numbers. */
+    fashion?: { layer: string; effect: string; color: string }[];
   };
   companions: (Position & { instance: MonsterInstance; hp?: number; mp?: number })[];
   enemies: (Position & {

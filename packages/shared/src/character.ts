@@ -15,6 +15,7 @@ import type { BattleSetup, Range } from "./battle/types";
 import { gearBonuses, weaponRange } from "./equipment";
 import { ascensionPassiveFor, playerKit } from "./player-kit";
 import type { EquipmentDefinition, RolledAffix } from "./schemas";
+import type { FashionLook } from "./fashion";
 
 export interface ClassDefinition {
   id: string;
@@ -118,6 +119,8 @@ export interface CharacterView {
   class3Id?: string | null;
   /** The divine awakening path `ascend:<race>:<a|b>` (ascension.ts); null before it. */
   ascensionId?: string | null;
+  /** Worn fashion looks, one per layer (fashion.ts); a look only, no stats. */
+  fashion?: FashionLook[];
   raceId: string;
   element: Element;
   level: number;
@@ -228,6 +231,7 @@ export function playerSetup(
     })(),
     ...(worn.sigilIds !== undefined && worn.sigilIds.length > 0 ? { sigilIds: [...worn.sigilIds] } : {}),
     ...(ascensionPassiveFor(c.raceId, c.ascensionId) !== undefined ? { ascensionId: c.ascensionId! } : {}),
+    ...(c.fashion !== undefined && c.fashion.length > 0 ? { fashion: c.fashion.map((f) => ({ layer: f.layer, effect: f.effect, color: f.color })) } : {}),
     basicAttackRange: weaponRange(worn.mainHand, cls?.basicAttackRange ?? "melee"),
     ...(c.companionBox !== undefined ? { companionRoom: Math.max(0, c.companionBox.capacity - c.companionBox.used) } : {}),
     row: PLAYER_POSITION.row,

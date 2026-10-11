@@ -165,16 +165,19 @@ export function rebirthVariantFor(species: SpeciesDefinition, stage: number): Re
 export function companionKit(
   rules: RulesConfig,
   species: SpeciesDefinition,
-  inst: Pick<MonsterInstance, "rebirthStage" | "rebirthChoices">,
+  inst: Pick<MonsterInstance, "rebirthStage" | "rebirthChoices"> & { originRecord?: { innateId?: string | null } },
   fightingLevel: number,
 ): KitSlot[] {
   const unlock = rules.provisional.rebirthVariantUnlockLevels.value;
+  // A secret-quest companion (secret-quests.ts) carries its own innate in place of the species one;
+  // it keeps the species innate's trained level (baseId). An unlocked Rebirth variant still wins.
+  const ownInnate = inst.originRecord?.innateId ?? null;
   return speciesSkillSlots(species).map((baseId) => {
     const v = species.rebirthVariants?.find((x) => x.replaces === baseId);
     const branch = v === undefined ? undefined : inst.rebirthChoices[String(v.stage) as "1" | "2" | "3"];
     const pick = v?.options.find((o) => o.branch === branch);
     if (v === undefined || pick === undefined || inst.rebirthStage < v.stage || fightingLevel < unlock[v.stage - 1]!) {
-      return { baseId, skillId: baseId, variantStage: null };
+      return { baseId, skillId: ownInnate !== null && baseId === species.innatePassiveId ? ownInnate : baseId, variantStage: null };
     }
     return { baseId, skillId: pick.skillId, variantStage: v.stage };
   });

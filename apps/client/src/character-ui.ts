@@ -8,6 +8,7 @@ import {
   JOURNAL_TITLES,
   EXAMPLE_SECRET_QUEST_TEMPLATES,
   exampleSecretRewardRegistry,
+  FASHION_LAYER_TH,
   secretTitleRewardId,
   type SecretQuest,
   levelBand,
@@ -1365,6 +1366,7 @@ export function journalPanel(api: CharacterApi): Promise<void> {
     }
 
     let data: Awaited<ReturnType<CharacterApi["journal"]>> | null = null;
+    let fashion: Awaited<ReturnType<CharacterApi["fashion"]>> | null = null;
     const draw = () => {
       if (data === null) return;
       const j = data;
@@ -1401,6 +1403,32 @@ export function journalPanel(api: CharacterApi): Promise<void> {
         tl.append(li);
       }
       body.append(tl);
+
+      // Fashion from secret quests (fashion.ts): one piece per layer, a look only.
+      if (fashion !== null && fashion.owned.length > 0) {
+        body.append(el("h3", {}, "แฟชั่น (ช่องละชิ้น ไม่มีผลต่อพลัง)"));
+        const fl = el("ul", { class: "pm-list", "data-section": "fashion" });
+        for (const id of fashion.owned) {
+          const def = secretRewards.get(id);
+          if (def?.kind !== "fashion") continue;
+          const worn = fashion.worn.some((w) => w.rewardId === id);
+          const li = el("li", { "data-fashion": id });
+          li.append(el("span", { class: "pm-grow" }, `${worn ? "◆" : "◇"} ${def.name.th} — ช่อง${FASHION_LAYER_TH[def.layer]}`));
+          const b = el("button", { type: "button" }, worn ? "ถอด" : "ใส่");
+          b.addEventListener("click", async () => {
+            try {
+              await api.setFashion(def.layer, worn ? null : id);
+              fashion = await api.fashion();
+              draw();
+            } catch (e) {
+              error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+            }
+          });
+          li.append(b);
+          fl.append(li);
+        }
+        body.append(fl);
+      }
 
       body.append(el("h3", {}, "มอนสเตอร์"));
       const bar = el("div", { class: "pm-choices" });
@@ -1471,10 +1499,10 @@ export function journalPanel(api: CharacterApi): Promise<void> {
       );
       body.append(el("div", { class: "pm-note" }, "นับการชนะ/จับตั้งแต่เปิดระบบบันทึก · ฉายาเป็นตัวอย่าง (P12)"));
     };
-    api
-      .journal()
-      .then((j) => {
+    Promise.all([api.journal(), api.fashion()])
+      .then(([j, f]) => {
         data = j;
+        fashion = f;
         draw();
       })
       .catch((e) => (error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e)));
@@ -2580,7 +2608,8 @@ export function skillPanel(api: CharacterApi, start: CharacterBundle, inTown: bo
           const kind = i === 3 ? "ติดตัว" : def?.kind === "active" ? "ใช้งาน" : "ติดตัว";
           const row = el("li", { "data-skill": skillId });
           const power = def === undefined ? "" : def.kind === "active" ? ` · ${modsText(skillLevelMods(RULES, def, eff))}` : " · (ผลติดตัวยังไม่ทำงานในไฟต์)";
-          const variantNote = inUse === skillId ? "" : ` (สาย R${kit[i]!.variantStage} แทน ${skillDefs.get(skillId)?.name.th ?? skillId})`;
+          const variantNote =
+            inUse === skillId ? "" : kit[i]!.variantStage === null ? ` (ติดตัวเฉพาะตัว แทน ${skillDefs.get(skillId)?.name.th ?? skillId})` : ` (สาย R${kit[i]!.variantStage} แทน ${skillDefs.get(skillId)?.name.th ?? skillId})`;
           const head = `${def?.name.th ?? skillId}${variantNote} [${kind}] Lv${lv}${eff < lv ? ` (ใช้ได้ Lv${eff})` : ""}${power}`;
           const cost = skillTrainCost(RULES, sp, skillId, lv, { lootTables, items: itemDefs });
           if (!cost.ok) {
