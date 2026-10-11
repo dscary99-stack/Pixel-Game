@@ -5,6 +5,7 @@ import {
   PRODUCTION_RULES,
   exampleMapRegistry,
   findPath,
+  parsePlayerLook,
   isWalkable,
   stepCostMs,
   tryStep,
@@ -202,6 +203,38 @@ describe("MapChannel (presence)", () => {
 
     expect(ch.leave("acct:a").out).toEqual([{ to: "others", msg: { t: "left", sid: "s1" } }]);
     expect(ch.size).toBe(1);
+  });
+
+  it("others see a player's title and worn fashion from the look given at join; a bad look is dropped", () => {
+    const ch = new MapChannel(rules, town, 1, [], sids());
+    const look = { titleId: "title:first_steps", fashion: [{ layer: "aura", effect: "sparkle", color: "#f2d45c" }] };
+    ch.join("acct:a", "A", town.spawn, 0, look);
+    const b = ch.join("acct:b", "B", { x: 10, y: 8 }, 0);
+    if (!b.ok) throw new Error();
+    expect(msgs(b.out, "self")[0]).toMatchObject({ t: "welcome", others: [{ sid: "s1", name: "A", look }] });
+    expect(msgs(b.out, "others")).toEqual([{ t: "joined", player: { sid: "s2", name: "B", x: 10, y: 8, facing: "S" } }]);
+    // A reconnect without a look takes the old one off.
+    const again = ch.join("acct:a", "A", town.spawn, 10);
+    if (!again.ok) throw new Error();
+    expect((msgs(again.out, "self")[0] as Extract<WorldServerMessage, { t: "welcome" }>).self.look).toBeUndefined();
+
+    expect(parsePlayerLook(JSON.stringify(look))).toEqual(look);
+    expect(parsePlayerLook("{}")).toBeUndefined();
+    expect(parsePlayerLook("not json")).toBeUndefined();
+    expect(parsePlayerLook(null)).toBeUndefined();
+    expect(
+      parsePlayerLook(
+        JSON.stringify({
+          titleId: "Title <b>",
+          fashion: [
+            { layer: "aura", effect: "sparkle", color: "#f2d45c" },
+            { layer: "aura", effect: "flame", color: "#e0603a" },
+            { layer: "cape", effect: "flame", color: "#e0603a" },
+            { layer: "head", effect: "leaf", color: "red" },
+          ],
+        }),
+      ),
+    ).toEqual({ fashion: [{ layer: "aura", effect: "sparkle", color: "#f2d45c" }] });
   });
 
   it("a second connection from the same account replaces the first instead of adding a player", () => {

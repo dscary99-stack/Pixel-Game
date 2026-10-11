@@ -74,6 +74,8 @@ interface PlayerView {
   body: Phaser.GameObjects.Rectangle;
   nose: Phaser.GameObjects.Rectangle;
   label: Phaser.GameObjects.Text;
+  /** Worn fashion shapes (placeholders until the art lands), each kept at an offset from the body. */
+  extras: { obj: Phaser.GameObjects.Shape; dx: number; dy: number }[];
   pos: TilePos;
 }
 
@@ -121,6 +123,7 @@ export class WorldScene extends Phaser.Scene {
   private channelNo = 1;
   private layer: Phaser.GameObjects.Container | null = null;
   private players = new Map<string, PlayerView>();
+  private walkTweens = new WeakMap<object, Phaser.Tweens.Tween>();
   private selfSid: string | null = null;
   private seq = 0;
   private readyAt = 0;
@@ -422,17 +425,38 @@ export class WorldScene extends Phaser.Scene {
     const body = this.add.rectangle(px, py, 22, 28, self ? 0xf2c94c : 0x7ab8f2).setStrokeStyle(2, 0x1b1830).setDepth(10);
     const [fx, fy] = FACE_OFFSET[p.facing];
     const nose = this.add.rectangle(px + fx, py + fy, 6, 6, 0x1b1830).setDepth(11);
+    const title = titleName(p.look?.titleId);
     const label = this.add
-      .text(px, py - 22, p.name, { fontFamily: "sans-serif", fontSize: "11px", color: self ? "#f2c94c" : "#ffffff", backgroundColor: "#00000088", padding: { x: 3, y: 1 } })
+      .text(px, py - 22, title === null ? p.name : `[${title}] ${p.name}`, { fontFamily: "sans-serif", fontSize: "11px", color: self ? "#f2c94c" : "#ffffff", backgroundColor: "#00000088", padding: { x: 3, y: 1 } })
       .setOrigin(0.5, 1)
       .setDepth(12);
-    this.players.set(p.sid, { body, nose, label, pos: { x: p.x, y: p.y } });
+    this.players.set(p.sid, { body, nose, label, extras: this.drawFashion(body, p.look?.fashion ?? []), pos: { x: p.x, y: p.y } });
+  }
+
+  /**
+   * Worn fashion (fashion.ts) as placeholder shapes, the same reading as in fights (ART_HANDOFF §9):
+   * head a band on top, body the outline colour, back a panel behind, aura a soft glow under.
+   */
+  private drawFashion(body: Phaser.GameObjects.Rectangle, looks: readonly { layer: string; effect: string; color: string }[]) {
+    const out: PlayerView["extras"] = [];
+    for (const f of looks) {
+      const color = Number.parseInt(f.color.slice(1), 16);
+      if (f.layer === "body") body.setStrokeStyle(2, color);
+      else if (f.layer === "head") out.push({ obj: this.add.rectangle(body.x, body.y - 12, 18, 5, color).setDepth(11), dx: 0, dy: -12 });
+      else if (f.layer === "back") out.push({ obj: this.add.rectangle(body.x - 9, body.y + 2, 10, 24, color, 0.9).setDepth(9), dx: -9, dy: 2 });
+      else if (f.layer === "aura") {
+        const glow = this.add.ellipse(body.x, body.y + 4, 36, 40, color, 1).setDepth(9);
+        this.tweens.add({ targets: glow, alpha: { from: 0.2, to: 0.5 }, duration: 900, yoyo: true, repeat: -1 });
+        out.push({ obj: glow, dx: 0, dy: 4 });
+      }
+    }
+    return out;
   }
 
   private removePlayer(sid: string) {
     const v = this.players.get(sid);
     if (v === undefined) return;
-    [v.body, v.nose, v.label].forEach((o) => o.destroy());
+    [v.body, v.nose, v.label, ...v.extras.map((e) => e.obj)].forEach((o) => o.destroy());
     this.players.delete(sid);
   }
 
@@ -442,14 +466,16 @@ export class WorldScene extends Phaser.Scene {
     v.pos = pos;
     const [px, py] = center(pos);
     const [fx, fy] = facing === null ? [v.nose.x - v.body.x, v.nose.y - v.body.y] : FACE_OFFSET[facing];
-    const targets: [Phaser.GameObjects.Rectangle | Phaser.GameObjects.Text, number, number][] = [
+    const targets: [Phaser.GameObjects.Shape | Phaser.GameObjects.Text, number, number][] = [
       [v.body, px, py],
       [v.nose, px + fx, py + fy],
       [v.label, px, py - 22],
+      ...v.extras.map((e): [Phaser.GameObjects.Shape, number, number] => [e.obj, px + e.dx, py + e.dy]),
     ];
     for (const [obj, x, y] of targets) {
-      this.tweens.killTweensOf(obj);
-      if (animate) this.tweens.add({ targets: obj, x, y, duration: ms });
+      // Only the last walk tween is replaced, so an aura keeps its pulse.
+      this.walkTweens.get(obj)?.stop();
+      if (animate) this.walkTweens.set(obj, this.tweens.add({ targets: obj, x, y, duration: ms }));
       else obj.setPosition(x, y);
     }
     // y-sorting placeholder: lower on screen draws in front.

@@ -30,6 +30,15 @@ export type WorldClientMessage = z.infer<typeof WorldClientMessageSchema>;
 
 export type Facing = "N" | "E" | "S" | "W";
 
+/**
+ * How a player looks to others (fashion.ts, journal titles): the shown title id and the worn fashion.
+ * Taken when the player joins the channel, so a change shows after the next map change or reconnect.
+ */
+export interface PlayerLook {
+  titleId?: string;
+  fashion?: { layer: string; effect: string; color: string }[];
+}
+
 /** What other players may see. No account id, no timing state. */
 export interface PublicPlayer {
   sid: string;
@@ -37,6 +46,7 @@ export interface PublicPlayer {
   x: number;
   y: number;
   facing: Facing;
+  look?: PlayerLook;
 }
 
 export type WorldServerMessage =
@@ -100,12 +110,33 @@ export interface Presence {
   dirty: boolean;
   /** Set while the player is in a private fight; they cannot walk until it is over. */
   battleId: string | null;
+  look?: PlayerLook;
 }
 
 /** A message for the acting player, for everyone else in the channel, or for one player. */
 export type Outgoing = { to: "self" | "others"; msg: WorldServerMessage };
 
-export const publicPlayer = (p: Presence): PublicPlayer => ({ sid: p.sid, name: p.name, x: p.pos.x, y: p.pos.y, facing: p.facing });
+export const publicPlayer = (p: Presence): PublicPlayer => ({ sid: p.sid, name: p.name, x: p.pos.x, y: p.pos.y, facing: p.facing, ...(p.look !== undefined ? { look: p.look } : {}) });
+
+/** A look from untrusted text (a header): a title id and at most one valid look per fashion layer. */
+export function parsePlayerLook(raw: string | null): PlayerLook | undefined {
+  if (raw === null || raw === "") return undefined;
+  try {
+    const o = JSON.parse(raw) as { titleId?: unknown; fashion?: unknown };
+    const titleId = typeof o.titleId === "string" && /^title:[a-z0-9_]{1,80}$/.test(o.titleId) ? o.titleId : undefined;
+    const layers = new Set<string>();
+    const fashion = (Array.isArray(o.fashion) ? o.fashion : []).flatMap((f: { layer?: unknown; effect?: unknown; color?: unknown }) => {
+      if (typeof f?.layer !== "string" || !["head", "body", "back", "aura"].includes(f.layer) || layers.has(f.layer)) return [];
+      if (typeof f.effect !== "string" || !/^[a-z]{1,16}$/.test(f.effect) || typeof f.color !== "string" || !/^#[0-9a-f]{6}$/.test(f.color)) return [];
+      layers.add(f.layer);
+      return [{ layer: f.layer, effect: f.effect, color: f.color }];
+    });
+    const look: PlayerLook = { ...(titleId !== undefined ? { titleId } : {}), ...(fashion.length > 0 ? { fashion } : {}) };
+    return Object.keys(look).length > 0 ? look : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export type JoinResult =
   | { ok: true; presence: Presence; replaced: boolean; out: Outgoing[] }
@@ -147,7 +178,7 @@ export class MapChannel {
    * Enter the channel at `pos` (from the canonical saved position). An account already here keeps
    * its live position and public id: the old connection is replaced, nobody sees a second player.
    */
-  join(accountId: string, name: string, pos: TilePos, now: number): JoinResult {
+  join(accountId: string, name: string, pos: TilePos, now: number, look?: PlayerLook): JoinResult {
     const existing = this.players.get(accountId);
     if (existing === undefined && this.players.size >= this.rules.provisional.channelCapacity.value) {
       return { ok: false, code: "CHANNEL_FULL", message: `channel ${this.channel} is full` };
@@ -163,8 +194,10 @@ export class MapChannel {
       dirty: false,
       battleId: null,
     };
-    // A fresh connection starts its own step numbering.
+    // A fresh connection starts its own step numbering, and brings the look the player has now.
     presence.lastSeq = 0;
+    if (look !== undefined) presence.look = look;
+    else delete presence.look;
     this.players.set(accountId, presence);
     const out: Outgoing[] = [
       {

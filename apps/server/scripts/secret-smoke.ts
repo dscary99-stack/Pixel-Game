@@ -1,7 +1,7 @@
 // End-to-end secret quests against `wrangler dev`: locked says nothing → dev reveal → walking into the
 // field through the portal counts an explore quest once → materials handed in at the town (retry
 // replays) → a finished quest's rewards claimed once (retry replays) → a claimed title can be shown →
-// a claimed fashion piece is worn on its own layer only.
+// a claimed fashion piece is worn on its own layer only and shows on the map.
 // Run `npm run db:migrate:local` and `npm run dev:server` first, then `npm run smoke:secret`.
 import { exampleMapRegistry, exampleSecretRewardRegistry, findPath } from "@pmrpg/shared";
 import { api, connect, run, walk, type Msg } from "./smoke-lib";
@@ -114,5 +114,12 @@ if (dressed !== undefined) {
   const ch = (await call("GET", "/character")).body.character;
   if (w.status !== 200 || ch.fashion?.[0]?.rewardId !== id) fail("fashion not worn");
   out.fashion = { rewardId: id, layer: def.layer, worn: ch.fashion };
+  // 6. The map shows the worn piece (and the shown title) to everyone, taken from D1 at join.
+  const m = await connect(account, "map:dawn_town");
+  const me = m.inbox.find((x: Msg) => x.t === "welcome").self;
+  m.sock.close();
+  out.look = me.look;
+  if (!me.look?.fashion?.some((l: Msg) => l.layer === def.layer)) fail("the map does not show the worn fashion");
+  if (title !== undefined && me.look?.titleId !== title.ref) fail("the map does not show the chosen title");
 }
 console.log(JSON.stringify(out, null, 1));

@@ -16,6 +16,7 @@ import {
   DEV_FIXTURE_RULES,
   EXAMPLE_START_MAP,
   MapChannel,
+  parsePlayerLook,
   PRODUCTION_RULES,
   Rng,
   defaultCombatBag,
@@ -152,6 +153,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     const mapId = request.headers.get("x-map");
     const channelNo = Number(request.headers.get("x-channel"));
     const name = decodeURIComponent(request.headers.get("x-name") ?? "%3F");
+    const look = parsePlayerLook(decodeURIComponent(request.headers.get("x-look") ?? ""));
     if (accountId === null || mapId === null || !Number.isInteger(channelNo)) return new Response("bad request", { status: 400 });
 
     const pair = new WebSocketPair();
@@ -180,7 +182,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
 
     await this.journal.recordMap(accountId, mapId);
     const channel = this.ensureChannel(mapId, channelNo);
-    const joined = channel.join(accountId, name, claim.pos, Date.now());
+    const joined = channel.join(accountId, name, claim.pos, Date.now(), look);
     if (!joined.ok) {
       server.accept();
       server.send(JSON.stringify({ t: "error", code: joined.code, message: joined.message } satisfies WorldServerMessage));

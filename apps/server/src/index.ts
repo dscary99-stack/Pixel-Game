@@ -320,8 +320,12 @@ async function worldRoute(request: Request, env: Env, url: URL): Promise<Respons
   if (request.headers.get("Upgrade") !== "websocket") return json(426, { error: "EXPECTED_WEBSOCKET" });
 
   // Identity goes to the object in headers the Worker sets; anything the client sent is dropped.
-  const name = (await charactersFor(env).get(accountId))?.name ?? displayName(accountId);
-  const headers = new Headers({ Upgrade: "websocket", "x-account": accountId, "x-map": mapId, "x-channel": String(channel), "x-name": encodeURIComponent(name) });
+  const ch = await charactersFor(env).get(accountId);
+  const name = ch?.name ?? displayName(accountId);
+  // How others see this player (the shown title and worn fashion), taken at join (channel.ts PlayerLook).
+  const titleId = ch === null ? null : await journalFor(env).title(accountId);
+  const look = { ...(titleId !== null ? { titleId } : {}), ...(ch?.fashion !== undefined && ch.fashion.length > 0 ? { fashion: ch.fashion.map((f) => ({ layer: f.layer, effect: f.effect, color: f.color })) } : {}) };
+  const headers = new Headers({ Upgrade: "websocket", "x-account": accountId, "x-map": mapId, "x-channel": String(channel), "x-name": encodeURIComponent(name), "x-look": encodeURIComponent(JSON.stringify(look)) });
   const stub = env.MAP.get(env.MAP.idFromName(mapObjectName(mapId, channel)));
   return stub.fetch(new Request(request.url, { headers }));
 }
