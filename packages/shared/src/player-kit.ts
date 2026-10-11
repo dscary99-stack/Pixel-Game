@@ -1,6 +1,7 @@
 /**
  * What a character fights with (chapter 02; Nut 2026-10-09): the skills learned on its skill trees
- * (skill-tree.ts, class-trees.ts) at the levels learned, and its race passive from Lv1. Skill points
+ * (skill-tree.ts, class-trees.ts) at the levels learned, and its race passive from Lv1 (the evolved one
+ * after divine awakening, ascension.ts). Skill points
  * come from job levels (job.ts). Every learned skill is usable (no loadout yet).
  */
 import { SKILL_TREES, TREE_PASSIVE_IDS } from "./content/class-trees";
@@ -119,7 +120,21 @@ export interface PlayerKit {
  * them); a Class2 branch counts only when it belongs to the character's Class1, and a learned level
  * above the node's max (a tree that changed) is clipped.
  */
-export function playerKit(classId: string, raceId: string, class2Id: string | null | undefined, learned: Readonly<Record<string, number>> = {}, class3Id?: string | null): PlayerKit {
+/** The evolved passive of an ascension path `ascend:<race>:<a|b>` (ascension.ts) when the path is this race's. */
+export function ascensionPassiveFor(raceId: string, ascensionId: string | null | undefined): string | undefined {
+  const m = /^ascend:([a-z]+):([ab])$/.exec(ascensionId ?? "");
+  return m === null || `race:${m[1]}` !== raceId ? undefined : `skill:ascend_${m[1]}_${m[2]}`;
+}
+
+export function playerKit(
+  classId: string,
+  raceId: string,
+  class2Id: string | null | undefined,
+  learned: Readonly<Record<string, number>> = {},
+  class3Id?: string | null,
+  /** The ascension path (ascension.ts): its evolved passive replaces the race passive. */
+  ascensionId?: string | null,
+): PlayerKit {
   const trees = characterTrees(classId, class2Id, class3Id);
   const skillIds: string[] = [];
   const skillLevels: Record<string, number> = {};
@@ -135,7 +150,7 @@ export function playerKit(classId: string, raceId: string, class2Id: string | nu
       }
     }
   }
-  const race = RACE_PASSIVES[raceId];
+  const race = ascensionPassiveFor(raceId, ascensionId) ?? RACE_PASSIVES[raceId];
   if (race !== undefined) passiveIds.push(race);
   return { skillIds, skillLevels, passiveIds };
 }

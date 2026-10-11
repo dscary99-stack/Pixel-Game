@@ -710,6 +710,29 @@ export const RULES = {
       "P28",
       "P16 levels 50/120; the trial boss at 150%: in a simulation, a Lv50 character with Lv40 shop gear and three Lv45 companions wins every seeded run on plain Auto with 8 of 9 classes; the Bard won 1 of 6 and needs manual play. Class3 at Lv120 against the tyrant at 550%: a Lv120 character with what it has before the claim (Class1 50 + Class2 70 points, stats bought at their rising cost, Lv40 shop gear) and three Lv115 companions wins 49 of 54 seeded runs on Auto (500% 53/54, 600% 27/54); the Grand Beast Marshal won 0 of 3 and needs manual play",
     ),
+    /**
+     * Divine awakening จุติเทพ (chapter 02, ascension.ts): from Lv200 with a Class3, after the race
+     * trial (a training-ground fight like the class trials, the boss at `trialStatPct`), for coins and
+     * materials paid at the claim; one of two paths at a time, switched in town for `pathSwitchCoins`.
+     * In a fight the gauge starts at 0, gains `gainPerAction` for an action that did something (damage,
+     * healing, a status, a shield, an item), at most `gainCapPerRound` a round, and at `gaugeMax` the
+     * character may spend its action to awaken: once a fight, for `awakenTurns` of its own turns.
+     */
+    ascension: provisional(
+      {
+        level: 200,
+        coins: 2_000_000,
+        materials: [{ itemId: "item:rift_core", quantity: 10 }],
+        pathSwitchCoins: 500_000,
+        trialStatPct: 1000,
+        gaugeMax: 100,
+        gainPerAction: 25,
+        gainCapPerRound: 25,
+        awakenTurns: 3,
+      } as const,
+      "P31",
+      "Claude's proposal (chapter 02 draft): Lv200 + Class3, 2,000,000 coins and 10 rift cores (tower guardian drop; there are no Lv200 materials yet), path switch 500,000 coins; gauge full after 4 rounds with a real action, awakening 3 own turns once a fight. Trial: the tower tyrant at 1000%; a Lv200 character with Class1 50 + Class2 70 + Class3 70 points, stats bought at their rising cost, Lv40 shop gear and three Lv195 companions wins 48 of 54 seeded runs on Auto (900% 52/54, 1200% 36/54); Ruin Champion lost 3 of 3 and needs manual play",
+    ),
   },
   // Nut answered the last OPEN rules on 2026-10-07. A new OPEN rule goes here as open<T>(...) with value null.
   unresolved: {} as Readonly<Record<string, Rule<null>>>,

@@ -13,7 +13,7 @@ import type { RulesConfig } from "./rules";
 import { ElementSchema, type Element, type MonsterInstance, type PrimaryStats, type SpeciesDefinition } from "./schemas";
 import type { BattleSetup, Range } from "./battle/types";
 import { gearBonuses, weaponRange } from "./equipment";
-import { playerKit } from "./player-kit";
+import { ascensionPassiveFor, playerKit } from "./player-kit";
 import type { EquipmentDefinition, RolledAffix } from "./schemas";
 
 export interface ClassDefinition {
@@ -116,6 +116,8 @@ export interface CharacterView {
   class2Id?: string | null;
   /** The Class3 from the trial at Lv120 (class-change.ts); null before it. */
   class3Id?: string | null;
+  /** The divine awakening path `ascend:<race>:<a|b>` (ascension.ts); null before it. */
+  ascensionId?: string | null;
   raceId: string;
   element: Element;
   level: number;
@@ -217,7 +219,7 @@ export function playerSetup(
     ...(c.mp === null ? {} : { mp: c.mp }),
     // The skills learned on the trees and the race passive (player-kit.ts).
     ...(() => {
-      const k = playerKit(c.classId, c.raceId, c.class2Id, c.skills, c.class3Id);
+      const k = playerKit(c.classId, c.raceId, c.class2Id, c.skills, c.class3Id, c.ascensionId);
       return {
         skillIds: k.skillIds,
         ...(Object.values(k.skillLevels).some((l) => l > 1) ? { skillLevels: k.skillLevels } : {}),
@@ -225,6 +227,7 @@ export function playerSetup(
       };
     })(),
     ...(worn.sigilIds !== undefined && worn.sigilIds.length > 0 ? { sigilIds: [...worn.sigilIds] } : {}),
+    ...(ascensionPassiveFor(c.raceId, c.ascensionId) !== undefined ? { ascensionId: c.ascensionId! } : {}),
     basicAttackRange: weaponRange(worn.mainHand, cls?.basicAttackRange ?? "melee"),
     ...(c.companionBox !== undefined ? { companionRoom: Math.max(0, c.companionBox.capacity - c.companionBox.used) } : {}),
     row: PLAYER_POSITION.row,

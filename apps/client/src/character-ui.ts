@@ -2049,7 +2049,7 @@ export function skillTreePanel(api: CharacterApi, start: CharacterBundle): Promi
         }
         body.append(grid);
       }
-      const race = playerKit(c.classId, c.raceId, null).passiveIds;
+      const race = playerKit(c.classId, c.raceId, null, {}, null, c.ascensionId).passiveIds;
       if (race.length > 0) body.append(el("div", { class: "pm-note" }, `ติดตัวจากเผ่า: ${race.map((id) => `${skillDefs.get(id)?.name.th ?? id} — ${skillDefs.get(id) === undefined ? "" : skillBrief(skillDefs.get(id)!)}`).join(" · ")}`));
       showInfo();
     };
@@ -2073,6 +2073,7 @@ const PASSIVE_ON_TH: Partial<Record<string, string>> = {
   used_item: "ใช้ไอเทม",
   moved: "สลับตำแหน่ง",
   debuffed: "ถูกศัตรูติดสถานะ",
+  guarded: "ตั้งรับ",
   kill: "ล้มศัตรู",
   ally_down: "พวกเดียวกันล้ม",
   hp_below: "HP ต่ำ",
@@ -2165,7 +2166,7 @@ export function statsPanel(api: CharacterApi, start: CharacterBundle): Promise<C
       }, error);
       if (resetBtn !== null) body.append(resetBtn);
       // Job levels and the skills learned on the trees (skill-tree.ts), and the race passive.
-      const kit = playerKit(c.classId, c.raceId, c.class2Id, c.skills, c.class3Id);
+      const kit = playerKit(c.classId, c.raceId, c.class2Id, c.skills, c.class3Id, c.ascensionId);
       const skills = el("ul", { class: "pm-list", "data-class-skills": "" });
       const row = (id: string, note: string) => {
         const sk = skillDefs.get(id);
@@ -2286,6 +2287,18 @@ export function autoHuntPanel(speciesIds: readonly string[]): Promise<AutoHuntSe
     const reserve = choices(panel, [0, 10, 20, 30, 50].map((n) => ({ value: String(n), label: `${n}%` })), String(saved.skills.mpReservePercent));
     panel.append(el("label", {}, "ใช้สกิลฮีลเมื่อ HP เพื่อนต่ำกว่า"));
     const healBelow = choices(panel, [30, 40, 50, 60, 70].map((n) => ({ value: String(n), label: `${n}%` })), String(saved.skills.healBelowPercent));
+    // Divine awakening (P31): only for characters that ascended; the same choices for everyone.
+    panel.append(el("label", {}, "จุติเทพ (เมื่อเกจเต็ม)"));
+    const awaken = choices(
+      panel,
+      [
+        { value: "ready", label: "ใช้ทันที" },
+        { value: "strong", label: "เฉพาะเจอ Elite/บอส" },
+        { value: "low_hp", label: "เมื่อ HP ต่ำกว่าครึ่ง" },
+        { value: "never", label: "ไม่ใช้" },
+      ],
+      saved.awaken,
+    );
     const itemsOut = el("input", { type: "checkbox", id: "pm-items-out" });
     itemsOut.checked = saved.stopWhenItemsOut;
     const itemsOutRow = el("label", { for: "pm-items-out" });
@@ -2320,6 +2333,7 @@ export function autoHuntPanel(speciesIds: readonly string[]): Promise<AutoHuntSe
         stopBelowCompanionHpPercent: Number(compHp()),
         itemRules: ruleRows.flatMap((r) => r()),
         skills: { use: useSkills.checked, mpReservePercent: Number(reserve()), healBelowPercent: Number(healBelow()) },
+        awaken: awaken(),
         stopWhenItemsOut: itemsOut.checked,
         allowElite: elite.checked,
       });
@@ -2335,14 +2349,14 @@ export function autoHuntPanel(speciesIds: readonly string[]): Promise<AutoHuntSe
 }
 
 /** The Auto item and skill rules saved with the Auto Hunt settings; manual Auto Battle uses the same ones. */
-export function savedAutoPolicy(): Pick<AutoHuntSettings, "itemRules" | "skills"> {
+export function savedAutoPolicy(): Pick<AutoHuntSettings, "itemRules" | "skills" | "awaken"> {
   let saved: AutoHuntSettings;
   try {
     saved = AutoHuntSettingsSchema.parse(JSON.parse(localStorage.getItem("pm-auto-hunt") ?? "{}"));
   } catch {
     saved = AutoHuntSettingsSchema.parse({});
   }
-  return { itemRules: saved.itemRules, skills: saved.skills };
+  return { itemRules: saved.itemRules, skills: saved.skills, awaken: saved.awaken };
 }
 
 /**
@@ -2658,6 +2672,12 @@ const CLASS3_REFUSAL_TH: Record<string, string> = {
   JOB_TOO_LOW: "Class2 Job ยังไม่เต็ม",
   ALREADY_CHOSEN: "รับ Class3 แล้ว",
 };
+const ASCEND_REFUSAL_TH: Record<string, string> = {
+  NO_CLASS3: "ต้องรับ Class3 ก่อน",
+  LEVEL_TOO_LOW: "เลเวลยังไม่ถึง",
+  ALREADY_ASCENDED: "จุติแล้ว",
+};
+const AWAKEN_TARGET_TH: Record<string, string> = { self: "ตัวเอง", allies: "ทั้งทีม", enemies: "ศัตรูทั้งหมด" };
 
 /**
  * Class2 at ผู้ใหญ่พิมพ์ (class-change.ts, P16/P28): the two branches of this class with what each adds,
@@ -2673,7 +2693,7 @@ export function classPanel(api: CharacterApi): Promise<string | null> {
     const done = el("button", { type: "button" }, "ปิด");
     const actions = el("div", { class: "pm-actions" });
     actions.append(done);
-    panel.append(el("h2", {}, "เปลี่ยนอาชีพ (Class2 / Class3)"), body, error, actions);
+    panel.append(el("h2", {}, "เปลี่ยนอาชีพ (Class2 / Class3 / จุติเทพ)"), body, error, actions);
     const finish = (battleId: string | null) => {
       close();
       resolve(battleId);
@@ -2704,11 +2724,26 @@ export function classPanel(api: CharacterApi): Promise<string | null> {
       if (v.class2Id !== null) body.append(el("div", { class: "pm-stats", "data-class2": v.class2Id }, `สายของคุณ: ${class2Branch(v.class2Id)?.name.th ?? v.class2Id}`));
       if (v.class3Id !== null) body.append(el("div", { class: "pm-stats", "data-class3": v.class3Id }, `Class3 ของคุณ: ${class3Advance(v.class3Id)?.name.th ?? v.class3Id}`));
       const t = v.trial;
-      // The latest trial is either tier: a Class3 id or a branch id.
-      const tier3 = t !== null && trialTier(t.branchId) === 3;
-      const open = t !== null && (tier3 ? v.class3Id === null : v.class2Id === null);
-      const trialName = t === null ? "" : tier3 ? (class3Advance(t.branchId)?.name.th ?? t.branchId) : `สาย${class2Branch(t.branchId)?.name.th ?? t.branchId}`;
-      if (t !== null && t.status === "won" && open) {
+      const asc = v.ascension;
+      // The latest trial is any tier: a race trial, a Class3 id or a branch id.
+      const tier = t === null ? null : trialTier(t.branchId);
+      const tier3 = tier === 3;
+      const open = t !== null && (tier === "ascend" ? asc?.pathId === null : tier3 ? v.class3Id === null : v.class2Id === null);
+      const trialName = t === null ? "" : tier === "ascend" ? "จุติเทพ" : tier3 ? (class3Advance(t.branchId)?.name.th ?? t.branchId) : `สาย${class2Branch(t.branchId)?.name.th ?? t.branchId}`;
+      if (t !== null && t.status === "won" && open && tier === "ascend" && asc !== null) {
+        // The race trial is claimed in town with its cost, picking path A or B.
+        body.append(el("div", { class: "pm-stats" }, "ผ่านบททดสอบจุติเทพแล้ว! เลือกวิถี (จ่ายตอนรับ)"));
+        for (const p of asc.ascension.paths) {
+          const take = el("button", { type: "button", class: "primary", "data-ascend-claim": p.id }, `รับวิถี${p.name.th} (${asc.cost.coins.toLocaleString()} เหรียญ)`);
+          take.addEventListener("click", () =>
+            void run(async () => {
+              await api.ascend(t.operationId, p.key, asc.cost.coins);
+              draw(await api.classView());
+            }),
+          );
+          body.append(take);
+        }
+      } else if (t !== null && t.status === "won" && open) {
         const claim = el("button", { type: "button", class: "primary", "data-class-claim": t.operationId }, `รับ${trialName}`);
         claim.addEventListener("click", () =>
           void run(async () => {
@@ -2726,6 +2761,47 @@ export function classPanel(api: CharacterApi): Promise<string | null> {
           const r = await api.classTrialStart(`class_${crypto.randomUUID().replace(/-/g, "")}`, id);
           finish(r.battleId);
         });
+      if (asc !== null && v.class3Id !== null) {
+        const a = asc.ascension;
+        const bossA = bossDefs.get(asc.bossId)?.name.th ?? asc.bossId;
+        const mats = asc.cost.materials.map((m) => `${itemDefs.get(m.itemId)?.name.th ?? m.itemId} ×${m.quantity}`).join(", ");
+        const list = el("ul", { class: "pm-list", "data-ascension": a.id });
+        for (const p of a.paths) {
+          const awaken = p.awakening.map((e) => `${AWAKEN_TARGET_TH[e.target] ?? e.target}: ${e.statuses.map((x) => STATUS_DEFINITIONS[x.statusId].th).join(" ")}`).join(" · ");
+          list.append(el("li", { "data-ascension-path": p.id }, `วิถี${p.name.th}${asc.pathId === p.id ? " (ใช้อยู่)" : ""} — Passive ${p.passiveName}: ${p.summary} · ตื่น: ${awaken}`));
+        }
+        body.append(
+          el("h3", {}, `จุติเทพ: ${a.name.th} (${a.name.en}) · ${a.raceName}`),
+          el(
+            "div",
+            { class: "pm-note" },
+            `เปิดที่ Lv${asc.level} หลังรับ Class3 · บททดสอบเผ่า: สู้${bossA}ที่แรงขึ้นเป็น ${asc.trialStatPct}% กติกาเดียวกับบททดสอบอาชีพ (อาชีพไหนก็ผ่านได้ด้วยทีม) · ชนะแล้วจ่าย ${asc.cost.coins.toLocaleString()} เหรียญ + ${mats} แล้วเลือกวิถี · Passive เผ่าเปลี่ยนเป็นของวิถี (ไม่ซ้อนของเดิม) · ในไฟต์มีเกจจุติ เต็มแล้วกดตื่นได้ครั้งเดียวต่อไฟต์ อยู่ 3 ตาของตัวเอง · เปลี่ยนวิถีในเมือง ${asc.switchCoins.toLocaleString()} เหรียญ · ตัวเลขเป็นตัวอย่าง (P31)`,
+          ),
+          list,
+        );
+        if (asc.pathId === null) {
+          const go = el("button", { type: "button", class: "primary", "data-class-trial": a.id }, "เริ่มบททดสอบจุติเทพ");
+          if (asc.blocked !== null) {
+            go.setAttribute("disabled", "");
+            go.textContent = ASCEND_REFUSAL_TH[asc.blocked] ?? asc.blocked;
+          }
+          go.addEventListener("click", () => startTrial(a.id));
+          body.append(go);
+        } else {
+          const now = a.paths.find((p) => p.id === asc.pathId);
+          const other = a.paths.find((p) => p.id !== asc.pathId);
+          if (now !== undefined && other !== undefined) {
+            const sw = el("button", { type: "button", "data-ascend-switch": other.id }, `เปลี่ยนเป็นวิถี${other.name.th} (${asc.switchCoins.toLocaleString()} เหรียญ)`);
+            sw.addEventListener("click", () =>
+              void run(async () => {
+                await api.ascendSwitch(now.key, other.key, asc.switchCoins);
+                draw(await api.classView());
+              }),
+            );
+            body.append(sw);
+          }
+        }
+      }
       const c3 = v.class3;
       if (c3 !== null) {
         const boss3 = bossDefs.get(c3.bossId)?.name.th ?? c3.bossId;

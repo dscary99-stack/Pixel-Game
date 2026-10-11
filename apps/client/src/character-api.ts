@@ -204,6 +204,18 @@ export class CharacterApi {
     return this.call<{ status: "claimed"; class2Id?: string; class3Id?: string }>("POST", "/class/trial/claim", { operationId });
   }
 
+  /** Divine awakening after a won race trial: pay coins + materials and take path a or b (P31). */
+  ascend(trialOperationId: string, path: "a" | "b", expectedCoins: number) {
+    const operationId = `ascend_${crypto.randomUUID().replace(/-/g, "")}`;
+    return this.call<{ status: "done"; result: { pathId: string }; coins: number }>("POST", "/town/ascend", { operationId, trialOperationId, path, expectedCoins });
+  }
+
+  /** Switch the ascension path for coins (P31). */
+  ascendSwitch(expectedPath: "a" | "b", path: "a" | "b", expectedCoins: number) {
+    const operationId = `ascsw_${crypto.randomUUID().replace(/-/g, "")}`;
+    return this.call<{ status: "done"; result: { pathId: string }; coins: number }>("POST", "/town/ascend/switch", { operationId, expectedPath, path, expectedCoins });
+  }
+
   frontier() {
     return this.call<FrontierView>("GET", "/frontier");
   }

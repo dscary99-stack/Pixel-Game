@@ -4,7 +4,7 @@
  * it never computes damage, loot, capture or ownership itself (chapter 11 §1).
  */
 import Phaser from "phaser";
-import { DEV_FIXTURE_RULES, ELITE_MODIFIER_TH, combatBagOf, EXAMPLE_FRONTIER, FRONTIER_MODIFIER_TH, STATUS_DEFINITIONS, exampleContentMaps, type BattleCommand, type BattleEvent, type BattleUnit, type Element, type PublicBattleState } from "@pmrpg/shared";
+import { DEV_FIXTURE_RULES, ascensionPath, ELITE_MODIFIER_TH, combatBagOf, EXAMPLE_FRONTIER, FRONTIER_MODIFIER_TH, STATUS_DEFINITIONS, exampleContentMaps, type BattleCommand, type BattleEvent, type BattleUnit, type Element, type PublicBattleState } from "@pmrpg/shared";
 import type { BattleTransport, Snapshot } from "./transport";
 import { savedAutoPolicy } from "./character-ui";
 import { capturePreview, pct2 } from "./capture-ui";
@@ -102,10 +102,11 @@ export class BattleScene extends Phaser.Scene {
       ["ชุบ", () => this.act("revive")],
       ["จับ", () => this.act("capture")],
       ["หนี", () => this.act("flee")],
+      ["จุติ", () => this.act("awaken")],
     ];
-    // Eight buttons and Auto left of the log: 62px wide, 48px tall (P10 touch target height).
-    buttons.forEach(([label, fn], i) => this.button(16 + i * 68, 470, label, fn));
-    this.autoButton = this.button(16 + buttons.length * 68, 470, "Auto: ปิด", () => this.toggleAuto(), 76);
+    // Eight buttons and Auto left of the log: 56px wide, 48px tall (P10 touch target height).
+    buttons.forEach(([label, fn], i) => this.button(16 + i * 60, 470, label, fn, 56));
+    this.autoButton = this.button(16 + buttons.length * 60, 470, "Auto: ปิด", () => this.toggleAuto(), 72);
 
     // Auto only runs while this page is open and visible (C14: no offline farming).
     // The server holds Auto to one action per autoBattleActionMs, the same as Auto Hunt.
@@ -330,7 +331,7 @@ export class BattleScene extends Phaser.Scene {
     btn(ok ? 120 : 16, ok ? "ยกเลิก" : "ปิด", "#4a4560", () => this.closeCapturePreview());
   }
 
-  private async act(kind: "attack" | "skill" | "guard" | "item" | "capture" | "flee" | "revive") {
+  private async act(kind: "attack" | "skill" | "guard" | "item" | "capture" | "flee" | "revive" | "awaken") {
     if (this.watching) return this.pushLog("กำลังล่าอัตโนมัติ: กด หยุดล่า ก่อนสั่งเอง");
     if (this.busy || this.snap.state.status !== "active" || this.snap.actor === null) return;
     if (!this.myTurn()) return this.pushLog(`ยังไม่ถึงตาเรา: ตาของ ${this.name(this.snap.actor)}`);
@@ -358,6 +359,16 @@ export class BattleScene extends Phaser.Scene {
         // Flee chance from SPD and the monsters' flee values (O15); the server rolls.
         const pv = fleePreview(DEV_FIXTURE_RULES, this.snap.state, CONTENT.species, actor.unitId, (id) => this.name(id));
         return this.showConfirm(pv.lines, pv.ok, "ยืนยันหนี", () => void this.send({ type: "flee", actorId: actor.unitId }));
+      }
+      case "awaken": {
+        // Divine awakening (P31): a full gauge, once a fight; the server checks again.
+        const a = actor.awakening;
+        if (a === undefined) return this.pushLog("ยังไม่ได้จุติเทพ (Lv200 หลัง Class3)");
+        if (a.used) return this.pushLog("ตื่นไปแล้วในไฟต์นี้");
+        const max = DEV_FIXTURE_RULES.provisional.ascension.value.gaugeMax;
+        if (a.gauge < max) return this.pushLog(`เกจจุติยังไม่เต็ม ${a.gauge}/${max}`);
+        cmd = { type: "awaken", actorId: actor.unitId };
+        break;
       }
       case "revive": {
         // Revive item on the selected fallen ally, else the first one (O15: from the round after it fell).
@@ -464,6 +475,15 @@ export class BattleScene extends Phaser.Scene {
       }
       case "CaptureResolved":
         return this.pushLog(`จับ ${this.name(e.targetId)}: ${e.success ? "สำเร็จ (ได้ Lv1)" : "ไม่สำเร็จ (เครื่องจับถูกใช้ไป 1 ชิ้น)"} โอกาส ${pct2(e.probability)}`);
+      case "AwakeningChanged": {
+        const path = ascensionPath(e.pathId);
+        if (e.change === "awakened") {
+          this.popup(e.unitId, "จุติ!", "#ffe08a");
+          return this.pushLog(`✦ ${this.name(e.unitId)} ตื่นเป็นเทพ วิถี${path?.name.th ?? e.pathId} (${e.turnsLeft} ตา)`);
+        }
+        if (e.change === "ended") return this.pushLog(`${this.name(e.unitId)} หมดเวลาจุติ`);
+        return e.gauge >= DEV_FIXTURE_RULES.provisional.ascension.value.gaugeMax ? this.pushLog(`เกจจุติของ ${this.name(e.unitId)} เต็มแล้ว กด จุติ ได้`) : undefined;
+      }
       case "FleeResolved":
         return this.pushLog(`หนี: ${e.success ? "สำเร็จ" : "ไม่สำเร็จ (เสียตานี้)"} โอกาส ${pct2(e.chancePct / 100)}`);
       case "UnitRevived": {
@@ -629,6 +649,13 @@ export class BattleScene extends Phaser.Scene {
         ` · ศัตรู ×${(state.frontier.statPct / 100).toFixed(2)}${mods ? ` · ลูกเล่น: ${mods}` : ""}${left > 0 ? ` · กำลังเสริมเหลือ ${left}` : ""}`;
     }
     if (state.practice === true) tower += "\nลานทดสอบ: ไม่ได้และไม่เสียอะไร · หนีออกได้ทุกเมื่อ";
+    // Divine awakening: the gauge of each ascended character, or the turns it has left (P31).
+    const gaugeMax = DEV_FIXTURE_RULES.provisional.ascension.value.gaugeMax;
+    for (const u of state.units) {
+      const a = u.awakening;
+      if (a === undefined || u.ko) continue;
+      tower += `\nจุติ ${u.name}: ${a.turnsLeft > 0 ? `ตื่นอยู่ อีก ${a.turnsLeft} ตา` : a.used ? "ใช้แล้ว" : `เกจ ${a.gauge}/${gaugeMax}`}`;
+    }
     const party = state.partyBonus ? `ปาร์ตี้ ${state.partyBonus.partners} คน: EXP +${state.partyBonus.expPercent}% วัสดุ +${state.partyBonus.materialDropPercent}%` : "";
     const waiting = state.members !== undefined && !this.myTurn() ? " (เพื่อน · รอเขาสั่ง)" : "";
     this.turnText.setText(

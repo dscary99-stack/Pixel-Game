@@ -6,7 +6,7 @@
  */
 import type { z } from "zod";
 import { EXAMPLE_AFFIX_POOLS, EXAMPLE_EQUIPMENT, SHOP_EQUIPMENT } from "./equipment";
-import { RACE_PASSIVE_SKILLS } from "./player-skills";
+import { ASCENSION_PASSIVE_SKILLS, RACE_PASSIVE_SKILLS } from "./player-skills";
 import { TREE_SKILLS } from "./class-trees";
 import { EXAMPLE_REFINE_ITEMS } from "./refine";
 import { PassiveSchema, type PassiveTriggerSchema } from "../schemas";
@@ -490,7 +490,7 @@ function sigil(id: string, sourceSpeciesId: string, equipGroups: SigilDefinition
 export function exampleContentMaps() {
   return {
     species: new Map(EXAMPLE_SPECIES.map((s) => [s.id, s])),
-    skills: new Map([...EXAMPLE_SKILLS, ...TREE_SKILLS, ...RACE_PASSIVE_SKILLS].map((s) => [s.id, s])),
+    skills: new Map([...EXAMPLE_SKILLS, ...TREE_SKILLS, ...RACE_PASSIVE_SKILLS, ...ASCENSION_PASSIVE_SKILLS].map((s) => [s.id, s])),
     items: new Map(EXAMPLE_ITEMS.map((s) => [s.id, s])),
     lootTables: new Map([...EXAMPLE_LOOT_TABLES, ...EXAMPLE_FRONTIER_LOOT_TABLES].map((s) => [s.id, s])),
     sigils: new Map(EXAMPLE_SIGILS.map((s) => [s.id, s])),

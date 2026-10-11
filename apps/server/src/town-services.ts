@@ -52,6 +52,10 @@ import {
   type RulesConfig,
   type SigilDefinition,
   type SpeciesDefinition,
+  AscendClaimRequestSchema,
+  AscendSwitchRequestSchema,
+  ascensionOfRace,
+  ascensionRefusal,
 } from "@pmrpg/shared";
 import { hashJson, type SqlBound, type SqlDb } from "./reward-ledger";
 
@@ -69,7 +73,7 @@ export interface TownContent {
   recipes?: ReadonlyMap<string, Recipe>;
 }
 
-type Kind = "npc_buy" | "npc_sell" | "sigil_install" | "sigil_remove" | "companion_rebirth" | "skill_train" | "rebirth_branch" | "affix_reroll" | "affix_choose" | "craft";
+type Kind = "npc_buy" | "npc_sell" | "sigil_install" | "sigil_remove" | "companion_rebirth" | "skill_train" | "rebirth_branch" | "affix_reroll" | "affix_choose" | "craft" | "ascend" | "ascend_switch";
 
 export type ServiceRejection =
   | "INVALID_REQUEST"
@@ -101,6 +105,13 @@ export type ServiceRejection =
   | "CHOICE_PENDING"
   | "NO_PENDING_REROLL"
   | "NO_SUCH_RECIPE"
+  | "NO_CHARACTER"
+  | "NO_CLASS3"
+  | "ALREADY_ASCENDED"
+  | "NOT_ASCENDED"
+  | "NOT_FOUND"
+  | "NOT_WON"
+  | "SAME_PATH"
   | "CHANGED";
 
 export type ServiceResult<T> = { status: "done"; replayed: boolean; result: T } | { status: "rejected"; reason: ServiceRejection; message: string };
@@ -160,6 +171,14 @@ export interface CraftResult {
   equipment: { id: string; definitionId: string; rarity: Rarity; affixes: RolledAffix[] }[];
   profession: Profession;
   mastery: { before: number; after: number };
+}
+export interface AscendResult {
+  pathId: string;
+  paid: { coins: number; materials: { itemId: string; quantity: number }[] };
+}
+export interface AscendSwitchResult {
+  pathId: string;
+  paid: number;
 }
 export interface SigilResult {
   equipmentId: string;
@@ -632,6 +651,156 @@ export class TownServices {
       if (now === null) return reject("NOT_OWNER", "that companion is not yours");
       if (now.rebirth_stage < stage || now.b !== expectedBranch) return reject("CHANGED", "the companion changed; reload and try again");
       if (now.lock_state !== "free") return reject("ASSET_LOCKED", "that companion is busy");
+      return reject("INSUFFICIENT_COINS", `switching costs ${cost} coins`);
+    });
+  }
+
+  // ------------------------------------------------------------------ divine awakening (ascension.ts, P31)
+
+  /**
+   * Claim the ascension after a won race trial (class-store.ts starts it): in town, outside fights,
+   * Lv200 with a Class3 and no ascension yet, paying the coins and materials of the rules (P31). One
+   * batch like Rebirth: the anchor checks every guard (the trial's fight settled as a win included),
+   * then coins and materials are charged, the path written and the trial marked claimed. A retry
+   * replays; a second claim (any trial, any path) finds the character already ascended.
+   */
+  async ascend(accountId: string, raw: unknown): Promise<ServiceResult<AscendResult>> {
+    const parsed = AscendClaimRequestSchema.safeParse(raw);
+    if (!parsed.success) return reject("INVALID_REQUEST", issues(parsed.error));
+    const { operationId, trialOperationId, path, expectedCoins } = parsed.data;
+    const hash = await hashJson({ kind: "ascend", trialOperationId, path, expectedCoins });
+    const prior = await this.prior<AscendResult>(accountId, operationId, hash);
+    if (prior !== null) return prior;
+
+    const ch = await this.db
+      .prepare(`SELECT id, race_id, level, class3_id, ascension_id FROM characters WHERE account_id = ?`)
+      .bind(accountId)
+      .first<{ id: string; race_id: string; level: number; class3_id: string | null; ascension_id: string | null }>();
+    if (ch === null) return reject("NO_CHARACTER", "create a character first");
+    const asc = ascensionOfRace(ch.race_id);
+    if (asc === undefined) return reject("NOT_FOUND", "your race has no ascension");
+    const r = this.rules.provisional.ascension.value;
+    const refusal = ascensionRefusal(this.rules, { raceId: ch.race_id, level: ch.level, class3Id: ch.class3_id, ascensionId: ch.ascension_id }, asc.id);
+    if (refusal === "ALREADY_ASCENDED") return reject("ALREADY_ASCENDED", "this character already ascended");
+    if (refusal === "NO_CLASS3") return reject("NO_CLASS3", "take your Class3 first");
+    if (refusal === "LEVEL_TOO_LOW") return reject("LEVEL_TOO_LOW", `divine awakening opens at Lv${r.level}`);
+    if (expectedCoins !== r.coins) return reject("COST_CHANGED", `divine awakening costs ${r.coins} coins`);
+    const trial = await this.db
+      .prepare(`SELECT branch_id FROM class_trials WHERE character_id = ? AND operation_id = ?`)
+      .bind(ch.id, trialOperationId)
+      .first<{ branch_id: string }>();
+    if (trial === null || trial.branch_id !== asc.id) return reject("NOT_FOUND", "no race trial with this operation id");
+
+    const pathId = `${asc.id}:${path}`;
+    const materials = r.materials.map((m) => ({ itemId: m.itemId, quantity: m.quantity }));
+    const result: AscendResult = { pathId, paid: { coins: r.coins, materials } };
+    const won = `EXISTS (SELECT 1 FROM class_trials t JOIN battle_reservations b ON b.reservation_id = t.reservation_id
+      WHERE t.character_id = ? AND t.operation_id = ? AND t.branch_id = ? AND b.status = 'settled' AND b.outcome = 'victory')`;
+    const guards = [
+      this.inTown(),
+      `NOT ${OPEN_BATTLE}`,
+      `EXISTS (SELECT 1 FROM characters WHERE id = ? AND account_id = ? AND ascension_id IS NULL AND class3_id IS NOT NULL AND level >= ?)`,
+      won,
+      `(SELECT COALESCE(SUM(delta), 0) FROM coin_ledger WHERE account_id = ?) >= ?`,
+      ...materials.map(() => `(SELECT COALESCE(SUM(delta), 0) FROM item_ledger WHERE account_id = ? AND item_id = ?) >= ?`),
+    ];
+    const args = [
+      accountId,
+      ...this.townMapIds,
+      accountId,
+      ch.id,
+      accountId,
+      r.level,
+      ch.id,
+      trialOperationId,
+      asc.id,
+      accountId,
+      r.coins,
+      ...materials.flatMap((m) => [accountId, m.itemId, m.quantity]),
+    ];
+    const ledgerId = `svc:${accountId}:${operationId}`;
+    const at = this.now();
+    const ours = this.ours(accountId, operationId, hash);
+    await this.db.batch([
+      this.anchor(accountId, operationId, "ascend", hash, result, guards, args),
+      this.db
+        .prepare(
+          `INSERT INTO coin_ledger (operation_id, line_no, account_id, delta, reason, created_at)
+           SELECT ?, 0, ?, ?, 'ascend', ? WHERE ${ours.sql} ON CONFLICT DO NOTHING`,
+        )
+        .bind(ledgerId, accountId, -r.coins, at, ...ours.args),
+      ...materials.map((m, i) =>
+        this.db
+          .prepare(
+            `INSERT INTO item_ledger (operation_id, line_no, account_id, item_id, delta, reason, created_at)
+             SELECT ?, ?, ?, ?, ?, 'ascend', ? WHERE ${ours.sql} ON CONFLICT DO NOTHING`,
+          )
+          .bind(ledgerId, i, accountId, m.itemId, -m.quantity, at, ...ours.args),
+      ),
+      this.db
+        .prepare(`UPDATE characters SET ascension_id = ?, ascension_operation_id = ? WHERE id = ? AND account_id = ? AND ascension_id IS NULL AND ${ours.sql}`)
+        .bind(pathId, operationId, ch.id, accountId, ...ours.args),
+      this.db
+        .prepare(`UPDATE class_trials SET status = 'claimed' WHERE character_id = ? AND operation_id = ? AND ${ours.sql}`)
+        .bind(ch.id, trialOperationId, ...ours.args),
+    ]);
+    return this.outcome(accountId, operationId, hash, async () => {
+      const why = await this.whereAndFight(accountId);
+      if (why !== null) return why;
+      const now = await this.db.prepare(`SELECT ascension_id FROM characters WHERE id = ?`).bind(ch.id).first<{ ascension_id: string | null }>();
+      if (now?.ascension_id != null) return reject("ALREADY_ASCENDED", "this character already ascended");
+      const res = await this.db
+        .prepare(`SELECT b.status, b.outcome FROM class_trials t JOIN battle_reservations b ON b.reservation_id = t.reservation_id WHERE t.character_id = ? AND t.operation_id = ?`)
+        .bind(ch.id, trialOperationId)
+        .first<{ status: string; outcome: string | null }>();
+      if (res?.status !== "settled" || res.outcome !== "victory") return reject("NOT_WON", "win the race trial first");
+      if ((await this.coins(accountId)) < r.coins) return reject("INSUFFICIENT_COINS", `divine awakening costs ${r.coins} coins`);
+      for (const m of materials) if ((await this.itemBalance(accountId, m.itemId)) < m.quantity) return reject("INSUFFICIENT_ITEMS", `divine awakening needs ${m.quantity} ${m.itemId}`);
+      return reject("CHANGED", "something changed; reload and try again");
+    });
+  }
+
+  /** Switch the ascension path in town for coins (P31: a coin sink, like the Rebirth branch). */
+  async switchAscensionPath(accountId: string, raw: unknown): Promise<ServiceResult<AscendSwitchResult>> {
+    const parsed = AscendSwitchRequestSchema.safeParse(raw);
+    if (!parsed.success) return reject("INVALID_REQUEST", issues(parsed.error));
+    const { operationId, expectedPath, path, expectedCoins } = parsed.data;
+    const hash = await hashJson({ kind: "ascend_switch", expectedPath, path, expectedCoins });
+    const prior = await this.prior<AscendSwitchResult>(accountId, operationId, hash);
+    if (prior !== null) return prior;
+    if (path === expectedPath) return reject("SAME_PATH", "that path is already in use");
+    const ch = await this.db.prepare(`SELECT id, race_id, ascension_id FROM characters WHERE account_id = ?`).bind(accountId).first<{ id: string; race_id: string; ascension_id: string | null }>();
+    if (ch === null) return reject("NO_CHARACTER", "create a character first");
+    const asc = ascensionOfRace(ch.race_id);
+    if (asc === undefined || ch.ascension_id === null) return reject("NOT_ASCENDED", "ascend first");
+    const cost = this.rules.provisional.ascension.value.pathSwitchCoins;
+    if (expectedCoins !== cost) return reject("COST_CHANGED", `switching costs ${cost} coins`);
+    const from = `${asc.id}:${expectedPath}`;
+    const pathId = `${asc.id}:${path}`;
+    const result: AscendSwitchResult = { pathId, paid: cost };
+    const guards = [
+      this.inTown(),
+      `NOT ${OPEN_BATTLE}`,
+      `EXISTS (SELECT 1 FROM characters WHERE id = ? AND account_id = ? AND ascension_id = ?)`,
+      `(SELECT COALESCE(SUM(delta), 0) FROM coin_ledger WHERE account_id = ?) >= ?`,
+    ];
+    const args = [accountId, ...this.townMapIds, accountId, ch.id, accountId, from, accountId, cost];
+    const ours = this.ours(accountId, operationId, hash);
+    await this.db.batch([
+      this.anchor(accountId, operationId, "ascend_switch", hash, result, guards, args),
+      this.db
+        .prepare(
+          `INSERT INTO coin_ledger (operation_id, line_no, account_id, delta, reason, created_at)
+           SELECT ?, 0, ?, ?, 'ascend_switch', ? WHERE ${ours.sql} ON CONFLICT DO NOTHING`,
+        )
+        .bind(`svc:${accountId}:${operationId}`, accountId, -cost, this.now(), ...ours.args),
+      this.db.prepare(`UPDATE characters SET ascension_id = ? WHERE id = ? AND account_id = ? AND ascension_id = ? AND ${ours.sql}`).bind(pathId, ch.id, accountId, from, ...ours.args),
+    ]);
+    return this.outcome(accountId, operationId, hash, async () => {
+      const why = await this.whereAndFight(accountId);
+      if (why !== null) return why;
+      const now = await this.db.prepare(`SELECT ascension_id FROM characters WHERE id = ?`).bind(ch.id).first<{ ascension_id: string | null }>();
+      if (now?.ascension_id !== from) return reject("CHANGED", "the path changed; reload and try again");
       return reject("INSUFFICIENT_COINS", `switching costs ${cost} coins`);
     });
   }

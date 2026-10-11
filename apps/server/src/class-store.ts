@@ -13,14 +13,18 @@
  * Class3 (Lv120): the same start and claim with a Class3 id in `branchId` (trialTier): the character
  * needs its branch and Class2 Job at its cap; the boss is the tower tyrant at the Class3 trial stat %,
  * and the claim sets `class3_id` the same once-only way.
+ *
+ * Divine awakening (Lv200, ascension.ts): the same start with `ascend:<race>` (the character's own race,
+ * a Class3, no ascension yet); the boss is the tyrant at the ascension trial stat % (P31). Its claim
+ * costs coins and materials, so it is a town service (TownServices.ascend), not `claim` here.
  */
-import { ClassTrialClaimRequestSchema, ClassTrialStartRequestSchema, CLASS2_TRIAL_BOSS_ID, CLASS3_TRIAL_BOSS_ID, class2Refusal, class3Refusal, trialTier, classView, jobCap, companionSetups, playerSetup, type BattleSetup, type ClassTrialView, type ClassView, type RulesConfig } from "@pmrpg/shared";
+import { ASCENSION_TRIAL_BOSS_ID, ascensionRefusal, ClassTrialClaimRequestSchema, ClassTrialStartRequestSchema, CLASS2_TRIAL_BOSS_ID, CLASS3_TRIAL_BOSS_ID, class2Refusal, class3Refusal, trialTier, classView, jobCap, companionSetups, playerSetup, type BattleSetup, type ClassTrialView, type ClassView, type RulesConfig } from "@pmrpg/shared";
 import type { CharacterStore } from "./character-store";
 import type { Economy } from "./economy";
 import type { FrontierBattlePort } from "./frontier-store";
 import { hashJson, type SqlDb } from "./reward-ledger";
 
-export type ClassRejection = "INVALID_REQUEST" | "NO_CHARACTER" | "NOT_FOUND" | "NO_CLASS2" | "NOT_IN_TOWN" | "IN_BATTLE" | "LEVEL_TOO_LOW" | "JOB_TOO_LOW" | "ALREADY_CHOSEN" | "NOT_WON" | "ENCOUNTER_REFUSED";
+export type ClassRejection = "INVALID_REQUEST" | "NO_CHARACTER" | "NOT_FOUND" | "NO_CLASS2" | "NO_CLASS3" | "ALREADY_ASCENDED" | "NOT_IN_TOWN" | "IN_BATTLE" | "LEVEL_TOO_LOW" | "JOB_TOO_LOW" | "ALREADY_CHOSEN" | "NOT_WON" | "ENCOUNTER_REFUSED";
 type Rejected = { status: "rejected"; reason: ClassRejection; message: string };
 const reject = (reason: ClassRejection, message: string): Rejected => ({ status: "rejected", reason, message });
 
@@ -75,7 +79,13 @@ export class ClassStore {
       if (res?.status === "settled" || prior.status === "claimed") return { status: "started", battleId: prior.battle_id, branchId, resumed: true };
     } else {
       const cc = this.rules.provisional.classChange.value;
-      if (tier === 3) {
+      if (tier === "ascend") {
+        const refusal = ascensionRefusal(this.rules, character, branchId);
+        if (refusal === "NOT_FOUND") return reject("NOT_FOUND", "that is not your race's trial");
+        if (refusal === "NO_CLASS3") return reject("NO_CLASS3", "take your Class3 first");
+        if (refusal === "ALREADY_ASCENDED") return reject("ALREADY_ASCENDED", "this character already ascended");
+        if (refusal === "LEVEL_TOO_LOW") return reject("LEVEL_TOO_LOW", `the race trial opens at Lv${this.rules.provisional.ascension.value.level}`);
+      } else if (tier === 3) {
         const refusal = class3Refusal(this.rules, character, branchId);
         if (refusal === "NOT_FOUND") return reject("NOT_FOUND", "your branch has no such Class3");
         if (refusal === "NO_CLASS2") return reject("NO_CLASS2", "take your Class2 first");
@@ -91,7 +101,7 @@ export class ClassStore {
       }
       if (!(await this.inTown(accountId))) return reject("NOT_IN_TOWN", "the trial is taken in town");
     }
-    const battleId = prior?.battle_id ?? `battle:ct_${(await hashJson({ accountId, operationId, kind: tier === 3 ? "class3" : "class2" })).slice(0, 32)}`;
+    const battleId = prior?.battle_id ?? `battle:ct_${(await hashJson({ accountId, operationId, kind: tier === "ascend" ? "ascend" : tier === 3 ? "class3" : "class2" })).slice(0, 32)}`;
     const reservationId = `res:${battleId}`;
     if ((await this.economy.reservedBag(reservationId)) === null) {
       const team = character.team.map((t) => t.instanceId);
@@ -117,11 +127,11 @@ export class ClassStore {
       player: playerSetup(accountId, { ...character, hp: null, mp: null }, worn),
       companions: companionSetups(character.team, full),
       enemies: [],
-      boss: { bossId: tier === 3 ? CLASS3_TRIAL_BOSS_ID : CLASS2_TRIAL_BOSS_ID },
+      boss: { bossId: tier === "ascend" ? ASCENSION_TRIAL_BOSS_ID : tier === 3 ? CLASS3_TRIAL_BOSS_ID : CLASS2_TRIAL_BOSS_ID },
       bag: {},
       practice: true,
       classTrial: true,
-      ...(tier === 3 ? { classTrialTier: 3 as const } : {}),
+      ...(tier === 3 ? { classTrialTier: 3 as const } : tier === "ascend" ? { classTrialTier: "ascend" as const } : {}),
     };
     // The Battle DO keeps the first setup it was given, so a resumed create is a no-op.
     const created = await this.battles.create(accountId, setup, reservationId);
@@ -139,6 +149,7 @@ export class ClassStore {
     const t = await this.trial(c.id, operationId);
     if (t === null) return reject("NOT_FOUND", "no trial with this operation id");
     const tier = trialTier(t.branch_id);
+    if (tier === "ascend") return reject("INVALID_REQUEST", "a race trial is claimed in town with its cost (POST /town/ascend)");
     const col = tier === 3 ? "class3" : "class2";
     const answer = (id: string): ClassClaimResult => (tier === 3 ? { status: "claimed", class3Id: id } : { status: "claimed", class2Id: id });
     const taken = reject("ALREADY_CHOSEN", `this character already took its Class${tier}`);

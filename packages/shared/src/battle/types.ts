@@ -65,6 +65,11 @@ export interface BattleUnit {
   elite?: { modifiers: EliteModifier[]; enraged: boolean; moraleBroken: boolean; counterOn: string | null };
   /** Wild bosses with more than one action per round (chapter 03); absent means 1. */
   actionsPerRound?: number;
+  /**
+   * Divine awakening (ascension.ts, P31): the path, the gauge (0..gaugeMax, starts at 0 every fight),
+   * the last round it gained, whether it was used this fight, and own turns of awakening left.
+   */
+  awakening?: { pathId: string; gauge: number; gainedRound: number; gainedThisRound: number; used: boolean; turnsLeft: number; fresh?: boolean };
   /** Once-per-battle passives already used ("skillId#trigger index"). */
   passivesUsed?: string[];
   ko: boolean;
@@ -216,7 +221,9 @@ export type BattleCommand =
   | { type: "item"; actorId: string; itemId: string; targetId: string }
   | { type: "capture"; actorId: string; targetId: string; itemId: string }
   | { type: "move"; actorId: string; row: Row; slot: number }
-  | { type: "flee"; actorId: string };
+  | { type: "flee"; actorId: string }
+  /** Divine awakening: spend the action with a full gauge (once a fight). */
+  | { type: "awaken"; actorId: string };
 
 export type CommandSource = "player" | "auto";
 
@@ -288,6 +295,8 @@ export type BattleEventBody =
   | { type: "ReinforcementArrived"; unitId: string; speciesId: string; element: Element; row: Row; slot: number; replaces: string; left: number }
   /** A flee try (O15): the chance in % it was rolled at. */
   | { type: "FleeResolved"; actorId: string; success: boolean; chancePct: number }
+  /** Divine awakening (ascension.ts): the gauge filled up, the unit awakened, or its awakening ended. */
+  | { type: "AwakeningChanged"; unitId: string; pathId: string; change: "gauge" | "awakened" | "ended"; gauge: number; turnsLeft: number }
   /** A fallen ally is back (O15); it acts again from the next round. `sourceId`: the skill or item. */
   | { type: "UnitRevived"; unitId: string; byId: string; sourceId: string; hp: number }
   | { type: "CaptureResolved"; targetId: string; speciesId: string; success: boolean; probability: number; profileVersion: string }
@@ -349,6 +358,8 @@ export interface BattleSetup {
     sigilIds?: string[];
     /** Free places in the character's companion box when the fight starts (P26); omitted = no limit. */
     companionRoom?: number;
+    /** Divine awakening path (ascension.ts): the unit gets an awakening gauge. */
+    ascensionId?: string;
   };
   companions: (Position & { instance: MonsterInstance; hp?: number; mp?: number })[];
   enemies: (Position & {
@@ -371,8 +382,8 @@ export interface BattleSetup {
    * get the rules' trial stat % (P28). Needs `practice` and `boss`.
    */
   classTrial?: boolean;
-  /** 3 for the Class3 trial (its own stat %, P28); a Class2 trial leaves it out. */
-  classTrialTier?: 3;
+  /** 3 for the Class3 trial (its own stat %, P28), "ascend" for the divine awakening trial (P31); a Class2 trial leaves it out. */
+  classTrialTier?: 3 | "ascend";
   bag: Record<string, number>;
   /** Counted by the server when the fight starts (P02); never from the client. */
   partyBonus?: PartyBonus;

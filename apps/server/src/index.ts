@@ -36,6 +36,8 @@
  *   POST /town/buy-gear            buy plain equipment at an armory (operationId, shopId, definitionId, quantity, expectedTotal)
  *   POST /town/rebirth             companion Rebirth at the town NPC (operationId, companionId, expectedStage)
  *   POST /town/rebirth/branch      switch a reached Rebirth stage's variant branch for coins (operationId, companionId, stage, expectedBranch, branch, expectedCost)
+ *   POST /town/ascend              divine awakening after a won race trial: pay coins + materials, pick path a/b (operationId, trialOperationId, path, expectedCoins)
+ *   POST /town/ascend/switch       switch the ascension path for coins (operationId, expectedPath, path, expectedCoins)
  *   POST /town/skill               train one companion skill a level (operationId, companionId, skillId, expectedLevel)
  *   PUT  /character/team           set the team (expectedVersion; ≤5, no duplicate species, outside fights)
  *   GET  /frontier                 the weekly tower: this week's entry used, current and best floor (settles a finished floor first)
@@ -45,7 +47,7 @@
  *   GET  /practice                 the town training ground: the field bosses it can stage (P17)
  *   POST /practice/start           start or resume a practice fight in town ({ operationId, bossId }); nothing earned or lost
  *   GET  /class                    Class2: the two branches of this class, the trial level, the latest trial
- *   POST /class/trial/start        start or resume the Class2 trial in town ({ operationId, branchId }); Lv50+, no branch yet; a Class3 id as branchId starts the Class3 trial (Lv120+, Class2 Job 70)
+ *   POST /class/trial/start        start or resume the Class2 trial in town ({ operationId, branchId }); Lv50+, no branch yet; a Class3 id as branchId starts the Class3 trial (Lv120+, Class2 Job 70); `ascend:<race>` starts the divine awakening trial (Lv200 + Class3), claimed at POST /town/ascend
  *   POST /class/trial/claim        take the branch of a won trial ({ operationId } of that trial); once per character
  *   POST /character/skills/learn   learn the next level of a tree skill with job points ({ expectedVersion, skillId }; outside fights)
  *   POST /character/reset          use a reset scroll: stats back to the start or all tree skills forgotten ({ operationId, itemId }; outside fights; retry-safe)
@@ -80,6 +82,7 @@
  * whose battle provably never started.
  */
 import {
+  class3Advance,
   COMPANION_GROWTH_VERSION,
   DEV_FIXTURE_RULES,
   DEV_STARTER_COINS,
@@ -544,6 +547,8 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
   if (request.method === "POST" && url.pathname === "/town/sell") return serviceReply(env, accountId, await townFor(env).sell(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/rebirth") return serviceReply(env, accountId, await townFor(env).rebirth(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/rebirth/branch") return serviceReply(env, accountId, await townFor(env).changeRebirthBranch(accountId, body));
+  if (request.method === "POST" && url.pathname === "/town/ascend") return serviceReply(env, accountId, await townFor(env).ascend(accountId, body));
+  if (request.method === "POST" && url.pathname === "/town/ascend/switch") return serviceReply(env, accountId, await townFor(env).switchAscensionPath(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/skill") return serviceReply(env, accountId, await townFor(env).trainSkill(accountId, body));
   if (request.method === "PUT" && url.pathname === "/character/stats") {
     const r = await store.allocate(accountId, body);
@@ -640,6 +645,15 @@ async function devRoute(request: Request, env: Env, url: URL): Promise<Response>
     const parsed = z.object({ level: z.number().int().min(1).max(200), job: z.number().int().min(1).max(70).optional() }).strict().safeParse(await readJson(request));
     if (!parsed.success) return json(400, { error: "INVALID_REQUEST" });
     await charactersFor(env).devRaiseLevel(accountId, parsed.data.level, parsed.data.job);
+    return json(200, { ok: true });
+  }
+  // DEV ONLY: a branch and its Class3 with full job points, so the divine awakening smoke starts at Lv200.
+  if (request.method === "POST" && url.pathname === "/dev/class") {
+    const parsed = z.object({ class2Id: z.string().min(1).max(60), class3Id: z.string().min(1).max(60) }).strict().safeParse(await readJson(request));
+    if (!parsed.success) return json(400, { error: "INVALID_REQUEST" });
+    const a = class3Advance(parsed.data.class3Id);
+    if (a === undefined || a.branchId !== parsed.data.class2Id) return json(400, { error: "NOT_FOUND" });
+    await charactersFor(env).devSetClasses(accountId, parsed.data.class2Id, parsed.data.class3Id);
     return json(200, { ok: true });
   }
   // DEV ONLY: a piece with set affixes, plus coins and items, so smokes can test rerolls.

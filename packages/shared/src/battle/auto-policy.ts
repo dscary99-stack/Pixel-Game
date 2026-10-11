@@ -38,8 +38,16 @@ export const AutoSkillRuleSchema = z
   .strict();
 export type AutoSkillRule = z.infer<typeof AutoSkillRuleSchema>;
 
+/**
+ * Divine awakening on Auto (chapter 02: Auto may use it by a condition, the same for everyone):
+ * "ready" as soon as the gauge is full, "strong" only while an Elite or boss stands, "low_hp" when the
+ * character is under half HP, "never".
+ */
+export const AutoAwakenSchema = z.enum(["ready", "strong", "low_hp", "never"]);
+export type AutoAwaken = z.infer<typeof AutoAwakenSchema>;
+
 export const AutoBattlePolicySchema = z
-  .object({ itemRules: z.array(AutoItemRuleSchema).max(5).default([]), skills: AutoSkillRuleSchema.prefault({}) })
+  .object({ itemRules: z.array(AutoItemRuleSchema).max(5).default([]), skills: AutoSkillRuleSchema.prefault({}), awaken: AutoAwakenSchema.default("ready") })
   .strict();
 export type AutoBattlePolicy = z.infer<typeof AutoBattlePolicySchema>;
 export type AutoBattlePolicyInput = z.input<typeof AutoBattlePolicySchema>;

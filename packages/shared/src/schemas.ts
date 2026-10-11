@@ -202,6 +202,8 @@ export const PASSIVE_EVENTS = [
   "moved",
   /** A harmful status from the other side landed on this unit (other = who put it on). */
   "debuffed",
+  /** This unit used the guard command. */
+  "guarded",
 ] as const;
 export type PassiveEvent = (typeof PASSIVE_EVENTS)[number];
 
@@ -224,7 +226,7 @@ export const PassiveTriggerSchema = z
   .superRefine((t, ctx) => {
     if ((t.on === "hp_below") !== (t.hpBelowPct !== undefined)) ctx.addIssue({ code: "custom", message: "hpBelowPct goes with hp_below only" });
     if (t.skillApplies !== undefined && t.on !== "used_skill") ctx.addIssue({ code: "custom", message: "skillApplies goes with used_skill only" });
-    const noOther = t.on === "battle_start" || t.on === "turn_start" || t.on === "turn_end" || t.on === "hp_below" || t.on === "moved";
+    const noOther = t.on === "battle_start" || t.on === "turn_start" || t.on === "turn_end" || t.on === "hp_below" || t.on === "moved" || t.on === "guarded";
     if (noOther && t.otherHas !== undefined) ctx.addIssue({ code: "custom", message: `${t.on} has no other unit` });
     // Harmful statuses only on an enemy "other"; helpful ones, heals and MP only on the owner's side.
     // used_skill's other can be either side: the kernel checks that one when it fires.

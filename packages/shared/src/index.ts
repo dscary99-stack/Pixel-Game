@@ -54,6 +54,7 @@ export * from "./vault";
 export * from "./practice";
 export * from "./player-kit";
 export * from "./class-change";
+export * from "./ascension";
 export * from "./job";
 export * from "./skill-tree";
 export * from "./skill-budget";

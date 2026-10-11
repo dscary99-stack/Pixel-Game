@@ -10,6 +10,8 @@
  *
  * Class3 (chapter 02): one per branch, from Lv120 with Class2 at its job cap. The same trial and claim,
  * naming the Class3 id instead of a branch id; its boss is a tower guardian at the Class3 trial stat %.
+ * The divine awakening trial (ascension.ts) starts the same way with `ascend:<race>`; it is claimed in
+ * town with its cost (town-services.ts), not here.
  */
 import { z } from "zod";
 import { OperationIdSchema, type CharacterView } from "./character";
@@ -17,6 +19,7 @@ import { SKILL_TREES } from "./content/class-trees";
 import { jobCap, jobLevelForExp } from "./job";
 import { class2Branch, class2BranchesOf, class3Advance, class3For, type Class2Branch, type Class3Advance } from "./player-kit";
 import type { RulesConfig } from "./rules";
+import { ascensionView, type AscensionView } from "./ascension";
 
 /** EXAMPLE: the trial boss (the only field boss so far); the rules give it the trial stat %. */
 export const CLASS2_TRIAL_BOSS_ID = "boss:crystal_crab_lord";
@@ -24,7 +27,7 @@ export const CLASS2_TRIAL_BOSS_ID = "boss:crystal_crab_lord";
 export const CLASS3_TRIAL_BOSS_ID = "boss:rift_spire_tyrant";
 
 /** Which tier a trial id is for: a Class3 id or a Class2 branch id. */
-export const trialTier = (id: string): 2 | 3 => (id.startsWith("class3:") ? 3 : 2);
+export const trialTier = (id: string): 2 | 3 | "ascend" => (id.startsWith("ascend:") ? "ascend" : id.startsWith("class3:") ? 3 : 2);
 
 export const ClassTrialStartRequestSchema = z.object({ operationId: OperationIdSchema, branchId: z.string().min(1).max(60) }).strict();
 export const ClassTrialClaimRequestSchema = z.object({ operationId: OperationIdSchema }).strict();
@@ -57,6 +60,8 @@ export interface ClassView {
   class3Id: string | null;
   /** Null until the character has a branch (each branch has one Class3). */
   class3: Class3View | null;
+  /** Divine awakening of the character's race (ascension.ts); null when the race is not known here. */
+  ascension: AscensionView | null;
   /** The two branches of this Class1, with what each adds. */
   branches: (Class2Branch & { skills: { skillId: string; maxLevel: number }[] })[];
   trialLevel: number;
@@ -71,7 +76,7 @@ export interface ClassView {
 }
 
 /** Why this character cannot take the trial for this branch, or null. */
-type TrialCharacter = Pick<CharacterView, "classId" | "level" | "class2Id" | "jobExp"> & { class3Id?: string | null };
+type TrialCharacter = Pick<CharacterView, "classId" | "level" | "class2Id" | "jobExp"> & { class3Id?: string | null; raceId?: string; ascensionId?: string | null };
 
 function blockedBy(rules: RulesConfig, c: TrialCharacter): null | "LEVEL_TOO_LOW" | "JOB_TOO_LOW" | "ALREADY_CHOSEN" {
   if (c.class2Id != null) return "ALREADY_CHOSEN";
@@ -120,6 +125,7 @@ export function classView(rules: RulesConfig, c: TrialCharacter, trial: ClassTri
             bossId: CLASS3_TRIAL_BOSS_ID,
             blocked: blocked3(rules, c),
           },
+    ascension: c.raceId === undefined ? null : ascensionView(rules, { raceId: c.raceId, level: c.level, class3Id: c.class3Id ?? null, ascensionId: c.ascensionId ?? null }),
     branches: class2BranchesOf(c.classId).map((b) => ({ ...b, skills: (SKILL_TREES.get(b.treeId)?.nodes ?? []).map((n) => ({ skillId: n.skillId, maxLevel: n.maxLevel })) })),
     trialLevel: cc.class2Level,
     trialStatPct: cc.trialStatPct,

@@ -15,7 +15,7 @@ import type { RulesConfig } from "../rules";
 import { portalAt, type MapDefinition, type TilePos } from "./map";
 import { findPathWhere, type Direction } from "./movement";
 import { inEngageRange, type VisiblePack } from "./encounter";
-import { AutoItemRuleSchema, AutoSkillRuleSchema } from "../battle/auto-policy";
+import { AutoAwakenSchema, AutoItemRuleSchema, AutoSkillRuleSchema } from "../battle/auto-policy";
 
 const SpeciesRef = z.string().regex(/^species:[a-z0-9_]+$/);
 
@@ -39,6 +39,8 @@ export const AutoHuntSettingsSchema = z
     itemRules: z.array(AutoItemRuleSchema).max(5).default([]),
     /** How Auto uses skills in fights (heal, cleanse, buff, debuff, damage; MP reserve). */
     skills: AutoSkillRuleSchema.prefault({}),
+    /** When Auto uses divine awakening (P31): as soon as it is ready, only against an Elite or boss, at low HP, or never. */
+    awaken: AutoAwakenSchema.default("ready"),
     /** Stop between fights once every item in the rules has run out. */
     stopWhenItemsOut: z.boolean().default(false),
   })

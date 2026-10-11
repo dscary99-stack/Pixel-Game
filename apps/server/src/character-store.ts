@@ -12,6 +12,7 @@
  */
 import {
   COMPANION_GROWTH_VERSION,
+  jobExpCap,
   STARTER_KIT,
   companionPrimaryStats,
   AllocateStatsRequestSchema,
@@ -59,6 +60,7 @@ interface CharacterRow {
   class_id: string;
   class2_id?: string | null;
   class3_id?: string | null;
+  ascension_id?: string | null;
   race_id: string;
   element: CharacterView["element"];
   level: number;
@@ -617,6 +619,18 @@ export class CharacterStore {
   }
 
   /**
+   * DEV ONLY: give the character a Class2 branch and its Class3 with every job tier at its cap, without
+   * the trials (smoke tests of divine awakening, which start at Lv200 with a Class3).
+   */
+  async devSetClasses(accountId: string, class2Id: string, class3Id: string): Promise<void> {
+    await this.db
+      .prepare(`UPDATE characters SET class2_id = ?, class3_id = ?, job1_xp = ?, job2_xp = ?, job3_xp = ? WHERE account_id = ?`)
+      .bind(class2Id, class3Id, jobExpCap(this.rules, 1), jobExpCap(this.rules, 2), jobExpCap(this.rules, 3), accountId)
+      .run();
+    await this.syncLevels(accountId);
+  }
+
+  /**
    * DEV ONLY: raise the character to at least this level by giving it the EXP for it, and its current
    * job tier to at least `job` (smoke tests of Class2 and the skill trees).
    */
@@ -670,6 +684,7 @@ export class CharacterStore {
       classId: row.class_id,
       class2Id: row.class2_id ?? null,
       class3Id: row.class3_id ?? null,
+      ascensionId: row.ascension_id ?? null,
       raceId: row.race_id,
       element: row.element,
       level: row.level,

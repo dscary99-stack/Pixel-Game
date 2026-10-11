@@ -5,6 +5,7 @@
  * new state + events. Same setup + same seed + same commands => identical results.
  * The Battle Durable Object owns persistence, idempotency and auth; this file owns the rules.
  */
+import { ascensionPath, awakeningApplications } from "../ascension";
 import { applyBond, bondBonusPercent, bondTier } from "../bond";
 import { companionCombatProfile } from "../companion-growth";
 import { SKILL_MAX_LEVEL, companionKit, effectiveSkillLevel, masteryForVictory, skillLevelCap, skillLevelMods, trainedSkillLevel } from "../skill-training";
@@ -162,6 +163,12 @@ export function createBattle(rules: RulesConfig, content: BattleContent, setup: 
   }
 }
 
+/** The trial boss's stat %: Class2, Class3 or the divine awakening trial (P28, P31). */
+function trialStatPct(rules: RulesConfig, tier: BattleSetup["classTrialTier"]): number {
+  if (tier === "ascend") return rules.provisional.ascension.value.trialStatPct;
+  return tier === 3 ? rules.provisional.classChange.value.class3TrialStatPct : rules.provisional.classChange.value.trialStatPct;
+}
+
 function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: BattleSetup): KernelResult {
   const bossDef = setup0.boss === undefined ? undefined : (content.bosses?.get(setup0.boss.bossId) ?? reject("MISSING_REFERENCE", `boss ${setup0.boss.bossId}`));
   if (bossDef !== undefined && setup0.enemies.length > 0) reject("INVALID_COMMAND", "a boss fight builds its own enemies");
@@ -182,7 +189,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
   const setup: BattleSetup = bossDef === undefined ? setup0 : { ...setup0, enemies: withEscorts(bossEnemies(bossDef), tower?.escorts ?? []) };
   if (setup0.classTrialTier !== undefined && setup0.classTrial !== true) reject("INVALID_COMMAND", "a trial tier needs a class trial");
   if (setup0.classTrial === true && (setup0.practice !== true || bossDef === undefined || tower !== undefined)) reject("INVALID_COMMAND", "a class trial is a practice boss fight");
-  const towerPct = floor !== undefined ? frontierStatPct(rules, floor) : setup0.classTrial === true ? (setup0.classTrialTier === 3 ? rules.provisional.classChange.value.class3TrialStatPct : rules.provisional.classChange.value.trialStatPct) : 100;
+  const towerPct = floor !== undefined ? frontierStatPct(rules, floor) : setup0.classTrial === true ? trialStatPct(rules, setup0.classTrialTier) : 100;
   const bossLoot = bossDef?.lootTableId;
   if (bossLoot !== undefined && !content.lootTables.has(bossLoot)) reject("MISSING_REFERENCE", `loot table ${bossLoot}`);
   if (bossDef !== undefined) {
@@ -308,6 +315,10 @@ function allyUnits(rules: RulesConfig, content: BattleContent, p: BattleSetup["p
     ...(p.skillLevels !== undefined && Object.keys(p.skillLevels).length > 0 ? { skillLevels: { ...p.skillLevels } } : {}),
     ...(p.passiveIds !== undefined && p.passiveIds.length > 0 ? { passiveIds: [...p.passiveIds] } : {}),
     ...(Object.keys(sigils).length > 0 ? { sigils } : {}),
+    // Divine awakening (ascension.ts): the gauge starts empty every fight.
+    ...(p.ascensionId === undefined
+      ? {}
+      : { awakening: { pathId: (ascensionPath(p.ascensionId) ?? reject("MISSING_REFERENCE", `ascension ${p.ascensionId}`)).id, gauge: 0, gainedRound: 0, gainedThisRound: 0, used: false, turnsLeft: 0 } }),
     basicAttackRange: p.basicAttackRange,
     primaryStats: { ...p.primaryStats },
     statuses: [],
@@ -701,6 +712,7 @@ function endTurn(ctx: Ctx, u: BattleUnit): void {
   // A boss counts its statuses down once a round, after its last action (P15 bossActions).
   if (!roundAction(ctx.s, u).last) return;
   firePassives(ctx, u, "turn_end");
+  awakeningCountdown(ctx, u);
   if (u.statuses === undefined || !active(u)) return;
   const kept: ActiveStatus[] = [];
   const expired: ActiveStatus[] = [];
@@ -1024,6 +1036,8 @@ function checkStatusBlocks(ctx: Ctx, actor: BattleUnit, cmd: BattleCommand): voi
   if (cmd.type === "capture") blocked("items", "cannot use capture items");
   if (cmd.type === "move") blocked("move", "cannot move");
   if (cmd.type === "flee") blocked("flee", "cannot flee");
+  // Awakening is a skill-like move: what stops skills stops it.
+  if (cmd.type === "awaken") blocked("skills", "cannot awaken");
   if (cmd.type === "attack" || cmd.type === "skill") {
     const taunter = tauntedBy(ctx.s, actor);
     const target = ctx.unit(cmd.targetId);
@@ -1090,6 +1104,69 @@ export function currentActor(state: BattleState): BattleUnit | null {
   return state.units.find((u) => u.unitId === id) ?? null;
 }
 
+// ================================================================ divine awakening (ascension.ts, P31)
+
+const ascensionRules = (ctx: Ctx) => ctx.rules.provisional.ascension.value;
+
+/**
+ * After an action: the gauge fills when the action did something (damage, healing, MP, a status that
+ * landed, a shield, a revive), at most `gainCapPerRound` a round, until the awakening is used.
+ */
+function gainAwakening(ctx: Ctx, u: BattleUnit, cmd: BattleCommand["type"], events: readonly BattleEvent[]): void {
+  const a = u.awakening;
+  if (a === undefined || a.used || !active(u) || (cmd !== "attack" && cmd !== "skill" && cmd !== "item")) return;
+  const real = events.some(
+    (e) =>
+      (e.type === "ActionResolved" && ((e.damage ?? 0) > 0 || (e.heal ?? 0) > 0)) ||
+      (e.type === "StatusChanged" && (e.change === "applied" || e.change === "refreshed")) ||
+      (e.type === "ShieldChanged" && e.change === "gained") ||
+      (e.type === "ResourceChanged" && e.source === "restore_mp" && e.mp > 0) ||
+      e.type === "UnitRevived",
+  );
+  if (!real) return;
+  const r = ascensionRules(ctx);
+  if (a.gainedRound !== ctx.s.round) {
+    a.gainedRound = ctx.s.round;
+    a.gainedThisRound = 0;
+  }
+  const add = Math.min(r.gainPerAction, r.gainCapPerRound - a.gainedThisRound, r.gaugeMax - a.gauge);
+  if (add <= 0) return;
+  a.gauge += add;
+  a.gainedThisRound += add;
+  ctx.emit({ type: "AwakeningChanged", unitId: u.unitId, pathId: a.pathId, change: "gauge", gauge: a.gauge, turnsLeft: a.turnsLeft });
+}
+
+/** Spend the action with a full gauge: the path's statuses for `awakenTurns` own turns, once a fight. */
+function doAwaken(ctx: Ctx, actor: BattleUnit): void {
+  const a = actor.awakening ?? reject("INVALID_COMMAND", `${actor.unitId} has no divine awakening`);
+  const r = ascensionRules(ctx);
+  if (a.used) reject("INVALID_COMMAND", "already awakened in this fight");
+  if (a.gauge < r.gaugeMax) reject("INVALID_COMMAND", `the awakening gauge is ${a.gauge}/${r.gaugeMax}`);
+  const path = ascensionPath(a.pathId) ?? reject("MISSING_REFERENCE", `ascension ${a.pathId}`);
+  a.used = true;
+  a.gauge = 0;
+  a.turnsLeft = r.awakenTurns;
+  a.fresh = true;
+  actionEvent(ctx, actor, "awaken", null);
+  ctx.emit({ type: "AwakeningChanged", unitId: actor.unitId, pathId: a.pathId, change: "awakened", gauge: 0, turnsLeft: a.turnsLeft });
+  for (const e of awakeningApplications(ctx.rules, path)) {
+    const targets = e.target === "self" ? [actor] : ctx.s.units.filter((u) => active(u) && u.part === undefined && (e.target === "allies") === (u.side === actor.side));
+    for (const t of targets) for (const st of e.statuses) applyStatus(ctx, actor, t, st, !STATUS_DEFINITIONS[st.statusId].harmful);
+  }
+}
+
+/** End of the owner's turn: one awakened turn less (not the turn it awakened in). */
+function awakeningCountdown(ctx: Ctx, u: BattleUnit): void {
+  const a = u.awakening;
+  if (a === undefined || a.turnsLeft <= 0) return;
+  if (a.fresh === true) {
+    a.fresh = false;
+    return;
+  }
+  a.turnsLeft -= 1;
+  if (a.turnsLeft === 0) ctx.emit({ type: "AwakeningChanged", unitId: u.unitId, pathId: a.pathId, change: "ended", gauge: a.gauge, turnsLeft: 0 });
+}
+
 // ================================================================ commands
 
 export interface ApplyOptions {
@@ -1112,7 +1189,9 @@ export function applyCommand(
       reject("NOT_YOUR_TURN", `it is ${actor?.unitId ?? "nobody"}'s turn`);
     }
     checkStatusBlocks(ctx, actor!, cmd);
+    const from = ctx.events.length;
     resolveCommand(ctx, actor!, cmd, opts.source);
+    gainAwakening(ctx, actor!, cmd.type, ctx.events.slice(from));
     afterAction(ctx, actor!, cmd.type);
     if (ctx.s.status === "active") endTurn(ctx, actor!);
     ctx.s.turnIndex += 1;
@@ -1133,7 +1212,8 @@ function resolveCommand(ctx: Ctx, actor: BattleUnit, cmd: BattleCommand, source:
       return doSkill(ctx, actor, cmd.skillId, ctx.unit(cmd.targetId));
     case "guard":
       actor.guarding = true;
-      return actionEvent(ctx, actor, "guard", null);
+      actionEvent(ctx, actor, "guard", null);
+      return firePassives(ctx, actor, "guarded");
     case "item": {
       const target = ctx.unit(cmd.targetId);
       doItem(ctx, actor, cmd.itemId, target);
@@ -1145,6 +1225,8 @@ function resolveCommand(ctx: Ctx, actor: BattleUnit, cmd: BattleCommand, source:
       return doMove(ctx, actor, cmd.row, cmd.slot);
     case "flee":
       return doFlee(ctx, actor);
+    case "awaken":
+      return doAwaken(ctx, actor);
     default:
       reject("INVALID_COMMAND", "unknown command");
   }
@@ -2137,6 +2219,13 @@ export function chooseAutoCommand(
       const pick = autoItemTarget(state, actor, item, rule, rules);
       if (pick !== undefined) return { type: "item", actorId: actor.unitId, itemId: rule.itemId, targetId: pick.unitId };
     }
+  }
+  // Divine awakening (P31): when the gauge is full, by the player's rule.
+  const aw = actor.awakening;
+  if (aw !== undefined && !aw.used && rules !== undefined && aw.gauge >= rules.provisional.ascension.value.gaugeMax && statusBlocks(actor.statuses, "skills") === undefined) {
+    const strong = state.units.some((u) => u.side === "enemy" && active(u) && (u.rank === "BOSS" || u.rank === "ELITE"));
+    const when = policy.awaken;
+    if (when === "ready" || (when === "strong" && strong) || (when === "low_hp" && actor.hp * 2 < actor.stats.maxHp)) return { type: "awaken", actorId: actor.unitId };
   }
   // Skills (chapter 08 rule engine): heal, cleanse, buff, debuff, then damage, while MP stays above
   // the player's reserve. Each skill is used on the best target it is worth using on.
