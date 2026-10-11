@@ -149,6 +149,17 @@ describe("skill trees (Nut 2026-10-09)", () => {
     }
   });
 
+  it("every tree skill has its own Thai name (Nut 2026-10-11: names fit each line)", () => {
+    const names = new Map<string, string>();
+    for (const t of SKILL_TREES.values()) {
+      for (const n of t.nodes) {
+        const th = sk(n.skillId).name.th;
+        expect(names.get(th), `${n.skillId} shares "${th}"`).toBeUndefined();
+        names.set(th, n.skillId);
+      }
+    }
+  });
+
   it("every Class2 branch has one Class3, whose tree is tier 3 with one signature capstone", () => {
     expect(CLASS3_ADVANCES.map((a) => a.branchId).sort()).toEqual(CLASS2_BRANCHES.map((b) => b.id).sort());
     for (const a of CLASS3_ADVANCES) {
