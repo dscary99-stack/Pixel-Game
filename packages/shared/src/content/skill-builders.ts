@@ -11,7 +11,7 @@
  * floor; the built skill says what it really does.
  */
 import { z } from "zod";
-import { BUDGET, damageRiderMult, minMp, mpForValue, skillBudget, statusValue, valuedOnce } from "../skill-budget";
+import { BUDGET, damageRiderMult, minMp, mpForValue, skillBudget, statusValue, strikesWorth, valuedOnce } from "../skill-budget";
 import type { JobTier } from "../job";
 import { PassiveSchema, PassiveTriggerSchema, type DamageEffect, type EffectTarget, type Element, type PassiveModifier, type SkillDefinition, type SkillLevelStep, type StatusApplication, type TargetRule } from "../schemas";
 import type { StatusId } from "../status";
@@ -47,7 +47,7 @@ function steps(g: Growth, mpCost: number): SkillLevelStep[] {
 
 /** The first effect: damage, heal or statuses. */
 export type Primary =
-  | { kind: "damage"; damageType: "physical" | "magic"; element?: Element; own?: true; riders?: Riders; statuses?: StatusApplication[] }
+  | { kind: "damage"; damageType: "physical" | "magic"; element?: Element; own?: true; riders?: Riders; statuses?: StatusApplication[]; hits?: number; bounce?: { jumps: number; falloffPct: number } }
   | { kind: "heal"; flat?: number; restoreMp?: number; statuses?: StatusApplication[] }
   | { kind: "status"; statuses: StatusApplication[] }
   | { kind: "revive"; hpPct: number };
@@ -135,8 +135,10 @@ export function skill(spec: SkillSpec): SkillDefinition {
   let first: Effect;
   if (p.kind === "damage") {
     const riders = p.riders ?? {};
-    const coefficient = round05((left - f * 0.9 * sumStatus(p.statuses)) / (f * damageRiderMult(riders)));
-    first = { kind: "damage", damageType: p.damageType, coefficient, flat: 0, element: p.element ?? "NEUTRAL", ...(p.own ? { ownElement: true as const } : {}), ...riders, ...(p.statuses ? { statuses: p.statuses } : {}) };
+    // Multi-hit and bounce (item 5) split the same budget over more strikes.
+    const strikes = { ...(p.hits ? { hits: p.hits } : {}), ...(p.bounce ? { bounce: p.bounce } : {}) };
+    const coefficient = round05((left - f * 0.9 * sumStatus(p.statuses)) / (f * damageRiderMult(riders) * strikesWorth(strikes)));
+    first = { kind: "damage", damageType: p.damageType, coefficient, flat: 0, element: p.element ?? "NEUTRAL", ...(p.own ? { ownElement: true as const } : {}), ...riders, ...(p.statuses ? { statuses: p.statuses } : {}), ...strikes };
   } else if (p.kind === "heal") {
     const coefficient = round05((left - (p.restoreMp ?? 0) / 100 * f - f * sumStatus(p.statuses) - (p.flat ?? 0) / 200 * f) / f);
     first = { kind: "heal", coefficient, flat: p.flat ?? 0, ...(p.restoreMp ? { restoreMp: p.restoreMp } : {}), ...(p.statuses ? { statuses: p.statuses } : {}) };

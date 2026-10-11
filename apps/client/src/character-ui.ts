@@ -1886,7 +1886,10 @@ function skillBrief(sk: SkillDefinition): string {
   const parts = [`MP ${sk.mpCost}`, sk.cooldown > 0 ? `คูลดาวน์ ${sk.cooldown} ตา` : "", TARGET_TH[sk.targetRule]];
   for (const e of sk.effectSequence) {
     if ("target" in e && e.target !== undefined && e.target !== "primary") parts.push(`แล้ว${EFFECT_TARGET_TH[e.target]}:`);
-    if (e.kind === "damage") parts.push(`${e.damageType === "physical" ? "ดาเมจกาย" : "ดาเมจเวท"} ×${e.coefficient}${e.ownElement === true ? " ธาตุตัวเอง" : e.element !== "NEUTRAL" ? ` ธาตุ${ELEMENT_TH[e.element]}` : ""}`);
+    if (e.kind === "damage")
+      parts.push(
+        `${e.damageType === "physical" ? "ดาเมจกาย" : "ดาเมจเวท"} ×${e.coefficient}${e.ownElement === true ? " ธาตุตัวเอง" : e.element !== "NEUTRAL" ? ` ธาตุ${ELEMENT_TH[e.element]}` : ""}${e.hits !== undefined ? ` ตี ${e.hits} ครั้ง` : ""}${e.bounce !== undefined ? ` กระดอนไปตัวอื่น ${e.bounce.jumps} ครั้ง (เบาลงครั้งละ ${e.bounce.falloffPct}%)` : ""}`,
+      );
     if (e.kind === "heal") parts.push(`ฮีล ×${e.coefficient}${e.flat > 0 ? ` +${e.flat}` : ""}`);
     if (e.kind === "revive") parts.push(`ชุบชีวิต HP ${e.hpPct}%`);
     for (const a of ("statuses" in e ? e.statuses : undefined) ?? []) parts.push(`${STATUS_DEFINITIONS[a.statusId].th}${a.shieldPct !== undefined ? ` ${a.shieldPct}%` : ""} ${a.chancePct}% ${a.turns} ตา`);

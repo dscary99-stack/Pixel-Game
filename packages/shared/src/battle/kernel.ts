@@ -1303,8 +1303,25 @@ function doSkill(ctx: Ctx, actor: BattleUnit, skillId: string, target: BattleUni
       if (eff.kind === "damage") {
         const element = eff.ownElement === true ? actor.element : eff.element;
         const statuses = eff.statuses?.map(levelled);
+        const { hits, bounce, ...rest } = eff;
         // Protect covers single-target hits only: an area hit lands on everyone it covers.
-        strike(ctx, actor, redirectedTarget(ctx, actor, t), "skill", skillId, { ...eff, element, coefficient, ...(statuses === undefined ? {} : { statuses }) }, false, spread);
+        const struck = redirectedTarget(ctx, actor, t);
+        strike(ctx, actor, struck, "skill", skillId, { ...rest, element, coefficient, ...(statuses === undefined ? {} : { statuses }) }, false, spread);
+        // Multi-hit: the same target again, its own rolls each time, no statuses; stops when it falls.
+        for (let h = 1; h < (hits ?? 1) && active(struck) && active(actor); h++) strike(ctx, actor, struck, "skill", skillId, { ...rest, element, coefficient, statuses: [] }, false, spread);
+        // Bounce: from the chosen target to enemies not hit yet, server-picked, weaker each jump.
+        if (bounce !== undefined && i === 0 && t === target) {
+          const hit = new Set([struck.unitId]);
+          let power = coefficient;
+          for (let j = 0; j < bounce.jumps && active(actor); j++) {
+            const left = ctx.s.units.filter((u) => u.side === struck.side && active(u) && !hit.has(u.unitId)).sort(formation);
+            if (left.length === 0) break;
+            const next = left[ctx.rng.nextInt(left.length)]!;
+            hit.add(next.unitId);
+            power = (power * (100 - bounce.falloffPct)) / 100;
+            strike(ctx, actor, next, "skill", skillId, { ...rest, element, coefficient: power, statuses: [] }, false, true);
+          }
+        }
       } else if (eff.kind === "status") {
         // No damage and no hit roll: each status rolls its own chance (O15, Nut 2026-10-04).
         actionEvent(ctx, actor, "skill", t, { skillId });

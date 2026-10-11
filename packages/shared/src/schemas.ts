@@ -116,6 +116,18 @@ export const DamageEffectSchema = z
     statuses: z.array(StatusApplicationSchema).max(3).optional(),
     /** Extra damage % against a target with this status; `consume` removes the status with the hit. */
     bonusVsStatus: z.object({ statusId: z.enum(STATUS_IDS), bonusPct: z.number().int().min(1).max(200), consume: z.boolean() }).strict().optional(),
+    /**
+     * Multi-hit (Nut 2026-10-09 item 5): the effect strikes each target this many times at its
+     * coefficient, each hit with its own hit and crit roll; statuses ride the first hit only, and the
+     * rest stop when the target falls.
+     */
+    hits: z.number().int().min(2).max(5).optional(),
+    /**
+     * Bounce (item 5): after the chosen target, the hit jumps up to `jumps` times to other enemies not hit
+     * yet (picked by the server's RNG, any row), each jump `falloffPct` weaker than the one before; each
+     * jump rolls its own hit and crit and carries no statuses. First effect of a single-enemy skill only.
+     */
+    bounce: z.object({ jumps: z.number().int().min(1).max(4), falloffPct: z.number().int().min(0).max(50) }).strict().optional(),
   })
   .strict();
 
@@ -318,6 +330,8 @@ export const SkillDefinitionSchema = z
     s.effectSequence.forEach((e, i) => {
       const t = "target" in e ? e.target : undefined;
       if (i === 0 && t !== undefined) ctx.addIssue({ code: "custom", message: "the first effect goes to the skill's own targets (no target)" });
+      if (e.kind === "damage" && e.hits !== undefined && e.bounce !== undefined) ctx.addIssue({ code: "custom", message: "a damage effect is multi-hit or bounces, not both" });
+      if (e.kind === "damage" && e.bounce !== undefined && (i !== 0 || s.targetRule !== "single_enemy")) ctx.addIssue({ code: "custom", message: "only the first effect of a single-enemy skill bounces" });
       if (i > 0 && t === undefined) ctx.addIssue({ code: "custom", message: `effect ${i + 1} needs a target` });
       if (e.kind === "revive" && s.effectSequence.length > 1) ctx.addIssue({ code: "custom", message: "a revive skill does only that" });
       if (i === 0 || t === undefined) return;

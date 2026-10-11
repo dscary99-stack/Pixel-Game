@@ -94,6 +94,24 @@ export function damageRiderMult(e: Pick<DamageEffect, "penetrationPct" | "critBo
 /** Hits land about this often; riders on a hit are worth that much less. */
 const HIT_SHARE = 0.9;
 
+/**
+ * How many single hits a multi-hit or bouncing effect is worth. Extra hits of a multi-hit count fully
+ * (the target may fall first, which only wastes overkill); each bounce counts its weaker power at
+ * BOUNCE_SHARE, because a jump needs another enemy standing and lands where the server picks.
+ */
+const BOUNCE_SHARE = 0.75;
+export function strikesWorth(e: Pick<DamageEffect, "hits" | "bounce">): number {
+  if (e.hits !== undefined) return e.hits;
+  if (e.bounce === undefined) return 1;
+  let n = 1;
+  let p = 1;
+  for (let j = 0; j < e.bounce.jumps; j++) {
+    p *= (100 - e.bounce.falloffPct) / 100;
+    n += BOUNCE_SHARE * p;
+  }
+  return n;
+}
+
 function effectFactor(skill: Pick<SkillDefinition, "targetRule">, target: EffectTarget | undefined): number {
   if (target === undefined || target === "primary") return BUDGET.targetFactor[skill.targetRule];
   return BUDGET.secondaryFactor[target];
@@ -104,7 +122,7 @@ export function skillValue(skill: Pick<SkillDefinition, "targetRule" | "effectSe
   let v = 0;
   for (const e of skill.effectSequence) {
     const f = effectFactor(skill, "target" in e ? e.target : undefined);
-    if (e.kind === "damage") v += f * (e.coefficient * damageRiderMult(e) + HIT_SHARE * (e.statuses ?? []).reduce((n, a) => n + statusValue(a), 0));
+    if (e.kind === "damage") v += f * (e.coefficient * damageRiderMult(e) * strikesWorth(e) + HIT_SHARE * (e.statuses ?? []).reduce((n, a) => n + statusValue(a), 0));
     else if (e.kind === "heal") v += f * (e.coefficient + e.flat / 200 + (e.restoreMp ?? 0) / 100 + (e.statuses ?? []).reduce((n, a) => n + statusValue(a), 0));
     else if (e.kind === "status") v += f * e.statuses.reduce((n, a) => n + statusValue(a), 0);
     // A revive brings a whole unit back: worth two hits plus the HP it comes back with.
