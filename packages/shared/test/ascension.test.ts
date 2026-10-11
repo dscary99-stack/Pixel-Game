@@ -5,6 +5,7 @@ import {
   ASCENSION_TRIAL_BOSS_ID,
   RACE_DEFINITIONS,
   RACE_PASSIVES,
+  RACE_TRIAL_GOALS,
   SkillDefinitionSchema,
   ascensionPassiveFor,
   ascensionPath,
@@ -21,7 +22,7 @@ import {
   type KernelResult,
   type RulesConfig,
 } from "../src/index";
-import { baseSetup, content, rules } from "./fixtures";
+import { baseSetup, companion, content, rules } from "./fixtures";
 
 const c = content();
 const ok = (r: KernelResult) => {
@@ -201,5 +202,68 @@ describe("the awakening gauge in a fight (P31)", () => {
     const r = ok(applyCommand(rules, c, s, { type: "guard", actorId: "player" }, { source: "player" }));
     expect(r.events.some((e) => e.type === "PassiveTriggered" && e.sourceId === "skill:ascend_stonekin_a" && e.on === "guarded")).toBe(true);
     expect(player(r.state).statuses!.some((x) => x.statusId === "def_up")).toBe(true);
+  });
+});
+
+describe("race goals in the trial (chapter 02: passable with many classes)", () => {
+  const trial = (raceId: string, over: Partial<BattleSetup> = {}) =>
+    baseSetup({ enemies: [], boss: { bossId: ASCENSION_TRIAL_BOSS_ID }, bag: {}, practice: true, classTrial: true, classTrialTier: "ascend", raceTrial: { raceId }, ...over });
+  /** Auto for both sides at a 100% boss (the fixture team is low level); the end state and every event. */
+  const soft = withAscension({ trialStatPct: 100 });
+  const run = (setup: BattleSetup, steps: number) => {
+    let s = ok(createBattle(soft, c, setup)).state;
+    const events: BattleEvent[] = [];
+    for (let i = 0; i < steps && s.status === "active"; i++) {
+      const actor = currentActor(s)!;
+      const x = ok(applyCommand(soft, c, s, chooseAutoCommand(s, c, {}, soft) ?? { type: "guard", actorId: actor.unitId }, { source: "auto" }));
+      events.push(...x.events);
+      s = x.state;
+    }
+    return { s, events };
+  };
+
+  it("every race has a goal; it belongs to the divine awakening trial only", () => {
+    for (const r of RACE_DEFINITIONS) expect(RACE_TRIAL_GOALS[r.id]?.need, r.id).toBeGreaterThan(0);
+    expect(ok(createBattle(rules, c, trial("race:sylvan"))).state.raceTrial).toEqual({ raceId: "race:sylvan", kind: "heals", need: RACE_TRIAL_GOALS["race:sylvan"]!.need, count: 0 });
+    expect(createBattle(rules, c, trial("race:nope"))).toMatchObject({ ok: false, code: "MISSING_REFERENCE" });
+    expect(createBattle(rules, c, trial("race:human", { classTrialTier: 3 }))).toMatchObject({ ok: false, code: "INVALID_COMMAND" });
+    expect(createBattle(rules, c, baseSetup({ raceTrial: { raceId: "race:human" } }))).toMatchObject({ ok: false, code: "INVALID_COMMAND" });
+    expect(ascensionView(rules, { raceId: "race:wildkin", level: 200, class3Id: "class3:x", ascensionId: null })?.goal).toEqual(RACE_TRIAL_GOALS["race:wildkin"]);
+  });
+
+  it("the whole team counts: hits are every ally hit on an enemy, skills one per turn however many targets", () => {
+    const hits = run(trial("race:skyborn"), 120);
+    const side = (id: string | null) => hits.s.units.find((u) => u.unitId === id)?.side;
+    const expected = hits.events.filter((e) => e.type === "ActionResolved" && e.hit === true && side(e.actorId) === "ally" && side(e.targetId) === "enemy").length;
+    expect(expected).toBeGreaterThan(0);
+    expect(hits.s.raceTrial!.count).toBe(expected);
+
+    const skills = run(trial("race:runeborn"), 120);
+    let turns = 0;
+    let counted = false;
+    for (const e of skills.events) {
+      if (e.type === "TurnStarted") counted = false;
+      if (e.type === "ActionResolved" && e.action === "skill" && skills.s.units.find((u) => u.unitId === e.actorId)?.side === "ally" && !counted) {
+        counted = true;
+        turns += 1;
+      }
+    }
+    expect(turns).toBeGreaterThan(0);
+    expect(skills.s.raceTrial!.count).toBe(turns);
+    const used = skills.events.filter((e) => e.type === "ActionResolved" && e.action === "skill" && skills.s.units.find((u) => u.unitId === e.actorId)?.side === "ally").length;
+    expect(used).toBeGreaterThanOrEqual(turns);
+  });
+
+  it("every goal moves in an Auto trial with a mixed team", () => {
+    for (const raceId of Object.keys(RACE_TRIAL_GOALS)) {
+      const team = (["species:armor_crab", "species:lantern_snail", "species:bell_bird"] as const).map((sp, i) => ({
+        instance: companion(`m${i}`, sp, c.species.get(sp)!.allowedElements[0]!, 30),
+        row: (i === 0 ? "front" : "back") as "front" | "back",
+        slot: i === 0 ? 0 : i,
+      }));
+      const setup = trial(raceId, { companions: team });
+      const { s } = run(setup, 300);
+      expect(s.raceTrial!.count, raceId).toBeGreaterThan(0);
+    }
   });
 });

@@ -2677,6 +2677,8 @@ const ASCEND_REFUSAL_TH: Record<string, string> = {
   LEVEL_TOO_LOW: "เลเวลยังไม่ถึง",
   ALREADY_ASCENDED: "จุติแล้ว",
 };
+/** The race trial's goal with its count (ascension.ts RACE_TRIAL_GOALS). */
+export const raceGoalTh = (g: { th: string; need: number }, count?: number): string => `${g.th} ${count === undefined ? "" : `${count}/`}${g.need} ครั้ง`;
 const AWAKEN_TARGET_TH: Record<string, string> = { self: "ตัวเอง", allies: "ทั้งทีม", enemies: "ศัตรูทั้งหมด" };
 
 /**
@@ -2753,7 +2755,9 @@ export function classPanel(api: CharacterApi): Promise<string | null> {
         );
         body.append(el("div", { class: "pm-stats" }, "ผ่านบททดสอบแล้ว!"), claim);
       } else if (t !== null && t.status === "lost" && open) {
-        body.append(el("div", { class: "pm-note" }, `บททดสอบ${trialName} ครั้งล่าสุดยังไม่ผ่าน ลองใหม่ได้`));
+        const g = t.raceGoal;
+        const why = g !== undefined && !g.met && asc?.goal != null ? ` (ชนะแต่เป้าหมายเผ่ายังไม่ครบ: ${raceGoalTh(asc.goal, g.count)})` : "";
+        body.append(el("div", { class: "pm-note", ...(why ? { "data-race-goal-missed": "" } : {}) }, `บททดสอบ${trialName} ครั้งล่าสุดยังไม่ผ่าน${why} ลองใหม่ได้`));
       }
       const startTrial = (id: string) =>
         void run(async () => {
@@ -2775,7 +2779,7 @@ export function classPanel(api: CharacterApi): Promise<string | null> {
           el(
             "div",
             { class: "pm-note" },
-            `เปิดที่ Lv${asc.level} หลังรับ Class3 · บททดสอบเผ่า: สู้${bossA}ที่แรงขึ้นเป็น ${asc.trialStatPct}% กติกาเดียวกับบททดสอบอาชีพ (อาชีพไหนก็ผ่านได้ด้วยทีม) · ชนะแล้วจ่าย ${asc.cost.coins.toLocaleString()} เหรียญ + ${mats} แล้วเลือกวิถี · Passive เผ่าเปลี่ยนเป็นของวิถี (ไม่ซ้อนของเดิม) · ในไฟต์มีเกจจุติ เต็มแล้วกดตื่นได้ครั้งเดียวต่อไฟต์ อยู่ 3 ตาของตัวเอง · เปลี่ยนวิถีในเมือง ${asc.switchCoins.toLocaleString()} เหรียญ · ตัวเลขเป็นตัวอย่าง (P31)`,
+            `เปิดที่ Lv${asc.level} หลังรับ Class3 · บททดสอบเผ่า: สู้${bossA}ที่แรงขึ้นเป็น ${asc.trialStatPct}% กติกาเดียวกับบททดสอบอาชีพ (อาชีพไหนก็ผ่านได้ด้วยทีม)${asc.goal !== null ? ` · เป้าหมายเผ่า: ${raceGoalTh(asc.goal)} ก่อนบอสล้ม (นับทั้งทีม)` : ""} · ชนะแล้วจ่าย ${asc.cost.coins.toLocaleString()} เหรียญ + ${mats} แล้วเลือกวิถี · Passive เผ่าเปลี่ยนเป็นของวิถี (ไม่ซ้อนของเดิม) · ในไฟต์มีเกจจุติ เต็มแล้วกดตื่นได้ครั้งเดียวต่อไฟต์ อยู่ 3 ตาของตัวเอง · เปลี่ยนวิถีในเมือง ${asc.switchCoins.toLocaleString()} เหรียญ · ตัวเลขเป็นตัวอย่าง (P31)`,
           ),
           list,
         );

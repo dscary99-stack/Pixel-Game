@@ -111,6 +111,7 @@ export type ServiceRejection =
   | "NOT_ASCENDED"
   | "NOT_FOUND"
   | "NOT_WON"
+  | "GOAL_NOT_MET"
   | "SAME_PATH"
   | "CHANGED";
 
@@ -695,7 +696,8 @@ export class TownServices {
     const materials = r.materials.map((m) => ({ itemId: m.itemId, quantity: m.quantity }));
     const result: AscendResult = { pathId, paid: { coins: r.coins, materials } };
     const won = `EXISTS (SELECT 1 FROM class_trials t JOIN battle_reservations b ON b.reservation_id = t.reservation_id
-      WHERE t.character_id = ? AND t.operation_id = ? AND t.branch_id = ? AND b.status = 'settled' AND b.outcome = 'victory')`;
+      WHERE t.character_id = ? AND t.operation_id = ? AND t.branch_id = ? AND b.status = 'settled' AND b.outcome = 'victory'
+        AND json_extract(b.result_json, '$.raceTrial.met') = 1)`;
     const guards = [
       this.inTown(),
       `NOT ${OPEN_BATTLE}`,
@@ -750,10 +752,11 @@ export class TownServices {
       const now = await this.db.prepare(`SELECT ascension_id FROM characters WHERE id = ?`).bind(ch.id).first<{ ascension_id: string | null }>();
       if (now?.ascension_id != null) return reject("ALREADY_ASCENDED", "this character already ascended");
       const res = await this.db
-        .prepare(`SELECT b.status, b.outcome FROM class_trials t JOIN battle_reservations b ON b.reservation_id = t.reservation_id WHERE t.character_id = ? AND t.operation_id = ?`)
+        .prepare(`SELECT b.status, b.outcome, json_extract(b.result_json, '$.raceTrial.met') AS met FROM class_trials t JOIN battle_reservations b ON b.reservation_id = t.reservation_id WHERE t.character_id = ? AND t.operation_id = ?`)
         .bind(ch.id, trialOperationId)
-        .first<{ status: string; outcome: string | null }>();
+        .first<{ status: string; outcome: string | null; met: number | null }>();
       if (res?.status !== "settled" || res.outcome !== "victory") return reject("NOT_WON", "win the race trial first");
+      if (res.met !== 1) return reject("GOAL_NOT_MET", "the race goal was not reached in that trial");
       if ((await this.coins(accountId)) < r.coins) return reject("INSUFFICIENT_COINS", `divine awakening costs ${r.coins} coins`);
       for (const m of materials) if ((await this.itemBalance(accountId, m.itemId)) < m.quantity) return reject("INSUFFICIENT_ITEMS", `divine awakening needs ${m.quantity} ${m.itemId}`);
       return reject("CHANGED", "something changed; reload and try again");

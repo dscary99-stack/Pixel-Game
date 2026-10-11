@@ -39,6 +39,8 @@ export interface ClassTrialView {
   branchId: string;
   battleId: string;
   status: ClassTrialStatus;
+  /** Divine awakening trial: the race goal's count at the end (a win short of `need` reads as lost). */
+  raceGoal?: { met: boolean; count: number; need: number };
 }
 
 export type Class3Blocked = null | "NO_CLASS2" | "LEVEL_TOO_LOW" | "JOB_TOO_LOW" | "ALREADY_CHOSEN";

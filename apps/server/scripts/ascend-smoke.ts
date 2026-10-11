@@ -1,6 +1,7 @@
 // End-to-end divine awakening check against `wrangler dev` (ascension.ts, P31): without a Class3 the
 // race trial is refused; at Lv200 with a Class3 (dev shortcut) another race's trial is not found, and
-// the character's own is the tower tyrant at the ascension stat %, won on Auto. The claim in town pays
+// the character's own is the tower tyrant at the ascension stat %, won on Auto with the race goal
+// (Stonekin: hits taken) reached; a win short of the goal reads as lost. The claim in town pays
 // coins + materials once (no coins: refused; a retry replays; a second claim is refused), the evolved
 // passive replaces the race passive, and in the next fight the awakening gauge fills from real actions
 // until the character awakens (once a fight). Last, the path switch costs coins and replays on retry.
@@ -83,16 +84,27 @@ for (let n = 1; n <= 5 && won === null; n++) {
   if (n === 1) {
     const tv = await battleCall(account, s.body.battleId)("GET", "");
     must(tv.state.practice === true && tv.state.enemyStatPct === asc.trialStatPct, "trial: tyrant at the ascension stat %", { pct: tv.state.enemyStatPct });
+    must(tv.state.raceTrial?.kind === "hits_taken" && tv.state.raceTrial.need === cv.ascension.goal.need, "trial: the Stonekin goal", tv.state.raceTrial);
     must((await call("POST", "/class/trial/claim", { operationId: op })).body.error === "INVALID_REQUEST", "a race trial is not claimed through /class");
   }
   // A long fight: keep Auto going until it ends (autoToEnd stops after 300 actions).
   let end = await autoToEnd(account, s.body.battleId);
   for (let k = 0; k < 6 && end.state.status === "active"; k++) end = await autoToEnd(account, s.body.battleId);
-  tries.push(`${end.state.status} r${end.state.round}`);
-  if (end.state.status === "victory") won = op;
+  const goal = end.state.raceTrial;
+  tries.push(`${end.state.status} r${end.state.round} goal ${goal.count}/${goal.need}`);
+  const met = end.state.status === "victory" && goal.count >= goal.need;
+  // The class panel agrees once the economy has settled the fight.
+  let tv = (await call("GET", "/class")).body.trial;
+  for (let k = 0; k < 20 && tv?.status === "started"; k++) {
+    await new Promise((res) => setTimeout(res, 250));
+    tv = (await call("GET", "/class")).body.trial;
+  }
+  must(tv?.status === (met ? "won" : "lost") && tv.raceGoal?.count === goal.count, "class panel: won only with the goal", { tv, goal });
+  if (!met && end.state.status === "victory") must((await call("POST", "/town/ascend", { operationId: `asc_short_${n}_${run}`, trialOperationId: op, path: "a", expectedCoins: asc.coins })).body.error === "GOAL_NOT_MET", "a win short of the goal is refused");
+  if (met) won = op;
 }
 out.tries = tries;
-must(won !== null, "won the race trial on Auto", tries);
+must(won !== null, "won the race trial on Auto with the goal", tries);
 
 // The claim pays coins + rift cores once.
 const claim = (operationId: string, path: "a" | "b") => call("POST", "/town/ascend", { operationId, trialOperationId: won, path, expectedCoins: asc.coins });

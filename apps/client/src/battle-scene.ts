@@ -4,7 +4,7 @@
  * it never computes damage, loot, capture or ownership itself (chapter 11 §1).
  */
 import Phaser from "phaser";
-import { DEV_FIXTURE_RULES, ascensionPath, ELITE_MODIFIER_TH, combatBagOf, EXAMPLE_FRONTIER, FRONTIER_MODIFIER_TH, STATUS_DEFINITIONS, exampleContentMaps, type BattleCommand, type BattleEvent, type BattleUnit, type Element, type PublicBattleState } from "@pmrpg/shared";
+import { DEV_FIXTURE_RULES, ascensionPath, raceTrialGoal, ELITE_MODIFIER_TH, combatBagOf, EXAMPLE_FRONTIER, FRONTIER_MODIFIER_TH, STATUS_DEFINITIONS, exampleContentMaps, type BattleCommand, type BattleEvent, type BattleUnit, type Element, type PublicBattleState } from "@pmrpg/shared";
 import type { BattleTransport, Snapshot } from "./transport";
 import { savedAutoPolicy } from "./character-ui";
 import { capturePreview, pct2 } from "./capture-ui";
@@ -649,6 +649,12 @@ export class BattleScene extends Phaser.Scene {
         ` · ศัตรู ×${(state.frontier.statPct / 100).toFixed(2)}${mods ? ` · ลูกเล่น: ${mods}` : ""}${left > 0 ? ` · กำลังเสริมเหลือ ${left}` : ""}`;
     }
     if (state.practice === true) tower += "\nลานทดสอบ: ไม่ได้และไม่เสียอะไร · หนีออกได้ทุกเมื่อ";
+    // Divine awakening trial: the race goal so far (ascension.ts RACE_TRIAL_GOALS).
+    if (state.raceTrial !== undefined) {
+      const g = raceTrialGoal(state.raceTrial.raceId);
+      const n = state.raceTrial;
+      tower += `\nเป้าหมายเผ่า: ${g?.th ?? n.kind} ${n.count}/${n.need}${n.count >= n.need ? " ✓" : ""}`;
+    }
     // Divine awakening: the gauge of each ascended character, or the turns it has left (P31).
     const gaugeMax = DEV_FIXTURE_RULES.provisional.ascension.value.gaugeMax;
     for (const u of state.units) {

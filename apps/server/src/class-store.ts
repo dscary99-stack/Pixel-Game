@@ -131,7 +131,7 @@ export class ClassStore {
       bag: {},
       practice: true,
       classTrial: true,
-      ...(tier === 3 ? { classTrialTier: 3 as const } : tier === "ascend" ? { classTrialTier: "ascend" as const } : {}),
+      ...(tier === 3 ? { classTrialTier: 3 as const } : tier === "ascend" ? { classTrialTier: "ascend" as const, raceTrial: { raceId: character.raceId } } : {}),
     };
     // The Battle DO keeps the first setup it was given, so a resumed create is a no-op.
     const created = await this.battles.create(accountId, setup, reservationId);
@@ -173,8 +173,10 @@ export class ClassStore {
     let status: ClassTrialView["status"] = row.status === "claimed" ? "claimed" : "started";
     if (status === "started") {
       const res = await this.economy.reservation(row.reservation_id);
-      if (res?.status === "settled") status = res.outcome === "victory" ? "won" : "lost";
+      // A race trial (ascension) is won only with the race goal reached as well.
+      if (res?.status === "settled") status = res.outcome === "victory" && res.raceTrial?.met !== false ? "won" : "lost";
       else if (res?.status === "released") status = "lost";
+      if (res?.raceTrial !== undefined) return { operationId: row.operation_id, branchId: row.branch_id, battleId: row.battle_id, status, raceGoal: res.raceTrial };
     }
     return { operationId: row.operation_id, branchId: row.branch_id, battleId: row.battle_id, status };
   }

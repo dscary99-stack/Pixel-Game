@@ -5,7 +5,7 @@
  * and one charge. The path switch costs coins and needs the path the player saw.
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { DEV_FIXTURE_RULES as R, exampleContentMaps, playerSetup, type BattleSetup } from "@pmrpg/shared";
+import { DEV_FIXTURE_RULES as R, RACE_TRIAL_GOALS, exampleContentMaps, playerSetup, type BattleSetup } from "@pmrpg/shared";
 import { BattleRoom, MemoryStorage } from "../src/battle-room";
 import { CharacterStore } from "../src/character-store";
 import { ClassStore } from "../src/class-store";
@@ -46,7 +46,11 @@ const at = (mapId: string) =>
        ON CONFLICT (account_id) DO UPDATE SET map_id = excluded.map_id`,
     )
     .run(A, mapId);
-const winTrial = (battleId: string) => db.prepare(`UPDATE battle_reservations SET status = 'settled', outcome = 'victory' WHERE battle_id = ?`).run(battleId);
+/** A won trial as the economy stores it (a race trial also carries its goal). */
+const winTrial = (battleId: string, met = true) =>
+  db
+    .prepare(`UPDATE battle_reservations SET status = 'settled', outcome = 'victory', result_json = ? WHERE battle_id = ?`)
+    .run(JSON.stringify({ allies: [], raceTrial: { met, count: met ? 75 : 12, need: 75 } }), battleId);
 const coins = () => town.coins(A);
 const cores = () => (db.prepare(`SELECT COALESCE(SUM(delta), 0) AS q FROM item_ledger WHERE account_id = ? AND item_id = 'item:rift_core'`).get(A) as { q: number }).q;
 
@@ -102,9 +106,12 @@ describe("divine awakening trial", () => {
     expect(await classes.start(A, { operationId: "trial_t1", branchId: "ascend:human" })).toMatchObject({ status: "rejected", reason: "NOT_FOUND" });
     const r = await classes.start(A, { operationId: "trial_t1", branchId: "ascend:stonekin" });
     expect(r).toMatchObject({ status: "started" });
-    expect(created.at(-1)!.setup).toMatchObject({ practice: true, classTrial: true, classTrialTier: "ascend", boss: { bossId: "boss:rift_spire_tyrant" } });
+    expect(created.at(-1)!.setup).toMatchObject({ practice: true, classTrial: true, classTrialTier: "ascend", raceTrial: { raceId: "race:stonekin" }, boss: { bossId: "boss:rift_spire_tyrant" } });
     if (r.status !== "started") throw new Error();
-    expect((await rooms.get(r.battleId)!.view(A)).enemyStatPct).toBe(asc.trialStatPct);
+    const v = await rooms.get(r.battleId)!.view(A);
+    expect(v.enemyStatPct).toBe(asc.trialStatPct);
+    expect(v.raceTrial).toMatchObject({ raceId: "race:stonekin", kind: "hits_taken", need: RACE_TRIAL_GOALS["race:stonekin"]!.need });
+    expect((await classes.view(A))!.ascension?.goal).toEqual(RACE_TRIAL_GOALS["race:stonekin"]);
     // It is claimed in town with its cost, not through the class claim.
     expect(await classes.claim(A, { operationId: "trial_t1" })).toMatchObject({ status: "rejected", reason: "INVALID_REQUEST" });
   });
@@ -157,6 +164,22 @@ describe("claiming the ascension (town service)", () => {
     expect(await claim("ascend_02")).toMatchObject({ status: "rejected", reason: "INSUFFICIENT_COINS" });
     expect(cores()).toBe(10);
     expect((await chars.get(A))!.ascensionId).toBeNull();
+  });
+
+  it("a win short of the race goal reads as lost and is not claimed; nothing is charged", async () => {
+    await toClass3(200);
+    await pay("1");
+    const r = await classes.start(A, { operationId: "trial_short", branchId: "ascend:stonekin" });
+    if (r.status !== "started") throw new Error();
+    winTrial(r.battleId, false);
+    expect((await classes.view(A))!.trial).toMatchObject({ status: "lost", raceGoal: { met: false, count: 12, need: 75 } });
+    const before = await coins();
+    expect(await claim("ascend_00", "a", "trial_short")).toMatchObject({ status: "rejected", reason: "GOAL_NOT_MET" });
+    expect(await coins()).toBe(before);
+    expect(cores()).toBe(10);
+    await wonRaceTrial("trial_full");
+    expect((await classes.view(A))!.trial).toMatchObject({ status: "won", raceGoal: { met: true } });
+    expect(await claim("ascend_01", "a", "trial_full")).toMatchObject({ status: "done" });
   });
 
   it("two claims at the same time (two won trials) end with one path and one charge", async () => {

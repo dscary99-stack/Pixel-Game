@@ -346,6 +346,7 @@ export class BattleRoom {
           entitlementIds: state.entitlements.filter((x) => (x.recipientId ?? state.ownerAccountId) === account).map((x) => x.entitlementId),
           // Secret quests (secret-progress.ts): what this fight did, from the final state only.
           ...(state.practice === true ? {} : { secret: secretFightFacts(state, isCapture, account) }),
+          ...(state.raceTrial !== undefined ? { raceTrial: { met: state.raceTrial.count >= state.raceTrial.need, count: state.raceTrial.count, need: state.raceTrial.need } } : {}),
         });
         out[K.settle] = { kind: "settle", status: "pending", settlement: settlementFor(state.ownerAccountId, reservationId, e.unusedReserved) };
         const members = (await this.storage.get<Record<string, string>>(K.memberReservations)) ?? {};

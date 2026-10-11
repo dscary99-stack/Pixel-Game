@@ -5,7 +5,7 @@
  * new state + events. Same setup + same seed + same commands => identical results.
  * The Battle Durable Object owns persistence, idempotency and auth; this file owns the rules.
  */
-import { ascensionPath, awakeningApplications } from "../ascension";
+import { ascensionPath, awakeningApplications, raceTrialGoal } from "../ascension";
 import { applyBond, bondBonusPercent, bondTier } from "../bond";
 import { companionCombatProfile } from "../companion-growth";
 import { SKILL_MAX_LEVEL, companionKit, effectiveSkillLevel, masteryForVictory, skillLevelCap, skillLevelMods, trainedSkillLevel } from "../skill-training";
@@ -110,6 +110,8 @@ class Ctx {
   readonly rng: Rng;
   /** Set while a passive's effects resolve, so passives never set off more passives. */
   inPassive = false;
+  /** Race trial "skills" goal: one count per unit turn, however many targets or hits the skill had. */
+  skillCounted = false;
   constructor(
     readonly s: BattleState,
     readonly rules: RulesConfig,
@@ -121,6 +123,7 @@ class Ctx {
   emit(body: BattleEventBody): void {
     this.s.eventSeq += 1;
     this.events.push({ eventId: `${this.s.battleId}:${this.s.eventSeq}`, seq: this.s.eventSeq, causeId: this.causeId, ...body });
+    if (this.s.raceTrial !== undefined && this.s.status === "active") tallyRaceTrial(this, body);
   }
   unit(id: string): BattleUnit {
     return this.s.units.find((u) => u.unitId === id) ?? reject("INVALID_TARGET", `unknown unit ${id}`);
@@ -133,6 +136,47 @@ class Ctx {
 }
 
 const active = (u: BattleUnit) => !u.ko && !u.retired;
+
+/** Counts the divine awakening trial's race goal (ascension.ts RACE_TRIAL_GOALS) from each event. */
+function tallyRaceTrial(ctx: Ctx, body: BattleEventBody): void {
+  const g = ctx.s.raceTrial!;
+  const side = (id: string | null) => (id === null ? undefined : ctx.s.units.find((u) => u.unitId === id)?.side);
+  let n = 0;
+  switch (body.type) {
+    case "TurnStarted":
+      ctx.skillCounted = false;
+      return;
+    case "ActionResolved": {
+      const actor = side(body.actorId);
+      const target = side(body.targetId);
+      if (g.kind === "heals" && actor === "ally" && target === "ally" && (body.heal ?? 0) > 0) n = 1;
+      else if (g.kind === "hits_taken" && actor === "enemy" && target === "ally" && body.hit === true && (body.damage ?? 0) > 0) n = 1;
+      else if (g.kind === "crits" && actor === "ally" && target === "enemy" && body.crit === true) n = 1;
+      else if (g.kind === "hits" && actor === "ally" && target === "enemy" && body.hit === true) n = 1;
+      else if (g.kind === "dodges" && actor === "enemy" && target === "ally" && body.hit === false) n = 1;
+      else if (g.kind === "skills" && actor === "ally" && body.action === "skill" && !ctx.skillCounted) {
+        ctx.skillCounted = true;
+        n = 1;
+      }
+      break;
+    }
+    case "StatusChanged": {
+      if (body.change !== "applied" && body.change !== "refreshed") return;
+      const harmful = STATUS_DEFINITIONS[body.statusId].harmful;
+      if (side(body.sourceId) !== "ally") return;
+      if (g.kind === "buffs" && !harmful && side(body.unitId) === "ally") n = 1;
+      else if (g.kind === "debuffs" && harmful && body.change === "applied" && side(body.unitId) === "enemy") n = 1;
+      break;
+    }
+    case "StatusTick":
+    case "ResourceChanged":
+      if (g.kind === "heals" && body.hp > 0 && side(body.unitId) === "ally") n = 1;
+      break;
+    default:
+      return;
+  }
+  if (n > 0) g.count += n;
+}
 
 /** The account that commands an ally: its controller in a party fight, else the fight's owner. */
 export const controllerOf = (state: Pick<BattleState, "ownerAccountId">, u: Pick<BattleUnit, "controllerId">): string => u.controllerId ?? state.ownerAccountId;
@@ -188,6 +232,8 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
   }
   const setup: BattleSetup = bossDef === undefined ? setup0 : { ...setup0, enemies: withEscorts(bossEnemies(bossDef), tower?.escorts ?? []) };
   if (setup0.classTrialTier !== undefined && setup0.classTrial !== true) reject("INVALID_COMMAND", "a trial tier needs a class trial");
+  const raceGoal = setup0.raceTrial === undefined ? undefined : (raceTrialGoal(setup0.raceTrial.raceId) ?? reject("MISSING_REFERENCE", `race goal ${setup0.raceTrial.raceId}`));
+  if (raceGoal !== undefined && setup0.classTrialTier !== "ascend") reject("INVALID_COMMAND", "a race goal belongs to the divine awakening trial");
   if (setup0.classTrial === true && (setup0.practice !== true || bossDef === undefined || tower !== undefined)) reject("INVALID_COMMAND", "a class trial is a practice boss fight");
   const towerPct = floor !== undefined ? frontierStatPct(rules, floor) : setup0.classTrial === true ? trialStatPct(rules, setup0.classTrialTier) : 100;
   const bossLoot = bossDef?.lootTableId;
@@ -242,6 +288,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
     originMode: setup.originMode,
     ...(setup.practice === true ? { practice: true } : {}),
     ...(setup.classTrial === true ? { enemyStatPct: towerPct } : {}),
+    ...(raceGoal !== undefined ? { raceTrial: { raceId: setup0.raceTrial!.raceId, kind: raceGoal.kind, need: raceGoal.need, count: 0 } } : {}),
     ownerAccountId: p.accountId,
     // Pinned for the whole fight (capture.ts): a deploy never changes a running fight's odds.
     captureProfile: rules.provisional.captureProfile.value,

@@ -123,6 +123,31 @@ export const ASCENSIONS: readonly Ascension[] = [
   ),
 ];
 
+/**
+ * What each race's trial counts besides the win (chapter 02: "passable with many classes"): the whole
+ * team counts, so no single class is required. The win alone is not enough; the count must reach
+ * `need` before the boss falls. EXAMPLE numbers (P31): about 40% of the median count in 32 Auto wins
+ * at 1000% (18 Class3 × 2 seeds, crab/fox/snail team); the smoke's own team took fewer hits than the
+ * sim's, so the numbers stay well below the sim's lows.
+ */
+export type RaceTrialGoalKind = "buffs" | "heals" | "hits_taken" | "crits" | "skills" | "debuffs" | "hits" | "dodges";
+export interface RaceTrialGoal {
+  kind: RaceTrialGoalKind;
+  need: number;
+  th: string;
+}
+export const RACE_TRIAL_GOALS: Readonly<Record<string, RaceTrialGoal>> = {
+  "race:human": { kind: "buffs", need: 120, th: "ทีมติดสถานะเสริมให้ฝ่ายเรา" },
+  "race:sylvan": { kind: "heals", need: 8, th: "ทีมฟื้น HP ให้ฝ่ายเรา" },
+  "race:stonekin": { kind: "hits_taken", need: 25, th: "ฝ่ายเรารับการโจมตีของศัตรู" },
+  "race:wildkin": { kind: "crits", need: 12, th: "ทีมโจมตีคริติคอล" },
+  "race:runeborn": { kind: "skills", need: 120, th: "ทีมใช้สกิล" },
+  "race:tideborn": { kind: "debuffs", need: 40, th: "ทีมติดสถานะลบให้ศัตรู" },
+  "race:skyborn": { kind: "hits", need: 80, th: "ทีมโจมตีโดนศัตรู" },
+  "race:veilborn": { kind: "dodges", need: 25, th: "ศัตรูโจมตีฝ่ายเราพลาด" },
+};
+export const raceTrialGoal = (raceId: string): RaceTrialGoal | undefined => RACE_TRIAL_GOALS[raceId];
+
 export const ascensionOfRace = (raceId: string): Ascension | undefined => ASCENSIONS.find((a) => a.raceId === raceId);
 /** The path for an `ascend:<race>:<a|b>` id, or undefined. */
 export function ascensionPath(id: string | null | undefined): AscensionPath | undefined {
@@ -183,6 +208,8 @@ export interface AscensionView {
   cost: { coins: number; materials: readonly { itemId: string; quantity: number }[] };
   switchCoins: number;
   blocked: AscensionBlocked;
+  /** What the race trial counts besides the win (RACE_TRIAL_GOALS). */
+  goal: RaceTrialGoal | null;
 }
 
 export function ascensionView(rules: RulesConfig, c: AscendCharacter): AscensionView | null {
@@ -203,5 +230,6 @@ export function ascensionView(rules: RulesConfig, c: AscendCharacter): Ascension
     cost: { coins: r.coins, materials: r.materials },
     switchCoins: r.pathSwitchCoins,
     blocked: ascensionBlocked(rules, c),
+    goal: raceTrialGoal(a.raceId) ?? null,
   };
 }

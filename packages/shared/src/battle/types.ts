@@ -9,6 +9,7 @@ import type { ErrorCode } from "../validators";
 import type { ActiveStatus, StatusId } from "../status";
 import type { EliteModifier } from "../elite";
 import type { FrontierModifierId } from "../frontier";
+import type { RaceTrialGoalKind } from "../ascension";
 
 export type Side = "ally" | "enemy";
 export type Row = "front" | "back";
@@ -202,6 +203,8 @@ export interface BattleState {
     /** Server only: the number for the next reinforcement's unit id (e<n>). */
     nextUnit?: number;
   };
+  /** Divine awakening trial: the race goal and how far the team got (ascension.ts RACE_TRIAL_GOALS). */
+  raceTrial?: { raceId: string; kind: RaceTrialGoalKind; need: number; count: number };
   /** The capture rules this fight started with (capture.ts); absent on states from before pinning = current profile. */
   captureProfile?: CaptureProfile;
   /** Private server RNG state. Never sent to the client. */
@@ -384,6 +387,8 @@ export interface BattleSetup {
   classTrial?: boolean;
   /** 3 for the Class3 trial (its own stat %, P28), "ascend" for the divine awakening trial (P31); a Class2 trial leaves it out. */
   classTrialTier?: 3 | "ascend";
+  /** The divine awakening trial only: the race whose goal (RACE_TRIAL_GOALS) the team must reach. */
+  raceTrial?: { raceId: string };
   bag: Record<string, number>;
   /** Counted by the server when the fight starts (P02); never from the client. */
   partyBonus?: PartyBonus;

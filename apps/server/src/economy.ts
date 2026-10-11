@@ -65,6 +65,8 @@ export interface Settlement {
   entitlementIds: string[];
   /** What the fight did, for secret quest progress (absent on fights settled before it existed). */
   secret?: SecretFightFacts;
+  /** Divine awakening trial: whether the team reached the race goal (kernel `raceTrial`). */
+  raceTrial?: { met: boolean; count: number; need: number };
 }
 
 export type SettleResult =
@@ -285,7 +287,7 @@ export class Economy {
              SET status = 'settled', settlement_hash = ?, outcome = ?, result_json = ?, updated_at = ?
            WHERE reservation_id = ? AND status = 'active' AND settlement_hash IS NULL AND ${receiptsGuard}`,
         )
-        .bind(hash, s.outcome, JSON.stringify({ allies: s.allies }), at, rid, ...receiptsArgs),
+        .bind(hash, s.outcome, JSON.stringify({ allies: s.allies, ...(s.raceTrial !== undefined ? { raceTrial: s.raceTrial } : {}) }), at, rid, ...receiptsArgs),
     ];
     unused.forEach(([itemId, qty], i) => {
       stmts.push(
@@ -438,12 +440,14 @@ export class Economy {
     return r?.reservation_id ?? null;
   }
 
-  async reservation(reservationId: string): Promise<{ status: ReservationStatus; outcome: string | null } | null> {
+  async reservation(reservationId: string): Promise<{ status: ReservationStatus; outcome: string | null; raceTrial?: Settlement["raceTrial"] } | null> {
     const r = await this.db
-      .prepare(`SELECT status, outcome FROM battle_reservations WHERE reservation_id = ?`)
+      .prepare(`SELECT status, outcome, result_json FROM battle_reservations WHERE reservation_id = ?`)
       .bind(reservationId)
-      .first<{ status: ReservationStatus; outcome: string | null }>();
-    return r ?? null;
+      .first<{ status: ReservationStatus; outcome: string | null; result_json: string | null }>();
+    if (r === null) return null;
+    const raceTrial = r.result_json === null ? undefined : (JSON.parse(r.result_json) as { raceTrial?: Settlement["raceTrial"] }).raceTrial;
+    return { status: r.status, outcome: r.outcome, ...(raceTrial !== undefined ? { raceTrial } : {}) };
   }
 
   /**
