@@ -3,7 +3,8 @@
  * login. A character puts items, gear and coins in at the town NPC, and any character of that login
  * takes them out there; looking inside works anywhere. ห้ามฝากคลัง (noStore) keeps a thing out.
  * Characters of the same login cannot trade with each other or buy each other's listings: the vault
- * is how things move between them. Companions do not go in (not decided yet).
+ * is how things move between them. Companions never go in (Nut 2026-10-09: companions belong to one
+ * character, P26). The view lists the newest moves (who put in or took out what).
  *
  * Numbers are P25.
  */
@@ -48,4 +49,15 @@ export interface VaultView {
   slots: number;
   /** False for a dev account that is not part of a login: its vault is its own. */
   shared: boolean;
+  /** The newest moves first (P25 historyLimit): which character put in or took out what. */
+  history: VaultHistoryEntry[];
+}
+
+export interface VaultHistoryEntry {
+  at: string;
+  characterName: string;
+  kind: "deposit" | "withdraw";
+  items: { itemId: string; name: string; quantity: number }[];
+  equipment: { definitionId: string; name: string }[];
+  coins: number;
 }

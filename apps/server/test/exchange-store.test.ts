@@ -45,6 +45,8 @@ const bag = (acct: string, item = POTION) => one<{ n: number }>("SELECT COALESCE
 const coins = (acct: string) => one<{ n: number }>("SELECT COALESCE(SUM(delta), 0) AS n FROM coin_ledger WHERE account_id = ?", acct).n;
 const mon = (id: string) => one<{ owner_id: string; lock_state: string; bond: number; nickname: string | null; ownership_version: number; protected: number }>("SELECT * FROM monster_instances WHERE id = ?", id);
 const piece = (id: string) => one<{ owner_id: string; lock_state: string; lock_ref: string | null; protected: number }>("SELECT * FROM equipment_instances WHERE id = ?", id);
+const met = (acct: string) => (db.prepare("SELECT species_id, element FROM journal_seen WHERE account_id = ? ORDER BY species_id").all(acct) as { species_id: string; element: string }[]).map((r) => `${r.species_id}/${r.element}`);
+const speciesOf = (id: string) => one<{ species_id: string }>("SELECT species_id FROM monster_instances WHERE id = ?", id).species_id;
 const pieceOf = (acct: string, def: string) => one<{ id: string }>("SELECT id FROM equipment_instances WHERE owner_id = ? AND definition_id = ?", acct, def).id;
 
 function pet(id: string, owner: string, speciesId: string, level = 1) {
@@ -203,6 +205,9 @@ describe("World Market", () => {
     expect(await buy(C, "buy_c_0001", id, 5000)).toMatchObject({ status: "rejected", reason: "LEVEL_INELIGIBLE" });
     expect(await buy(B, "buy_c_0002", id, 5000)).toMatchObject({ status: "done", result: { asset: { kind: "companion", bondAfterTransfer: 0 } } });
     expect(mon("mon:crab")).toMatchObject({ owner_id: B, lock_state: "free", bond: 0, nickname: null, ownership_version: 2 });
+    // The buyer's journal has met the species and element; the refused buyer's has not.
+    expect(met(B)).toContain(`${speciesOf("mon:crab")}/WATER`);
+    expect(met(C)).not.toContain(`${speciesOf("mon:crab")}/WATER`);
   });
 
   it("ห้ามขาย: an item or piece flagged noSell never reaches the market or an NPC buyer", async () => {
@@ -255,6 +260,9 @@ describe("direct trade", () => {
     expect(await trade.accept(B, { operationId: "accept_0002", offerId: offer.result.offerId })).toMatchObject({ status: "done" });
     expect(mon("mon:crab")).toMatchObject({ owner_id: B, bond: 0, nickname: null, lock_state: "free" });
     expect(mon("mon:fox")).toMatchObject({ owner_id: A, bond: 0, nickname: null, lock_state: "free", ownership_version: 2 });
+    // Each side's journal met what it received.
+    expect(met(B)).toContain(`${speciesOf("mon:crab")}/WATER`);
+    expect(met(A)).toContain(`${speciesOf("mon:fox")}/WATER`);
   });
 
   it("the level gap is checked for whoever receives a companion", async () => {

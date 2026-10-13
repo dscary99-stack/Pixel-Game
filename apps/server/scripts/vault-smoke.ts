@@ -69,6 +69,11 @@ const race = await Promise.all([
 ]);
 out.race = race.map((r) => r.body.error ?? r.status);
 if (race.filter((r) => r.status === 200).length !== 1) fail("the race did not have one winner");
+// 3b. The history shows every real move by either character (the race's loser adds nothing).
+const hist = (await one("GET", "/vault")).body.history as Msg[];
+out.history = hist.map((h: Msg) => `${h.characterName} ${h.kind} ${h.items.map((i: Msg) => `${i.itemId}×${i.quantity}`).join(" ")} ${h.equipment.length} pieces ${h.coins} coins`);
+const names = new Set(hist.map((h: Msg) => h.characterName));
+if (hist.filter((h: Msg) => h.kind === "withdraw" && h.items.some((i: Msg) => i.quantity === 6)).length !== 1 || names.size !== 2) fail("vault history is wrong");
 
 // 4. The same login cannot buy from itself or trade with itself.
 const listing = await one("POST", "/market/list", { operationId: `ml_${run}`, kind: "item", assetId: "item:small_potion", quantity: 1, price: 20, expectedFee: marketFee(R, 20) });

@@ -20,7 +20,7 @@ import {
   type RulesConfig,
   type SpeciesDefinition,
 } from "@pmrpg/shared";
-import type { SqlDb } from "./reward-ledger";
+import type { SqlBound, SqlDb } from "./reward-ledger";
 
 export interface JournalView extends JournalSummary {
   titles: string[];
@@ -204,4 +204,15 @@ export class JournalStore {
       sigilsWorn: [...worn].sort(),
     };
   }
+}
+
+/**
+ * The statement that marks the companions a WHERE picks out of `monster_instances` as met in the
+ * receiver's journal (bought, traded, mailed or given ones: the journal knows the species and element
+ * even after the companion leaves again). Put it before a transfer that changes what the WHERE matches.
+ */
+export function journalMetFrom(db: SqlDb, accountId: string, at: string, where: string, args: readonly unknown[]): SqlBound {
+  return db
+    .prepare(`INSERT INTO journal_seen (account_id, species_id, element, first_at) SELECT ?, species_id, element, ? FROM monster_instances WHERE ${where} ON CONFLICT DO NOTHING`)
+    .bind(accountId, at, ...args);
 }

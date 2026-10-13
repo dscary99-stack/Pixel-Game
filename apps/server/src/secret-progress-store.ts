@@ -35,6 +35,7 @@ import {
   type SpeciesDefinition,
 } from "@pmrpg/shared";
 import { hashJson, type SqlBound, type SqlDb } from "./reward-ledger";
+import { journalMetFrom } from "./journal-store";
 import { mailInsert } from "./mail-insert";
 
 export interface SecretCredit {
@@ -389,6 +390,7 @@ export class SecretProgressStore {
               COMPANION_GROWTH_VERSION,
               ...oursArgs,
             ),
+          journalMetFrom(this.db, accountId, at, `id = ? AND owner_id = ? AND ${ours}`, [g.ref, accountId, ...oursArgs]),
         );
       } else if (r.kind === "gear" && def?.kind === "gear") {
         if (!this.content.equipment.has(def.baseEquipmentId)) throw new Error(`reward ${r.rewardId} names unknown gear ${def.baseEquipmentId}`);

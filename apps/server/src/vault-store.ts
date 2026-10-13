@@ -5,7 +5,7 @@
  * guard holds, and every other write applies only under its token, so two characters taking the last
  * stack at once get one winner and a retried request replays its first answer.
  */
-import { VaultMoveRequestSchema, itemName, storable, vaultMoveIssue, type VaultMove, type VaultView, type RulesConfig, type AssetSnapshot } from "@pmrpg/shared";
+import { VaultMoveRequestSchema, itemName, storable, vaultMoveIssue, type VaultMove, type VaultHistoryEntry, type VaultView, type RulesConfig, type AssetSnapshot } from "@pmrpg/shared";
 import { ExchangeBase, OPEN_BATTLE, issues, marks, reject, type ExchangeContent, type ExchangeResult } from "./exchange-store";
 import { hashJson, type SqlBound, type SqlDb } from "./reward-ledger";
 
@@ -62,7 +62,36 @@ export class VaultStore extends ExchangeBase {
       usedSlots: items.size + pieces.length,
       slots: this.rules.provisional.vault.value.slots,
       shared: vault.shared,
+      history: await this.history(accountId, vault),
     };
+  }
+
+  /** The vault's newest moves by any of the login's characters (the anchors only exist for moves that happened). */
+  private async history(accountId: string, vault: { id: string; shared: boolean }): Promise<VaultHistoryEntry[]> {
+    const members = vault.shared
+      ? (await this.db.prepare(`SELECT account_id FROM user_characters WHERE user_id = ?`).bind(vault.id.slice("user:".length)).all<{ account_id: string }>()).results.map((r) => r.account_id)
+      : [accountId];
+    if (members.length === 0) return [];
+    const { results } = await this.db
+      .prepare(
+        `SELECT o.kind, o.result_json, o.created_at, c.name FROM vault_operations o LEFT JOIN characters c ON c.account_id = o.account_id
+         WHERE o.account_id IN (${marks(members.length)}) ORDER BY o.created_at DESC, o.operation_id DESC LIMIT ?`,
+      )
+      .bind(...members, this.rules.provisional.vault.value.historyLimit)
+      .all<{ kind: "vault_deposit" | "vault_withdraw"; result_json: string; created_at: string; name: string | null }>();
+    const moves = results.map((r) => ({ r, m: JSON.parse(r.result_json) as VaultMoveResult }));
+    const pieces = new Map((await this.pieces([...new Set(moves.flatMap((x) => x.m.equipmentIds))])).map((p) => [p.id, p.definition_id]));
+    return moves.map(({ r, m }) => ({
+      at: r.created_at,
+      characterName: r.name ?? "-",
+      kind: r.kind === "vault_deposit" ? "deposit" : "withdraw",
+      items: m.items.map((l) => ({ itemId: l.itemId, name: itemName(this.content.items, l.itemId), quantity: l.quantity })),
+      equipment: m.equipmentIds.map((id) => {
+        const def = pieces.get(id);
+        return { definitionId: def ?? id, name: (def === undefined ? undefined : this.content.equipment.get(def)?.name.th) ?? "อุปกรณ์" };
+      }),
+      coins: m.coins,
+    }));
   }
 
   private parse(raw: unknown): VaultMove | ReturnType<typeof reject> {

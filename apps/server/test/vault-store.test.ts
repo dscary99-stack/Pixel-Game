@@ -98,6 +98,7 @@ describe("account vault", () => {
     expect((await vault.view(B))!).toMatchObject({ shared: false, coins: 0, items: [], equipment: [] });
     expect(await vault.withdraw(B, { operationId: "wd_b00001", coins: 1 })).toMatchObject({ status: "rejected", reason: "NOT_IN_VAULT" });
 
+    now = "2026-10-08T01:00:00.000Z";
     const take = { operationId: "wd_000001", items: [{ itemId: POTION, quantity: 4 }], equipmentIds: [sword], coins: 3000 };
     expect(await vault.withdraw(C, take)).toMatchObject({ status: "done" });
     expect(await vault.withdraw(C, take)).toMatchObject({ status: "done", replayed: true });
@@ -105,6 +106,12 @@ describe("account vault", () => {
     expect(owner(sword)).toEqual({ owner_id: C, lock_state: "free" });
     expect((await store.equipment(C)).some((e) => e.id === sword)).toBe(true);
     expect((await vault.view(A))!).toMatchObject({ coins: 0, items: [], equipment: [], usedSlots: 0 });
+    // Both characters see who moved what, newest first; a replay or a refused request adds nothing.
+    const move = (kind: string, characterName: string, at: string) => ({ kind, characterName, at, items: [{ itemId: POTION, name: expect.any(String), quantity: 4 }], equipment: [{ definitionId: "equip:wooden_sword", name: expect.any(String) }], coins: 3000 });
+    const history = [move("withdraw", "ตัวรอง", "2026-10-08T01:00:00.000Z"), move("deposit", "ตัวหลัก", "2026-10-08T00:00:00.000Z")];
+    expect((await vault.view(A))!.history).toEqual(history);
+    expect((await vault.view(C))!.history).toEqual(history);
+    expect((await vault.view(B))!.history).toEqual([]);
   });
 
   it("ห้ามฝากคลัง stays out; worn pieces, too much, and the field are refused with nothing moved", async () => {

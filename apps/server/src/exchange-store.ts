@@ -47,6 +47,7 @@ import {
   type TradeView,
 } from "@pmrpg/shared";
 import { hashJson, type SqlBound, type SqlDb } from "./reward-ledger";
+import { journalMetFrom } from "./journal-store";
 import { mailInsert } from "./mail-insert";
 
 export type ExchangeRejection =
@@ -368,6 +369,7 @@ export class ExchangeBase {
       ];
     }
     return [
+      journalMetFrom(this.db, to, this.now(), `lock_ref = ? AND lock_state = 'in_escrow' AND ${ours.sql}`, [ref, ...ours.args]),
       this.db
         .prepare(
           `UPDATE equipment_instances SET owner_id = ?, lock_state = 'free', lock_ref = NULL, protected = 0, version = version + 1
@@ -1080,6 +1082,7 @@ export class TradeStore extends ExchangeBase {
     const c = side.companionIds;
     if (c.length > 0) {
       stmts.push(
+        journalMetFrom(this.db, to, this.now(), `owner_id = ? AND id IN (${marks(c.length)}) AND lock_state = 'free' AND ${ours.sql}`, [from, ...c, ...ours.args]),
         this.db
           .prepare(
             `UPDATE monster_instances SET owner_id = ?, bond = 0, nickname = NULL, protected = 0, ownership_version = ownership_version + 1

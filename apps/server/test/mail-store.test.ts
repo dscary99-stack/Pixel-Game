@@ -73,6 +73,8 @@ describe("mailbox", () => {
     expect([await eco.balance(A, POTION), coins(A)]).toEqual([(await p0) + 3, c0 + 500]);
     expect(one<{ owner_id: string }>("SELECT owner_id FROM monster_instances WHERE id = 'mon:mail:gift:0'").owner_id).toBe(A);
     expect((await mail.view(A))!.unclaimed).toBe(0);
+    // The journal met the mailed companion's species and element.
+    expect(one<{ n: number }>("SELECT COUNT(*) AS n FROM journal_seen WHERE account_id = ? AND species_id = 'species:supply_mole' AND element = 'EARTH'", A).n).toBe(1);
   });
 
   it("claims racing for one letter: exactly one pays", async () => {

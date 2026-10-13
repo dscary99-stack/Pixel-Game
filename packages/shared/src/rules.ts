@@ -262,7 +262,7 @@ export const RULES = {
      */
     companionBox: provisional({ capacity: 100 } as const, "P26", "Nut 2026-10-09: 100 companions besides the team, per character, not shared"),
     mail: provisional({ keepDays: 30, listLimit: 100 } as const, "P27", "letters kept 30 days (unclaimed ones are lost, like weekly rewards); the newest 100 are shown"),
-    vault: provisional({ slots: 100, maxLines: 20 } as const, "P25", "100 slots per account (one per item kind held, one per piece; coins take none); up to 20 lines per request"),
+    vault: provisional({ slots: 100, maxLines: 20, historyLimit: 30 } as const, "P25", "100 slots per account (one per item kind held, one per piece; coins take none); up to 20 lines per request; the newest 30 moves are shown"),
     /**
      * Direct trade between players (Nut 2026-10-07: item trade and companion trade are separate).
      * The proposer's side is held in escrow; the other player's side is checked when they accept.

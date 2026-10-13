@@ -17,6 +17,7 @@ import {
 } from "@pmrpg/shared";
 import { ExchangeBase, OPEN_BATTLE, issues, marks, reject, type ExchangeContent, type ExchangeResult } from "./exchange-store";
 import { hashJson, type SqlBound, type SqlDb } from "./reward-ledger";
+import { journalMetFrom } from "./journal-store";
 import { mailInsert, type NewLetter } from "./mail-insert";
 
 export { mailInsert, type NewLetter };
@@ -165,6 +166,7 @@ export class MailStore extends ExchangeBase {
                SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? WHERE ${ours.sql} ON CONFLICT DO NOTHING`,
             )
             .bind(c.id, c.speciesId, accountId, c.level, c.element, JSON.stringify(c.primaryStats), JSON.stringify(c.origin), id, c.growthSeed, c.growthVersion, c.noSell ? 1 : 0, c.noTrade ? 1 : 0, ...ours.args),
+          journalMetFrom(this.db, accountId, at, `id = ? AND owner_id = ? AND ${ours.sql}`, [c.id, accountId, ...ours.args]),
         );
       }
       stmts.push(this.db.prepare(`UPDATE mail SET claimed_at = ?, claim_op = ? WHERE id = ? AND account_id = ? AND claimed_at IS NULL AND ${ours.sql}`).bind(at, operationId, id, accountId, ...ours.args));

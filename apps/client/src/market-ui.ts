@@ -611,7 +611,7 @@ export function vaultPanel(api: CharacterApi, start: CharacterBundle, atNpc: boo
     actions.append(done);
     panel.append(
       el("h2", {}, "คลังของบัญชี"),
-      el("div", { class: "pm-note" }, `ใช้ร่วมกันทุกตัวละครในบัญชีนี้ · ${RULES.provisional.vault.value.slots} ช่อง (ไอเทมชนิดละ 1 ช่อง อุปกรณ์ชิ้นละ 1 ช่อง เหรียญไม่กินช่อง) · ฝาก/ถอนที่ผู้ใหญ่พิมพ์ในเมือง · คู่ใจยังฝากไม่ได้`),
+      el("div", { class: "pm-note" }, `ใช้ร่วมกันทุกตัวละครในบัญชีนี้ · ${RULES.provisional.vault.value.slots} ช่อง (ไอเทมชนิดละ 1 ช่อง อุปกรณ์ชิ้นละ 1 ช่อง เหรียญไม่กินช่อง) · ฝาก/ถอนที่ผู้ใหญ่พิมพ์ในเมือง · คู่ใจเป็นของตัวละครแต่ละตัว ฝากคลังไม่ได้`),
       head,
       body,
       note,
@@ -713,6 +713,16 @@ export function vaultPanel(api: CharacterApi, start: CharacterBundle, atNpc: boo
           carried.append(li);
         }
         body.append(el("h3", {}, "ติดตัวตัวละครนี้"), carried);
+
+        // Who moved what, newest first.
+        const log = el("ul", { class: "pm-list", "data-section": "vault-history" });
+        for (const h of v.history) {
+          const when = new Date(h.at).toLocaleString("th-TH", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+          const what = [...h.items.map((i) => `${i.name} ×${i.quantity}`), ...h.equipment.map((e) => e.name), ...(h.coins > 0 ? [`${h.coins.toLocaleString()} เหรียญ`] : [])].join(", ");
+          log.append(el("li", { "data-vault-move": h.kind }, `${when} · ${h.characterName} ${h.kind === "deposit" ? "ฝาก" : "ถอน"} ${what}`));
+        }
+        if (v.history.length === 0) log.append(el("li", {}, "ยังไม่มีการฝาก/ถอน"));
+        body.append(el("h3", {}, "ประวัติฝาก/ถอน"), log);
       } catch (e) {
         error.textContent = errText(e);
       }
