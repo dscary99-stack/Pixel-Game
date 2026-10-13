@@ -9,10 +9,10 @@
  *   rolls a new pack. There is no daily cap or energy: the wait is the respawn time only.
  */
 import type { RulesConfig } from "../rules";
-import type { Rng } from "../rng";
+import { Rng, seedRng } from "../rng";
 import type { BossDefinition, Element, SpeciesDefinition } from "../schemas";
 import type { BattleSetup } from "../battle/types";
-import type { MapDefinition, SpawnPoint, TilePos } from "./map";
+import { isWalkable, portalAt, type MapDefinition, type SpawnPoint, type TilePos } from "./map";
 import { rollEliteModifiers, type EliteModifier } from "../elite";
 
 export interface PackMember {
@@ -105,13 +105,14 @@ export function rollPack(spawn: SpawnPoint, packId: string, rng: Rng, elite?: { 
   return { packId, spawnId: spawn.id, at: { ...spawn.at }, rank: spawn.rank, sizeRange: [min, max], members };
 }
 
-export function visiblePack(p: PackInstance, species: ReadonlyMap<string, SpeciesDefinition>): VisiblePack {
+/** `at`: where the pack stands now (packPositionAt); defaults to its spawn point. */
+export function visiblePack(p: PackInstance, species: ReadonlyMap<string, SpeciesDefinition>, at: TilePos = p.at): VisiblePack {
   const leader = p.members[0]!;
   return {
     packId: p.packId,
     spawnId: p.spawnId,
-    x: p.at.x,
-    y: p.at.y,
+    x: at.x,
+    y: at.y,
     rank: p.rank,
     sizeRange: [...p.sizeRange],
     leader: {
@@ -127,6 +128,38 @@ export function visiblePack(p: PackInstance, species: ReadonlyMap<string, Specie
 export function inEngageRange(rules: RulesConfig, player: TilePos, pack: TilePos): boolean {
   const r = rules.provisional.engageRangeTiles.value;
   return Math.max(Math.abs(player.x - pack.x), Math.abs(player.y - pack.y)) <= r;
+}
+
+/** How many wander steps a pack of the current cycle has taken at `now` (P33). */
+export const packWanderStep = (rules: RulesConfig, now: number) =>
+  Math.floor((now % rules.provisional.packRespawnMs.value) / rules.provisional.packWander.value.stepMs);
+
+/**
+ * Where a pack stands after `step` wander steps (P33). Each step is one orthogonal tile or a pause,
+ * chosen from the pack id and step number, so every server call agrees without storing anything.
+ * The pack keeps to walkable, non-portal tiles within `radiusTiles` of its spawn point.
+ */
+export function packPositionAt(rules: RulesConfig, map: MapDefinition, pack: Pick<PackInstance, "packId" | "at">, step: number): TilePos {
+  const radius = rules.provisional.packWander.value.radiusTiles;
+  let pos = { ...pack.at };
+  for (let i = 1; i <= step; i++) {
+    const options = [pos, { x: pos.x, y: pos.y - 1 }, { x: pos.x + 1, y: pos.y }, { x: pos.x, y: pos.y + 1 }, { x: pos.x - 1, y: pos.y }].filter(
+      (t, k) =>
+        k === 0 ||
+        (Math.max(Math.abs(t.x - pack.at.x), Math.abs(t.y - pack.at.y)) <= radius && isWalkable(map, t.x, t.y) && portalAt(map, t.x, t.y) === null),
+    );
+    pos = { ...options[new Rng(seedRng(`${pack.packId}~${i}`)).nextInt(options.length)]! };
+  }
+  return pos;
+}
+
+/**
+ * Whether a player can engage a wandering pack: next to where it stands now, or where it stood one
+ * step ago (a click sent just before the pack moved still counts).
+ */
+export function inWanderEngageRange(rules: RulesConfig, map: MapDefinition, player: TilePos, pack: Pick<PackInstance, "packId" | "at">, now: number): boolean {
+  const step = packWanderStep(rules, now);
+  return inEngageRange(rules, player, packPositionAt(rules, map, pack, step)) || (step > 0 && inEngageRange(rules, player, packPositionAt(rules, map, pack, step - 1)));
 }
 
 /** Hunting only happens on field and dungeon maps (chapter 07 §4: town no hunt). */

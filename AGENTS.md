@@ -28,7 +28,7 @@ npm run dev:client     # http://127.0.0.1:5173 (local preview; หน้าแ�
 npm run db:migrate:local  # ใส่ D1 migrations ลงฐานข้อมูล local ก่อน dev:server ครั้งแรก/หลังเพิ่ม migration
 npm run dev:server     # wrangler dev :8787; เปิด client ด้วย ?server
 npm run smoke:server   # end-to-end ไฟต์ กับ wrangler dev ที่รันอยู่
-npm run smoke:world    # end-to-end การเดิน 2 ผู้เล่น (WebSocket) กับ wrangler dev ที่รันอยู่
+npm run smoke:world    # end-to-end การเดิน 2 ผู้เล่น (WebSocket) → ฝูงในทุ่งเดินไปมา (`packMoves`) → channel เต็มแล้วคนถัดไปถูกย้ายไป channel อื่น กับ wrangler dev ที่รันอยู่
 npm run smoke:encounter # end-to-end เดินเข้าทุ่ง → สู้ฝูง → กลับที่เดิม (ไฟต์ส่วนตัว O05) → ฝูง Elite โชว์ความสามารถตรงกับในไฟต์ → สมุดบันทึกมีแผนที่/ชนิดที่พบ กับ wrangler dev
 npm run smoke:character # end-to-end สร้างตัวละคร → เควสลับล็อก (`{locked:true}` ไม่มีข้อมูลอื่น) → dev เปิดดูได้ชุดเควส → จับคู่ใจ → จัดทีม → ตั้งชื่อเล่น → HP ติดตัว → แพ้กลับเมืองพัก → ปล่อยคู่ใจ กับ wrangler dev
 npm run smoke:equipment # end-to-end ของเริ่มต้น (ธรรมดา ไม่มีออปชัน) → ใส่/ถอด → stat ในไฟต์ → ล็อกระหว่างไฟต์ กับ wrangler dev

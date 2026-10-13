@@ -1,5 +1,5 @@
 // Shared helpers for the smoke scripts that walk and fight against `wrangler dev`.
-import { DIR_DELTA, exampleMapRegistry, findPath, inEngageRange, stepCostMs, PRODUCTION_RULES, type Direction, type TilePos } from "@pmrpg/shared";
+import { exampleMapRegistry, findPath, inEngageRange, stepCostMs, PRODUCTION_RULES, type Direction, type TilePos } from "@pmrpg/shared";
 
 export const api = process.env.API ?? "http://127.0.0.1:8787";
 const wsBase = api.replace(/^http/, "ws");
@@ -76,17 +76,31 @@ export async function toField(account: string): Promise<Client> {
   return c;
 }
 
-/** Walk until within engage range of the pack (P10: next to it). */
-export async function approach(c: Client, pack: TilePos) {
-  const field = maps.get(c.mapId)!;
-  const steps: Direction[] = [];
-  let q = { ...c.pos };
-  for (const d of findPath(field, q, pack)!) {
-    if (inEngageRange(PRODUCTION_RULES, q, pack)) break;
-    steps.push(d);
-    q = { x: q.x + DIR_DELTA[d][0], y: q.y + DIR_DELTA[d][1] };
+/** Where a pack stands now: its spot in the last pack list, moved by any wander steps since (P33). */
+export function packNow(c: Client, pack: TilePos & { packId?: string }): TilePos {
+  if (pack.packId === undefined) return pack;
+  let at: TilePos = { x: pack.x, y: pack.y };
+  let i = c.inbox.findLastIndex((m) => m.t === "packs");
+  const listed = i < 0 ? undefined : (c.inbox[i].packs as Msg[]).find((p) => p.packId === pack.packId);
+  if (listed !== undefined) at = { x: listed.x, y: listed.y };
+  for (i = Math.max(i, 0); i < c.inbox.length; i++) {
+    const m = c.inbox[i];
+    const mv = m.t === "packMoves" ? (m.moves as Msg[]).find((x) => x.packId === pack.packId) : undefined;
+    if (mv !== undefined) at = { x: mv.x, y: mv.y };
   }
-  await walk(c, steps);
+  return at;
+}
+
+/** Walk until within engage range of the pack (P10: next to it), following it as it wanders (P33). */
+export async function approach(c: Client, pack: TilePos & { packId?: string }) {
+  const field = maps.get(c.mapId)!;
+  for (let i = 0; i < 200; i++) {
+    const at = packNow(c, pack);
+    if (inEngageRange(PRODUCTION_RULES, c.pos, at)) return;
+    const path = findPath(field, c.pos, at);
+    if (path === null || path.length === 0) return;
+    if ((await walk(c, [path[0]!])) !== null) return;
+  }
 }
 
 export const lastPacks = (c: Client) => c.inbox.filter((m) => m.t === "packs").at(-1)!.packs as Msg[];

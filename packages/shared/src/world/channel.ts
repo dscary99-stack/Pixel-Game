@@ -60,13 +60,16 @@ export type WorldServerMessage =
   | { t: "correct"; seq: number; x: number; y: number; reason: StepRejection | "STALE_SEQ" | "IN_BATTLE" }
   /** The packs this player can engage right now (already-fought ones are left out). */
   | { t: "packs"; packs: VisiblePack[] }
+  /** Packs here took a wander step (P33): their new tiles. Unknown ids are ignored. */
+  | { t: "packMoves"; moves: { packId: string; x: number; y: number }[] }
   /** A private fight exists for this player; `resumed` when it was already running (reconnect). */
   /** `party`: everyone in a party boss fight (Nut 2026-10-07), first the one who started it. */
   | { t: "encounter"; battleId: string; resumed: boolean; party?: string[] }
   | { t: "resumed" }
   /** HP/MP of the character and free companions are full again (town rest, chapter 03 §3). */
   | { t: "rested" }
-  | { t: "transfer"; mapId: string; channel: number }
+  /** Go to this map and channel. `CHANNEL_FULL`: the requested channel was full, this one has room. */
+  | { t: "transfer"; mapId: string; channel: number; reason?: "CHANNEL_FULL" }
   | { t: "kicked"; reason: "REPLACED" | "EVICTED" }
   | { t: "error"; code: WorldErrorCode; message: string }
   | { t: "pong"; serverTime: number }
@@ -177,6 +180,11 @@ export class MapChannel {
     return this.players.get(accountId);
   }
 
+  /** Whether this account can join: it is already here, or the channel is below capacity (P11). */
+  hasRoom(accountId: string): boolean {
+    return this.players.has(accountId) || this.players.size < this.rules.provisional.channelCapacity.value;
+  }
+
   all(): Presence[] {
     return [...this.players.values()];
   }
@@ -187,7 +195,7 @@ export class MapChannel {
    */
   join(accountId: string, name: string, pos: TilePos, now: number, look?: PlayerLook): JoinResult {
     const existing = this.players.get(accountId);
-    if (existing === undefined && this.players.size >= this.rules.provisional.channelCapacity.value) {
+    if (!this.hasRoom(accountId)) {
       return { ok: false, code: "CHANNEL_FULL", message: `channel ${this.channel} is full` };
     }
     const presence: Presence = existing ?? {
@@ -320,4 +328,13 @@ export class MapChannel {
     this.players.delete(accountId);
     return { presence: p, out: [{ to: "others", msg: { t: "left", sid: p.sid } }] };
   }
+}
+
+/**
+ * The channels to try after `full` is full, in order: the next ones up, then wrapping round
+ * (P11 channelsPerMap). The player's requested channel is never tried twice.
+ */
+export function otherChannels(rules: RulesConfig, full: number): number[] {
+  const n = rules.provisional.channelsPerMap.value;
+  return Array.from({ length: n - 1 }, (_, i) => ((full - 1 + i + 1) % n) + 1);
 }

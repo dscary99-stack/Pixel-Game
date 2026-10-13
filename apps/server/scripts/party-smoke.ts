@@ -30,11 +30,16 @@ const C = await toField(acct("c"));
 for (const x of [A, B, C]) await x.wait((m) => m.t === "packs");
 
 async function engage(c: typeof A, spawnId: string) {
-  const pack = lastPacks(c).find((p) => p.spawnId === spawnId) ?? lastPacks(c)[0];
-  await approach(c, pack);
-  const from = c.inbox.length;
-  c.send({ t: "engage", packId: pack.packId });
-  const enc = await c.wait((m) => m.t === "encounter" || m.t === "error", 6000, from);
+  // A pack can roll over or wander off between the approach and the engage: try again.
+  let enc: Msg = null;
+  for (let i = 0; i < 4 && enc?.t !== "encounter"; i++) {
+    const pack = lastPacks(c).find((p) => p.spawnId === spawnId) ?? lastPacks(c)[0];
+    await approach(c, pack);
+    const from = c.inbox.length;
+    c.send({ t: "engage", packId: pack.packId });
+    enc = await c.wait((m) => m.t === "encounter" || m.t === "error", 6000, from);
+    if (enc.t === "error") console.error("retry engage:", enc.code);
+  }
   if (enc.t !== "encounter") throw new Error(JSON.stringify(enc));
   return enc.battleId as string;
 }

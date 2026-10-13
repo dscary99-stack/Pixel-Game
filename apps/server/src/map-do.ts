@@ -25,7 +25,11 @@ import {
   exampleSecretRewardRegistry,
   huntingAllowed,
   inEngageRange,
+  inWanderEngageRange,
+  otherChannels,
   packCycle,
+  packPositionAt,
+  packWanderStep,
   packEnemies,
   packInstanceId,
   companionSetups,
@@ -61,6 +65,7 @@ import {
   type MapDefinition,
   type Outgoing,
   type PackInstance,
+  type TilePos,
   type Presence,
   type PublicBattleState,
   type RulesConfig,
@@ -116,8 +121,11 @@ export class MapChannelDurableObject extends DurableObject<Env> {
   /** Accounts with an engage or resume in flight; a second tap waits for the first answer. */
   private readonly busy = new Set<string>();
   /** Auto Hunt routes (memory only; re-planned if the object restarts). */
-  private readonly routes = new Map<string, { packId: string; path: Direction[] }>();
+  /** `target`: where the pack stood when the route was planned; it is re-planned once the pack moves. */
+  private readonly routes = new Map<string, { packId: string; path: Direction[]; target: TilePos }>();
   private lastSaveAt = 0;
+  /** The pack cycle and wander step last sent to the channel (P33). */
+  private wanderSent: string | null = null;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -158,6 +166,19 @@ export class MapChannelDurableObject extends DurableObject<Env> {
 
     const pair = new WebSocketPair();
     const [client, server] = [pair[0], pair[1]];
+
+    // A full channel sends the player on to the first other channel of this map with room; only
+    // when every channel is full does the join fail with CHANNEL_FULL.
+    if (!this.ensureChannel(mapId, channelNo).hasRoom(accountId)) {
+      for (const other of otherChannels(this.rules, channelNo)) {
+        const stub = this.env.MAP.get(this.env.MAP.idFromName(mapObjectName(mapId, other)));
+        if (!(await stub.hasRoom(mapId, other, accountId).catch(() => false))) continue;
+        server.accept();
+        server.send(JSON.stringify({ t: "transfer", mapId, channel: other, reason: "CHANNEL_FULL" } satisfies WorldServerMessage));
+        server.close(1000, "CHANNEL_FULL");
+        return new Response(null, { status: 101, webSocket: client });
+      }
+    }
 
     // Same account live on another channel of this map: stop that connection first. It saves its
     // live position under its own generation, so the claim below starts from where they stand.
@@ -210,7 +231,14 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     // Towns are rest points: HP/MP come back for free (chapter 03 §3), never during a fight.
     if (this.maps.get(mapId)?.kind === "town" && (await this.characters.rest(accountId))) safeSend(server, { t: "rested" });
     await this.sendPacks(accountId, mapId, channelNo);
-    await this.ensureSaveAlarm();
+    // On a hunting map the next wander step (P33) must reach this player on time.
+    const here = this.maps.get(mapId)!;
+    if (huntingAllowed(here) && here.spawns.length > 0) {
+      const stepMs = this.rules.provisional.packWander.value.stepMs;
+      const next = (Math.floor(Date.now() / stepMs) + 1) * stepMs;
+      const set = await this.ctx.storage.getAlarm();
+      if (set === null || set > next) await this.ctx.storage.setAlarm(next);
+    } else await this.ensureSaveAlarm();
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -273,6 +301,11 @@ export class MapChannelDurableObject extends DurableObject<Env> {
    * The player changed title or fashion (the Worker read it from D1 and passes it as JSON): everyone in
    * this channel sees the new look now. Untrusted text is checked the same way as at join.
    */
+  /** Whether `accountId` could join this channel now (used by a full channel to pick another). */
+  async hasRoom(mapId: string, channel: number, accountId: string): Promise<boolean> {
+    return this.ensureChannel(mapId, channel).hasRoom(accountId);
+  }
+
   async refreshLook(accountId: string, lookJson: string): Promise<void> {
     for (const ws of this.ctx.getWebSockets(accountId)) {
       const a = ws.deserializeAttachment() as Attachment | null;
@@ -320,12 +353,17 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     return list;
   }
 
+  /** Where a pack of this cycle stands now (P33 wandering). */
+  private packAt(map: MapDefinition, p: PackInstance, now = Date.now()): TilePos {
+    return packPositionAt(this.rules, map, p, packWanderStep(this.rules, now));
+  }
+
   /** Send one player the packs they can engage (ones they already fought are left out). */
   private async sendPacks(accountId: string, mapId: string, channel: number): Promise<void> {
     const map = this.maps.get(mapId)!;
     const list = await this.currentPacks(map, channel);
     const fought = await this.encounters.fought(accountId, list.map((p) => p.packId));
-    const packs = list.filter((p) => !fought.has(p.packId)).map((p) => visiblePack(p, this.content.species));
+    const packs = list.filter((p) => !fought.has(p.packId)).map((p) => visiblePack(p, this.content.species, this.packAt(map, p)));
     // The map's boss is always there to challenge again (P17: no quota).
     const boss = visibleBoss(map, this.content.bosses, this.content.species);
     if (boss !== null) packs.push(boss);
@@ -369,7 +407,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     } else {
       pack = (await this.currentPacks(map, a.channel)).find((p) => p.packId === packId);
       if (pack === undefined) return fail("NO_SUCH_PACK", "that pack is gone; a new one appears next cycle");
-      if (!inEngageRange(this.rules, presence.pos, pack.at)) return fail("TOO_FAR", "walk next to the pack first");
+      if (!inWanderEngageRange(this.rules, map, presence.pos, pack, Date.now())) return fail("TOO_FAR", "walk next to the pack first");
       if ((await this.encounters.fought(account, [packId])).has(packId)) return fail("NO_SUCH_PACK", "you already fought this pack");
       members = pack.members;
     }
@@ -650,16 +688,22 @@ export class MapChannelDurableObject extends DurableObject<Env> {
 
     const live = await this.currentPacks(map, a.channel);
     let route = this.routes.get(account);
-    if (route !== undefined && !live.some((p) => p.packId === route!.packId)) route = undefined;
+    // A route is dropped when its pack is gone or has wandered off the tile it was planned to.
+    if (route !== undefined) {
+      const target = live.find((p) => p.packId === route!.packId);
+      const at = target === undefined ? null : this.packAt(map, target, now);
+      if (at === null || at.x !== route.target.x || at.y !== route.target.y) route = undefined;
+    }
     if (route === undefined) {
       const fought = await this.encounters.fought(account, live.map((p) => p.packId));
-      const visible = live.filter((p) => !fought.has(p.packId)).map((p) => visiblePack(p, this.content.species));
+      const visible = live.filter((p) => !fought.has(p.packId)).map((p) => visiblePack(p, this.content.species, this.packAt(map, p, now)));
       const found = stopSpeciesPack(auto.settings, visible);
       if (found !== null) return this.stopAuto(ws, "FOUND_SPECIES", { detail: found.leader.speciesId, packId: found.packId });
       const plan = planAutoHunt(this.rules, map, presence.pos, visible, auto.settings);
       if (plan.kind === "wait") return;
       if (plan.kind === "unreachable") return this.stopAuto(ws, "NO_TARGETS");
-      route = { packId: plan.packId, path: plan.kind === "walk" ? plan.path : [] };
+      const target = visible.find((p) => p.packId === plan.packId)!;
+      route = { packId: plan.packId, path: plan.kind === "walk" ? plan.path : [], target: { x: target.x, y: target.y } };
       this.routes.set(account, route);
     }
 
@@ -735,11 +779,36 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     // A new respawn cycle: everyone gets the new packs (including ones they fought last cycle).
     const sockets = this.ctx.getWebSockets().map((ws) => ws.deserializeAttachment() as Attachment | null).filter((x): x is Attachment => x !== null);
     const first = sockets[0];
-    if (first !== undefined && cycleBefore !== packCycle(this.rules, Date.now())) {
+    const map = first === undefined ? undefined : this.maps.get(first.mapId);
+    const wanders = map !== undefined && huntingAllowed(map) && map.spawns.length > 0;
+    const at = Date.now();
+    if (first !== undefined && cycleBefore !== packCycle(this.rules, at)) {
       for (const s of sockets) await this.sendPacks(s.presence.accountId, s.mapId, s.channel);
+    } else if (first !== undefined && wanders && this.wanderSent !== `${packCycle(this.rules, at)}:${packWanderStep(this.rules, at)}`) {
+      await this.sendPackMoves(map, first.channel, at);
     }
+    this.wanderSent = `${packCycle(this.rules, at)}:${packWanderStep(this.rules, at)}`;
+    const stepMs = this.rules.provisional.packWander.value.stepMs;
     if (hunting) await this.ctx.storage.setAlarm(Date.now() + this.rules.provisional.walkStepMs.value);
+    else if (wanders) await this.ctx.storage.setAlarm((Math.floor(Date.now() / stepMs) + 1) * stepMs);
     else await this.ensureSaveAlarm();
+  }
+
+  /**
+   * Packs that took a wander step since the last one (P33), sent to everyone in the channel. Ids a
+   * player does not see (already fought) are ignored by their client.
+   */
+  private async sendPackMoves(map: MapDefinition, channel: number, now: number): Promise<void> {
+    const step = packWanderStep(this.rules, now);
+    if (step === 0) return;
+    const moves = (await this.currentPacks(map, channel))
+      .map((p) => ({ packId: p.packId, now: packPositionAt(this.rules, map, p, step), before: packPositionAt(this.rules, map, p, step - 1) }))
+      .filter((m) => m.now.x !== m.before.x || m.now.y !== m.before.y)
+      .map((m) => ({ packId: m.packId, x: m.now.x, y: m.now.y }));
+    if (moves.length === 0) return;
+    for (const ws of this.ctx.getWebSockets()) {
+      if (ws.deserializeAttachment() !== null) safeSend(ws, { t: "packMoves", moves });
+    }
   }
 
   private async drop(ws: WebSocket): Promise<void> {

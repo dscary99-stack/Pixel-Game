@@ -110,6 +110,32 @@ await sleep(500);
 const B3 = connect(acct("b"), "map:dawn_field", 1);
 out.afterRelog = (await B3.wait((m) => m.t === "welcome")).self;
 
+// Packs wander (P33): within a few seconds the field sends steps for packs B can see.
+const listed = (await B3.wait((m) => m.t === "packs")).packs;
+const moves = (await B3.wait((m) => m.t === "packMoves", 20000)).moves;
+out.packMoves = moves;
+for (const mv of moves) {
+  const p = listed.find((q) => q.packId === mv.packId);
+  if (p !== undefined && Math.abs(p.x - mv.x) + Math.abs(p.y - mv.y) > 5) throw new Error(`pack jumped: ${JSON.stringify({ p, mv })}`);
+}
+
+// A full channel sends a newcomer to the other channel instead of refusing (P11 capacity).
+const fillers = [];
+let sent = null;
+let last = "";
+for (let i = 0; i < 60 && sent === null; i++) {
+  last = acct(`fill${i}`);
+  const f = connect(last, "map:dawn_town", 2);
+  const m = await f.wait((x) => x.t === "welcome" || x.t === "transfer" || x.t === "error");
+  fillers.push(f);
+  if (m.t !== "welcome") sent = m;
+}
+out.fullChannel = { joinedBeforeFull: fillers.length - 1, then: sent };
+if (sent?.t !== "transfer" || sent.channel !== 1 || sent.reason !== "CHANNEL_FULL") throw new Error(`full channel: ${JSON.stringify(sent)}`);
+const moved = connect(last, sent.mapId, sent.channel);
+out.fullChannel.landed = (await moved.wait((m) => m.t === "welcome")).channel;
+for (const f of [...fillers, moved]) f.sock.close();
+
 out.unauthenticated = (await fetch(`${api}/world/where`)).status;
 for (const c of [A, A2, A3, B, B2, B3, T]) c.sock.close();
 console.log(JSON.stringify(out, null, 1));

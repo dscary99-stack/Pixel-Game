@@ -448,6 +448,11 @@ export const RULES = {
     // Encounters (Phase C). Hunting speed numbers are P12 assumptions.
     packRespawnMs: provisional(60_000, "P12", "a visible pack is re-rolled this often; a player who fought it waits for the next one"),
     engageRangeTiles: provisional(1, "P10", "must stand next to (or on) the pack to start a fight"),
+    /**
+     * Packs wander (Nut 2026-10-11 list item 5): every `stepMs` a pack takes one orthogonal step (or
+     * stays) on a walkable, non-portal tile at most `radiusTiles` from its spawn point. Bosses stay put.
+     */
+    packWander: provisional({ stepMs: 4000, radiusTiles: 2 } as const, "P33", "Claude's first pass: one tile every 4 s within 2 tiles of the spawn; a player walks 16× faster"),
     // Auto pacing (chapter 08: the server, not the client's frame rate, sets the action cadence).
     // One cadence for Auto Battle and Auto Hunt (user decision 2026-10-03); not a farming limit.
     // Companion growth, effective level and Rebirth. Nut delegated these on 2026-10-03 ("คิดให้เลย");

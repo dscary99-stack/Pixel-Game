@@ -7,6 +7,7 @@ import {
   findPath,
   parsePlayerLook,
   isWalkable,
+  otherChannels,
   stepCostMs,
   tryStep,
   validateMaps,
@@ -296,5 +297,15 @@ describe("MapChannel (presence)", () => {
     for (let i = 0; i < cap; i++) expect(ch.join(`acct:${i}`, `P${i}`, town.spawn, 0).ok).toBe(true);
     expect(ch.join("acct:late", "L", town.spawn, 0)).toMatchObject({ ok: false, code: "CHANNEL_FULL" });
     expect(ch.join("acct:0", "P0", town.spawn, 0).ok).toBe(true);
+    expect(ch.hasRoom("acct:late")).toBe(false);
+    expect(ch.hasRoom("acct:0")).toBe(true);
+  });
+
+  it("a full channel tries the other channels of the map, wrapping round, never itself", () => {
+    const three = { ...rules, provisional: { ...rules.provisional, channelsPerMap: { ...rules.provisional.channelsPerMap, value: 3 } } } as unknown as typeof rules;
+    expect(otherChannels(three, 1)).toEqual([2, 3]);
+    expect(otherChannels(three, 2)).toEqual([3, 1]);
+    expect(otherChannels(three, 3)).toEqual([1, 2]);
+    expect(otherChannels(rules, 1)).toEqual([2]);
   });
 });

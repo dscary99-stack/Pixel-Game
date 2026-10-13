@@ -35,7 +35,7 @@ for (const who of ["a", "b"]) {
   if (!r.ok) throw new Error(await r.text());
 }
 
-const target = packsA.sort((p, q) => Math.abs(p.x - A.pos.x) + Math.abs(p.y - A.pos.y) - (Math.abs(q.x - A.pos.x) + Math.abs(q.y - A.pos.y)))[0];
+const target = packsA.filter((p) => p.rank !== "ELITE").sort((p, q) => Math.abs(p.x - A.pos.x) + Math.abs(p.y - A.pos.y) - (Math.abs(q.x - A.pos.x) + Math.abs(q.y - A.pos.y)))[0];
 A.send({ t: "engage", packId: target.packId });
 out.fromFar = (await A.wait((m) => m.t === "error" && m.code === "TOO_FAR")).code;
 

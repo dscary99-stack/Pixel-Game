@@ -84,7 +84,11 @@ interface PlayerView {
 
 interface PackView {
   pack: VisiblePack;
-  objects: Phaser.GameObjects.GameObject[];
+  body: Phaser.GameObjects.Rectangle;
+  shadow: Phaser.GameObjects.Ellipse;
+  label: Phaser.GameObjects.Text;
+  /** The idle bob, restarted after each wander step (P33). */
+  bob: Phaser.Tweens.Tween | null;
 }
 
 /** Why Auto Hunt stopped, in the player's words. */
@@ -321,10 +325,13 @@ export class WorldScene extends Phaser.Scene {
       }
       case "transfer":
         this.nextConnect = { mapId: m.mapId, channel: m.channel };
-        this.flash(`กำลังไป ${this.maps.get(m.mapId)?.name.th ?? m.mapId}…`);
+        this.flash(m.reason === "CHANNEL_FULL" ? `ช่องที่เลือกเต็ม ย้ายไปช่อง ${m.channel}…` : `กำลังไป ${this.maps.get(m.mapId)?.name.th ?? m.mapId}…`);
         break;
       case "packs":
         this.showPacks(m.packs);
+        break;
+      case "packMoves":
+        for (const mv of m.moves) this.movePack(mv.packId, { x: mv.x, y: mv.y });
         break;
       case "encounter":
         this.startBattle(m.battleId, m.resumed);
@@ -502,7 +509,10 @@ export class WorldScene extends Phaser.Scene {
 
   /** Everyone in the channel sees the same packs; ones this player already fought are left out. */
   private showPacks(packs: VisiblePack[]) {
-    for (const v of this.packs.values()) v.objects.forEach((o) => o.destroy());
+    for (const v of this.packs.values()) {
+      this.tweens.killTweensOf([v.body, v.shadow, v.label]);
+      [v.body, v.shadow, v.label].forEach((o) => o.destroy());
+    }
     this.packs.clear();
     for (const p of packs) {
       const [px, py] = center(p);
@@ -529,10 +539,40 @@ export class WorldScene extends Phaser.Scene {
         })
         .setOrigin(0.5, 1)
         .setDepth(12);
-      this.tweens.add({ targets: body, y: py - 3, duration: 500, yoyo: true, repeat: -1, ease: "Sine.InOut" });
-      this.packs.set(p.packId, { pack: p, objects: [body, shadow, label] });
+      const bob = this.tweens.add({ targets: body, y: py - 3, duration: 500, yoyo: true, repeat: -1, ease: "Sine.InOut" });
+      this.packs.set(p.packId, { pack: p, body, shadow, label, bob });
     }
     if (this.pendingEngage !== null && !this.packs.has(this.pendingEngage)) this.pendingEngage = null;
+  }
+
+  /** A pack took a wander step (P33): walk it one tile; a player heading for it follows. */
+  private movePack(packId: string, to: TilePos) {
+    const v = this.packs.get(packId);
+    if (v === undefined) return;
+    const [ox, oy] = center(v.pack);
+    const [px, py] = center(to);
+    v.pack = { ...v.pack, x: to.x, y: to.y };
+    v.bob?.stop();
+    v.bob = null;
+    this.tweens.killTweensOf([v.body, v.shadow, v.label]);
+    const ms = 600;
+    v.body.setPosition(ox, oy);
+    this.tweens.add({ targets: v.shadow, x: px, y: py + 12, duration: ms });
+    this.tweens.add({ targets: v.label, x: px, y: py - 14, duration: ms });
+    this.tweens.add({
+      targets: v.body,
+      x: px,
+      y: py,
+      duration: ms,
+      onComplete: () => {
+        if (this.packs.get(packId) === v) v.bob = this.tweens.add({ targets: v.body, y: py - 3, duration: 500, yoyo: true, repeat: -1, ease: "Sine.InOut" });
+      },
+    });
+    // Still walking to this pack: re-route to where it is now.
+    const self = this.selfView();
+    if (this.pendingEngage === packId && this.map !== null && self !== null && !inEngageRange(rules, self.pos, to)) {
+      this.path = findPath(this.map, self.pos, to) ?? [];
+    }
   }
 
   private startBattle(battleId: string, resumed: boolean) {
