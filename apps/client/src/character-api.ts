@@ -337,6 +337,11 @@ export class CharacterApi {
     return this.call<{ coins: number }>("POST", "/vault/withdraw", { operationId: opId("vout"), ...move });
   }
 
+  /** How full each channel of a map is; `players` is null when a channel did not answer. */
+  worldChannels(mapId: string) {
+    return this.call<{ mapId: string; channels: { channel: number; players: number | null; capacity: number }[] }>("GET", `/world/channels/${mapId}`);
+  }
+
   private async call<T>(method: string, path: string, body?: unknown): Promise<T> {
     const res = await fetch(`${this.base}${path}`, {
       method,

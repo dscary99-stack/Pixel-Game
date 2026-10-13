@@ -128,6 +128,8 @@ export class WorldScene extends Phaser.Scene {
   private autoOn = false;
   private map: MapDefinition | null = null;
   private channelNo = 1;
+  /** "ช่อง 1 12/50 · ช่อง 2 3/50" for this map, refreshed on arrival and every few seconds. */
+  private channelCounts = "";
   private layer: Phaser.GameObjects.Container | null = null;
   private players = new Map<string, PlayerView>();
   private walkTweens = new WeakMap<object, Phaser.Tweens.Tween>();
@@ -203,6 +205,8 @@ export class WorldScene extends Phaser.Scene {
     kb.on("keydown-U", () => void this.openArmory());
     kb.on("keydown-I", () => void this.openClass());
     kb.on("keydown-X", () => void this.openSkillTree());
+    // Channel fullness for the HUD (the picker is keys 1/2); a light GET, not per frame.
+    this.time.addEvent({ delay: 15_000, loop: true, callback: () => void this.refreshChannelCounts() });
     if (this.api !== null) {
       const button = (x: number, label: string, open: () => Promise<void>) =>
         this.add
@@ -381,6 +385,8 @@ export class WorldScene extends Phaser.Scene {
     if (map === undefined) return this.flash(`ไม่รู้จักแผนที่ ${mapId}`);
     this.map = map;
     this.channelNo = channel;
+    this.channelCounts = "";
+    void this.refreshChannelCounts();
     this.layer?.destroy(true);
     for (const v of this.players.values()) [v.body, v.nose, v.label].forEach((o) => o.destroy());
     this.players.clear();
@@ -596,10 +602,25 @@ export class WorldScene extends Phaser.Scene {
     this.scene.sleep();
   }
 
+  private async refreshChannelCounts() {
+    const map = this.map;
+    if (this.api === null || map === null) return;
+    try {
+      const r = await this.api.worldChannels(map.id);
+      if (this.map !== map) return;
+      this.channelCounts = r.channels.map((c) => `ช่อง ${c.channel} ${c.players ?? "?"}/${c.capacity}`).join(" · ");
+      this.refreshHud();
+    } catch {
+      // The picker is a hint only; keys 1/2 still switch.
+    }
+  }
+
   private refreshHud() {
     const m = this.map;
     const where =
-      m === null ? "กำลังเชื่อมต่อ…" : `${m.name.th} · channel ${this.channelNo} · ผู้เล่นที่เห็น ${this.players.size} คน${this.autoOn ? " · ล่าอัตโนมัติ: เปิด" : ""}`;
+      m === null
+        ? "กำลังเชื่อมต่อ…"
+        : `${m.name.th} · channel ${this.channelNo}${this.channelCounts === "" ? "" : ` (${this.channelCounts})`} · ผู้เล่นที่เห็น ${this.players.size} คน${this.autoOn ? " · ล่าอัตโนมัติ: เปิด" : ""}`;
     const c = this.bundle?.character;
     if (c === undefined) return void this.hud.setText(where);
     const v = vitals(c, this.bundle?.equipment ?? []);

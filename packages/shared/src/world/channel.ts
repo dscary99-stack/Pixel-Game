@@ -97,7 +97,9 @@ export type WorldErrorCode =
   /** Nobody in the team can fight; rest in town first. */
   | "NEED_REST"
   /** The fight ended but its rewards are still being recorded; ask again shortly. */
-  | "SETTLING";
+  | "SETTLING"
+  /** Too many messages (P11 wsMessageBudget); they were dropped. Sent once per burst. */
+  | "RATE_LIMITED";
 
 // ---------------------------------------------------------------- presence
 
@@ -337,4 +339,24 @@ export class MapChannel {
 export function otherChannels(rules: RulesConfig, full: number): number[] {
   const n = rules.provisional.channelsPerMap.value;
   return Array.from({ length: n - 1 }, (_, i) => ((full - 1 + i + 1) % n) + 1);
+}
+
+/** Per-connection message budget (P11 wsMessageBudget): a token bucket. */
+export interface MessageBucket {
+  tokens: number;
+  at: number;
+  /** RATE_LIMITED was already sent for this run of dropped messages. */
+  warned: boolean;
+}
+
+/**
+ * Spend one message from the bucket. `ok: false` means drop the message; `warn` says to tell the
+ * client once (not on every dropped message, which would let a flood double itself).
+ */
+export function takeMessageToken(rules: RulesConfig, bucket: MessageBucket | undefined, now: number): { ok: boolean; warn: boolean; bucket: MessageBucket } {
+  const { perSecond, burst } = rules.provisional.wsMessageBudget.value;
+  const prev = bucket ?? { tokens: burst, at: now, warned: false };
+  const tokens = Math.min(burst, prev.tokens + (Math.max(0, now - prev.at) * perSecond) / 1000);
+  if (tokens >= 1) return { ok: true, warn: false, bucket: { tokens: tokens - 1, at: now, warned: false } };
+  return { ok: false, warn: !prev.warned, bucket: { tokens, at: now, warned: true } };
 }

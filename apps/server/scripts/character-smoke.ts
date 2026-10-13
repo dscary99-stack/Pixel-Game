@@ -42,7 +42,7 @@ T.sock.close();
 await sleep(300);
 
 /** Engage the pack at this spawn, run `inFight`, then Auto to the end and come back. */
-async function fightAt(c: Client, spawnId: string, inFight: (battleId: string) => Promise<void> = async () => undefined) {
+async function fightAt(c: Client, spawnId: string, inFight: (battleId: string) => Promise<void> = async () => undefined, resume = true) {
   const pack = lastPacks(c).find((p) => p.spawnId === spawnId);
   if (pack === undefined) throw new Error(`no ${spawnId} pack`);
   await approach(c, pack);
@@ -53,6 +53,7 @@ async function fightAt(c: Client, spawnId: string, inFight: (battleId: string) =
   await inFight(enc.battleId);
   const view = await autoToEnd(account, enc.battleId);
   from = c.inbox.length;
+  if (!resume && view.state.status === "defeat") return { battleId: enc.battleId as string, view, back: null, from };
   c.send({ t: "resume" });
   const back = await c.wait((m) => m.t === "resumed", 8000, from);
   return { battleId: enc.battleId as string, view, back, from };
@@ -124,8 +125,22 @@ await A.wait((m) => m.t === "packs");
 out.strongFights = [];
 for (const spawnId of ["meadow_foxes", "pond_crabs"]) {
   if (!lastPacks(A).some((p) => p.spawnId === spawnId)) continue;
-  const r = await fightAt(A, spawnId);
+  const r = await fightAt(A, spawnId, undefined, false);
   (out.strongFights as string[]).push(`${spawnId}: ${r.view.state.status}`);
+  if (r.back === null) {
+    // Lost, then reloaded before pressing "walk on": the wiped team still goes home.
+    A.sock.close();
+    await sleep(300);
+    const again = await connect(account, "map:dawn_field");
+    out.reloadAfterLoss = again.mapId;
+    if (again.mapId !== "map:dawn_town") throw new Error(`reload after a loss stayed in ${again.mapId}`);
+    out.sentTo = again.mapId;
+    out.restedOnArrival = (await again.wait((m) => m.t === "rested")).t;
+    const after = (await http("GET", "/character")).body;
+    out.afterRest = { hp: after.character.hp, companionsFull: after.companions.every((c: Msg) => c.hp === null) };
+    A = again;
+    break;
+  }
   // A win with the character down also sends the team back to rest (enemies now use skills too).
   const sentBack = await A.wait((m) => m.t === "transfer", 1500, r.from).catch(() => null);
   if (r.view.state.status === "defeat" || sentBack !== null) {

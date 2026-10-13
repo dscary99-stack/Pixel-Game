@@ -8,6 +8,8 @@ import {
   parsePlayerLook,
   isWalkable,
   otherChannels,
+  takeMessageToken,
+  type MessageBucket,
   stepCostMs,
   tryStep,
   validateMaps,
@@ -307,5 +309,42 @@ describe("MapChannel (presence)", () => {
     expect(otherChannels(three, 2)).toEqual([3, 1]);
     expect(otherChannels(three, 3)).toEqual([1, 2]);
     expect(otherChannels(rules, 1)).toEqual([2]);
+  });
+});
+
+describe("message budget (P11 wsMessageBudget)", () => {
+  const { perSecond, burst } = PRODUCTION_RULES.provisional.wsMessageBudget.value;
+  it("lets a burst through, drops the rest with one warning, and refills over time", () => {
+    let b: MessageBucket | undefined;
+    let ok = 0;
+    let warns = 0;
+    for (let i = 0; i < burst + 10; i++) {
+      const r = takeMessageToken(PRODUCTION_RULES, b, 1000);
+      b = r.bucket;
+      if (r.ok) ok++;
+      if (r.warn) warns++;
+    }
+    expect(ok).toBe(burst);
+    expect(warns).toBe(1);
+    // One second later: `perSecond` more, and a new run of drops warns again.
+    ok = 0;
+    warns = 0;
+    for (let i = 0; i < perSecond + 5; i++) {
+      const r = takeMessageToken(PRODUCTION_RULES, b, 2000);
+      b = r.bucket;
+      if (r.ok) ok++;
+      if (r.warn) warns++;
+    }
+    expect(ok).toBe(perSecond);
+    expect(warns).toBe(1);
+  });
+
+  it("honest walking never runs out", () => {
+    let b: MessageBucket | undefined;
+    for (let t = 0; t < 60_000; t += 250) {
+      const r = takeMessageToken(PRODUCTION_RULES, b, t);
+      expect(r.ok).toBe(true);
+      b = r.bucket;
+    }
   });
 });

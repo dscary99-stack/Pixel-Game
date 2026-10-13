@@ -80,6 +80,7 @@
  *   POST /mail/claim               take everything in some letters (operationId, mailIds; anywhere but a fight)
  *   GET  /world/where              where the caller's character is saved (map + channel)
  *   GET  /world/:mapId/:channel    WebSocket into that Map Channel DO (walking, presence)
+ *   GET  /world/channels/:mapId    players in each channel of that map (channel picker)
  *
  * Starting a battle (chapter 11 §3): the economy (D1) reserves the bag and companions first, then
  * the Battle DO is created from that reservation and queues activation in its own outbox. If the
@@ -312,6 +313,21 @@ async function worldRoute(request: Request, env: Env, url: URL): Promise<Respons
   if (request.method === "GET" && url.pathname === "/world/where") {
     const where = await new WorldStore(env.DB, MAPS, EXAMPLE_START_MAP).where(accountId);
     return json(200, where ?? { mapId: EXAMPLE_START_MAP, channel: 1 });
+  }
+  // How full each channel of a map is, for the channel picker (P11 channelsPerMap/channelCapacity).
+  const fullness = url.pathname.match(/^\/world\/channels\/(map:[a-z0-9_]{1,60})$/);
+  if (request.method === "GET" && fullness !== null) {
+    const id = fullness[1]!;
+    if (!MAPS.has(id)) return json(404, { error: "UNKNOWN_MAP" });
+    const capacity = rules.provisional.channelCapacity.value;
+    const channels = await Promise.all(
+      Array.from({ length: rules.provisional.channelsPerMap.value }, async (_, i) => {
+        const n = i + 1;
+        const players = await env.MAP.get(env.MAP.idFromName(mapObjectName(id, n))).playerCount(id, n).catch(() => null);
+        return { channel: n, players, capacity };
+      }),
+    );
+    return json(200, { mapId: id, channels });
   }
   const m = url.pathname.match(/^\/world\/(map:[a-z0-9_]{1,60})\/([0-9]{1,2})$/);
   if (m === null || request.method !== "GET") return json(404, { error: "NOT_FOUND" });

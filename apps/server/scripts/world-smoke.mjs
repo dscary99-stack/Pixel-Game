@@ -61,6 +61,16 @@ A.sock.send("not json");
 A.sock.send(JSON.stringify({ t: "teleport", x: 23, y: 8 }));
 out.invalid = (await A.wait((m) => m.t === "error")).code;
 
+// Flooding: 60 messages at once. The budget answers about 20, the rest are dropped with one warning.
+await sleep(2500);
+const floodFrom = A.inbox.length;
+for (let i = 0; i < 60; i++) A.sock.send(JSON.stringify({ t: "ping" }));
+await sleep(800);
+const flood = A.inbox.slice(floodFrom);
+out.flood = { answered: flood.filter((m) => m.t === "pong").length, warnings: flood.filter((m) => m.code === "RATE_LIMITED").length };
+if (out.flood.answered > 25 || out.flood.warnings !== 1) throw new Error(`flood: ${JSON.stringify(out.flood)}`);
+await sleep(2500);
+
 // Teleport by connecting to another map: told to go where the character really is.
 const T = connect(acct("b"), "map:dawn_field");
 out.wrongMap = await T.wait((m) => m.t === "transfer");
@@ -132,6 +142,8 @@ for (let i = 0; i < 60 && sent === null; i++) {
 }
 out.fullChannel = { joinedBeforeFull: fillers.length - 1, then: sent };
 if (sent?.t !== "transfer" || sent.channel !== 1 || sent.reason !== "CHANNEL_FULL") throw new Error(`full channel: ${JSON.stringify(sent)}`);
+out.fullChannel.counts = (await (await fetch(`${api}/world/channels/map:dawn_town?dev_account=${encodeURIComponent(acct("a"))}`)).json()).channels;
+if (out.fullChannel.counts.find((c) => c.channel === 2)?.players !== out.fullChannel.counts[0].capacity) throw new Error(`counts: ${JSON.stringify(out.fullChannel.counts)}`);
 const moved = connect(last, sent.mapId, sent.channel);
 out.fullChannel.landed = (await moved.wait((m) => m.t === "welcome")).channel;
 for (const f of [...fillers, moved]) f.sock.close();

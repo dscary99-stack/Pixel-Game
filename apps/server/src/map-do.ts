@@ -27,6 +27,8 @@ import {
   inEngageRange,
   inWanderEngageRange,
   otherChannels,
+  takeMessageToken,
+  type MessageBucket,
   packCycle,
   packPositionAt,
   packWanderStep,
@@ -126,6 +128,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
   private lastSaveAt = 0;
   /** The pack cycle and wander step last sent to the channel (P33). */
   private wanderSent: string | null = null;
+  private readonly buckets = new WeakMap<WebSocket, MessageBucket>();
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -201,6 +204,24 @@ export class MapChannelDurableObject extends DurableObject<Env> {
       return new Response(null, { status: 101, webSocket: client });
     }
 
+    // An open fight comes back (reload mid-fight, or ended but still being recorded: the client's
+    // "walk on" finishes it). With none, a wiped team on a hunting map goes home first: someone who
+    // lost and reloaded before pressing "walk on" still lands in town to rest (chapter 03 §3).
+    const open = await this.encounters.openBattle(accountId);
+    let reattach: string | null = null;
+    if (open !== null) {
+      const status = await this.battleStatus(accountId, open);
+      if (status === "active" || (await this.awaitSettlement(accountId, open))?.status === "active") reattach = open;
+    }
+    if (reattach === null && this.maps.get(mapId)?.kind !== "town" && (await this.wiped(accountId))) {
+      const town = this.maps.get(EXAMPLE_START_MAP)!;
+      const ok = await this.store.moveTo(accountId, claim.generation, mapId, { mapId: town.id, x: town.spawn.x, y: town.spawn.y }, channelNo);
+      server.accept();
+      server.send(JSON.stringify((ok ? { t: "transfer", mapId: town.id, channel: channelNo } : { t: "kicked", reason: "REPLACED" }) satisfies WorldServerMessage));
+      server.close(1000, ok ? "transfer" : "replaced");
+      return new Response(null, { status: 101, webSocket: client });
+    }
+
     await this.journal.recordMap(accountId, mapId);
     const channel = this.ensureChannel(mapId, channelNo);
     const joined = channel.join(accountId, name, claim.pos, Date.now(), look);
@@ -223,10 +244,9 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     server.serializeAttachment(attachment);
     this.deliver(accountId, joined.out);
     // Reconnecting in the middle of a fight puts the player straight back into it.
-    const open = await this.encounters.openBattle(accountId);
-    if (open !== null && (await this.battleStatus(accountId, open)) === "active") {
-      this.setBattle(server, attachment, open);
-      safeSend(server, { t: "encounter", battleId: open, resumed: true });
+    if (reattach !== null) {
+      this.setBattle(server, attachment, reattach);
+      safeSend(server, { t: "encounter", battleId: reattach, resumed: true });
     }
     // Towns are rest points: HP/MP come back for free (chapter 03 §3), never during a fight.
     if (this.maps.get(mapId)?.kind === "town" && (await this.characters.rest(accountId))) safeSend(server, { t: "rested" });
@@ -245,6 +265,14 @@ export class MapChannelDurableObject extends DurableObject<Env> {
   override async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
     const a = ws.deserializeAttachment() as Attachment | null;
     if (a === null) return;
+    // A flooding client loses its extra messages (P11 wsMessageBudget); memory only, so a fresh
+    // object after hibernation starts every connection with a full bucket.
+    const spent = takeMessageToken(this.rules, this.buckets.get(ws), Date.now());
+    this.buckets.set(ws, spent.bucket);
+    if (!spent.ok) {
+      if (spent.warn) safeSend(ws, { t: "error", code: "RATE_LIMITED", message: "too many messages; slow down" });
+      return;
+    }
     const channel = this.ensureChannel(a.mapId, a.channel);
     const text = typeof message === "string" ? message : "";
     let raw: unknown = undefined;
@@ -301,6 +329,11 @@ export class MapChannelDurableObject extends DurableObject<Env> {
    * The player changed title or fashion (the Worker read it from D1 and passes it as JSON): everyone in
    * this channel sees the new look now. Untrusted text is checked the same way as at join.
    */
+  /** Players in this channel now (the channel picker shows it). */
+  async playerCount(mapId: string, channel: number): Promise<number> {
+    return this.ensureChannel(mapId, channel).size;
+  }
+
   /** Whether `accountId` could join this channel now (used by a full channel to pick another). */
   async hasRoom(mapId: string, channel: number, accountId: string): Promise<boolean> {
     return this.ensureChannel(mapId, channel).hasRoom(accountId);
@@ -535,13 +568,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
       }
       // Rewards and HP land in D1 before the player walks on: wait briefly for the settlement
       // (each view nudges the Battle DO's outbox), else ask the client to try again.
-      const rid = (await this.economy.reservationIdFor(presence.battleId, account)) ?? `res:${presence.battleId}`;
-      let r = await this.economy.reservation(rid);
-      for (let i = 0; i < 10 && r?.status === "active"; i++) {
-        await new Promise((done) => setTimeout(done, 200));
-        await this.battleStatus(account, presence.battleId);
-        r = await this.economy.reservation(rid);
-      }
+      const r = await this.awaitSettlement(account, presence.battleId);
       if (r?.status === "active") {
         safeSend(ws, { t: "error", code: "SETTLING", message: "recording the fight; try again" });
         return "settling";
@@ -549,20 +576,45 @@ export class MapChannelDurableObject extends DurableObject<Env> {
       this.setBattle(ws, this.att(ws) ?? a, null);
       if (r?.outcome === "defeat") {
         if (this.att(ws)?.auto) await this.stopAuto(ws, "DEFEATED");
-        // A wiped team goes back to the rest point (chapter 03 §3); arriving in town restores it.
-        const town = this.maps.get(EXAMPLE_START_MAP)!;
-        const ok = await this.store.moveTo(account, a.generation, a.mapId, { mapId: town.id, x: town.spawn.x, y: town.spawn.y }, a.channel);
-        ws.serializeAttachment(null);
-        this.deliver(account, this.ensureChannel(a.mapId, a.channel).leave(account).out);
         safeSend(ws, { t: "resumed" });
-        safeSend(ws, ok ? { t: "transfer", mapId: town.id, channel: a.channel } : { t: "kicked", reason: "REPLACED" });
-        ws.close(1000, ok ? "transfer" : "replaced");
+        await this.sendHome(ws, a);
         return "defeated";
       }
     }
     safeSend(ws, { t: "resumed" });
     await this.sendPacks(account, a.mapId, a.channel);
     return "done";
+  }
+
+  /** The fight's reservation once its settlement lands, waiting briefly (each view nudges the outbox). */
+  private async awaitSettlement(account: string, battleId: string) {
+    const rid = (await this.economy.reservationIdFor(battleId, account)) ?? `res:${battleId}`;
+    let r = await this.economy.reservation(rid);
+    for (let i = 0; i < 10 && r?.status === "active"; i++) {
+      await new Promise((done) => setTimeout(done, 200));
+      await this.battleStatus(account, battleId);
+      r = await this.economy.reservation(rid);
+    }
+    return r;
+  }
+
+  /** A wiped team goes back to the rest point (chapter 03 §3); arriving in town restores it. */
+  private async sendHome(ws: WebSocket, a: Attachment): Promise<void> {
+    const account = a.presence.accountId;
+    const town = this.maps.get(EXAMPLE_START_MAP)!;
+    const ok = await this.store.moveTo(account, a.generation, a.mapId, { mapId: town.id, x: town.spawn.x, y: town.spawn.y }, a.channel);
+    ws.serializeAttachment(null);
+    this.deliver(account, this.ensureChannel(a.mapId, a.channel).leave(account).out);
+    safeSend(ws, ok ? { t: "transfer", mapId: town.id, channel: a.channel } : { t: "kicked", reason: "REPLACED" });
+    ws.close(1000, ok ? "transfer" : "replaced");
+  }
+
+  /** The character and every companion are knocked out (HP 0 carried over from a fight). */
+  private async wiped(accountId: string): Promise<boolean> {
+    const loadout = await this.characters.loadout(accountId);
+    if (loadout === null) return false;
+    const alive = (hp: number | null) => hp === null || hp > 0;
+    return !alive(loadout.character.hp) && ![...loadout.instances.values()].some((i) => alive(i.hp));
   }
 
   /**
