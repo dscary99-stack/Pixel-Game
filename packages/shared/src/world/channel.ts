@@ -53,6 +53,8 @@ export type WorldServerMessage =
   | { t: "welcome"; mapId: string; channel: number; rulesVersion: string; self: PublicPlayer; others: PublicPlayer[] }
   | { t: "joined"; player: PublicPlayer }
   | { t: "left"; sid: string }
+  /** A player here changed their shown title or worn fashion (null: nothing shown now). */
+  | { t: "look"; sid: string; look: PlayerLook | null }
   | { t: "moved"; sid: string; x: number; y: number; facing: Facing }
   | { t: "ack"; seq: number; x: number; y: number }
   | { t: "correct"; seq: number; x: number; y: number; reason: StepRejection | "STALE_SEQ" | "IN_BATTLE" }
@@ -117,6 +119,11 @@ export interface Presence {
 export type Outgoing = { to: "self" | "others"; msg: WorldServerMessage };
 
 export const publicPlayer = (p: Presence): PublicPlayer => ({ sid: p.sid, name: p.name, x: p.pos.x, y: p.pos.y, facing: p.facing, ...(p.look !== undefined ? { look: p.look } : {}) });
+
+/** Two looks show the same (absent and empty are the same). */
+export function sameLook(a: PlayerLook | undefined, b: PlayerLook | undefined): boolean {
+  return JSON.stringify(a ?? {}) === JSON.stringify(b ?? {});
+}
 
 /** A look from untrusted text (a header): a title id and at most one valid look per fashion layer. */
 export function parsePlayerLook(raw: string | null): PlayerLook | undefined {
@@ -196,6 +203,7 @@ export class MapChannel {
     };
     // A fresh connection starts its own step numbering, and brings the look the player has now.
     presence.lastSeq = 0;
+    const lookChanged = existing !== undefined && !sameLook(existing.look, look);
     if (look !== undefined) presence.look = look;
     else delete presence.look;
     this.players.set(accountId, presence);
@@ -215,7 +223,22 @@ export class MapChannel {
       },
     ];
     if (existing === undefined) out.push({ to: "others", msg: { t: "joined", player: publicPlayer(presence) } });
+    // A reconnect with a new look shows it to everyone already here.
+    else if (lookChanged) out.push({ to: "others", msg: { t: "look", sid: presence.sid, look: presence.look ?? null } });
     return { ok: true, presence, replaced: existing !== undefined, out };
+  }
+
+  /**
+   * The player changed title or fashion while here (the server read it from D1): everyone here,
+   * the player too, gets the new look. Nothing is sent when the player is not here or nothing changed.
+   */
+  setLook(accountId: string, look: PlayerLook | undefined): { presence: Presence | null; out: Outgoing[] } {
+    const p = this.players.get(accountId);
+    if (p === undefined || sameLook(p.look, look)) return { presence: p ?? null, out: [] };
+    if (look !== undefined) p.look = look;
+    else delete p.look;
+    const msg: WorldServerMessage = { t: "look", sid: p.sid, look: p.look ?? null };
+    return { presence: p, out: [{ to: "self", msg }, { to: "others", msg }] };
   }
 
   /** Handle one untrusted client message. */

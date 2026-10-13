@@ -23,6 +23,7 @@ import {
   type MapDefinition,
   type NpcPlacement,
   type NpcService,
+  type PlayerLook,
   type PublicPlayer,
   type TileChar,
   type TilePos,
@@ -77,6 +78,8 @@ interface PlayerView {
   /** Worn fashion shapes (placeholders until the art lands), each kept at an offset from the body. */
   extras: { obj: Phaser.GameObjects.Shape; dx: number; dy: number }[];
   pos: TilePos;
+  name: string;
+  self: boolean;
 }
 
 interface PackView {
@@ -281,6 +284,9 @@ export class WorldScene extends Phaser.Scene {
       case "left":
         this.removePlayer(m.sid);
         break;
+      case "look":
+        this.setLook(m.sid, m.look);
+        break;
       case "moved":
         this.movePlayer(m.sid, { x: m.x, y: m.y }, m.facing, true);
         break;
@@ -425,12 +431,24 @@ export class WorldScene extends Phaser.Scene {
     const body = this.add.rectangle(px, py, 22, 28, self ? 0xf2c94c : 0x7ab8f2).setStrokeStyle(2, 0x1b1830).setDepth(10);
     const [fx, fy] = FACE_OFFSET[p.facing];
     const nose = this.add.rectangle(px + fx, py + fy, 6, 6, 0x1b1830).setDepth(11);
-    const title = titleName(p.look?.titleId);
     const label = this.add
-      .text(px, py - 22, title === null ? p.name : `[${title}] ${p.name}`, { fontFamily: "sans-serif", fontSize: "11px", color: self ? "#f2c94c" : "#ffffff", backgroundColor: "#00000088", padding: { x: 3, y: 1 } })
+      .text(px, py - 22, labelText(p.name, p.look?.titleId), { fontFamily: "sans-serif", fontSize: "11px", color: self ? "#f2c94c" : "#ffffff", backgroundColor: "#00000088", padding: { x: 3, y: 1 } })
       .setOrigin(0.5, 1)
       .setDepth(12);
-    this.players.set(p.sid, { body, nose, label, extras: this.drawFashion(body, p.look?.fashion ?? []), pos: { x: p.x, y: p.y } });
+    this.players.set(p.sid, { body, nose, label, extras: this.drawFashion(body, p.look?.fashion ?? []), pos: { x: p.x, y: p.y }, name: p.name, self });
+  }
+
+  /** A player here changed title or fashion: redraw the name and the fashion shapes in place. */
+  private setLook(sid: string, look: PlayerLook | null) {
+    const v = this.players.get(sid);
+    if (v === undefined) return;
+    for (const e of v.extras) {
+      this.tweens.killTweensOf(e.obj);
+      e.obj.destroy();
+    }
+    v.body.setStrokeStyle(2, 0x1b1830);
+    v.extras = this.drawFashion(v.body, look?.fashion ?? []);
+    v.label.setText(labelText(v.name, look?.titleId));
   }
 
   /**
@@ -1002,3 +1020,9 @@ export class WorldScene extends Phaser.Scene {
 type Pointer = Phaser.Input.Pointer;
 
 const center = (p: TilePos): [number, number] => [p.x * TILE + TILE / 2, p.y * TILE + TILE / 2];
+
+/** The name over a walker, with the shown title in front. */
+function labelText(name: string, titleId: string | undefined): string {
+  const title = titleName(titleId);
+  return title === null ? name : `[${title}] ${name}`;
+}

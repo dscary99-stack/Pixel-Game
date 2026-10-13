@@ -269,6 +269,21 @@ export class MapChannelDurableObject extends DurableObject<Env> {
   }
 
   /** Another channel of this map is taking over the account (channel switch). */
+  /**
+   * The player changed title or fashion (the Worker read it from D1 and passes it as JSON): everyone in
+   * this channel sees the new look now. Untrusted text is checked the same way as at join.
+   */
+  async refreshLook(accountId: string, lookJson: string): Promise<void> {
+    for (const ws of this.ctx.getWebSockets(accountId)) {
+      const a = ws.deserializeAttachment() as Attachment | null;
+      if (a === null) continue;
+      const r = this.ensureChannel(a.mapId, a.channel).setLook(accountId, parsePlayerLook(lookJson));
+      if (r.presence !== null) ws.serializeAttachment({ ...a, presence: r.presence } satisfies Attachment);
+      this.deliver(accountId, r.out);
+      return;
+    }
+  }
+
   async evict(accountId: string): Promise<void> {
     for (const ws of this.ctx.getWebSockets(accountId)) {
       const a = ws.deserializeAttachment() as Attachment | null;

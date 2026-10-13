@@ -117,6 +117,16 @@ if (dressed !== undefined) {
   // 6. The map shows the worn piece (and the shown title) to everyone, taken from D1 at join.
   const m = await connect(account, "map:dawn_town");
   const me = m.inbox.find((x: Msg) => x.t === "welcome").self;
+  // Taking the piece off while standing here shows at once (no rejoin), and putting it back too.
+  const from = m.inbox.length;
+  await call("PUT", "/character/fashion", { layer: def.layer, rewardId: null });
+  const off = await m.wait((x: Msg) => x.t === "look", 4000, from);
+  if ((off.look?.fashion ?? []).some((l: Msg) => l.layer === def.layer)) fail("taking fashion off did not show on the map");
+  const from2 = m.inbox.length;
+  await call("PUT", "/character/fashion", { layer: def.layer, rewardId: id });
+  const on = await m.wait((x: Msg) => x.t === "look", 4000, from2);
+  if (!(on.look?.fashion ?? []).some((l: Msg) => l.layer === def.layer)) fail("putting fashion on did not show on the map");
+  out.liveLook = { off: off.look, on: on.look };
   m.sock.close();
   out.look = me.look;
   if (!me.look?.fashion?.some((l: Msg) => l.layer === def.layer)) fail("the map does not show the worn fashion");

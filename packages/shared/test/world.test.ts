@@ -217,6 +217,22 @@ describe("MapChannel (presence)", () => {
     const again = ch.join("acct:a", "A", town.spawn, 10);
     if (!again.ok) throw new Error();
     expect((msgs(again.out, "self")[0] as Extract<WorldServerMessage, { t: "welcome" }>).self.look).toBeUndefined();
+    // ... and the others are told at once; a reconnect with the same look tells nobody.
+    expect(msgs(again.out, "others")).toEqual([{ t: "look", sid: "s1", look: null }]);
+    const same = ch.join("acct:a", "A", town.spawn, 20);
+    if (!same.ok) throw new Error();
+    expect(msgs(same.out, "others")).toEqual([]);
+
+    // A change while here (title or fashion set in town): everyone, the player too, sees it now.
+    const changed = ch.setLook("acct:a", look);
+    expect(changed.out).toEqual([
+      { to: "self", msg: { t: "look", sid: "s1", look } },
+      { to: "others", msg: { t: "look", sid: "s1", look } },
+    ]);
+    expect(changed.presence?.look).toEqual(look);
+    expect(ch.setLook("acct:a", look).out).toEqual([]);
+    expect(ch.setLook("acct:nobody", look)).toEqual({ presence: null, out: [] });
+    expect(ch.setLook("acct:a", undefined).out[1]).toEqual({ to: "others", msg: { t: "look", sid: "s1", look: null } });
 
     expect(parsePlayerLook(JSON.stringify(look))).toEqual(look);
     expect(parsePlayerLook("{}")).toBeUndefined();

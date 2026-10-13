@@ -111,6 +111,7 @@ import {
   RolledAffixSchema,
   attainmentView,
   type BattleSetup,
+  type PlayerLook,
 } from "@pmrpg/shared";
 import { z } from "zod";
 import { accountsFor, resolveAccount, resolveSession } from "./auth";
@@ -324,11 +325,25 @@ async function worldRoute(request: Request, env: Env, url: URL): Promise<Respons
   const ch = await charactersFor(env).get(accountId);
   const name = ch?.name ?? displayName(accountId);
   // How others see this player (the shown title and worn fashion), taken at join (channel.ts PlayerLook).
-  const titleId = ch === null ? null : await journalFor(env).title(accountId);
-  const look = { ...(titleId !== null ? { titleId } : {}), ...(ch?.fashion !== undefined && ch.fashion.length > 0 ? { fashion: ch.fashion.map((f) => ({ layer: f.layer, effect: f.effect, color: f.color })) } : {}) };
+  const look = ch === null ? {} : await lookFor(env, accountId);
   const headers = new Headers({ Upgrade: "websocket", "x-account": accountId, "x-map": mapId, "x-channel": String(channel), "x-name": encodeURIComponent(name), "x-look": encodeURIComponent(JSON.stringify(look)) });
   const stub = env.MAP.get(env.MAP.idFromName(mapObjectName(mapId, channel)));
   return stub.fetch(new Request(request.url, { headers }));
+}
+
+/** How others see this character on the map: the shown title and the worn fashion (from D1). */
+async function lookFor(env: Env, accountId: string): Promise<PlayerLook> {
+  const ch = await charactersFor(env).get(accountId);
+  const titleId = ch === null ? null : await journalFor(env).title(accountId);
+  return { ...(titleId !== null ? { titleId } : {}), ...(ch?.fashion !== undefined && ch.fashion.length > 0 ? { fashion: ch.fashion.map((f) => ({ layer: f.layer, effect: f.effect, color: f.color })) } : {}) };
+}
+
+/** After a title or fashion change: the channel the player stands in shows the new look now (best effort). */
+async function pushLook(env: Env, accountId: string): Promise<void> {
+  const where = await new WorldStore(env.DB, MAPS, EXAMPLE_START_MAP).where(accountId);
+  if (where === null) return;
+  const stub = env.MAP.get(env.MAP.idFromName(mapObjectName(where.mapId, where.channel)));
+  await stub.refreshLook(accountId, JSON.stringify(await lookFor(env, accountId))).catch(() => undefined);
 }
 
 /** Party (P02): see your party, start one, join by code, leave. */
@@ -552,11 +567,13 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
   if (request.method === "PUT" && url.pathname === "/character/fashion") {
     const r = await journalFor(env).setFashion(accountId, body, exampleSecretRewardRegistry());
     if (!r.ok) return json(r.code === "INVALID_REQUEST" ? 400 : r.code === "NO_CHARACTER" ? 404 : 409, { error: r.code, message: r.message });
+    await pushLook(env, accountId);
     return json(200, r);
   }
   if (request.method === "PUT" && url.pathname === "/character/title") {
     const r = await journalFor(env).setTitle(accountId, body);
     if (!r.ok) return json(r.code === "INVALID_REQUEST" ? 400 : r.code === "NO_CHARACTER" ? 404 : 409, { error: r.code, message: r.message });
+    await pushLook(env, accountId);
     return json(200, r);
   }
   if (request.method === "POST" && url.pathname === "/quests/claim") {
