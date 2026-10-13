@@ -84,7 +84,7 @@ export function bossEnemies(def: BossDefinition): BattleSetup["enemies"] {
     row: p.row,
     slot: next(p.row),
     lootEligible: false,
-    part: { partId: p.id, name: p.name.th, effect: p.effect, pct: p.pct, hpPct: p.hpPct },
+    part: { partId: p.id, name: p.name.th, effect: p.effect, pct: p.pct, hpPct: p.hpPct, ...(p.skillId !== undefined ? { skillId: p.skillId } : {}) },
   }));
   return [{ unitId: "e1", speciesId: def.speciesId, element: def.element, row: "front", slot: 2 }, ...adds, ...parts];
 }
@@ -243,6 +243,9 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
     if (sp?.rank !== "BOSS") reject("INVALID_COMMAND", `boss ${bossDef.id} needs a BOSS species`);
     for (const ph of bossDef.phases) {
       if (ph.telegraph !== undefined && !sp!.skillIds.includes(ph.telegraph.skillId)) reject("MISSING_REFERENCE", `telegraph ${ph.telegraph.skillId} is not the boss's skill`);
+    }
+    for (const p of bossDef.parts ?? []) {
+      if (p.skillId !== undefined && !sp!.skillIds.includes(p.skillId)) reject("MISSING_REFERENCE", `part ${p.id} seals ${p.skillId}, which is not the boss's skill`);
     }
   }
   const party = setup.partyMembers ?? [];
@@ -523,7 +526,7 @@ function enemyUnit(
   if (e.part === undefined) return unit;
   // A part never acts and is not the boss: no skills, no passives, one (unused) action, never capturable.
   const { actionsPerRound: _a, ...still } = unit;
-  return { ...still, name: e.part.name, skillIds: [], skillLevels: {}, passiveIds: [], captureWindowOpen: false, lootTableId: null, part: { partId: e.part.partId, effect: e.part.effect, pct: e.part.pct } };
+  return { ...still, name: e.part.name, skillIds: [], skillLevels: {}, passiveIds: [], captureWindowOpen: false, lootTableId: null, part: { partId: e.part.partId, effect: e.part.effect, pct: e.part.pct, ...(e.part.skillId !== undefined ? { skillId: e.part.skillId } : {}) } };
 }
 
 /**
@@ -1511,6 +1514,7 @@ function strike(ctx: Ctx, actor: BattleUnit, chosen: BattleUnit, action: "attack
     if (vs.consume) removeStatus(ctx, target, vs.statusId);
   }
   if (eff.element === "FIRE" && statusOf(target, "oil") !== undefined) outgoing *= (100 + t.oilFireBonusPct) / 100;
+  outgoing *= partPowerFactor(ctx, actor);
   for (const m of passiveModifiers(ctx, actor)) {
     if (m.kind === "damage_vs_status" && statusOf(target, m.statusId) !== undefined) outgoing *= (100 + m.bonusPct) / 100;
   }
@@ -1619,7 +1623,13 @@ function knockOut(ctx: Ctx, u: BattleUnit): void {
   ctx.emit({ type: "EnemyDefeated", unitId: u.unitId, speciesId: u.speciesId! });
   if (u.part !== undefined && ctx.s.boss !== undefined) {
     (ctx.s.boss.partsBroken ??= []).push(u.part.partId);
-    ctx.emit({ type: "BossPartBroken", unitId: u.unitId, partId: u.part.partId });
+    ctx.emit({ type: "BossPartBroken", unitId: u.unitId, partId: u.part.partId, effect: u.part.effect, ...(u.part.skillId !== undefined ? { sealedSkillId: u.part.skillId } : {}) });
+    // A broken seal takes its skill away: a move of it already warned about is called off.
+    const t = ctx.s.boss.telegraph;
+    if (u.part.skillId !== undefined && t !== null && t.skillId === u.part.skillId) {
+      ctx.emit({ type: "BossTelegraph", unitId: ctx.s.boss.unitId, skillId: t.skillId, change: "cancelled", firesRound: t.firesRound });
+      ctx.s.boss.telegraph = null;
+    }
   }
   // Parts and summoned minions give nothing (no unbounded reward from resummons); a practice fight gives nothing at all.
   if (u.part !== undefined || u.summoned === true || ctx.s.practice === true) return;
@@ -1957,6 +1967,22 @@ function enterBossPhase(ctx: Ctx, index: number): void {
   if (ph.summon !== undefined && active(boss)) bossSummon(ctx, ph.summon);
 }
 
+/** Skills the boss has lost: those held by seal parts that are broken. */
+function sealedSkills(ctx: Ctx, u: BattleUnit): Set<string> {
+  const out = new Set<string>();
+  if (ctx.s.boss?.unitId !== u.unitId) return out;
+  for (const p of ctx.s.units) if (p.part?.effect === "seal" && p.part.skillId !== undefined && !active(p)) out.add(p.part.skillId);
+  return out;
+}
+
+/** Damage dealt by the boss while its power parts stand: each adds its % (multiplied). */
+function partPowerFactor(ctx: Ctx, actor: BattleUnit): number {
+  if (ctx.s.boss?.unitId !== actor.unitId) return 1;
+  let f = 1;
+  for (const u of ctx.s.units) if (u.part?.effect === "power" && active(u)) f *= (100 + u.part.pct) / 100;
+  return f;
+}
+
 /** Damage taken by the boss while its armor parts stand: each takes off its % (multiplied). */
 function partArmorFactor(ctx: Ctx, target: BattleUnit): number {
   if (ctx.s.boss?.unitId !== target.unitId) return 1;
@@ -2044,6 +2070,7 @@ function announceTelegraph(ctx: Ctx): void {
   const b = ctx.s.boss;
   const tg = bossDefinition(ctx)?.phases[b?.phase ?? 0]?.telegraph;
   if (b === undefined || tg === undefined || b.telegraph !== null || !active(ctx.unit(b.unitId))) return;
+  if (sealedSkills(ctx, ctx.unit(b.unitId)).has(tg.skillId)) return;
   if (ctx.s.round - b.lastTelegraphRound < tg.everyRounds) return;
   b.telegraph = { skillId: tg.skillId, firesRound: ctx.s.round + 1 };
   b.lastTelegraphRound = ctx.s.round;
@@ -2077,7 +2104,8 @@ function enemyAct(ctx: Ctx, u: BattleUnit): void {
   const disarmed = statusBlocks(u.statuses, "attack") !== undefined;
   // A boss keeps its telegraphed moves for the warned turn only.
   const reserved = ctx.s.boss?.unitId === u.unitId ? telegraphSkills(ctx) : undefined;
-  const options = skillOptions(ctx.rules, ctx.content, ctx.s, u, ctx.rules.provisional.enemyAi.value.healBelowHpPct).filter((o) => reserved?.has(o.skill.id) !== true);
+  const sealed = sealedSkills(ctx, u);
+  const options = skillOptions(ctx.rules, ctx.content, ctx.s, u, ctx.rules.provisional.enemyAi.value.healBelowHpPct).filter((o) => reserved?.has(o.skill.id) !== true && !sealed.has(o.skill.id));
   if (options.length > 0 && (disarmed || ctx.rng.chanceBp(ctx.rules.provisional.enemyAi.value.skillChancePct * 100))) {
     const pick = options[ctx.rng.nextInt(options.length)]!;
     const target = pick.pool.length === 1 ? pick.pool[0]! : pick.pool[ctx.rng.nextInt(pick.pool.length)]!;

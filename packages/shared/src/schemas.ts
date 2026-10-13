@@ -450,19 +450,27 @@ export const BossPhaseTriggerSchema = z.discriminatedUnion("kind", [
 /**
  * A boss part (chapter 07 §5): a separate enemy unit that never acts and gives the boss an effect while
  * it stands. armor: the boss takes `pct`% less damage; regen: the boss heals `pct`% of max HP at the
- * start of each round. Breaking it ends the effect and can start a phase (`part_broken`). Parts give no
- * EXP or loot, cannot be captured, and fall with the boss. HP is `hpPct`% of the boss's max HP.
+ * start of each round; power: the boss deals `pct`% more damage; seal: the boss's skill `skillId` comes
+ * from the part, so breaking it takes that skill away for the rest of the fight (a warned move of that
+ * skill is called off too; `pct` is unused, keep it 1). Breaking a part ends its effect and can start a
+ * phase (`part_broken`). Parts give no EXP or loot, cannot be captured, and fall with the boss. HP is
+ * `hpPct`% of the boss's max HP.
  */
+export const BOSS_PART_EFFECTS = ["armor", "regen", "power", "seal"] as const;
+export type BossPartEffect = (typeof BOSS_PART_EFFECTS)[number];
 export const BossPartSchema = z
   .object({
     id: z.string().regex(/^[a-z_]{1,32}$/),
     name: LocalizedName,
     row: z.enum(["front", "back"]),
-    effect: z.enum(["armor", "regen"]),
+    effect: z.enum(BOSS_PART_EFFECTS),
     pct: z.number().int().min(1).max(90),
     hpPct: z.number().int().min(5).max(100),
+    /** seal only: the boss skill the part holds. */
+    skillId: SkillId.optional(),
   })
-  .strict();
+  .strict()
+  .refine((p) => (p.effect === "seal") === (p.skillId !== undefined), "a seal part names the skill it holds; other parts name none");
 export type BossPart = z.infer<typeof BossPartSchema>;
 
 /**

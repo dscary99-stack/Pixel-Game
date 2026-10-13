@@ -219,6 +219,8 @@ export const EXAMPLE_FRONTIER_BOSSES: BossDefinition[] = [
       { speciesId: "species:armor_crab", element: "EARTH", row: "front", lootEligible: true },
       { speciesId: "species:lantern_snail", element: "WATER", row: "back", lootEligible: true },
     ],
+    // The horn holds the shockwave: break it and the warden can never use (or warn about) it again.
+    parts: [{ id: "horn", name: { th: "เขาคลื่นกระแทก" }, row: "back", effect: "seal", pct: 1, hpPct: 25, skillId: "skill:lord_shockwave" }],
     phases: CRAB_PHASES,
     lootTableId: "loot:rift_spire_guardian",
   },

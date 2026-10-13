@@ -425,9 +425,11 @@ export class BattleScene extends Phaser.Scene {
         }
         return this.pushLog(e.change === "fired" ? `${this.name(e.unitId)} ใช้ ${sk}!` : `${sk} ของ ${this.name(e.unitId)} ถูกยกเลิก`);
       }
-      case "BossPartBroken":
+      case "BossPartBroken": {
         this.popup(e.unitId, "แตก!", "#ffe08a");
-        return this.pushLog(`★ ${this.name(e.unitId)} แตกแล้ว!`);
+        const lost = e.sealedSkillId === undefined ? "" : ` บอสใช้ ${CONTENT.skills.get(e.sealedSkillId)?.name.th ?? e.sealedSkillId} ไม่ได้อีก`;
+        return this.pushLog(`★ ${this.name(e.unitId)} แตกแล้ว!${lost}`);
+      }
       case "BossSummoned":
         for (const id of e.unitIds) this.popup(id, "มาเสริม!", "#ff9b6b");
         return this.pushLog(`บอสเรียก ${e.unitIds.map((id) => this.name(id)).join(", ")} มาช่วย${e.left > 0 ? ` (เรียกได้อีก ${e.left})` : ""}`);
@@ -613,7 +615,7 @@ export class BattleScene extends Phaser.Scene {
       // A tower reinforcement says so (it took a fallen enemy's cell this fight).
       const reinforcement = state.units.some((o) => o.replacedBy === u.unitId) ? "▲กำลังเสริม" : u.summoned === true ? "▲ถูกเรียกมา" : "";
       // A boss part never acts; it says what standing does for the boss (chapter 07 §5, readable without colour).
-      const part = u.part === undefined ? "" : u.part.effect === "armor" ? `◆ชิ้นส่วน: บอสรับดาเมจ −${u.part.pct}%` : `◆ชิ้นส่วน: บอสฟื้น ${u.part.pct}%/รอบ`;
+      const part = u.part === undefined ? "" : `◆ชิ้นส่วน: ${partEffectTh(u.part)}`;
       const name = u.part !== undefined ? u.name : `${u.name} Lv${u.level}${u.retired ? " (จับแล้ว)" : ""}`;
       if (enemy) {
         // One name line above; statuses and tags beside the body, inside this cell's band.
@@ -747,3 +749,17 @@ export class BattleScene extends Phaser.Scene {
 }
 
 export const GAME_SIZE = { width: W, height: H };
+
+/** What a boss part does while it stands, in Thai. */
+function partEffectTh(p: { effect: string; pct: number; skillId?: string }): string {
+  switch (p.effect) {
+    case "armor":
+      return `บอสรับดาเมจ −${p.pct}%`;
+    case "regen":
+      return `บอสฟื้น ${p.pct}%/รอบ`;
+    case "power":
+      return `บอสตีแรง +${p.pct}%`;
+    default:
+      return `ทุบแตกแล้วบอสใช้ ${CONTENT.skills.get(p.skillId ?? "")?.name.th ?? p.skillId} ไม่ได้`;
+  }
+}

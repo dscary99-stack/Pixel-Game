@@ -251,6 +251,82 @@ describe("boss parts, summons and practice (P17)", () => {
     expect(of(events, "ResourceChanged").filter((e) => e.source === "boss_part")).toEqual([expect.objectContaining({ unitId: "e1", hp: Math.floor((boss.stats.maxHp * 5) / 100) })]);
   });
 
+  // A lord with a seal part on its shockwave (and no claw), and one with a power part.
+  const sealed: BossDefinition = {
+    ...LORD,
+    id: "boss:t_seal",
+    parts: [{ id: "horn", name: { th: "เขา" }, row: "back", effect: "seal", pct: 1, hpPct: 20, skillId: "skill:lord_shockwave" }],
+    phases: [LORD.phases[0]!, { ...LORD.phases[1]!, enterWhen: [{ kind: "hp_below", pct: 50 }], summon: undefined }],
+  };
+
+  it("a seal part holds a boss skill: once broken the boss never uses or warns about it, and a pending warning is called off", () => {
+    expect(BossDefinitionSchema.safeParse(sealed).success).toBe(true);
+    const w = world((setup) => (setup.player.basicAttackRange = "ranged"), sealed);
+    const horn = unit(w.start.state, "e4");
+    expect(horn.part).toEqual({ partId: "horn", effect: "seal", pct: 1, skillId: "skill:lord_shockwave" });
+    // Standing: the shockwave is warned about as usual.
+    const { s: warned, events: before } = w.until(w.start.state, 4);
+    const announced = of(before, "BossTelegraph").filter((e) => e.change === "announced");
+    expect(announced.length).toBeGreaterThan(0);
+    // Break the horn while a warning is pending: it is called off, and none come after.
+    const s = structuredClone(warned);
+    s.boss!.telegraph = { skillId: "skill:lord_shockwave", firesRound: s.round + 1 };
+    unit(s, "e4").hp = 1;
+    while (currentActor(s)!.unitId !== "player") Object.assign(s, w.run(s, { type: "guard", actorId: currentActor(s)!.unitId }).state);
+    const r = w.run(s, { type: "attack", actorId: "player", targetId: "e4" });
+    expect(of(r.events, "BossPartBroken")).toEqual([expect.objectContaining({ partId: "horn", effect: "seal", sealedSkillId: "skill:lord_shockwave" })]);
+    expect(of(r.events, "BossTelegraph")).toEqual([expect.objectContaining({ change: "cancelled", skillId: "skill:lord_shockwave" })]);
+    // Let the boss use skills freely for many rounds: never the shockwave again.
+    const loud = structuredClone(rules);
+    (loud.provisional.enemyAi as { value: { skillChancePct: number; healBelowHpPct: number } }).value = { skillChancePct: 100, healBelowHpPct: 50 };
+    let t = r.state;
+    const later: BattleEvent[] = [];
+    for (let i = 0; i < 200 && t.status === "active" && t.round < r.state.round + 12; i++) {
+      const x = ok(applyCommand(loud, w.c, t, { type: "guard", actorId: currentActor(t)!.unitId }, { source: "player" }));
+      later.push(...x.events);
+      t = x.state;
+    }
+    const used = of(later, "ActionResolved").filter((e) => e.actorId === "e1").map((e) => e.skillId);
+    expect(used.some((id) => id !== null && id !== undefined)).toBe(true);
+    expect(used).not.toContain("skill:lord_shockwave");
+    expect(of(later, "BossTelegraph")).toEqual([]);
+  });
+
+  it("a power part makes the boss hit harder while it stands", () => {
+    const def: BossDefinition = { ...sealed, id: "boss:t_power", parts: [{ id: "core", name: { th: "แกน" }, row: "back", effect: "power", pct: 50, hpPct: 20 }] };
+    expect(BossDefinitionSchema.safeParse(def).success).toBe(true);
+    const w = world(() => {}, def);
+    const bossHit = (s: BattleState) => {
+      let t = structuredClone(s);
+      for (let i = 0; i < 50; i++) {
+        const x = w.run(t, { type: "guard", actorId: currentActor(t)!.unitId });
+        const hit = of(x.events, "ActionResolved").find((e) => e.actorId === "e1" && e.skillId == null && (e.damage ?? 0) > 0);
+        if (hit !== undefined) return hit.damage!;
+        t = x.state;
+      }
+      throw new Error("the boss never hit");
+    };
+    const standing = bossHit(w.start.state);
+    const broken = structuredClone(w.start.state);
+    unit(broken, "e4").ko = true;
+    unit(broken, "e4").hp = 0;
+    const open = bossHit(broken);
+    expect(standing).toBeGreaterThan(open);
+    expect(Math.abs(standing - Math.floor(open * 1.5))).toBeLessThanOrEqual(2);
+  });
+
+  it("the schema and the kernel refuse a seal without a skill, a skill on another part, and a seal on a skill the boss lacks", () => {
+    const horn = sealed.parts![0]!;
+    const { skillId: _s, ...noSkill } = horn;
+    expect(BossDefinitionSchema.safeParse({ ...sealed, parts: [noSkill] }).success).toBe(false);
+    expect(BossDefinitionSchema.safeParse({ ...sealed, parts: [{ ...horn, effect: "armor" }] }).success).toBe(false);
+    const c = content();
+    const bad: BossDefinition = { ...sealed, id: "boss:t_bad", parts: [{ ...horn, skillId: "skill:fox_mark_bite" }] };
+    c.bosses.set(bad.id, bad);
+    const r = createBattle(rules, c, baseSetup({ enemies: [], boss: { bossId: bad.id } }));
+    expect(r).toMatchObject({ ok: false, code: "MISSING_REFERENCE", message: expect.stringMatching(/seals/) });
+  });
+
   it("the schema refuses a trigger on a missing part, duplicate parts, too many units and a phase-1 summon", () => {
     const [p1, p2] = LORD.phases as [BossDefinition["phases"][number], BossDefinition["phases"][number]];
     const part = LORD.parts![0]!;

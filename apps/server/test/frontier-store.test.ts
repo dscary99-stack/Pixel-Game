@@ -236,7 +236,7 @@ describe("floors", () => {
     const s = await started(10);
     expect(s.boss).toBe(true);
     expect(created.at(-1)!.setup).toMatchObject({ enemies: [], boss: { bossId: "boss:rift_spire_warden" }, frontier: { floor: 10, modifiers: EXAMPLE_FRONTIER.floors[9]!.modifiers } });
-    expect(created.at(-1)!.setup.frontier!.escorts).toHaveLength(7);
+    expect(created.at(-1)!.setup.frontier!.escorts).toHaveLength(6);
     await finish(s.battleId, "victory");
     await Promise.all([tower.settle(A), tower.settle(A)]);
     expect(db.prepare(`SELECT character_id, frontier_id, floor FROM frontier_first_clears`).all()).toEqual([

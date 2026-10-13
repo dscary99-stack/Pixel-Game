@@ -127,8 +127,8 @@ describe("rolling a floor", () => {
       { floor: 30, statPct: 220, kind: "boss", bossId: "boss:rift_spire_warden" },
       { floor: 100, statPct: 500, kind: "boss", bossId: "boss:rift_spire_tyrant" },
     ]);
-    // Guardian + adds + escorts = 10 (warden has 2 adds, tyrant 4).
-    for (const [f, escorts] of [[10, 7], [20, 5]] as const) {
+    // Guardian + adds + parts + escorts = 10 (warden has 2 adds and a horn, tyrant 4 adds).
+    for (const [f, escorts] of [[10, 6], [20, 5]] as const) {
       const b = rollFrontierFloor(R, T, c, "frun_a", f);
       if (b.kind !== "boss") throw new Error("boss floor expected");
       expect(b.escorts).toHaveLength(escorts);

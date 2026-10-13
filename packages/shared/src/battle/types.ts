@@ -2,7 +2,7 @@ import type { PartyBonus } from "../party";
 import type { OriginMode, LootLine } from "../loot";
 import type { CaptureProfile, Rank } from "../rules";
 import type { RngState } from "../rng";
-import type { Element, MonsterInstance, PassiveEvent, PrimaryStats } from "../schemas";
+import type { BossPartEffect, Element, MonsterInstance, PassiveEvent, PrimaryStats } from "../schemas";
 import type { DamageBreakdown } from "../damage";
 import type { DerivedStats, GearBonuses } from "../stats";
 import type { ErrorCode } from "../validators";
@@ -83,7 +83,7 @@ export interface BattleUnit {
   /** Tower floors: a fallen or captured enemy whose cell a reinforcement took (the unit that came in). */
   replacedBy?: string;
   /** Boss fights: a part of the boss (never acts, no EXP/loot, falls with the boss). */
-  part?: { partId: string; effect: "armor" | "regen"; pct: number };
+  part?: { partId: string; effect: BossPartEffect; pct: number; skillId?: string };
   /** Boss fights: a minion the boss called in mid-fight (no EXP/loot, falls with the boss). */
   summoned?: boolean;
   guarding: boolean;
@@ -245,7 +245,7 @@ export type BattleEventBody =
   | { type: "RoundStarted"; round: number; order: string[] }
   | { type: "BossPhaseChanged"; unitId: string; phase: number; phaseId: string }
   /** A boss part was broken: its effect on the boss ends. */
-  | { type: "BossPartBroken"; unitId: string; partId: string }
+  | { type: "BossPartBroken"; unitId: string; partId: string; effect: BossPartEffect; sealedSkillId?: string }
   /** The boss called minions into free cells; `left` more may come this fight. */
   | { type: "BossSummoned"; unitIds: string[]; left: number }
   /** announced at a round's start, fired on the boss's first action of `firesRound`, or cancelled (phase change, silence, KO). */
@@ -377,7 +377,7 @@ export interface BattleSetup {
     lootEligible?: boolean;
     elite?: { modifiers: EliteModifier[] };
     /** Boss parts only (bossEnemies builds them from the boss definition). */
-    part?: { partId: string; name: string; effect: "armor" | "regen"; pct: number; hpPct: number };
+    part?: { partId: string; name: string; effect: BossPartEffect; pct: number; hpPct: number; skillId?: string };
   })[];
   /**
    * A practice fight at the town training ground (P17): nothing is earned or lost. No EXP, loot,
