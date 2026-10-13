@@ -306,3 +306,86 @@ describe("a real floor fight end to end", () => {
     expect(db.prepare(`SELECT COUNT(*) AS n FROM frontier_floor_results`).get()).toEqual({ n: 1 });
   });
 });
+
+describe("guardian rewards and the weekly board (P32)", () => {
+  const mails = () => db.prepare(`SELECT id, payload_json FROM mail WHERE account_id = ? ORDER BY id`).all(A) as { id: string; payload_json: string }[];
+  async function clearGuardian(op: string) {
+    await enter(op);
+    await tower.devJump(A, 10);
+    const s = await started(10);
+    await finish(s.battleId, "victory");
+  }
+
+  it("the first clear mails the first-clear and weekly rewards once, however often it settles; a later week mails only the weekly one", async () => {
+    expect((await view()).bossFloors.slice(0, 2)).toEqual([
+      { floor: 10, firstCleared: false, first: { coins: 20_000, items: { "item:rift_core": 1 } }, weekly: { coins: 5_000, items: {} } },
+      { floor: 20, firstCleared: false, first: { coins: 40_000, items: { "item:rift_core": 1 } }, weekly: { coins: 10_000, items: {} } },
+    ]);
+    await clearGuardian("enter_0001");
+    await Promise.all([tower.settle(A), tower.settle(A), tower.settle(A)]);
+    const first = mails();
+    expect(first.map((m) => m.id)).toEqual([expect.stringMatching(/^mail:frontier_first:/), expect.stringMatching(/^mail:frontier_week:/)]);
+    expect(JSON.parse(first[0]!.payload_json)).toMatchObject({ coins: 20_000, items: { "item:rift_core": 1 } });
+    expect(JSON.parse(first[1]!.payload_json)).toMatchObject({ coins: 5_000, items: {} });
+    expect((await view()).bossFloors[0]).toMatchObject({ floor: 10, firstCleared: true });
+    // Next week: the same floor again gives the week's reward only.
+    clock = "2026-10-13T10:00:00.000Z";
+    await clearGuardian("enter_0002");
+    await tower.settle(A);
+    const ids = mails().map((m) => m.id);
+    expect(ids.filter((id) => id.startsWith("mail:frontier_first:"))).toHaveLength(1);
+    expect(ids.filter((id) => id.startsWith("mail:frontier_week:"))).toHaveLength(2);
+  });
+
+  it("a normal floor and a lost guardian floor mail nothing; a crashed settlement batch mails nothing until it applies", async () => {
+    await enter("enter_0001");
+    await finish((await started(1)).battleId, "victory");
+    await tower.devJump(A, 10);
+    const s = await started(10);
+    await finish(s.battleId, "victory");
+    d1.failNextBatch = true;
+    await expect(tower.settle(A)).rejects.toThrow();
+    expect(mails()).toHaveLength(0);
+    await tower.settle(A);
+    expect(mails()).toHaveLength(2);
+    // A loss on the next guardian floor gives nothing.
+    await tower.devJump(A, 20);
+    await finish((await started(20)).battleId, "defeat");
+    await tower.settle(A);
+    expect(mails()).toHaveLength(2);
+  });
+
+  it("the board ranks by best floor, earlier first on a tie, and shows the caller's own line outside the top", async () => {
+    const others = [
+      { acct: "acct:b", name: "บี", best: 30, at: "2026-10-06T09:00:00.000Z" },
+      { acct: "acct:c", name: "ซี", best: 10, at: "2026-10-06T08:00:00.000Z" },
+      { acct: "acct:d", name: "ดี", best: 10, at: "2026-10-06T11:00:00.000Z" },
+    ];
+    for (const [i, o] of others.entries()) {
+      await chars.create(o.acct, { operationId: `op_create_${i}x`, name: o.name, classId: "class:guardian", raceId: "race:stonekin", element: "EARTH" });
+      const cid = (await chars.get(o.acct))!.id;
+      db.prepare(
+        `INSERT INTO frontier_runs (run_id, character_id, account_id, frontier_id, week_id, operation_id, team_json, floor, best_floor, status, created_at, updated_at)
+         VALUES (?, ?, ?, ?, 'w:2026-10-05', 'op', '[]', ?, ?, 'open', 'x', 'x')`,
+      ).run(`frun_${i}`, cid, o.acct, EXAMPLE_FRONTIER.id, o.best + 1, o.best);
+      db.prepare(`INSERT INTO frontier_floor_results (run_id, floor, battle_id, outcome, token, settled_at) VALUES (?, ?, 'b', 'victory', 't', ?)`).run(`frun_${i}`, o.best, o.at);
+    }
+    expect((await tower.board(A))!.mine).toBeNull();
+    await clearGuardian("enter_0001"); // A reaches floor 10 at 10:00, between ซี and ดี
+    const b = (await tower.board(A))!;
+    expect(b.top.map((e) => [e.rank, e.name, e.best])).toEqual([
+      [1, "บี", 30],
+      [2, "ซี", 10],
+      [3, "นัท", 10],
+      [4, "ดี", 10],
+    ]);
+    expect(b.mine).toMatchObject({ rank: 3, name: "นัท", best: 10 });
+    const small = new FrontierStore(d1, { ...R, provisional: { ...R.provisional, frontierRewards: { ...R.provisional.frontierRewards, value: { ...R.provisional.frontierRewards.value, leaderboardSize: 2 } } } } as unknown as typeof R, EXAMPLE_FRONTIER, towerContent, eco, chars, port, null, () => clock);
+    const s = (await small.board(A))!;
+    expect(s.top.map((e) => e.name)).toEqual(["บี", "ซี"]);
+    expect(s.mine).toMatchObject({ rank: 3, name: "นัท" });
+    // Last week's runs are not on this week's board.
+    clock = "2026-10-13T10:00:00.000Z";
+    expect((await tower.board(A))!.top).toEqual([]);
+  });
+});

@@ -17,6 +17,8 @@
  */
 import {
   EMPTY_FRONTIER_VITALS,
+  EMPTY_MAIL,
+  frontierBossRewards,
   FrontierEnterRequestSchema,
   FrontierFloorRequestSchema,
   FrontierLeaveRequestSchema,
@@ -31,6 +33,8 @@ import {
   questPeriod,
   rollFrontierFloor,
   type BattleSetup,
+  type FrontierBoardEntry,
+  type FrontierBoardView,
   type FrontierContent,
   type FrontierDefinition,
   type FrontierView,
@@ -41,6 +45,7 @@ import {
 import type { CharacterStore } from "./character-store";
 import type { Economy, AllyResult } from "./economy";
 import type { JournalStore } from "./journal-store";
+import { mailInsert } from "./mail-insert";
 import { hashJson, type SqlBound, type SqlDb } from "./reward-ledger";
 
 export type FrontierRejection =
@@ -286,6 +291,42 @@ export class FrontierStore {
               )
               .bind(run.character_id, this.def.id, floor, run.run_id, at, ...oursArgs),
           );
+          // Guardian rewards (P32) go to the mailbox in the same batch: the week's every time, the first
+          // clear's only when this run wrote the character's first-clear row for the floor.
+          const reward = frontierBossRewards(this.rules, floor);
+          stmts.push(
+            mailInsert(
+              this.db,
+              this.rules,
+              {
+                mailId: `mail:frontier_week:${run.run_id}:${floor}`,
+                accountId: run.account_id,
+                source: "system",
+                title: `หอคอยรอยแยก: ผ่านชั้น ${floor}`,
+                body: `รางวัลประจำสัปดาห์ของชั้นผู้พิทักษ์ ${floor}`,
+                payload: { ...EMPTY_MAIL, coins: reward.weekly.coins, items: reward.weekly.items },
+              },
+              at,
+              { sql: ours, args: oursArgs },
+            ),
+            mailInsert(
+              this.db,
+              this.rules,
+              {
+                mailId: `mail:frontier_first:${run.character_id}:${this.def.id}:${floor}`,
+                accountId: run.account_id,
+                source: "system",
+                title: `หอคอยรอยแยก: ผ่านชั้น ${floor} ครั้งแรก`,
+                body: `รางวัลผ่านชั้นผู้พิทักษ์ ${floor} ครั้งแรก`,
+                payload: { ...EMPTY_MAIL, coins: reward.first.coins, items: reward.first.items },
+              },
+              at,
+              {
+                sql: `${ours} AND EXISTS (SELECT 1 FROM frontier_first_clears WHERE character_id = ? AND frontier_id = ? AND floor = ? AND run_id = ?)`,
+                args: [...oursArgs, run.character_id, this.def.id, floor, run.run_id],
+              },
+            ),
+          );
         }
       } else {
         // A loss (or anything but a win) ends the run for the week.
@@ -305,6 +346,40 @@ export class FrontierStore {
     // The run keeps its own HP/MP; the character standing in town rests as towns allow (chapter 03 §3).
     if (applied > 0 && (await this.inTown(accountId))) await this.characters.rest(accountId);
     return applied;
+  }
+
+  /**
+   * This week's board: the best `leaderboardSize` characters by best floor, ties to whoever reached it
+   * first (the floor's settlement time), plus this character's own line wherever it stands.
+   */
+  async board(accountId: string): Promise<FrontierBoardView | null> {
+    const ch = await this.character(accountId);
+    if (ch === null) return null;
+    await this.settle(accountId);
+    const week = this.week();
+    const rows = `SELECT r.character_id AS cid, c.name AS name, r.best_floor AS best, f.settled_at AS at
+      FROM frontier_runs r JOIN characters c ON c.id = r.character_id
+      JOIN frontier_floor_results f ON f.run_id = r.run_id AND f.floor = r.best_floor
+      WHERE r.frontier_id = ? AND r.week_id = ? AND r.best_floor > 0`;
+    type Row = { cid: string; name: string; best: number; at: string };
+    const { results } = await this.db
+      .prepare(`${rows} ORDER BY best DESC, at ASC, cid ASC LIMIT ?`)
+      .bind(this.def.id, week.id, this.rules.provisional.frontierRewards.value.leaderboardSize)
+      .all<Row>();
+    const entry = (r: Row, rank: number): FrontierBoardEntry => ({ rank, name: r.name, best: r.best, reachedAt: r.at });
+    const top = results.map((r, i) => entry(r, i + 1));
+    let mine: FrontierBoardEntry | null = top[results.findIndex((r) => r.cid === ch.id)] ?? null;
+    if (mine === null) {
+      const me = await this.db.prepare(`SELECT * FROM (${rows}) WHERE cid = ?`).bind(this.def.id, week.id, ch.id).first<Row>();
+      if (me !== null) {
+        const ahead = await this.db
+          .prepare(`SELECT COUNT(*) AS n FROM (${rows}) WHERE best > ? OR (best = ? AND (at < ? OR (at = ? AND cid < ?)))`)
+          .bind(this.def.id, week.id, me.best, me.best, me.at, me.at, me.cid)
+          .first<{ n: number }>();
+        mine = entry(me, (ahead?.n ?? 0) + 1);
+      }
+    }
+    return { weekId: week.id, endsAt: week.endsAt, top, mine };
   }
 
   /** DEV ONLY: move this week's open run to `floor` between fights (to reach a boss floor in a smoke). */
@@ -358,7 +433,19 @@ export class FrontierStore {
   private async viewFor(characterId: string): Promise<FrontierView> {
     const week = this.week();
     const run = await this.run(characterId, week.id);
+    const { results: cleared } = await this.db
+      .prepare(`SELECT floor FROM frontier_first_clears WHERE character_id = ? AND frontier_id = ?`)
+      .bind(characterId, this.def.id)
+      .all<{ floor: number }>();
+    const firsts = new Set(cleared.map((r) => r.floor));
+    const every = this.rules.confirmed.frontierBossEveryFloors.value;
+    const bossFloors = Array.from({ length: Math.floor(this.rules.confirmed.frontierFloors.value / every) }, (_, i) => (i + 1) * every).map((floor) => ({
+      floor,
+      firstCleared: firsts.has(floor),
+      ...frontierBossRewards(this.rules, floor),
+    }));
     return {
+      bossFloors,
       frontierId: this.def.id,
       name: this.def.name,
       lore: this.def.lore.th,

@@ -3,7 +3,7 @@
  * what it gets back. Identity uses the dev header until O11 picks auth.
  */
 import { authHeaders, type Identity } from "./identity";
-import type { AssetSnapshot, CharacterView, CreateCharacterRequest, MarketBrowseQuery, MarketKind, MarketView, TradeKind, TradeSide, TradeView, VaultView, MailView, DisposeQuote, EquipSlot, EquipmentView, FrontierView, PracticeView, ClassView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RefineResult, RolledAffix, SecretQuestView, AttainmentView, FashionLayer, FashionLook } from "@pmrpg/shared";
+import type { AssetSnapshot, CharacterView, CreateCharacterRequest, MarketBrowseQuery, MarketKind, MarketView, TradeKind, TradeSide, TradeView, VaultView, MailView, DisposeQuote, EquipSlot, EquipmentView, FrontierBoardView, FrontierView, PracticeView, ClassView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RefineResult, RolledAffix, SecretQuestView, AttainmentView, FashionLayer, FashionLook } from "@pmrpg/shared";
 
 export type StoredCompanion = MonsterInstance & { hp: number | null; mp: number | null };
 
@@ -242,6 +242,10 @@ export class CharacterApi {
   /** Start (or resume) the floor shown; the answer is the fight to open. */
   frontierStart(runId: string, floor: number) {
     return this.call<{ battleId: string; floor: number; boss: boolean; resumed: boolean }>("POST", "/frontier/floor/start", { runId, floor });
+  }
+  /** This week's tower board: top characters by best floor and the caller's own line. */
+  frontierBoard() {
+    return this.call<FrontierBoardView>("GET", "/frontier/board");
   }
   frontierLeave(runId: string) {
     return this.call<{ view: FrontierView }>("POST", "/frontier/leave", { runId });

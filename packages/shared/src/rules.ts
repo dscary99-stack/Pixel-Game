@@ -733,6 +733,22 @@ export const RULES = {
       "P31",
       "Claude's proposal (chapter 02 draft): Lv200 + Class3, 2,000,000 coins and 10 rift cores (tower guardian drop; there are no Lv200 materials yet), path switch 500,000 coins; gauge full after 4 rounds with a real action, awakening 3 own turns once a fight. Trial: the tower tyrant at 1000%; a Lv200 character with Class1 50 + Class2 70 + Class3 70 points, stats bought at their rising cost, Lv40 shop gear and three Lv195 companions wins 48 of 54 seeded runs on Auto (900% 52/54, 1200% 36/54); Ruin Champion lost 3 of 3 and needs manual play",
     ),
+    /**
+     * Tower rewards (chapter 07 §4; the tower's point is the guardians' rare drops, these come on top).
+     * Clearing a guardian floor (every 10th) mails the character `weeklyCoinsPerFloor` × floor every week,
+     * and the first time ever on that floor also `firstClearCoinsPerFloor` × floor and `firstClearItems`.
+     * The weekly board shows the best `leaderboardSize` characters by best floor (earlier first on a tie).
+     */
+    frontierRewards: provisional(
+      {
+        firstClearCoinsPerFloor: 2000,
+        firstClearItems: [{ itemId: "item:rift_core", quantity: 1 }],
+        weeklyCoinsPerFloor: 500,
+        leaderboardSize: 50,
+      } as const,
+      "P32",
+      "Claude's first pass: first clear of floor F = 2,000 × F coins + 1 rift core (all ten guardians once = 110,000 coins and the 10 cores ascension asks for), every week 500 × F coins per guardian floor cleared (at most 27,500 a week), board top 50",
+    ),
   },
   // Nut answered the last OPEN rules on 2026-10-07. A new OPEN rule goes here as open<T>(...) with value null.
   unresolved: {} as Readonly<Record<string, Rule<null>>>,

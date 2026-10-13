@@ -366,6 +366,47 @@ export interface FrontierView {
   /** This week's entry is used once a run exists for the week. */
   entryUsed: boolean;
   run: FrontierRunView | null;
+  /** Every guardian floor with its rewards (P32). */
+  bossFloors: FrontierBossFloorView[];
+}
+
+// ---------------------------------------------------------------- rewards and the weekly board (P32)
+
+/** What clearing a guardian floor mails: coins plus items by id. */
+export interface FrontierReward {
+  coins: number;
+  items: Record<string, number>;
+}
+
+/** A guardian floor's rewards: `weekly` every week it is cleared, `first` on top the first time ever. */
+export function frontierBossRewards(rules: RulesConfig, floor: number): { first: FrontierReward; weekly: FrontierReward } {
+  const r = rules.provisional.frontierRewards.value;
+  const items: Record<string, number> = {};
+  for (const it of r.firstClearItems) items[it.itemId] = (items[it.itemId] ?? 0) + it.quantity;
+  return { first: { coins: r.firstClearCoinsPerFloor * floor, items }, weekly: { coins: r.weeklyCoinsPerFloor * floor, items: {} } };
+}
+
+/** One guardian floor in the panel: its rewards and whether this character has ever cleared it. */
+export interface FrontierBossFloorView {
+  floor: number;
+  firstCleared: boolean;
+  first: FrontierReward;
+  weekly: FrontierReward;
+}
+
+/** The week's board: the best characters by best floor, ties broken by who got there first. */
+export interface FrontierBoardEntry {
+  rank: number;
+  name: string;
+  best: number;
+  reachedAt: string;
+}
+export interface FrontierBoardView {
+  weekId: string;
+  endsAt: string;
+  top: FrontierBoardEntry[];
+  /** This character's own line (also when outside the top); null before it clears a floor this week. */
+  mine: FrontierBoardEntry | null;
 }
 
 // ---------------------------------------------------------------- content check

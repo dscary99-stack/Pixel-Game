@@ -1809,16 +1809,48 @@ export function frontierPanel(api: CharacterApi): Promise<string | null> {
           ),
         );
       }
-      body.append(el("div", { class: "pm-note" }, "จับมอนสเตอร์ในหอได้ตามปกติ (เริ่ม Lv1) รวมถึงกำลังเสริม · บอสทุก 10 ชั้นมีของหายาก · ค่าทั้งหมดเป็นตัวอย่าง (P12)"));
+      // Guardian floors (P32): mailed when cleared, the first-clear part once ever.
+      const coins = (n: number) => n.toLocaleString("th-TH");
+      body.append(
+        el(
+          "div",
+          { class: "pm-stats", "data-frontier-rewards": "", style: "white-space: pre-line" },
+          [
+            "รางวัลชั้นผู้พิทักษ์ (ส่งเข้ากล่องจดหมาย):",
+            ...v.bossFloors.map(
+              (b) =>
+                `ชั้น ${b.floor}: ทุกสัปดาห์ ${coins(b.weekly.coins)} เหรียญ · ${b.firstCleared ? "✓ รับรางวัลครั้งแรกแล้ว" : `ครั้งแรก +${coins(b.first.coins)} เหรียญ${Object.entries(b.first.items)
+                  .map(([id, q]) => ` + ${id === "item:rift_core" ? "แกนรอยแยก" : id} ×${q}`)
+                  .join("")}`}`,
+            ),
+          ].join("\n"),
+        ),
+      );
+      body.append(board);
+      body.append(el("div", { class: "pm-note" }, "จับมอนสเตอร์ในหอได้ตามปกติ (เริ่ม Lv1) รวมถึงกำลังเสริม · บอสทุก 10 ชั้นมีของหายาก · ค่าทั้งหมดเป็นตัวอย่าง (P12/P32)"));
       enter.hidden = v.entryUsed;
       next.hidden = run === null || run.status !== "open";
       next.textContent = run?.battleId != null ? "กลับเข้าไฟต์" : `ชั้นถัดไป (${run?.floor ?? 1})`;
       leave.hidden = run === null || run.status !== "open" || run.battleId !== null || !run.inside;
     };
+    // This week's board (top characters by best floor, ties to who got there first).
+    const board = el("div", { class: "pm-stats", "data-frontier-board": "", style: "white-space: pre-line" }, "อันดับสัปดาห์นี้: กำลังโหลด…");
+    const loadBoard = async () => {
+      try {
+        const b = await api.frontierBoard();
+        const line = (e: { rank: number; name: string; best: number }) => `${e.rank}. ${e.name} · ชั้น ${e.best}`;
+        const top = b.top.slice(0, 10).map(line);
+        const mine = b.mine === null ? "คุณ: ยังไม่ผ่านชั้นไหนสัปดาห์นี้" : b.mine.rank > 10 ? `คุณ: ${line(b.mine)}` : "";
+        board.textContent = ["อันดับสัปดาห์นี้:", ...(top.length === 0 ? ["ยังไม่มีใครผ่านชั้นไหน"] : top), mine].filter((x) => x !== "").join("\n");
+      } catch {
+        board.textContent = "อันดับสัปดาห์นี้: โหลดไม่ได้";
+      }
+    };
     const load = async (tries = 0) => {
       try {
         view = await api.frontier();
         draw();
+        void loadBoard();
         // A floor that just ended may still be recording; ask again shortly.
         if (view.run?.battleId != null && tries < 5) setTimeout(() => void load(tries + 1), 800);
       } catch (e) {

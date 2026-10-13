@@ -45,6 +45,7 @@
  *   POST /town/skill               train one companion skill a level (operationId, companionId, skillId, expectedLevel)
  *   PUT  /character/team           set the team (expectedVersion; ≤5, no duplicate species, outside fights)
  *   GET  /frontier                 the weekly tower: this week's entry used, current and best floor (settles a finished floor first)
+ *   GET  /frontier/board           this week's board: top characters by best floor, and the caller's own line
  *   POST /frontier/enter           use this week's entry at the town NPC (operationId; once a week, in town)
  *   POST /frontier/floor/start     start or resume the next floor fight ({ runId, floor }); answers the battle id
  *   POST /frontier/leave           step out between floors; the run stays for the week ({ runId })
@@ -403,6 +404,10 @@ async function frontierRoute(request: Request, env: Env, url: URL): Promise<Resp
   if (request.method === "GET" && url.pathname === "/frontier") {
     const view = await tower.view(accountId);
     return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
+  }
+  if (request.method === "GET" && url.pathname === "/frontier/board") {
+    const board = await tower.board(accountId);
+    return board === null ? json(404, { error: "NO_CHARACTER" }) : json(200, board);
   }
   if (request.method !== "POST") return json(405, { error: "METHOD_NOT_ALLOWED" });
   const body = await readJson(request);

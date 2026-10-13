@@ -1,4 +1,4 @@
-// End-to-end tower check against `wrangler dev` (chapter 07 §4, Nut 2026-10-06): enter the Rift Spire
+// End-to-end tower check against `wrangler dev` (guardian rewards by mail and the weekly board, P32) (chapter 07 §4, Nut 2026-10-06): enter the Rift Spire
 // in town with this week's one entry, win floor 1 (10 monsters, its gimmick) and stand on floor 2, step
 // out and come back, capture on a tower floor, jump (dev) to floor 10 for the guardian (filled to 10
 // with escorts), jump to floor 31+ and see a reinforcement take a fallen enemy's cell, lose to end the
@@ -136,6 +136,21 @@ out.bossFloor = {
   outcome: f10.end.status,
   after: { floor: f10.after.run.floor, best: f10.after.run.best, status: f10.after.run.status },
 };
+
+// 5b. Guardian rewards (P32) and the weekly board: a won guardian floor mails this week's reward and
+// the first-clear one; the board shows this character's best floor.
+const tv = (await http("GET", "/frontier")).body;
+const mailbox = (await http("GET", "/mail")).body;
+const towerMail = mailbox.letters.filter((l: Msg) => l.title.startsWith("หอคอยรอยแยก"));
+if (f10.end.status === "victory") {
+  must(tv.bossFloors[0].firstCleared === true && towerMail.length === 2, "guardian rewards mailed", { boss: tv.bossFloors[0], towerMail });
+  must(towerMail.some((l: Msg) => l.coins === tv.bossFloors[0].first.coins && l.items.some((i: Msg) => i.itemId === "item:rift_core")), "first-clear letter", towerMail);
+} else {
+  must(towerMail.length === 0, "no guardian reward without the win", towerMail);
+}
+const board = (await http("GET", "/frontier/board")).body;
+must(board.mine !== null && board.mine.best === f10.after.run.best && board.top.some((e: Msg) => e.rank === board.mine.rank && e.best === board.mine.best), "board line", board);
+out.rewards = { boss10: tv.bossFloors[0], mails: towerMail.map((l: Msg) => `${l.title}: ${l.coins} coins ${l.items.map((i: Msg) => `${i.itemId}×${i.quantity}`).join(" ")}`), mine: board.mine, topSize: board.top.length };
 
 // 6. Reinforcements from floor 31: jump (dev) to a later floor, see a replacement take a fallen enemy's
 // cell after a kill. If the guardian won, the dev reset gives the week's entry back for a new run first.
