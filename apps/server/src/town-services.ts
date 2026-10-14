@@ -56,6 +56,9 @@ import {
   AscendSwitchRequestSchema,
   ascensionOfRace,
   ascensionRefusal,
+  CompanionGiftRequestSchema,
+  favoriteGift,
+  type GiftRefusal,
 } from "@pmrpg/shared";
 import { hashJson, type SqlBound, type SqlDb } from "./reward-ledger";
 
@@ -73,7 +76,7 @@ export interface TownContent {
   recipes?: ReadonlyMap<string, Recipe>;
 }
 
-type Kind = "npc_buy" | "npc_sell" | "sigil_install" | "sigil_remove" | "companion_rebirth" | "skill_train" | "rebirth_branch" | "affix_reroll" | "affix_choose" | "craft" | "ascend" | "ascend_switch";
+type Kind = "npc_buy" | "npc_sell" | "sigil_install" | "sigil_remove" | "companion_rebirth" | "skill_train" | "rebirth_branch" | "affix_reroll" | "affix_choose" | "craft" | "ascend" | "ascend_switch" | "companion_gift";
 
 export type ServiceRejection =
   | "INVALID_REQUEST"
@@ -113,9 +116,17 @@ export type ServiceRejection =
   | "NOT_WON"
   | "GOAL_NOT_MET"
   | "SAME_PATH"
+  | GiftRefusal
   | "CHANGED";
 
 export type ServiceResult<T> = { status: "done"; replayed: boolean; result: T } | { status: "rejected"; reason: ServiceRejection; message: string };
+
+export interface GiftResult {
+  companionId: string;
+  itemId: string;
+  gain: number;
+  bond: number;
+}
 
 export interface BuyResult {
   bought: { itemId: string; quantity: number; coins: number }[];
@@ -220,6 +231,69 @@ export class TownServices {
       )
       .bind(operationId, accountId, coins, this.now())
       .run();
+  }
+
+  // ------------------------------------------------------------------ favourite gifts (Bond, P35)
+
+  /**
+   * Give a companion its favourite item for Bond (chapter 04 §6). Anywhere outside a fight; needs won
+   * fights together since the last gift and stops at the gift cap. One item is used; a retry replays.
+   */
+  async gift(accountId: string, raw: unknown): Promise<ServiceResult<GiftResult>> {
+    const parsed = CompanionGiftRequestSchema.safeParse(raw);
+    if (!parsed.success) return reject("INVALID_REQUEST", issues(parsed.error));
+    const { operationId, companionId, itemId } = parsed.data;
+    const hash = await hashJson({ kind: "companion_gift", companionId, itemId });
+    const prior = await this.prior<GiftResult>(accountId, operationId, hash);
+    if (prior !== null) return prior;
+
+    const read = async () =>
+      this.db
+        .prepare(`SELECT species_id, bond, gift_bond, wins_since_gift, lock_state FROM monster_instances WHERE id = ? AND owner_id = ?`)
+        .bind(companionId, accountId)
+        .first<{ species_id: string; bond: number; gift_bond: number; wins_since_gift: number; lock_state: string }>();
+    const why = async (): Promise<ServiceResult<never>> => {
+      const fight = await this.fighting(accountId);
+      if (fight !== null) return fight;
+      const c = await read();
+      if (c === null) return reject("NOT_OWNER", "that companion is not yours");
+      if (c.lock_state === "in_escrow") return reject("ASSET_LOCKED", "that companion is listed or in a trade");
+      const check = favoriteGift(this.rules, this.content.species.get(c.species_id) ?? {}, { bond: c.bond, giftBond: c.gift_bond, winsSinceGift: c.wins_since_gift }, itemId);
+      if (!check.ok) return reject(check.code, check.message);
+      const have = await this.db.prepare(`SELECT COALESCE(SUM(delta), 0) AS n FROM item_ledger WHERE account_id = ? AND item_id = ?`).bind(accountId, itemId).first<{ n: number }>();
+      if ((have?.n ?? 0) < 1) return reject("INSUFFICIENT_ITEMS", "you do not have that item");
+      return reject("CHANGED", "something changed; reload and try again");
+    };
+    const c = await read();
+    if (c === null) return why();
+    const check = favoriteGift(this.rules, this.content.species.get(c.species_id) ?? {}, { bond: c.bond, giftBond: c.gift_bond, winsSinceGift: c.wins_since_gift }, itemId);
+    if (!check.ok) return why();
+
+    // The companion must still be exactly as read: two gifts at once cannot both pass the checks.
+    const guards = [
+      `NOT ${OPEN_BATTLE}`,
+      `(SELECT COALESCE(SUM(delta), 0) FROM item_ledger WHERE account_id = ? AND item_id = ?) >= 1`,
+      `EXISTS (SELECT 1 FROM monster_instances WHERE id = ? AND owner_id = ? AND lock_state <> 'in_escrow' AND bond = ? AND gift_bond = ? AND wins_since_gift = ?)`,
+    ];
+    const args: unknown[] = [accountId, accountId, itemId, companionId, accountId, c.bond, c.gift_bond, c.wins_since_gift];
+    const result: GiftResult = { companionId, itemId, gain: check.gain, bond: c.bond + check.gain };
+    const ours = this.ours(accountId, operationId, hash);
+    await this.db.batch([
+      this.anchor(accountId, operationId, "companion_gift", hash, result, guards, args),
+      this.db
+        .prepare(
+          `INSERT INTO item_ledger (operation_id, line_no, account_id, item_id, delta, reason, created_at)
+           SELECT ?, 0, ?, ?, -1, 'companion_gift', ? WHERE ${ours.sql} ON CONFLICT DO NOTHING`,
+        )
+        .bind(`svc:${accountId}:${operationId}`, accountId, itemId, this.now(), ...ours.args),
+      this.db
+        .prepare(
+          `UPDATE monster_instances SET bond = bond + ?, gift_bond = gift_bond + ?, wins_since_gift = 0
+           WHERE id = ? AND owner_id = ? AND bond = ? AND gift_bond = ? AND ${ours.sql}`,
+        )
+        .bind(check.gain, check.gain, companionId, accountId, c.bond, c.gift_bond, ...ours.args),
+    ]);
+    return this.outcome(accountId, operationId, hash, why);
   }
 
   // ------------------------------------------------------------------ NPC sale (coin source)

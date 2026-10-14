@@ -49,6 +49,7 @@ import {
   rebirthVariantFor,
   companionKit,
   applyBond,
+  favoriteGift,
   bondBonusPercent,
   bondTier,
   BOND_STAT,
@@ -2592,6 +2593,11 @@ export function skillPanel(api: CharacterApi, start: CharacterBundle, inTown: bo
       el(
         "div",
         { class: "pm-note" },
+        `Bond อื่น ๆ: คู่ใจในทีมเข้าแผนที่ใหม่ครั้งแรก +${RULES.provisional.bondSources.value.firstMapVisit} · ชนะบอสแต่ละตัวครั้งแรกโดยไม่ล้ม +${RULES.provisional.bondSources.value.firstBossWin} · ให้ของโปรด +${RULES.provisional.bondSources.value.favoriteGift} (ต้องชนะด้วยกัน ${RULES.provisional.bondSources.value.favoriteWinsBetween} ไฟต์ต่อครั้ง ให้ได้รวม ${RULES.provisional.bondSources.value.favoriteGiftCap}) · ขาย/เทรดแล้วเริ่มนับใหม่`,
+      ),
+      el(
+        "div",
+        { class: "pm-note" },
         `ชนะไฟต์: คู่ใจทุกตัวในไฟต์ได้ความชำนาญ +${RULES.provisional.skillMasteryPerEnemy.value} ต่อศัตรูที่กำจัด/จับ และ Bond +${RULES.provisional.bondPerVictory.value} (ตัวที่ล้มในไฟต์ Bond −${RULES.provisional.bondLossOnFall.value}) · ฝึกสกิลที่ NPC ในเมือง (ความชำนาญ + เหรียญ + วัสดุ species) สำเร็จแน่นอน · แต่ละสกิลได้ของต่างกันต่อขั้น (พลัง/MP/cooldown/เป้าหมาย) และใช้ได้ไม่เกินที่เลเวลคู่ใจตอนสู้อนุญาต${inTown ? "" : " · ตอนนี้อยู่นอกเมือง ดูได้อย่างเดียว"}`,
       ),
       body,
@@ -2619,6 +2625,25 @@ export function skillPanel(api: CharacterApi, start: CharacterBundle, inTown: bo
         draw();
       }
     };
+    const gift = async (companionId: string, itemId: string) => {
+      if (busy) return;
+      busy = true;
+      error.textContent = "";
+      const key = `gift:${companionId}:${giftCountOf(companionId)}`;
+      const op = ops.get(key) ?? `gift_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`;
+      ops.set(key, op);
+      try {
+        await api.giftCompanion(op, companionId, itemId);
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+      } finally {
+        bundle = (await api.get().catch(() => null)) ?? bundle;
+        busy = false;
+        draw();
+      }
+    };
+    // One operation per gift: a new id once the companion's gift total has moved on.
+    const giftCountOf = (id: string) => bundle.companions.find((x) => x.id === id)?.giftBond ?? 0;
     const draw = () => {
       body.replaceChildren();
       const ul = el("ul", { class: "pm-list" });
@@ -2635,6 +2660,21 @@ export function skillPanel(api: CharacterApi, start: CharacterBundle, inTown: bo
             `${sp.name.th}${c.rebirthStage > 0 ? ` ★R${c.rebirthStage}` : ""} · Lv${c.currentLevel}${fighting < c.currentLevel ? ` (สู้เป็น Lv${fighting})` : ""} · Bond ${c.bond}/1000 ${BOND_TIER_NAMES[bondTier(RULES, c.bond)]}${bonus > 0 ? ` (${BOND_STAT_TH[BOND_STAT[sp.archetype]]} +${bonus}%)` : ""} · ความชำนาญ ${c.skillMastery}`,
           ),
         );
+        // Favourite gift (P35): needs won fights together since the last one, capped in total.
+        if (sp.favoriteItemId !== undefined) {
+          const src = RULES.provisional.bondSources.value;
+          const fav = itemDefs.get(sp.favoriteItemId)?.name.th ?? sp.favoriteItemId;
+          const have = bundle.bag[sp.favoriteItemId] ?? 0;
+          const check = favoriteGift(RULES, sp, c, sp.favoriteItemId);
+          const row = el("div", { class: "pm-note" }, `ของโปรด: ${fav} (มี ${have}) · ให้แล้ว Bond ${c.giftBond ?? 0}/${src.favoriteGiftCap} · ชนะด้วยกันแล้ว ${Math.min(c.winsSinceGift ?? 0, src.favoriteWinsBetween)}/${src.favoriteWinsBetween} ไฟต์ `);
+          const give = el("button", { type: "button", "data-gift": c.id }, `ให้ (+${check.ok ? check.gain : src.favoriteGift} Bond)`);
+          give.disabled = !check.ok || have < 1;
+          if (!check.ok) give.title = check.message;
+          else if (have < 1) give.title = `ไม่มี${fav}`;
+          give.addEventListener("click", () => void gift(c.id, sp.favoriteItemId!));
+          row.append(give);
+          li.append(row);
+        }
         const rows = el("ul", { class: "pm-list" });
         // The kit in a fight now, with any Rebirth variant that has unlocked (chapter 04 §7).
         const kit = companionKit(RULES, sp, c, fighting);

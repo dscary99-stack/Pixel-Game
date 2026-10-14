@@ -505,6 +505,18 @@ export const RULES = {
     ),
     bondPerVictory: provisional(2, "P06", "each companion that started a won fight and did not fall in it"),
     bondLossOnFall: provisional(2, "P06", "Nut 2026-10-03: a companion knocked out in a fight loses Bond (once per fight, any outcome); never below 0; time offline never lowers it"),
+    /**
+     * Other Bond sources (chapter 04 §6: first exploration, first boss, favourite gifts). A companion in
+     * the team the first time it enters a map with this owner gets `firstMapVisit`; one that stays up
+     * through the first win against a boss gets `firstBossWin` (once per boss); a favourite gift gives
+     * `favoriteGift`, needs `favoriteWinsBetween` won fights since the last gift (adventure, not waiting),
+     * and gifts give at most `favoriteGiftCap` Bond in total per owner.
+     */
+    bondSources: provisional(
+      { firstMapVisit: 10, firstBossWin: 30, favoriteGift: 10, favoriteWinsBetween: 10, favoriteGiftCap: 300 } as const,
+      "P35",
+      "Claude's first pass: 40 maps ≈ 400, a few bosses ≈ 100+, gifts ≤ 300 (30 gifts, 300 won fights); fights stay the main source (+2 a win)",
+    ),
     bondTierSize: provisional(200, "P06", "chapter 04 §6 tiers: 0–199, 200–399, 400–599, 600–799, 800–1000"),
     bondTierBonusPercent: provisional([0, 1, 2, 3, 5] as const, "P06", "small capped bonus on the archetype's stat, per tier"),
     // Rebirth variants (chapter 04 §7). Nut 2026-10-03: unlock levels OK; changing a branch is allowed and

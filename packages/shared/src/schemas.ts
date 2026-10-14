@@ -410,6 +410,8 @@ export const SpeciesDefinitionSchema = z
     skillIds: z.array(SkillId).length(C.speciesSkillCount.value),
     innatePassiveId: SkillId,
     captureItemId: ItemId,
+    /** A gift this species likes (Bond, chapter 04 §6, P35); without one, gifts give no Bond. */
+    favoriteItemId: ItemId.optional(),
     /** Base capture rate before HP/status/item factors (capture.ts, P18). */
     captureBaseRate: z.number().min(0).max(1),
     /** This monster's flee value in % (O15, P19); without it the rank default applies. 0 = cannot be fled from. */
@@ -607,6 +609,9 @@ export const MonsterInstanceSchema = z
     /** ห้ามขาย / ห้ามเทรด on this one companion (market.ts), e.g. a secret-quest reward. */
     noSell: z.boolean().optional(),
     noTrade: z.boolean().optional(),
+    /** Bond this owner has given through favourite gifts, and won fights since the last gift (P35). */
+    giftBond: z.number().int().min(0).optional(),
+    winsSinceGift: z.number().int().min(0).optional(),
   })
   .strict();
 export type MonsterInstance = z.infer<typeof MonsterInstanceSchema>;

@@ -97,6 +97,16 @@ export const EXAMPLE_SKILLS: SkillDefinition[] = [
   { ...dmg("skill:player_sweep", "กวาดแถว", "physical", 0.7, 0, "NEUTRAL", "melee", 10, 4), targetRule: "enemy_row" },
 ];
 
+/** Favourite gifts (Bond, P35), EXAMPLE: each likes another field material. */
+const EXAMPLE_FAVORITES: Readonly<Record<string, string>> = {
+  "species:armor_crab": "item:river_pebble",
+  "species:ember_fox": "item:mole_fur",
+  "species:lantern_snail": "item:crystal_shard",
+  "species:supply_mole": "item:snail_glow_slime",
+  "species:bell_bird": "item:fox_tail_ash",
+  "species:crystal_crab_lord": "item:river_pebble",
+};
+
 export const EXAMPLE_SPECIES: SpeciesDefinition[] = [
   species("species:armor_crab", "ปูเกราะ", 6, "tank", ["EARTH", "WATER"], [
     "skill:crab_take_hit",
@@ -440,7 +450,7 @@ function species(
   captureBaseRate: number,
   wildPrimaryStats: SpeciesDefinition["wildPrimaryStats"],
   basicAttackRange: "melee" | "ranged",
-  extra: Partial<Pick<SpeciesDefinition, "rebirthVariants" | "rebirthCosmetic" | "rank" | "bossActionsPerRound">> = {},
+  extra: Partial<Pick<SpeciesDefinition, "rebirthVariants" | "rebirthCosmetic" | "rank" | "bossActionsPerRound" | "favoriteItemId">> = {},
 ): SpeciesDefinition {
   const slug = id.slice("species:".length);
   return {
@@ -461,6 +471,7 @@ function species(
     artId: `art:${slug}`,
     wildPrimaryStats,
     basicAttackRange,
+    ...(EXAMPLE_FAVORITES[id] !== undefined ? { favoriteItemId: EXAMPLE_FAVORITES[id] } : {}),
     ...extra,
   };
 }

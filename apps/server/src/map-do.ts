@@ -223,6 +223,8 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     }
 
     await this.journal.recordMap(accountId, mapId);
+    // First exploration (chapter 04 §6, P35): the team's companions new to this map gain Bond once.
+    await this.characters.bondFirstVisit(accountId, mapId);
     const channel = this.ensureChannel(mapId, channelNo);
     const joined = channel.join(accountId, name, claim.pos, Date.now(), look);
     if (!joined.ok) {

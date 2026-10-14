@@ -16,6 +16,7 @@ export * from "./character";
 export * from "./equipment";
 export * from "./sigil";
 export * from "./sigil-stacking";
+export * from "./bond-sources";
 export * from "./progression";
 export * from "./companion-growth";
 export * from "./rebirth";

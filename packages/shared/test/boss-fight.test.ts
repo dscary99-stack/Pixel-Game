@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   applyCommand,
+  chooseAutoCommand,
   BossDefinitionSchema,
   bossEnemies,
   createBattle,
@@ -19,7 +20,7 @@ import {
   type BossDefinition,
   type KernelResult,
 } from "../src/index";
-import { baseSetup, content, rules as baseRules } from "./fixtures";
+import { baseSetup, companion, content, rules as baseRules } from "./fixtures";
 
 const rules = structuredClone(baseRules);
 (rules.provisional.hitChanceClampPct as { value: readonly [number, number] }).value = [100, 100];
@@ -368,5 +369,23 @@ describe("boss lairs on the map (P17, C14, C30)", () => {
     const noBoss = { ...field, bossLair: undefined };
     expect(validateMaps([noBoss, maps.get("map:dawn_town")!]).map((i) => i.message)).toContain("every hunting map has a boss (C30)");
     expect(validateMaps([field, maps.get("map:dawn_town")!], c.species, new Map())).toContainEqual(expect.objectContaining({ message: `boss lair uses unknown boss ${LORD.id}` }));
+  });
+});
+
+describe("first boss win Bond (P35)", () => {
+  it("a won boss fight names the boss on the fight result; a plain fight does not", () => {
+    const w = world((setup) => {
+      setup.player.gear = { ...setup.player.gear, PATK: 5_000 };
+      setup.companions = [{ instance: companion("m1", "species:lantern_snail", "WATER", 30), row: "back", slot: 0 }];
+    });
+    let s = w.start.state;
+    for (let i = 0; i < 3000 && s.status === "active"; i++) s = ok(applyCommand(rules, w.c, s, chooseAutoCommand(s)!, { source: "auto" })).state;
+    expect(s.status).toBe("victory");
+    expect(s.entitlements.find((e) => e.kind === "fight_result")).toMatchObject({ bossId: LORD.id, companions: { m1: { bond: 2 } } });
+    const c = content();
+    let p = ok(createBattle(rules, c, baseSetup({ companions: [{ instance: companion("m1", "species:lantern_snail", "WATER", 30), row: "back", slot: 0 }] }))).state;
+    for (let i = 0; i < 3000 && p.status === "active"; i++) p = ok(applyCommand(rules, c, p, chooseAutoCommand(p)!, { source: "auto" })).state;
+    expect(p.status).toBe("victory");
+    expect(p.entitlements.find((e) => e.kind === "fight_result")).not.toHaveProperty("bossId");
   });
 });

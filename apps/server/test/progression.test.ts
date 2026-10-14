@@ -256,6 +256,27 @@ describe("Bond and skill mastery when a fight ends (chapter 04 §5–§6)", () =
     expect(row("mon:bird")).toEqual({ bond: 8, skill_mastery: 0 });
   });
 
+  it("a first win against a boss adds Bond once per boss, only for companions that stayed up (P35)", async () => {
+    const first = PRODUCTION_RULES.provisional.bondSources.value.firstBossWin;
+    const boss: Entitlement = {
+      entitlementId: `${BATTLE}:all:result`,
+      kind: "fight_result",
+      companions: { "mon:mole": { bond: 2, mastery: 3 }, "mon:bird": { bond: -2, mastery: 3 }, "mon:home": { bond: 2, mastery: 3 } },
+      bossId: "boss:crystal_crab_lord",
+    };
+    await Promise.all([eco.grant(boss, A), eco.grant(boss, A)]);
+    await eco.grant(boss, A);
+    expect(row("mon:mole")).toEqual({ bond: 2 + first, skill_mastery: 3 });
+    expect(row("mon:bird")).toEqual({ bond: 0, skill_mastery: 3 });
+    expect(row("mon:home")).toEqual({ bond: 0, skill_mastery: 0 });
+    const wins = (id: string) => (db.prepare(`SELECT wins_since_gift AS w FROM monster_instances WHERE id = ?`).get(id) as { w: number }).w;
+    expect([wins("mon:mole"), wins("mon:bird"), wins("mon:home")]).toEqual([1, 0, 0]);
+    // The same boss again (another result on this loadout): the win's +2 only.
+    expect(await eco.grant({ entitlementId: `${BATTLE}:again:result`, kind: "fight_result", companions: { "mon:mole": { bond: 2, mastery: 0 } }, bossId: "boss:crystal_crab_lord" }, A)).toMatchObject({ status: "granted" });
+    expect(row("mon:mole")).toEqual({ bond: 4 + first, skill_mastery: 3 });
+    expect(wins("mon:mole")).toBe(2);
+  });
+
   it("stops at Bond 1000 and the mastery cap", async () => {
     db.prepare(`UPDATE monster_instances SET bond = 999, skill_mastery = ? WHERE id = 'mon:mole'`).run(PRODUCTION_RULES.provisional.skillMasteryCap.value - 1);
     await eco.grant(victory(2, 3), A);

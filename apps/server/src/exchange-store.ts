@@ -378,7 +378,7 @@ export class ExchangeBase {
         .bind(to, ref, ...ours.args),
       this.db
         .prepare(
-          `UPDATE monster_instances SET owner_id = ?, lock_state = 'free', lock_ref = NULL, bond = 0, nickname = NULL, protected = 0,
+          `UPDATE monster_instances SET owner_id = ?, lock_state = 'free', lock_ref = NULL, bond = 0, gift_bond = 0, wins_since_gift = 0, nickname = NULL, protected = 0,
              ownership_version = ownership_version + 1
            WHERE lock_ref = ? AND lock_state = 'in_escrow' AND ${ours.sql}`,
         )
@@ -1085,7 +1085,7 @@ export class TradeStore extends ExchangeBase {
         journalMetFrom(this.db, to, this.now(), `owner_id = ? AND id IN (${marks(c.length)}) AND lock_state = 'free' AND ${ours.sql}`, [from, ...c, ...ours.args]),
         this.db
           .prepare(
-            `UPDATE monster_instances SET owner_id = ?, bond = 0, nickname = NULL, protected = 0, ownership_version = ownership_version + 1
+            `UPDATE monster_instances SET owner_id = ?, bond = 0, gift_bond = 0, wins_since_gift = 0, nickname = NULL, protected = 0, ownership_version = ownership_version + 1
              WHERE owner_id = ? AND id IN (${marks(c.length)}) AND lock_state = 'free' AND ${ours.sql}`,
           )
           .bind(to, from, ...c, ...ours.args),

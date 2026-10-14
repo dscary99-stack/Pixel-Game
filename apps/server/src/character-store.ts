@@ -11,6 +11,7 @@
  *   `planEquip` decides slots, level and two-hand rules, the batch re-checks ownership and locks.
  */
 import {
+  BOND_MAX,
   COMPANION_GROWTH_VERSION,
   jobExpCap,
   STARTER_KIT,
@@ -102,6 +103,8 @@ interface InstanceRow {
   mp: number | null;
   nickname?: string | null;
   protected?: number;
+  gift_bond?: number;
+  wins_since_gift?: number;
 }
 
 export type StoredInstance = MonsterInstance & { hp: number | null; mp: number | null };
@@ -417,6 +420,37 @@ export class CharacterStore {
     return results.map(toInstance);
   }
 
+  /**
+   * First visit (P35): every companion in the team that has never entered `mapId` under this owner
+   * gains Bond once. Returns the companions that gained. Walking in and out never repeats it.
+   */
+  async bondFirstVisit(accountId: string, mapId: string): Promise<string[]> {
+    const token = crypto.randomUUID();
+    const at = this.now();
+    await this.db.batch([
+      this.db
+        .prepare(
+          `INSERT INTO companion_firsts (instance_id, owner_id, kind, key, token, created_at)
+           SELECT m.id, m.owner_id, 'map', ?, ?, ?
+           FROM character_team t JOIN characters c ON c.id = t.character_id JOIN monster_instances m ON m.id = t.monster_instance_id
+           WHERE c.account_id = ? AND m.owner_id = ?
+           ON CONFLICT DO NOTHING`,
+        )
+        .bind(mapId, token, at, accountId, accountId),
+      this.db
+        .prepare(
+          `UPDATE monster_instances SET bond = MIN(bond + ?, ?)
+           WHERE owner_id = ? AND id IN (SELECT instance_id FROM companion_firsts WHERE owner_id = ? AND kind = 'map' AND key = ? AND token = ?)`,
+        )
+        .bind(this.rules.provisional.bondSources.value.firstMapVisit, BOND_MAX, accountId, accountId, mapId, token),
+    ]);
+    const rows = await this.db
+      .prepare(`SELECT instance_id FROM companion_firsts WHERE owner_id = ? AND kind = 'map' AND key = ? AND token = ?`)
+      .bind(accountId, mapId, token)
+      .all<{ instance_id: string }>();
+    return rows.results.map((r) => r.instance_id);
+  }
+
   async setTeam(accountId: string, raw: unknown): Promise<SetTeamResult> {
     const parsed = SetTeamRequestSchema.safeParse(raw);
     if (!parsed.success) return { status: "rejected", reason: "INVALID_REQUEST", message: parsed.error.issues.map((i) => i.message).join("; ") };
@@ -727,6 +761,8 @@ function toInstance(r: InstanceRow): StoredInstance {
     ...(r.protected === 1 ? { protected: true } : {}),
     ...(r.no_sell === 1 ? { noSell: true } : {}),
     ...(r.no_trade === 1 ? { noTrade: true } : {}),
+    ...(r.gift_bond !== undefined ? { giftBond: r.gift_bond } : {}),
+    ...(r.wins_since_gift !== undefined ? { winsSinceGift: r.wins_since_gift } : {}),
     hp: r.hp,
     mp: r.mp,
   };

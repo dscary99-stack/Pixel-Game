@@ -2,6 +2,7 @@
 // until the dev reveal), rest in town, capture a companion, put it in the team, name it, fight with
 // it, see HP carry over, lose and wake up in town, then take it out of the team and release it.
 // Run `npm run db:migrate:local` and `npm run dev:server` first, then `npm run smoke:character`.
+import { exampleContentMaps } from "@pmrpg/shared";
 import { approach, api, autoToEnd, battleCall, connect, lastPacks, run, sleep, toField, type Client, type Msg, AUTO_GAP_MS } from "./smoke-lib";
 
 const account = `acct:c${run}`;
@@ -129,6 +130,7 @@ for (const spawnId of ["meadow_foxes", "pond_crabs"]) {
   (out.strongFights as string[]).push(`${spawnId}: ${r.view.state.status}`);
   if (r.back === null) {
     // Lost, then reloaded before pressing "walk on": the wiped team still goes home.
+    const bondBefore = (await http("GET", "/character")).body.companions.find((c: Msg) => c.id === captured)?.bond;
     A.sock.close();
     await sleep(300);
     const again = await connect(account, "map:dawn_field");
@@ -137,6 +139,12 @@ for (const spawnId of ["meadow_foxes", "pond_crabs"]) {
     out.sentTo = again.mapId;
     out.restedOnArrival = (await again.wait((m) => m.t === "rested")).t;
     const after = (await http("GET", "/character")).body;
+    // The captured companion's first time in town with this owner: Bond once (P35).
+    if (captured !== null) {
+      const firstTownBond = { before: bondBefore, after: after.companions.find((c: Msg) => c.id === captured)?.bond };
+      out.firstTownBond = firstTownBond;
+      if (firstTownBond.after !== firstTownBond.before + 10) throw new Error(`first visit Bond: ${JSON.stringify(firstTownBond)}`);
+    }
     out.afterRest = { hp: after.character.hp, companionsFull: after.companions.every((c: Msg) => c.hp === null) };
     A = again;
     break;
@@ -155,7 +163,14 @@ for (const spawnId of ["meadow_foxes", "pond_crabs"]) {
     break;
   }
 }
-// 7. Out of the team, the companion can be released (nothing back); a retry replays.
+// 7. A favourite gift needs won fights together first (P35): the route answers NEEDS_ADVENTURE.
+if (captured !== null) {
+  const sp = (await http("GET", "/character")).body.companions.find((c: Msg) => c.id === captured)?.speciesId;
+  const fav = exampleContentMaps().species.get(sp)?.favoriteItemId;
+  out.giftTooSoon = (await http("POST", "/character/companion/gift", { operationId: `gift_${run}`, companionId: captured, itemId: fav })).body.error;
+  if (out.giftTooSoon !== "NEEDS_ADVENTURE") throw new Error(`gift: ${String(out.giftTooSoon)}`);
+}
+// 8. Out of the team, the companion can be released (nothing back); a retry replays.
 if (captured !== null) {
   const now = (await http("GET", "/character")).body;
   await http("PUT", "/character/team", { expectedVersion: now.character.version, companionIds: [] });

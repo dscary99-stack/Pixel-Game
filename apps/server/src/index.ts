@@ -28,6 +28,7 @@
  *   GET  /town/orders              this week's NPC orders with fills left (chapter 09)
  *   POST /town/order               fill an NPC order once (operationId, orderId)
  *   POST /town/gear/dispose        sell or salvage free, unworn, Sigil-free, unprotected pieces in town (operationId, mode, equipmentIds, expected)
+ *   POST /character/companion/gift     favourite gift for Bond (operationId, companionId, itemId; outside fights, P35)
  *   POST /character/companion/release  release a companion for nothing back (operationId, companionId; not in team, not protected)
  *   PUT  /character/protect        set or clear the protect flag ({ kind: equipment|companion, id, protected })
  *   PUT  /character/companion/nickname  name a companion or clear it ({ companionId, nickname|null })
@@ -620,6 +621,7 @@ async function characterRoute(request: Request, env: Env, url: URL): Promise<Res
   if (request.method === "POST" && url.pathname === "/town/ascend") return serviceReply(env, accountId, await townFor(env).ascend(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/ascend/switch") return serviceReply(env, accountId, await townFor(env).switchAscensionPath(accountId, body));
   if (request.method === "POST" && url.pathname === "/town/skill") return serviceReply(env, accountId, await townFor(env).trainSkill(accountId, body));
+  if (request.method === "POST" && url.pathname === "/character/companion/gift") return serviceReply(env, accountId, await townFor(env).gift(accountId, body));
   if (request.method === "PUT" && url.pathname === "/character/stats") {
     const r = await store.allocate(accountId, body);
     if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : 409, { error: r.reason, message: r.message });

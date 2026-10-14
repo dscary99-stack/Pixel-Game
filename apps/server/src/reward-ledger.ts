@@ -228,6 +228,35 @@ export class RewardLedger {
             .bind(g.bond, BOND_MAX, g.mastery, this.rules.provisional.skillMasteryCap.value, recipientId, companionId, battleId, recipientId, id, recipientId, hash),
         );
       }
+      // Stayed up through a win (P35): one more fight toward the next favourite gift, and the first
+      // win against this boss under this owner adds Bond once. The firsts row carries this writer's
+      // token, so a racing retry cannot add that Bond twice.
+      const token = crypto.randomUUID();
+      const inLoadout = `id IN (SELECT value FROM json_each(json_extract(${loadout}, '$.companionIds')))`;
+      for (const [companionId, g] of Object.entries(entitlement.companions)) {
+        if (g.bond <= 0) continue;
+        stmts.push(
+          this.db
+            .prepare(`UPDATE monster_instances SET wins_since_gift = wins_since_gift + 1 WHERE owner_id = ? AND id = ? AND ${inLoadout} AND ${OWN_RECEIPT}`)
+            .bind(recipientId, companionId, battleId, recipientId, id, recipientId, hash),
+        );
+        if (entitlement.bossId === undefined) continue;
+        stmts.push(
+          this.db
+            .prepare(
+              `INSERT INTO companion_firsts (instance_id, owner_id, kind, key, token, created_at)
+               SELECT id, owner_id, 'boss', ?, ?, ? FROM monster_instances WHERE owner_id = ? AND id = ? AND ${inLoadout} AND ${OWN_RECEIPT}
+               ON CONFLICT DO NOTHING`,
+            )
+            .bind(entitlement.bossId, token, at, recipientId, companionId, battleId, recipientId, id, recipientId, hash),
+          this.db
+            .prepare(
+              `UPDATE monster_instances SET bond = MIN(bond + ?, ?)
+               WHERE owner_id = ? AND id = ? AND EXISTS (SELECT 1 FROM companion_firsts WHERE instance_id = ? AND owner_id = ? AND kind = 'boss' AND key = ? AND token = ?)`,
+            )
+            .bind(this.rules.provisional.bondSources.value.firstBossWin, BOND_MAX, recipientId, companionId, companionId, recipientId, entitlement.bossId, token),
+        );
+      }
     }
     await this.db.batch(stmts);
 

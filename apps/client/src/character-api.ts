@@ -337,6 +337,11 @@ export class CharacterApi {
     return this.call<{ coins: number }>("POST", "/vault/withdraw", { operationId: opId("vout"), ...move });
   }
 
+  /** Favourite gift for Bond (P35); `operationId` is kept by the caller so a retry replays. */
+  giftCompanion(operationId: string, companionId: string, itemId: string) {
+    return this.call<{ result: { gain: number; bond: number } }>("POST", "/character/companion/gift", { operationId, companionId, itemId });
+  }
+
   /** How full each channel of a map is; `players` is null when a channel did not answer. */
   worldChannels(mapId: string) {
     return this.call<{ mapId: string; channels: { channel: number; players: number | null; capacity: number }[] }>("GET", `/world/channels/${mapId}`);

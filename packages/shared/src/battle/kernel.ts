@@ -2275,7 +2275,8 @@ function companionResults(ctx: Ctx, outcome: "victory" | "defeat" | "fled"): voi
       if (bond !== 0 || mastery !== 0) companions[u.instanceId] = { bond, mastery };
     }
     if (Object.keys(companions).length === 0) continue;
-    const entitlement: Entitlement = { entitlementId: `${ctx.s.battleId}:all:result`, kind: "fight_result", companions, ...recipientField(ctx.s, who) };
+    const boss = won && ctx.s.boss !== undefined ? { bossId: ctx.s.boss.bossId } : {};
+    const entitlement: Entitlement = { entitlementId: `${ctx.s.battleId}:all:result`, kind: "fight_result", companions, ...boss, ...recipientField(ctx.s, who) };
     ctx.s.entitlements.push(entitlement);
     ctx.emit({ type: "RewardEntitled", entitlement });
   }

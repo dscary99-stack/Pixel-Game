@@ -135,6 +135,8 @@ export type Entitlement = (
       kind: "fight_result";
       /** Per companion instance that started the fight: Bond change (negative after a fall) and mastery gained. */
       companions: Record<string, { bond: number; mastery: number }>;
+      /** A won boss fight: companions with a Bond gain here may get the first-boss Bond once (P35). */
+      bossId?: string;
       /** No EXP here: it came with each enemy's own entitlement. */
       exp?: undefined;
       companionExp?: undefined;
