@@ -4,6 +4,8 @@ import {
   createBattle,
   currentActor,
   equipmentDisplayName,
+  scaleSigilAction,
+  sigilTriggerChanceBp,
   wornGear,
   type BattleCommand,
   type BattleEvent,
@@ -88,14 +90,48 @@ describe("Sigil effects in a fight", () => {
     crab.forEach((d, i) => expect(d / plain[i]!).toBeCloseTo(0.9, 6));
   });
 
-  it("a trigger Sigil fires once however many copies are worn; seal turns Sigils off", () => {
+  it("copies of a trigger Sigil roll once, with a stronger effect; seal turns Sigils off (P34)", () => {
     const two = fight(["sigil:bell_bird", "sigil:bell_bird"]);
     expect(of(two.start.events, "PassiveTriggered")).toEqual([expect.objectContaining({ unitId: "player", sourceId: "sigil:bell_bird", on: "battle_start" })]);
+    const mp = (ids: string[]) => {
+      const w = fight(ids);
+      const s = structuredClone(w.s);
+      unit(s, "player").mp = 0;
+      const r = w.run(s, { type: "attack", actorId: "player", targetId: "e1" });
+      expect(of(r.events, "PassiveTriggered")).toHaveLength(1);
+      return unit(r.state, "player").mp;
+    };
+    expect(mp(["sigil:supply_mole"])).toBe(1);
+    // The second accessory copy doubles the MP (extraCopyStrengthPct 100).
+    expect(mp(["sigil:supply_mole", "sigil:supply_mole"])).toBe(2);
     const w = fight(["sigil:supply_mole"]);
     const s = structuredClone(w.s);
-    unit(s, "player").mp = 0;
-    expect(of(w.run(s, { type: "attack", actorId: "player", targetId: "e1" }).events, "PassiveTriggered")).toHaveLength(1);
     unit(s, "player").statuses = [{ statusId: "seal", sourceId: null, turnsLeft: 3, stacks: 1, fresh: false }];
     expect(of(w.run(s, { type: "attack", actorId: "player", targetId: "e1" }).events, "PassiveTriggered")).toEqual([]);
+  });
+
+  it("combined chance is 1 − (1 − p)^n, and strength scales per copy", () => {
+    expect(sigilTriggerChanceBp(30, 1)).toBe(3000);
+    expect(sigilTriggerChanceBp(30, 2)).toBe(5100);
+    expect(sigilTriggerChanceBp(30, 3)).toBe(6570);
+    expect(sigilTriggerChanceBp(100, 4)).toBe(10_000);
+    expect(scaleSigilAction(rules, { kind: "heal", target: "self", pctMaxHp: 5 }, 3)).toEqual({ kind: "heal", target: "self", pctMaxHp: 15 });
+    expect(scaleSigilAction(rules, { kind: "heal", target: "self", pctMaxHp: 30 }, 3)).toMatchObject({ pctMaxHp: 50 });
+    expect(scaleSigilAction(rules, { kind: "status", target: "other", statuses: [{ statusId: "burn", chancePct: 40, turns: 2 }] }, 2)).toMatchObject({ statuses: [{ chancePct: 64 }] });
+    expect(scaleSigilAction(rules, { kind: "restore_mp", target: "self", amount: 3 }, 1)).toEqual({ kind: "restore_mp", target: "self", amount: 3 });
+  });
+
+  it("a Sigil procs once per turn slot, however many hits a skill lands (P34 proc budget)", () => {
+    const c = content();
+    c.sigils.set("sigil:test_echo", { ...c.sigils.get("sigil:supply_mole")!, id: "sigil:test_echo", effect: { modifiers: [], triggers: [{ on: "dealt_damage", chancePct: 100, oncePerBattle: false, then: [{ kind: "restore_mp", target: "self", amount: 1 }] }] } });
+    const skillId = "skill:c2_beast_marshal_maul";
+    const setup = baseSetup({ battleId: "battle:sigil-budget", seed: "budget" });
+    setup.player = { ...setup.player, skillIds: [skillId], mp: 200, sigilIds: ["sigil:test_echo"], primaryStats: { ...setup.player.primaryStats, DEX: 60 } };
+    let st: BattleState = ok(createBattle(rules, c, setup)).state;
+    for (let i = 0; i < 30 && currentActor(st)?.unitId !== "player"; i++) st = ok(applyCommand(rules, c, st, { type: "guard", actorId: currentActor(st)!.unitId }, { source: "player" })).state;
+    const r = ok(applyCommand(rules, c, st, { type: "skill", actorId: "player", skillId, targetId: "e2" }, { source: "player" }));
+    const hits = r.events.filter((e) => e.type === "ActionResolved" && e.actorId === "player" && e.skillId === skillId && (e.damage ?? 0) > 0).length;
+    expect(hits).toBeGreaterThan(1);
+    expect(of(r.events, "PassiveTriggered").filter((e) => e.sourceId === "sigil:test_echo")).toHaveLength(1);
   });
 });

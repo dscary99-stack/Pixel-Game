@@ -20,6 +20,7 @@ import type { CaptureProfile, RulesConfig } from "../rules";
 import { captureChance, captureCheck, fightCaptureProfile, type CaptureBreakdown } from "../capture";
 import { fleeChance, reviveBlock, reviveHp } from "../flee";
 import type { BossDefinition, DamageEffect, EffectTarget, Element, ItemDefinition, LootTable, Passive, PassiveAction, PassiveEvent, PassiveModifier, SigilDefinition, SkillDefinition, SpeciesDefinition, StatusApplication } from "../schemas";
+import { scaleSigilAction, sigilTriggerChanceBp } from "../sigil-stacking";
 import { isAreaRule, targetsEnemies } from "../schemas";
 import { deriveStats, type DerivedStats } from "../stats";
 import {
@@ -866,6 +867,7 @@ interface PassiveSource {
   id: string;
   passive: Passive;
   count: number;
+  sigil: boolean;
 }
 
 /** The passives a unit can use now: its passive skills and worn Sigils; none while sealed (catalog §3.5). */
@@ -874,11 +876,11 @@ function livePassives(ctx: Ctx, u: BattleUnit): PassiveSource[] {
   const out: PassiveSource[] = [];
   for (const id of u.passiveIds ?? []) {
     const sk = ctx.content.skills.get(id);
-    if (sk?.passive !== undefined) out.push({ id, passive: sk.passive, count: 1 });
+    if (sk?.passive !== undefined) out.push({ id, passive: sk.passive, count: 1, sigil: false });
   }
   for (const [id, count] of Object.entries(u.sigils ?? {})) {
     const sg = ctx.content.sigils?.get(id);
-    if (sg?.effect !== undefined) out.push({ id, passive: sg.effect, count });
+    if (sg?.effect !== undefined) out.push({ id, passive: sg.effect, count, sigil: true });
   }
   return out;
 }
@@ -905,7 +907,10 @@ function passiveModifiers(ctx: Ctx, u: BattleUnit): PassiveModifier[] {
  */
 function firePassives(ctx: Ctx, u: BattleUnit, on: PassiveEvent, info: PassiveInfo = {}): void {
   if (ctx.inPassive || !active(u)) return;
-  // Triggers fire once per source, however many copies of a Sigil are worn (PROVISIONAL).
+  // Copies of a trigger Sigil roll once with a combined chance and a stronger effect, and one Sigil
+  // procs at most `procsPerTurn` times per turn slot (P34, chapter 05 §5).
+  const slot = `${ctx.s.round}:${ctx.s.turnIndex}`;
+  const budget = ctx.rules.provisional.sigilTriggerStacking.value.procsPerTurn;
   for (const sk of livePassives(ctx, u)) {
     sk.passive.triggers.forEach((tr, i) => {
       if (tr.on !== on || !active(u) || ctx.s.status !== "active") return;
@@ -919,12 +924,19 @@ function firePassives(ctx: Ctx, u: BattleUnit, on: PassiveEvent, info: PassiveIn
       }
       const key = `${sk.id}#${i}`;
       if (tr.oncePerBattle && (u.passivesUsed ?? []).includes(key)) return;
-      if (tr.chancePct < 100 && !ctx.rng.chanceBp(tr.chancePct * 100)) return;
+      const procs = sk.sigil ? (u.sigilProcs?.slot === slot ? (u.sigilProcs.used[sk.id] ?? 0) : 0) : 0;
+      if (sk.sigil && procs >= budget) return;
+      const bp = sk.sigil ? sigilTriggerChanceBp(tr.chancePct, sk.count) : tr.chancePct * 100;
+      if (bp < 10_000 && !ctx.rng.chanceBp(bp)) return;
       if (tr.oncePerBattle) (u.passivesUsed ??= []).push(key);
+      if (sk.sigil) {
+        if (u.sigilProcs?.slot !== slot) u.sigilProcs = { slot, used: {} };
+        u.sigilProcs.used[sk.id] = procs + 1;
+      }
       ctx.emit({ type: "PassiveTriggered", unitId: u.unitId, sourceId: sk.id, on });
       ctx.inPassive = true;
       try {
-        for (const a of tr.then) passiveAction(ctx, u, a, info.other);
+        for (const a of tr.then) passiveAction(ctx, u, sk.sigil ? scaleSigilAction(ctx.rules, a, sk.count) : a, info.other);
       } finally {
         ctx.inPassive = false;
       }

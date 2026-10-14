@@ -75,6 +75,8 @@ export interface BattleUnit {
   awakening?: { pathId: string; gauge: number; gainedRound: number; gainedThisRound: number; used: boolean; turnsLeft: number; fresh?: boolean };
   /** Once-per-battle passives already used ("skillId#trigger index"). */
   passivesUsed?: string[];
+  /** Trigger Sigil procs in the current turn slot ("round:turnIndex"), per Sigil id (P34 budget). */
+  sigilProcs?: { slot: string; used: Record<string, number> };
   ko: boolean;
   /** The round this unit fell in (0 = it started the fight down). Revive works from the next round (O15). */
   downRound?: number;

@@ -613,6 +613,17 @@ export const RULES = {
     // Sigil removal (chapter 05 §4, chapter 06). Coins per Sigil by the equipment's required level:
     // [fromLevelInclusive, coins]. Lv50/120/200 = 3 hours of the chapter 06 manual net example;
     // the Lv1 tier has no source number and is a pure prototype guess.
+    /**
+     * Trigger Sigils (chapter 05 §5): n copies of one Sigil roll once, with chance 1 − (1 − p)^n, and
+     * each copy past the first adds `extraCopyStrengthPct` of the effect (heal %, MP, status chance).
+     * One Sigil fires at most `procsPerTurn` times in one turn slot, so a 5-hit skill or a bounce does
+     * not fire it five times.
+     */
+    sigilTriggerStacking: provisional(
+      { extraCopyStrengthPct: 100, procsPerTurn: 1 } as const,
+      "P34",
+      "Claude's first pass: a second copy doubles a trigger's effect (as % Sigils multiply in full, O09), one proc per Sigil per turn slot",
+    ),
     sigilRemovalCostTiers: provisional(
       [
         [1, 300],

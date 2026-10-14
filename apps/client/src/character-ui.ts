@@ -80,6 +80,9 @@ import {
   equipmentDisplayName,
   sigilFits,
   sigilRemovalCost,
+  scaleSigilAction,
+  sigilTriggerChanceBp,
+  type SigilDefinition,
   affixRerollCost,
   refineQuote,
   refinedBaseStats,
@@ -539,6 +542,9 @@ export function equipmentPanel(api: CharacterApi, start: CharacterBundle): Promi
         if (sg === undefined || qty <= 0) continue;
         const li = el("li", { "data-sigil": itemId });
         li.append(el("span", { class: "pm-grow" }, `${sg.name.th} ×${qty} · ใส่ได้กับ${sg.equipGroups.map((g) => GROUP_TH[g]).join("/")}`));
+        // What one more copy adds, before installing (chapter 05 §5: never a silent duplicate).
+        const worn = bundle.equipment.filter((p) => p.slot !== null && p.slot !== undefined).reduce((n, p) => n + p.sigils.filter((x) => x === sg.id).length, 0);
+        li.append(el("span", { class: "pm-note" }, sigilStackNote(sg, worn)));
         const targets = bundle.equipment.filter((p) => {
           const def = equipmentDefs.get(p.definitionId);
           return def !== undefined && sigilFits(def, sg) && p.sigils.length < sigilCapacity(RULES, def);
@@ -2925,4 +2931,22 @@ export function classPanel(api: CharacterApi): Promise<string | null> {
     };
     void run(async () => draw(await api.classView()));
   });
+}
+
+/** One more copy of a Sigil, in words: a trigger's chance and effect now and after (P34), or % on %. */
+function sigilStackNote(sg: SigilDefinition, worn: number): string {
+  const tr = sg.effect?.triggers?.[0];
+  const head = `ใส่อยู่ ${worn} ดวง → ${worn + 1} ดวง: `;
+  if (tr === undefined) return `${head}ผล % ของทุกดวงคูณซ้อนกัน`;
+  const pct = (n: number) => (n === 0 ? "0%" : `${Math.round(sigilTriggerChanceBp(tr.chancePct, n) / 100)}%`);
+  const what = (n: number) =>
+    n === 0
+      ? "ไม่มีผล"
+      : tr.then
+          .map((a) => {
+            const x = scaleSigilAction(RULES, a, n);
+            return x.kind === "heal" ? `ฟื้น HP ${x.pctMaxHp}%` : x.kind === "restore_mp" ? `คืน MP ${x.amount}` : x.statuses.map((y) => `${STATUS_DEFINITIONS[y.statusId].th} ${y.chancePct}%`).join(", ");
+          })
+          .join(" + ");
+  return `${head}โอกาสทำงาน ${pct(worn)} → ${pct(worn + 1)} · ${what(worn)} → ${what(worn + 1)} · ทอยครั้งเดียว ทำงานได้ ${RULES.provisional.sigilTriggerStacking.value.procsPerTurn} ครั้งต่อเทิร์น`;
 }
