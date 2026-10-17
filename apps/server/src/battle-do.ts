@@ -66,14 +66,26 @@ export class BattleDurableObject extends DurableObject<Env> {
   override async alarm(): Promise<void> {
     // Auto Hunt: one ally action per tick (P01 autoBattleActionMs), never faster.
     const step = await this.room.autopilotStep().catch(() => "idle" as const);
+    // A fight nobody came back to closes as lost (P36), which also frees the account's fight slot.
+    const abandoned = await this.room.abandonIfIdle().catch(() => false);
     await this.room.drainOutbox(this.economy);
     // Re-read rather than trust the drain's snapshot: a command may have queued more meanwhile.
     // A refused entry (failed) blocks settlement until an operator acts, so retrying is pointless.
     const r = await this.room.outbox();
     const next: number[] = [];
     if (step === "acted" || (step === "idle" && (await this.room.autopilot()) && (await this.active()))) next.push(Date.now() + this.actionMs);
-    if (r.pending > 0 && r.failed === 0) next.push(Date.now() + (step === "over" ? 0 : OUTBOX_RETRY_MS));
+    if (r.pending > 0 && r.failed === 0) next.push(Date.now() + (step === "over" || abandoned ? 0 : OUTBOX_RETRY_MS));
+    const idle = await this.room.abandonAt().catch(() => null);
+    if (idle !== null) next.push(Math.max(idle, Date.now()));
     if (next.length > 0) await this.ctx.storage.setAlarm(Math.min(...next));
+  }
+
+  /** Every fight keeps an alarm no later than its abandon time (P36); the alarm re-checks and re-arms. */
+  private async armAbandonCheck(): Promise<void> {
+    const at = await this.room.abandonAt();
+    if (at === null) return;
+    const current = await this.ctx.storage.getAlarm();
+    if (current === null || current > at) await this.ctx.storage.setAlarm(at);
   }
 
   private get actionMs(): number {
@@ -86,7 +98,11 @@ export class BattleDurableObject extends DurableObject<Env> {
 
   private async kickOutbox(): Promise<OutboxSummary> {
     const r = await this.room.outbox();
-    if (r.pending > 0 && r.failed === 0 && (await this.ctx.storage.getAlarm()) === null) await this.ctx.storage.setAlarm(Date.now());
+    if (r.pending > 0 && r.failed === 0) {
+      // The far-off abandon check (P36) must not hold a delivery back.
+      const at = await this.ctx.storage.getAlarm();
+      if (at === null || at > Date.now() + OUTBOX_RETRY_MS) await this.ctx.storage.setAlarm(Date.now());
+    }
     return r;
   }
 
@@ -98,6 +114,7 @@ export class BattleDurableObject extends DurableObject<Env> {
           if (op.setup.player.accountId !== accountId) return { ok: false, code: "NOT_OWNER", message: "setup owner mismatch" };
           const body = await this.room.create(op.setup, op.reservationId, op.memberReservations);
           await this.kickOutbox();
+          await this.armAbandonCheck();
           return { ok: true, body };
         }
         case "claim":
@@ -119,7 +136,14 @@ export class BattleDurableObject extends DurableObject<Env> {
           await this.room.setAutopilot(accountId, op.on, op.policy);
           // Start pacing now; the alarm keeps itself going while autopilot is on and the fight is live.
           if (op.on) await this.ctx.storage.setAlarm(Date.now() + this.actionMs);
+          else await this.armAbandonCheck();
           return { ok: true, body: { autopilot: op.on } };
+        }
+        case "devIdle": {
+          if (this.env.ENVIRONMENT !== "dev") return { ok: false, code: "NOT_OWNER", message: "dev only" };
+          await this.room.devAge(accountId);
+          await this.ctx.storage.setAlarm(Date.now());
+          return { ok: true, body: { ok: true } };
         }
         case "events":
           await this.room.view(accountId);
@@ -128,6 +152,7 @@ export class BattleDurableObject extends DurableObject<Env> {
         case "auto": {
           const body = await this.room.command(accountId, op.body, op.kind === "auto" ? "auto" : "player");
           await this.kickOutbox();
+          await this.armAbandonCheck();
           return { ok: true, body };
         }
       }
@@ -143,6 +168,8 @@ export type RoomOp =
   | { kind: "claim" }
   | { kind: "view" }
   | { kind: "events"; cursor: number }
+  /** DEV ONLY: age the fight past P36's idle time (smokes). */
+  | { kind: "devIdle" }
   | { kind: "command"; body: unknown }
   | { kind: "auto"; body: unknown }
   | { kind: "autopilot"; on: boolean; policy?: AutoBattlePolicyInput };

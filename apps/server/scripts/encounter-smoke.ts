@@ -134,6 +134,33 @@ const encC = await C.wait((m) => m.t === "encounter" || m.t === "error", 6000, f
 const e1 = (await battleCall(acct("c"), encC.battleId)("GET", "")).state.units.find((u: Msg) => u.unitId === "e1");
 out.elite = { shown: elite.leader.elite, inFight: e1.elite?.modifiers, rank: e1.rank };
 if (JSON.stringify(e1.elite?.modifiers) !== JSON.stringify(elite.leader.elite) || e1.rank !== "ELITE") throw new Error(`elite mismatch: ${JSON.stringify(out.elite)}`);
-for (const c of [A2, B, C]) c.sock.close();
+// Abandoned (P36): B closes the page mid-fight and never acts. After the idle time (dev ages it) the
+// fight closes as lost by itself, settles, and B's return walks home instead of back into it.
+B.sock.close();
+const callB = battleCall(acct("b"), encB.battleId);
+const HB = { "content-type": "application/json", "x-dev-account": acct("b") };
+const aged = await fetch(`${api}/dev/battle/idle`, { method: "POST", headers: HB, body: JSON.stringify({ battleId: encB.battleId }) });
+if (!aged.ok) throw new Error(`dev idle: ${await aged.text()}`);
+let viewB = await callB("GET", "");
+for (let i = 0; i < 50 && !(viewB.state.status !== "active" && viewB.settlement.settled); i++) {
+  await sleep(200);
+  viewB = await callB("GET", "");
+}
+const endB = (await callB("GET", "/events?since=0")).events?.find((e: Msg) => e.type === "BattleEnded");
+out.abandoned = { status: viewB.state.status, settled: viewB.settlement.settled, flagged: endB?.abandoned === true };
+if (viewB.state.status !== "defeat" || !viewB.settlement.settled || endB?.abandoned !== true) throw new Error(`abandoned fight did not close: ${JSON.stringify(out.abandoned)}`);
+// Back on the page: the closed fight is not offered again, B stands where it was, and engaging works
+// again (a far pack answers TOO_FAR, not the old fight).
+const B2 = await connect(acct("b"), "map:dawn_field");
+const packsB2 = (await B2.wait((m) => m.t === "packs" || m.t === "encounter", 6000)) as Msg;
+if (packsB2.t !== "packs") throw new Error(`after an abandoned fight: ${JSON.stringify(packsB2)}`);
+const far = (packsB2.packs as Msg[]).filter((p) => p.rank === "NORMAL").sort((p, q) => Math.abs(q.x - B2.pos.x) + Math.abs(q.y - B2.pos.y) - (Math.abs(p.x - B2.pos.x) + Math.abs(p.y - B2.pos.y)))[0];
+from = B2.inbox.length;
+B2.send({ t: "engage", packId: far.packId });
+const engageB2 = await B2.wait((m) => m.t === "error" || m.t === "encounter", 6000, from);
+out.abandonedReturn = { onField: B2.mapId, engage: engageB2.t === "error" ? engageB2.code : engageB2.t };
+if (engageB2.t !== "error" || engageB2.code !== "TOO_FAR") throw new Error(`after an abandoned fight: ${JSON.stringify(out.abandonedReturn)}`);
+B2.sock.close();
+for (const c of [A2, C]) c.sock.close();
 console.log(JSON.stringify(out, null, 1));
 process.exit(0);

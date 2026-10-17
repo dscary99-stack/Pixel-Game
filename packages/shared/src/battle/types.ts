@@ -319,6 +319,8 @@ export type BattleEventBody =
       unusedReserved: Record<string, number>;
       /** Party boss fights: each other member's bag result (the fields above are the owner's). */
       members?: Record<string, { consumed: Record<string, number>; unusedReserved: Record<string, number> }>;
+      /** Closed by the server because nobody acted for P36's time, not by the fight itself. */
+      abandoned?: true;
     };
 
 export type BattleEvent = EventBase & BattleEventBody;

@@ -556,7 +556,7 @@ export class BattleScene extends Phaser.Scene {
       case "TurnSkipped":
         return this.pushLog(`${this.name(e.unitId)} ${STATUS_DEFINITIONS[e.statusId].th} ข้ามเทิร์น`);
       case "BattleEnded":
-        return this.pushLog(`จบไฟต์: ${e.outcome}`);
+        return this.pushLog(e.abandoned === true ? `จบไฟต์: ไม่มีใครสั่งนานเกินไป นับเป็น ${e.outcome}` : `จบไฟต์: ${e.outcome}`);
       default:
         return;
     }

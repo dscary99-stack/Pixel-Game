@@ -241,6 +241,13 @@ export const RULES = {
      * 5 cells per row (players front, companions back), and how long a member's turn may wait before any
      * other member may have the server play it with plain Auto (no items).
      */
+    /**
+     * A fight nobody acts in (O11's in-fight disconnect part, not decided by Nut yet; Claude's default):
+     * no state change for `idleMs` and no Auto Hunt driving it closes the fight as a loss (a practice
+     * fight as left), so a closed tab never holds the account's fight slot forever and waiting is never
+     * a way out of a fight that cannot be fled. Rewards and captures already won stay.
+     */
+    abandonedFight: provisional({ idleMs: 600_000 } as const, "P36", "Claude's default: 10 minutes to come back; then the fight counts as lost"),
     partyBoss: provisional({ rowSlots: 5, standInAfterMs: 30_000 } as const, "P22", "5 cells per row; a stalled member's turn can be played by Auto after 30 s"),
     /**
      * World Market (Nut 2026-10-07: list goods for sale to everyone). Escrow first (chapter 11 §4).

@@ -14,6 +14,7 @@
  */
 import {
   CommandEnvelopeSchema,
+  abandonBattle,
   applyCommand,
   chooseAutoCommand,
   AutoBattlePolicySchema,
@@ -315,6 +316,34 @@ export class BattleRoom {
     if (!r.ok) return "idle";
     await this.storage.putMany({ [K.state]: r.state, ...eventEntries(r.events), [K.turnAt]: this.now(), ...(await this.outboxFor(r.state, r.events)) });
     return r.state.status === "active" ? "acted" : "over";
+  }
+
+  /**
+   * When an untouched fight closes as abandoned (P36), or null when it is over or Auto Hunt is
+   * playing it (the Map Channel turns that off on disconnect, which starts the clock).
+   */
+  async abandonAt(): Promise<number | null> {
+    const state = await this.storage.get<BattleState>(K.state);
+    if (state === undefined || state.status !== "active" || (await this.autopilot())) return null;
+    return ((await this.storage.get<number>(K.turnAt)) ?? 0) + this.rules.provisional.abandonedFight.value.idleMs;
+  }
+
+  /** DEV ONLY (smokes): make the fight look untouched for P36's time; the next check closes it. */
+  async devAge(accountId: string): Promise<void> {
+    const state = await this.requireState();
+    if (!isMember(state, accountId)) throw new RoomError("NOT_OWNER", "not your battle");
+    await this.storage.putMany({ [K.turnAt]: this.now() - this.rules.provisional.abandonedFight.value.idleMs });
+  }
+
+  /** Closes the fight if nobody acted in it for P36's time; written like any other end (outbox included). */
+  async abandonIfIdle(): Promise<boolean> {
+    const at = await this.abandonAt();
+    if (at === null || this.now() < at) return false;
+    const state = await this.requireState();
+    const r = abandonBattle(this.rules, this.content, state, `abandoned:${state.stateVersion}`);
+    if (!r.ok) return false;
+    await this.storage.putMany({ [K.state]: r.state, ...eventEntries(r.events), [K.turnAt]: this.now(), ...(await this.outboxFor(r.state, r.events)) });
+    return true;
   }
 
   /** Outbox entries for the entitlements and the battle end a command produced. */

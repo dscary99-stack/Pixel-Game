@@ -666,6 +666,13 @@ async function devRoute(request: Request, env: Env, url: URL): Promise<Response>
     return json(200, { balances, reservation });
   }
   if (request.method === "POST" && url.pathname === "/dev/reconcile") return json(200, await reconcile(env, 0));
+  // DEV ONLY: a fight looks untouched for P36's idle time, so smokes see it close as abandoned.
+  if (request.method === "POST" && url.pathname === "/dev/battle/idle") {
+    const parsed = z.object({ battleId: z.string().min(1).max(200) }).strict().safeParse(await readJson(request));
+    if (!parsed.success) return json(400, { error: "INVALID_REQUEST" });
+    const r = (await env.BATTLE.get(env.BATTLE.idFromName(parsed.data.battleId)).handle(accountId, { kind: "devIdle" })) as RoomReply;
+    return r.ok ? json(200, r.body) : json(409, { error: r.code, message: r.message });
+  }
   // DEV ONLY: stands in for GM / system mail so smokes can send a letter with items, coins and a companion.
   if (request.method === "POST" && url.pathname === "/dev/mail") {
     const parsed = DevMailSchema.safeParse(await readJson(request));

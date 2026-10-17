@@ -2229,7 +2229,7 @@ function checkEnd(ctx: Ctx): void {
   else if (!alliesLeft) endBattle(ctx, "defeat");
 }
 
-function endBattle(ctx: Ctx, outcome: "victory" | "defeat" | "fled"): void {
+function endBattle(ctx: Ctx, outcome: "victory" | "defeat" | "fled", abandoned = false): void {
   const s = ctx.s;
   s.status = outcome;
   companionResults(ctx, outcome);
@@ -2248,7 +2248,25 @@ function endBattle(ctx: Ctx, outcome: "victory" | "defeat" | "fled"): void {
     consumed: { ...s.consumed },
     unusedReserved: unusedOf(s.bag),
     ...(s.members !== undefined ? { members: Object.fromEntries(s.members.map((m) => [m.accountId, { consumed: { ...m.consumed }, unusedReserved: unusedOf(m.bag) }])) } : {}),
+    ...(abandoned ? { abandoned: true as const } : {}),
   });
+}
+
+/**
+ * Closes a fight nobody acted in (P36; the server decides when). It counts as lost, so leaving is
+ * never a way out of a fight that cannot be fled; a practice fight is simply left. HP/MP, items
+ * used and anything already won stay as they are, the same as any other end.
+ */
+export function abandonBattle(rules: RulesConfig, content: BattleContent, state: BattleState, causeId: string | null = null): KernelResult {
+  const ctx = new Ctx(structuredClone(state), rules, content, causeId);
+  try {
+    if (ctx.s.status !== "active") reject("BATTLE_OVER", `battle is ${ctx.s.status}`);
+    endBattle(ctx, ctx.s.practice === true ? "fled" : "defeat", true);
+    return ctx.finish();
+  } catch (e) {
+    if (e instanceof Rejection) return { ok: false, code: e.code, message: e.message };
+    throw e;
+  }
 }
 
 function unusedOf(bag: Record<string, number>): Record<string, number> {
