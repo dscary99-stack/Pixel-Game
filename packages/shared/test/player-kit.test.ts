@@ -5,6 +5,7 @@ import {
   CLASS2_TRIAL_BOSS_ID,
   CLASS3_ADVANCES,
   CLASS3_TRIAL_BOSS_ID,
+  REBIRTH_TRIAL_BOSS_ID,
   SKILL_TREES,
   characterTrees,
   class3Refusal,
@@ -243,5 +244,21 @@ describe("Class3 (chapter 02, P16/P28)", () => {
       }
       expect(s.status, a.id).not.toBe("active");
     }
+  });
+});
+
+describe("companion Rebirth trial (P37)", () => {
+  const trial = (over: Partial<BattleSetup>) =>
+    createBattle(rules, c, { ...baseSetup({ enemies: [], boss: { bossId: REBIRTH_TRIAL_BOSS_ID }, bag: {}, practice: true, classTrial: true }), ...over });
+
+  it("the tyrant gets the stat % of the stage the trial opens, only in a class trial without a tier", () => {
+    rules.provisional.rebirthTrial.value.statPct.forEach((pct, i) => {
+      const s = ok(trial({ rebirthTrial: { stage: i + 1 } })).state;
+      expect(s.enemyStatPct).toBe(pct);
+      expect(s.rebirthTrial).toEqual({ stage: i + 1 });
+    });
+    expect(trial({ rebirthTrial: { stage: 4 } })).toMatchObject({ ok: false, code: "INVALID_COMMAND" });
+    expect(trial({ rebirthTrial: { stage: 1 }, classTrial: undefined })).toMatchObject({ ok: false, code: "INVALID_COMMAND" });
+    expect(trial({ rebirthTrial: { stage: 1 }, classTrialTier: 3 })).toMatchObject({ ok: false, code: "INVALID_COMMAND" });
   });
 });

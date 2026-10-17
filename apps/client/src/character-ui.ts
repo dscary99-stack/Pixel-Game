@@ -45,6 +45,8 @@ import {
   EFFECT_RES_NAME_TH,
   type PartyView,
   rebirthCost,
+  REBIRTH_TRIAL_BOSS_ID,
+  type RebirthTrialView,
   rebirthBranchChangeCost,
   rebirthVariantFor,
   companionKit,
@@ -2317,8 +2319,9 @@ export function autoHuntPanel(speciesIds: readonly string[]): Promise<AutoHuntSe
     // Items Auto may use (chapter 08: allowed items, when, and how many per fight).
     panel.append(el("label", {}, "ของที่ให้ Auto ใช้ (ตัวละครเป็นคนใช้ ใช้ได้เมื่อถึงตาตัวละคร เลือกได้สูงสุด 5 ชนิด เรียงตามลำดับที่ใช้ก่อน)"));
     // Each kind has its own trigger (chapter 08): heal below HP %, mana below MP %, revive a fallen ally,
-    // support (buff/cleanse) when the ally lacks the buff or carries a harmful status.
-    const KIND_ORDER = ["heal", "mana", "revive", "support"] as const;
+    // support (buff/cleanse) when the ally lacks the buff or carries a harmful status, a group buff when
+    // enough allies lack it, an attack item on the weakest enemy (or every enemy) with an Elite/boss option.
+    const KIND_ORDER = ["heal", "mana", "revive", "support", "attack"] as const;
     const ruleItems = [...itemDefs.values()]
       .filter((d) => (KIND_ORDER as readonly string[]).includes(d.kind))
       .sort((a, b) => KIND_ORDER.indexOf(a.kind as (typeof KIND_ORDER)[number]) - KIND_ORDER.indexOf(b.kind as (typeof KIND_ORDER)[number]));
@@ -2334,6 +2337,9 @@ export function autoHuntPanel(speciesIds: readonly string[]): Promise<AutoHuntSe
       let target = () => "ally";
       let hpBelow = () => String(prev?.hpBelowPercent ?? 40);
       let mpBelow = () => String(prev?.mpBelowPercent ?? 30);
+      let minTargets = () => String(prev?.minTargets ?? 2);
+      let strongOnly = () => String(prev?.strongOnly ?? false);
+      const countChoices = [1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: `${n} ตัว` }));
       if (d.kind === "heal") {
         row.append(el("div", { class: "pm-note" }, "ใช้กับ"));
         target = choices(row, [{ value: "ally", label: "เพื่อนที่ HP ต่ำสุด" }, { value: "self", label: "ตัวเองเท่านั้น" }], prev?.target ?? "ally");
@@ -2346,6 +2352,14 @@ export function autoHuntPanel(speciesIds: readonly string[]): Promise<AutoHuntSe
         mpBelow = choices(row, pctChoices, mpBelow());
       } else if (d.kind === "revive") {
         row.append(el("div", { class: "pm-note" }, "ชุบเพื่อนที่ล้มทันทีที่ชุบได้ (ล้มครบ 1 ตาแล้ว)"));
+      } else if (d.kind === "attack") {
+        row.append(el("div", { class: "pm-note" }, d.area === true ? "ปาใส่ศัตรูทั้งหมด เมื่อศัตรูเหลืออย่างน้อย" : "ปาใส่ศัตรูที่ HP ต่ำสุด (Elite/บอสก่อน)"));
+        if (d.area === true) minTargets = choices(row, countChoices, minTargets());
+        row.append(el("div", { class: "pm-note" }, "ใช้เมื่อ"));
+        strongOnly = choices(row, [{ value: "false", label: "ทุกไฟต์" }, { value: "true", label: "เฉพาะเจอ Elite/บอส" }], strongOnly());
+      } else if (d.area === true) {
+        row.append(el("div", { class: "pm-note" }, "ยาหมู่: ใช้ทีเดียวทั้งทีม เมื่อมีคนที่ยังไม่มีผลนี้อย่างน้อย"));
+        minTargets = choices(row, countChoices, minTargets());
       } else {
         row.append(el("div", { class: "pm-note" }, "ใช้กับ"));
         target = choices(row, [{ value: "ally", label: "เพื่อนที่ยังไม่มีผลนี้" }, { value: "self", label: "ตัวเองเท่านั้น" }], prev?.target ?? "ally");
@@ -2356,7 +2370,17 @@ export function autoHuntPanel(speciesIds: readonly string[]): Promise<AutoHuntSe
       panel.append(row);
       return () =>
         on.checked
-          ? [{ itemId: d.id, target: target() as "ally" | "self", hpBelowPercent: Number(hpBelow()), mpBelowPercent: Number(mpBelow()), maxPerFight: Number(max()) }]
+          ? [
+              {
+                itemId: d.id,
+                target: target() as "ally" | "self",
+                hpBelowPercent: Number(hpBelow()),
+                mpBelowPercent: Number(mpBelow()),
+                maxPerFight: Number(max()),
+                minTargets: Number(minTargets()),
+                strongOnly: strongOnly() === "true",
+              },
+            ]
           : [];
     });
     // Skills Auto may use (chapter 08 rule engine): heal, cleanse, buff, debuff, then damage.
@@ -2445,10 +2469,12 @@ export function savedAutoPolicy(): Pick<AutoHuntSettings, "itemRules" | "skills"
  * Companion Rebirth at the town NPC (chapter 04 §7). Shows each companion's next stage, what it
  * costs and what is missing; the server checks everything again and charges once.
  */
-export function rebirthPanel(api: CharacterApi, start: CharacterBundle): Promise<CharacterBundle> {
+/** Resolves with the trial fight to enter (P37), or null when the panel was just closed. */
+export function rebirthPanel(api: CharacterApi, start: CharacterBundle): Promise<string | null> {
   return new Promise((resolve) => {
     const { panel, close } = overlay();
     let bundle = start;
+    let trials: RebirthTrialView[] = [];
     let busy = false;
     const ops = new Map<string, string>();
     const { lootTables } = exampleContentMaps();
@@ -2459,6 +2485,11 @@ export function rebirthPanel(api: CharacterApi, start: CharacterBundle): Promise
     actions.append(done);
     panel.append(
       el("h2", {}, "จุติคู่ใจ (Rebirth)"),
+      el(
+        "div",
+        { class: "pm-note" },
+        `ก่อนจุติแต่ละขั้นต้องผ่านบททดสอบ: สู้${bossDefs.get(REBIRTH_TRIAL_BOSS_ID)?.name.th ?? REBIRTH_TRIAL_BOSS_ID}ที่แรงขึ้นเป็น ${RULES.provisional.rebirthTrial.value.statPct.map((p) => `${p}%`).join("/")} (R1/R2/R3) กติกาลานทดสอบ (ไม่ได้ไม่เสียอะไร) คู่ใจตัวนั้นต้องอยู่ในทีมและยังยืนอยู่ตอนชนะ · ตัวเลขเป็นตัวอย่าง (P37)`,
+      ),
       el("div", { class: "pm-note" }, `คู่ใจ Lv200 กลับเป็น Lv1 เส้นทางเติบโตเดิม + โบนัสสเตตัส (ขั้น 1/2/3 = +4/+7/+10% รวม) · ธาตุ Bond ประวัติ เลเวลสกิลคงเดิม · แต่ละขั้นเลือกสายสกิล A/B (R1 สกิล, R2 innate, R3 สกิล + ลวดลายมีเอฟเฟกต์) ใช้ได้เมื่อสู้ถึง Lv${RULES.provisional.rebirthVariantUnlockLevels.value.join("/")} · เปลี่ยนสายทีหลังได้ด้วยเหรียญ · ทำในเมือง นอกไฟต์`),
       body,
       error,
@@ -2466,8 +2497,11 @@ export function rebirthPanel(api: CharacterApi, start: CharacterBundle): Promise
     );
     done.addEventListener("click", () => {
       close();
-      resolve(bundle);
+      resolve(null);
     });
+    const loadTrials = async () => {
+      trials = (await api.rebirthTrials().catch(() => null))?.trials ?? trials;
+    };
     const run = async (key: string, prefix: string, call: (op: string) => Promise<unknown>) => {
       if (busy) return;
       busy = true;
@@ -2480,8 +2514,23 @@ export function rebirthPanel(api: CharacterApi, start: CharacterBundle): Promise
         error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
       } finally {
         bundle = (await api.get().catch(() => null)) ?? bundle;
+        await loadTrials();
         busy = false;
         draw();
+      }
+    };
+    const startTrial = async (companionId: string) => {
+      if (busy) return;
+      busy = true;
+      error.textContent = "";
+      try {
+        // A fresh id per tap; a retry of this request resumes the same fight on the server.
+        const r = await api.rebirthTrialStart(`rtrial_${crypto.randomUUID().replace(/-/g, "").slice(0, 24)}`, companionId);
+        close();
+        resolve(r.battleId);
+      } catch (e) {
+        error.textContent = e instanceof ApiError ? `${e.code}: ${e.message}` : String(e);
+        busy = false;
       }
     };
     const skillName = (id: string) => skillDefs.get(id)?.name.th ?? id;
@@ -2522,9 +2571,29 @@ export function rebirthPanel(api: CharacterApi, start: CharacterBundle): Promise
           continue;
         }
         const have = bundle.bag[cost.materialItemId] ?? 0;
+        const levelsOk = c.xp >= cost.companionExp && bundle.character.xp >= expForLevel(RULES, "player", cost.playerLevel);
+        const trial = trials.find((t) => t.companionId === c.id && t.stage === cost.nextStage);
+        const inTeam = bundle.character.team.some((t) => t.instanceId === c.id);
+        const tr = el("div", { class: "pm-branch", "data-rebirth-trial": c.id });
+        tr.append(
+          el(
+            "span",
+            {},
+            `บททดสอบ R${cost.nextStage} (${RULES.provisional.rebirthTrial.value.statPct[cost.nextStage - 1]}%): ${trial?.status === "won" ? "ผ่านแล้ว" : trial?.status === "lost" ? "ครั้งล่าสุดยังไม่ผ่าน (แพ้ หนี หรือคู่ใจล้มตอนจบ)" : trial?.status === "started" ? "กำลังสู้" : "ยังไม่ได้ทำ"}`,
+          ),
+        );
+        if (trial?.status !== "won") {
+          const go = el("button", { type: "button", "data-rebirth-trial-start": c.id }, trial?.status === "started" ? "กลับเข้าไฟต์" : "เริ่มบททดสอบ");
+          go.disabled = !levelsOk || !inTeam;
+          if (!inTeam) tr.append(el("span", { class: "pm-note" }, " (ใส่คู่ใจเข้าทีมก่อน)"));
+          go.addEventListener("click", () => void startTrial(c.id));
+          tr.append(go);
+        }
+        li.append(tr);
         const missing = [
           c.xp < cost.companionExp ? `คู่ใจต้อง Lv${cost.companionLevel}` : "",
           bundle.character.xp < expForLevel(RULES, "player", cost.playerLevel) ? `ตัวละครต้อง Lv${cost.playerLevel}` : "",
+          trial?.status !== "won" ? "ต้องผ่านบททดสอบ" : "",
           bundle.coins < cost.coins ? "เหรียญไม่พอ" : "",
           have < cost.materialQty ? "วัสดุไม่พอ" : "",
         ].filter((x) => x !== "");
@@ -2548,6 +2617,7 @@ export function rebirthPanel(api: CharacterApi, start: CharacterBundle): Promise
       body.append(ul);
     };
     draw();
+    void loadTrials().then(draw);
   });
 }
 

@@ -39,7 +39,7 @@
  *   GET  /town/refine/receipt?operationId=  the stored receipt of one attempt (roll, outcome, paid)
  *   POST /town/buy                 buy from a town shop at the shown total (operationId, shopId, lines, expectedTotal)
  *   POST /town/buy-gear            buy plain equipment at an armory (operationId, shopId, definitionId, quantity, expectedTotal)
- *   POST /town/rebirth             companion Rebirth at the town NPC (operationId, companionId, expectedStage)
+ *   POST /town/rebirth             companion Rebirth at the town NPC (operationId, companionId, expectedStage); needs the stage's won trial (P37)
  *   POST /town/rebirth/branch      switch a reached Rebirth stage's variant branch for coins (operationId, companionId, stage, expectedBranch, branch, expectedCost)
  *   POST /town/ascend              divine awakening after a won race trial: pay coins + materials, pick path a/b (operationId, trialOperationId, path, expectedCoins)
  *   POST /town/ascend/switch       switch the ascension path for coins (operationId, expectedPath, path, expectedCoins)
@@ -53,6 +53,8 @@
  *   GET  /practice                 the town training ground: the field bosses it can stage (P17)
  *   POST /practice/start           start or resume a practice fight in town ({ operationId, bossId }); nothing earned or lost
  *   GET  /class                    Class2: the two branches of this class, the trial level, the latest trial
+ *   GET  /class/rebirth            the latest Rebirth trial of each companion for its next stage (P37)
+ *   POST /class/rebirth/start      start or resume a companion's Rebirth trial in town ({ operationId, companionId }); in the team, Lv200, the stage's licence level
  *   POST /class/trial/start        start or resume the Class2 trial in town ({ operationId, branchId }); Lv50+, no branch yet; a Class3 id as branchId starts the Class3 trial (Lv120+, Class2 Job 70); `ascend:<race>` starts the divine awakening trial (Lv200 + Class3), claimed at POST /town/ascend
  *   POST /class/trial/claim        take the branch of a won trial ({ operationId } of that trial); once per character
  *   POST /character/skills/learn   learn the next level of a tree skill with job points ({ expectedVersion, skillId }; outside fights)
@@ -491,10 +493,16 @@ async function classRoute(request: Request, env: Env, url: URL): Promise<Respons
     const view = await store.view(accountId);
     return view === null ? json(404, { error: "NO_CHARACTER" }) : json(200, view);
   }
-  if (request.method !== "POST" || (url.pathname !== "/class/trial/start" && url.pathname !== "/class/trial/claim")) return json(405, { error: "METHOD_NOT_ALLOWED" });
+  if (request.method === "GET" && url.pathname === "/class/rebirth") {
+    const trials = await store.rebirthTrials(accountId);
+    return trials === null ? json(404, { error: "NO_CHARACTER" }) : json(200, { trials });
+  }
+  const routes = ["/class/trial/start", "/class/trial/claim", "/class/rebirth/start"];
+  if (request.method !== "POST" || !routes.includes(url.pathname)) return json(405, { error: "METHOD_NOT_ALLOWED" });
   const body = await readJson(request);
   if (body === undefined) return json(400, { error: "INVALID_REQUEST" });
-  const r = url.pathname === "/class/trial/start" ? await store.start(accountId, body) : await store.claim(accountId, body);
+  const r =
+    url.pathname === "/class/trial/start" ? await store.start(accountId, body) : url.pathname === "/class/rebirth/start" ? await store.startRebirth(accountId, body) : await store.claim(accountId, body);
   if (r.status === "rejected") return json(r.reason === "INVALID_REQUEST" ? 400 : r.reason === "NO_CHARACTER" || r.reason === "NOT_FOUND" ? 404 : 409, { error: r.reason, message: r.message });
   return json(200, r);
 }

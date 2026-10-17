@@ -632,6 +632,13 @@ export const ItemDefinitionSchema = z
     restoreMp: z.number().int().min(1).optional(),
     /** support: helpful statuses put on the ally it is used on (buffs, cleanse); each rolls its own chance. */
     statuses: z.array(StatusApplicationSchema).min(1).max(3).optional(),
+    /**
+     * attack: a thrown item's hit, through the same hit/crit/defense/element steps as a skill but with
+     * a flat amount (no attack stat, so it does not grow with the thrower).
+     */
+    damage: z.object({ damageType: z.enum(["physical", "magic"]), flat: z.number().int().min(1), element: ElementSchema }).strict().optional(),
+    /** support/attack: every living ally (support) or enemy (attack) at once instead of one. */
+    area: z.boolean().optional(),
     /** revive: % of max HP the fallen ally comes back with (O15). */
     reviveHpPct: z.number().int().min(1).max(100).optional(),
     /** capture: the one species this item captures (species-specific capture items, chapter 04 §3). */
@@ -670,6 +677,12 @@ export const ItemDefinitionSchema = z
     }
     if ((it.kind === "support") !== (it.statuses !== undefined)) {
       ctx.addIssue({ code: "custom", message: "support items, and only they, list statuses" });
+    }
+    if ((it.kind === "attack") !== (it.damage !== undefined)) {
+      ctx.addIssue({ code: "custom", message: "attack items, and only they, set damage" });
+    }
+    if (it.area === true && it.kind !== "support" && it.kind !== "attack") {
+      ctx.addIssue({ code: "custom", message: "only support and attack items can be area items" });
     }
     if (it.statuses?.some((a) => STATUS_DEFINITIONS[a.statusId].harmful)) {
       ctx.addIssue({ code: "custom", message: "support items only carry helpful statuses (they are used on allies)" });

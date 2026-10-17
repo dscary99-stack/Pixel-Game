@@ -501,7 +501,17 @@ export const RULES = {
         speciesMaterial: [30, 60, 100],
       } as const,
       "P05",
-      "was O04; Nut delegated 2026-10-03: per stage 1/2/3; the trial (บททดสอบ) is not built yet",
+      "was O04; Nut delegated 2026-10-03: per stage 1/2/3; the trial before it is rebirthTrial (P37)",
+    ),
+    /**
+     * The companion's Rebirth trial (O04's บททดสอบ, chapter 04 §7): a training-ground fight against
+     * the tower tyrant at `statPct[stage - 1]`, won with that companion in the team and standing at the
+     * end, before each Rebirth.
+     */
+    rebirthTrial: provisional(
+      { statPct: [500, 700, 1000] } as const,
+      "P37",
+      "Claude 2026-10-17: in a simulation on plain Auto, all 8 classes (2 seeds each) with stats bought at their rising cost, Lv40 shop gear, the Lv200 companion and two companions 5 levels below the character: R1 at Lv100 with Class2 wins 17/18 at 500% (600% 14/18); R2 at Lv150 with Class3 wins 17/18 at 700% (800% 14/18); R3 at Lv200 wins 16/18 at 1000%, the divine awakening trial's %; the companion was standing in every win",
     ),
     // Skill levels and Bond (chapter 04 §5–§6, P06). Gate table from chapter 04 §5; costs, mastery and
     // Bond numbers are Claude's proposal (docs/design/SKILL_LEVELS_BOND.md), PROVISIONAL.

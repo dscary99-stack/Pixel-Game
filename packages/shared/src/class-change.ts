@@ -26,8 +26,9 @@ export const CLASS2_TRIAL_BOSS_ID = "boss:crystal_crab_lord";
 /** EXAMPLE: the Class3 trial boss, the stronger tower guardian (four adds); the rules give it the Class3 trial stat %. */
 export const CLASS3_TRIAL_BOSS_ID = "boss:rift_spire_tyrant";
 
-/** Which tier a trial id is for: a Class3 id or a Class2 branch id. */
-export const trialTier = (id: string): 2 | 3 | "ascend" => (id.startsWith("ascend:") ? "ascend" : id.startsWith("class3:") ? 3 : 2);
+/** Which tier a trial id is for: a Class3 id, a Class2 branch id, a race trial or a companion's Rebirth trial (P37). */
+export const trialTier = (id: string): 2 | 3 | "ascend" | "rebirth" =>
+  id.startsWith("rebirth:") ? "rebirth" : id.startsWith("ascend:") ? "ascend" : id.startsWith("class3:") ? 3 : 2;
 
 export const ClassTrialStartRequestSchema = z.object({ operationId: OperationIdSchema, branchId: z.string().min(1).max(60) }).strict();
 export const ClassTrialClaimRequestSchema = z.object({ operationId: OperationIdSchema }).strict();

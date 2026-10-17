@@ -217,7 +217,9 @@ for (let n = 1; n <= 5 && won3 === null; n++) {
     must(tv.state.practice === true && tv.state.enemyStatPct === 550 && boss.speciesId !== undefined, "Class3 trial: tyrant at 550%", { pct: tv.state.enemyStatPct });
     out.class3Boss = { speciesId: boss.speciesId, maxHp: boss.stats.maxHp, statPct: tv.state.enemyStatPct, enemies: tv.state.units.filter((u: Msg) => u.side === "enemy").length };
   }
-  const end = await autoToEnd(account, s.body.battleId);
+  // A long fight: keep Auto going until it ends (autoToEnd stops after 300 actions).
+  let end = await autoToEnd(account, s.body.battleId);
+  for (let k = 0; k < 6 && end.state.status === "active"; k++) end = await autoToEnd(account, s.body.battleId);
   tries3.push(`${end.state.status} r${end.state.round}`);
   if (end.state.status === "victory") won3 = op;
 }

@@ -2,7 +2,7 @@
  * Companion Rebirth at the town NPC (chapter 04 §7) on the D1 migrations (node:sqlite stand-in).
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { PRODUCTION_RULES as R, companionPrimaryStats, exampleContentMaps, expForLevel, STARTER_KIT } from "@pmrpg/shared";
+import { PRODUCTION_RULES as R, companionPrimaryStats, exampleContentMaps, expForLevel, rebirthTrialId, STARTER_KIT } from "@pmrpg/shared";
 import { CharacterStore } from "../src/character-store";
 import { Economy } from "../src/economy";
 import { TownServices } from "../src/town-services";
@@ -40,6 +40,19 @@ const at = (mapId: string) =>
 const req = (operationId: string, expectedStage = 0, branch: "A" | "B" = "A") => ({ operationId, companionId: PET, expectedStage, branch });
 const choices = () => JSON.parse((db.prepare("SELECT rebirth_choices_json AS c FROM monster_instances WHERE id = ?").get(PET) as { c: string }).c);
 
+/** A won Rebirth trial (P37) for the stage, with the crab standing; the trial itself is in rebirth-trial.test.ts. */
+const wonTrial = async (stage: number) => {
+  const battleId = `battle:rt${stage}`;
+  const reservationId = `res:${battleId}`;
+  const ch = db.prepare("SELECT id FROM characters WHERE account_id = ?").get(A) as { id: string };
+  await eco.reserve({ reservationId, accountId: A, battleId, bag: {}, companionIds: [] });
+  await eco.activate(reservationId);
+  await eco.settle({ reservationId, battleId, accountId: A, outcome: "victory", unused: {}, allies: [], entitlementIds: [], rebirthTrial: { stage, standing: [PET] } });
+  db.prepare(
+    `INSERT INTO class_trials (character_id, operation_id, account_id, branch_id, battle_id, reservation_id, status, created_at) VALUES (?, ?, ?, ?, ?, ?, 'started', 'x')`,
+  ).run(ch.id, `rtrial_${stage}`, A, rebirthTrialId(PET, stage), battleId, reservationId);
+};
+
 beforeEach(async () => {
   db = freshDb();
   const d1 = new SqliteD1(db);
@@ -56,6 +69,7 @@ beforeEach(async () => {
      VALUES (?, 'species:armor_crab', ?, 200, ?, 'EARTH', '{}', '{"kind":"capture","at":"x"}', 'seed:crab', 'g1', 2, 321)`,
   ).run(PET, A, expForLevel(R, "companion", 200));
   at(TOWN);
+  await wonTrial(1);
 });
 
 describe("companion Rebirth (chapter 04 §7)", () => {

@@ -15,6 +15,7 @@ import { rollLoot } from "../loot";
 import { eliteModifierIssues } from "../elite";
 import { FrontierModifierIdSchema, frontierMaxReinforcements, frontierModifierStats, frontierStatPct, type FrontierModifierId } from "../frontier";
 import { companionExp, killExp } from "../progression";
+import { rebirthTrialStatPct } from "../rebirth";
 import { Rng, seedRng } from "../rng";
 import type { CaptureProfile, RulesConfig } from "../rules";
 import { captureChance, captureCheck, fightCaptureProfile, type CaptureBreakdown } from "../capture";
@@ -208,8 +209,9 @@ export function createBattle(rules: RulesConfig, content: BattleContent, setup: 
   }
 }
 
-/** The trial boss's stat %: Class2, Class3 or the divine awakening trial (P28, P31). */
-function trialStatPct(rules: RulesConfig, tier: BattleSetup["classTrialTier"]): number {
+/** The trial boss's stat %: Class2, Class3, the divine awakening or a Rebirth trial (P28, P31, P37). */
+function trialStatPct(rules: RulesConfig, tier: BattleSetup["classTrialTier"], rebirth: BattleSetup["rebirthTrial"]): number {
+  if (rebirth !== undefined) return rebirthTrialStatPct(rules, rebirth.stage) ?? reject("INVALID_COMMAND", `no Rebirth trial for stage ${rebirth.stage}`);
   if (tier === "ascend") return rules.provisional.ascension.value.trialStatPct;
   return tier === 3 ? rules.provisional.classChange.value.class3TrialStatPct : rules.provisional.classChange.value.trialStatPct;
 }
@@ -235,8 +237,9 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
   if (setup0.classTrialTier !== undefined && setup0.classTrial !== true) reject("INVALID_COMMAND", "a trial tier needs a class trial");
   const raceGoal = setup0.raceTrial === undefined ? undefined : (raceTrialGoal(setup0.raceTrial.raceId) ?? reject("MISSING_REFERENCE", `race goal ${setup0.raceTrial.raceId}`));
   if (raceGoal !== undefined && setup0.classTrialTier !== "ascend") reject("INVALID_COMMAND", "a race goal belongs to the divine awakening trial");
+  if (setup0.rebirthTrial !== undefined && (setup0.classTrial !== true || setup0.classTrialTier !== undefined)) reject("INVALID_COMMAND", "a Rebirth trial is a class trial without a tier");
   if (setup0.classTrial === true && (setup0.practice !== true || bossDef === undefined || tower !== undefined)) reject("INVALID_COMMAND", "a class trial is a practice boss fight");
-  const towerPct = floor !== undefined ? frontierStatPct(rules, floor) : setup0.classTrial === true ? trialStatPct(rules, setup0.classTrialTier) : 100;
+  const towerPct = floor !== undefined ? frontierStatPct(rules, floor) : setup0.classTrial === true ? trialStatPct(rules, setup0.classTrialTier, setup0.rebirthTrial) : 100;
   const bossLoot = bossDef?.lootTableId;
   if (bossLoot !== undefined && !content.lootTables.has(bossLoot)) reject("MISSING_REFERENCE", `loot table ${bossLoot}`);
   if (bossDef !== undefined) {
@@ -293,6 +296,7 @@ function createBattleInner(rules: RulesConfig, content: BattleContent, setup0: B
     ...(setup.practice === true ? { practice: true } : {}),
     ...(setup.classTrial === true ? { enemyStatPct: towerPct } : {}),
     ...(raceGoal !== undefined ? { raceTrial: { raceId: setup0.raceTrial!.raceId, kind: raceGoal.kind, need: raceGoal.need, count: 0 } } : {}),
+    ...(setup0.rebirthTrial !== undefined ? { rebirthTrial: { stage: setup0.rebirthTrial.stage } } : {}),
     ownerAccountId: p.accountId,
     // Pinned for the whole fight (capture.ts): a deploy never changes a running fight's odds.
     captureProfile: rules.provisional.captureProfile.value,
@@ -857,7 +861,7 @@ function applyStatus(ctx: Ctx, source: BattleUnit, target: BattleUnit, a: Status
 
 interface PassiveInfo {
   other?: BattleUnit;
-  action?: "attack" | "skill";
+  action?: "attack" | "skill" | "item";
   otherStatuses?: readonly ActiveStatus[];
   skill?: SkillDefinition;
   hpBefore?: number;
@@ -1502,7 +1506,7 @@ type StrikeEffect = { damageType: "physical" | "magic"; coefficient: number; fla
   Pick<DamageEffect, "penetrationPct" | "accuracyBonusPct" | "critBonusPct" | "execute" | "lifestealPct" | "recoilPct" | "statuses" | "bonusVsStatus">
 >;
 
-function strike(ctx: Ctx, actor: BattleUnit, chosen: BattleUnit, action: "attack" | "skill", skillId: string | null, eff: StrikeEffect, isCounter = false, area = false): void {
+function strike(ctx: Ctx, actor: BattleUnit, chosen: BattleUnit, action: "attack" | "skill" | "item", skillId: string | null, eff: StrikeEffect, isCounter = false, area = false): void {
   const rules = ctx.rules;
   const t = tuning(ctx);
   // A protector steps in front of the unit it protects (catalog §3.4), except against area hits.
@@ -1704,6 +1708,18 @@ function doItem(ctx: Ctx, actor: BattleUnit, itemId: string, target: BattleUnit)
     actionEvent(ctx, actor, "item", target, {});
     return revive(ctx, actor, target, item.reviveHpPct ?? 1, itemId);
   }
+  if (item.kind === "attack") {
+    // Thrown, so any living enemy can be aimed at (back row too); an area item hits every one.
+    const hittable = validTargets(ctx.s, "enemy", "ranged");
+    if (item.area !== true && !hittable.includes(target)) reject("INVALID_TARGET", "attack items need a living enemy you can see");
+    if ((combatBagOf(ctx.s, actor).bag[itemId] ?? 0) <= 0) reject("INSUFFICIENT_RESOURCE", `no ${itemId} in the combat bag`);
+    consumeItem(ctx, actor, itemId);
+    const d = item.damage!;
+    const eff: StrikeEffect = { damageType: d.damageType, coefficient: 0, flat: d.flat, element: d.element };
+    const victims = item.area === true ? ctx.s.units.filter((u) => u.side === "enemy" && active(u)) : [target];
+    for (const v of victims) if (active(v) && active(actor)) strike(ctx, actor, v, "item", null, eff, false, item.area === true);
+    return;
+  }
   if (item.kind !== "heal" && item.kind !== "mana" && item.kind !== "support") reject("INVALID_COMMAND", `${item.kind} items are not usable in a fight`);
   if (target.side !== "ally" || !active(target)) reject("INVALID_TARGET", `${item.kind} items need a living ally`);
   if (item.kind === "mana") {
@@ -1719,7 +1735,9 @@ function doItem(ctx: Ctx, actor: BattleUnit, itemId: string, target: BattleUnit)
     if ((combatBagOf(ctx.s, actor).bag[itemId] ?? 0) <= 0) reject("INSUFFICIENT_RESOURCE", `no ${itemId} in the combat bag`);
     consumeItem(ctx, actor, itemId);
     actionEvent(ctx, actor, "item", target, {});
-    for (const a of item.statuses ?? []) applyStatus(ctx, actor, target, a);
+    // A group item reaches every living ally of the user's side.
+    const allies = item.area === true ? ctx.s.units.filter((u) => u.side === actor.side && active(u)) : [target];
+    for (const u of allies) for (const a of item.statuses ?? []) applyStatus(ctx, actor, u, a);
     return;
   }
   if ((combatBagOf(ctx.s, actor).bag[itemId] ?? 0) <= 0) reject("INSUFFICIENT_RESOURCE", `no ${itemId} in the combat bag`);
@@ -2366,8 +2384,9 @@ export function chooseAutoCommand(
  * Who an Auto item rule would use its item on now, if anyone (chapter 08 allowed items). Heal: the
  * lowest HP share under the rule's HP %; mana: the lowest MP share under its MP %; revive: the first
  * fallen ally that can be brought back now (needs `rules`); support: the first ally the statuses would
- * still do something for (a buff it lacks, a harmful status to cleanse). "self" limits it to the
- * character.
+ * still do something for (a buff it lacks, a harmful status to cleanse), or for a group item the user
+ * once enough allies would gain; attack: the weakest enemy it can aim at (an Elite or boss first), or
+ * any enemy for an area item once enough stand. "self" limits heal/mana/support to the character.
  */
 function autoItemTarget(state: BattleState, actor: BattleUnit, item: ItemDefinition, rule: AutoItemRule, rules: RulesConfig | undefined): BattleUnit | undefined {
   const allies = rule.target === "self" ? [actor] : state.units.filter((u) => u.side === "ally");
@@ -2381,8 +2400,21 @@ function autoItemTarget(state: BattleState, actor: BattleUnit, item: ItemDefinit
     case "revive":
       if (rules === undefined) return undefined;
       return allies.find((u) => u.ko && reviveBlock(rules, state, actor, u) === null);
-    case "support":
-      return living.find((u) => (item.statuses ?? []).some((a) => worthApplying(actor, u, a.statusId)));
+    case "support": {
+      const gain = living.filter((u) => (item.statuses ?? []).some((a) => worthApplying(actor, u, a.statusId)));
+      // A group item goes on everyone at once (target: the user); "self" makes it count only the character.
+      if (item.area === true) return rule.target === "self" ? gain[0] : gain.length >= rule.minTargets ? actor : undefined;
+      return gain[0];
+    }
+    case "attack": {
+      const enemies = state.units.filter((u) => u.side === "enemy" && active(u));
+      const strong = enemies.filter((u) => u.rank === "BOSS" || u.rank === "ELITE");
+      if (rule.strongOnly && strong.length === 0) return undefined;
+      if (item.area === true) return enemies.length >= rule.minTargets ? enemies[0] : undefined;
+      const aim = validTargets(state, "enemy", "ranged");
+      const pool = aim.filter((u) => strong.includes(u));
+      return (pool.length > 0 ? pool : aim).reduce<BattleUnit | undefined>((best, u) => (best === undefined || u.hp < best.hp ? u : best), undefined);
+    }
     default:
       return undefined;
   }

@@ -262,24 +262,41 @@ export class BattleScene extends Phaser.Scene {
     });
   }
   /**
-   * The item menu: heal, mana and support items in this player's combat bag (revive has its own button).
-   * Each is used on the selected living ally, else the character.
+   * The item menu: heal, mana, support and attack items in this player's combat bag (revive has its own
+   * button). Ally items go on the selected living ally, else the character; attack items on the selected
+   * enemy, else the first one; group items reach the whole side.
    */
   private openItemMenu(actor: BattleUnit) {
     this.closeSkillMenu();
     const bag = combatBagOf(this.snap.state, actor).bag;
-    const usable = Object.entries(bag).filter(([id, n]) => n > 0 && ["heal", "mana", "support"].includes(CONTENT.items.get(id)?.kind ?? ""));
+    const usable = Object.entries(bag).filter(([id, n]) => n > 0 && ["heal", "mana", "support", "attack"].includes(CONTENT.items.get(id)?.kind ?? ""));
     if (usable.length === 0) return this.pushLog("ไม่มียาที่ใช้ได้ในกระเป๋าต่อสู้");
     usable.forEach(([id, n], i) => {
       const def = CONTENT.items.get(id)!;
-      const what = def.kind === "heal" ? `HP +${def.healHp}` : def.kind === "mana" ? `MP +${def.restoreMp}` : (def.statuses ?? []).map((a) => STATUS_DEFINITIONS[a.statusId].th).join(", ");
+      const all = def.area === true ? (def.kind === "attack" ? " (ศัตรูทั้งหมด)" : " (ทั้งทีม)") : "";
+      const what =
+        def.kind === "heal"
+          ? `HP +${def.healHp}`
+          : def.kind === "mana"
+            ? `MP +${def.restoreMp}`
+            : def.kind === "attack"
+              ? `โจมตี ${def.damage!.flat}${all}`
+              : `${(def.statuses ?? []).map((a) => STATUS_DEFINITIONS[a.statusId].th).join(", ")}${all}`;
       const b = this.add
         .text(16 + i * 132, 410, `${def.name.th} ×${n}\n${what}`, { fontFamily: "sans-serif", fontSize: "12px", color: "#ffffff", backgroundColor: "#2f6b5a", padding: { x: 6, y: 6 }, fixedWidth: 124, align: "center" })
         .setInteractive({ useHandCursor: true });
       b.on("pointerdown", () => {
         this.closeSkillMenu();
         const sel = this.selectedTarget === null ? undefined : this.unit(this.selectedTarget);
-        const target = sel !== undefined && sel.side === actor.side && !sel.ko ? sel.unitId : actor.unitId;
+        const target =
+          def.kind === "attack"
+            ? sel !== undefined && sel.side !== actor.side && !sel.ko
+              ? sel.unitId
+              : this.firstEnemy()
+            : sel !== undefined && sel.side === actor.side && !sel.ko
+              ? sel.unitId
+              : actor.unitId;
+        if (target === null) return;
         void this.send({ type: "item", actorId: actor.unitId, itemId: id, targetId: target });
       });
       this.skillMenu.push(b);

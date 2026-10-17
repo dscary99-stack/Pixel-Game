@@ -896,9 +896,12 @@ export class WorldScene extends Phaser.Scene {
   /** Companion Rebirth NPC; only in town (the server checks the stored position too). */
   private async openRebirth() {
     if (this.map !== null && this.map.kind !== "town") return this.flash("จุติคู่ใจได้ในเมือง");
-    return this.withPanel("จุติคู่ใจได้นอกไฟต์เท่านั้น", async (api, bundle) => {
-      await rebirthPanel(api, bundle);
+    let battleId: string | null = null;
+    await this.withPanel("จุติคู่ใจได้นอกไฟต์เท่านั้น", async (api, bundle) => {
+      battleId = await rebirthPanel(api, bundle);
     });
+    // The companion's trial (P37): coming back reopens the panel to finish the Rebirth.
+    if (battleId !== null) this.startHttpBattle(battleId, "เริ่มบททดสอบจุติ!", () => void this.openRebirth());
   }
 
   /** Companion skills and Bond; training is at the town NPC (the server checks the stored position too). */

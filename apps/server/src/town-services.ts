@@ -32,6 +32,7 @@ import {
   rebirthVariantFor,
   companionPrimaryStats,
   rebirthCost,
+  rebirthTrialId,
   RemoveSigilRequestSchema,
   SellRequestSchema,
   BuyRequestSchema,
@@ -98,6 +99,7 @@ export type ServiceRejection =
   | "NO_MATERIAL"
   | "LEVEL_TOO_LOW"
   | "PLAYER_LEVEL_TOO_LOW"
+  | "TRIAL_REQUIRED"
   | "MAX_SKILL_LEVEL"
   | "NOT_SPECIES_SKILL"
   | "MASTERY_TOO_LOW"
@@ -580,9 +582,16 @@ export class TownServices {
     if (!hasVariant && branch !== null) return reject("NO_VARIANT", `${species.id} has no variants at Rebirth ${cost.nextStage}`);
 
     const result: RebirthResult = { companionId, stage: cost.nextStage, branch, paid: { coins: cost.coins, itemId: cost.materialItemId, quantity: cost.materialQty } };
+    // P37: this character won the next stage's trial with the companion still standing.
+    const trialWon = `EXISTS (SELECT 1 FROM class_trials t JOIN battle_reservations b ON b.reservation_id = t.reservation_id
+      WHERE t.account_id = ? AND t.character_id = (SELECT id FROM characters WHERE account_id = ?) AND t.branch_id = ?
+        AND b.status = 'settled' AND b.outcome = 'victory'
+        AND EXISTS (SELECT 1 FROM json_each(b.result_json, '$.rebirthTrial.standing') s WHERE s.value = ?))`;
+    const trialArgs = [accountId, accountId, rebirthTrialId(companionId, cost.nextStage), companionId];
     const guards = [
       this.inTown(),
       `NOT ${OPEN_BATTLE}`,
+      trialWon,
       `EXISTS (SELECT 1 FROM monster_instances WHERE id = ? AND owner_id = ? AND lock_state = 'free' AND rebirth_stage = ? AND xp >= ?)`,
       `EXISTS (SELECT 1 FROM characters WHERE account_id = ? AND xp >= ?)`,
       `(SELECT COALESCE(SUM(delta), 0) FROM coin_ledger WHERE account_id = ?) >= ?`,
@@ -592,6 +601,7 @@ export class TownServices {
       accountId,
       ...this.townMapIds,
       accountId,
+      ...trialArgs,
       companionId,
       accountId,
       expectedStage,
@@ -659,6 +669,9 @@ export class TownServices {
       if (now.xp < cost.companionExp) return reject("LEVEL_TOO_LOW", `the companion must be Lv${cost.companionLevel}`);
       const ch = await this.db.prepare(`SELECT xp FROM characters WHERE account_id = ?`).bind(accountId).first<{ xp: number }>();
       if ((ch?.xp ?? 0) < cost.playerExp) return reject("PLAYER_LEVEL_TOO_LOW", `your character must be Lv${cost.playerLevel}`);
+      if ((await this.db.prepare(`SELECT 1 AS ok WHERE ${trialWon}`).bind(...trialArgs).first<{ ok: number }>()) === null) {
+        return reject("TRIAL_REQUIRED", `win this companion's Rebirth ${cost.nextStage} trial first, with it standing at the end`);
+      }
       if ((await this.coins(accountId)) < cost.coins) return reject("INSUFFICIENT_COINS", `Rebirth costs ${cost.coins} coins`);
       return reject("INSUFFICIENT_ITEMS", `Rebirth needs ${cost.materialQty} ${cost.materialItemId}`);
     });

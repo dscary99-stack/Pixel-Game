@@ -271,6 +271,10 @@ export const EXAMPLE_ITEMS: ItemDefinition[] = [
   { id: "item:stat_reset_scroll", ...meta, name: { th: "คัมภีร์ล้างสเตตัส", en: "Stat Reset Scroll" }, kind: "reset", resets: "stats", vendorPrice: 0 },
   { id: "item:skill_reset_scroll", ...meta, name: { th: "คัมภีร์ล้างสกิล", en: "Skill Reset Scroll" }, kind: "reset", resets: "skills", vendorPrice: 0 },
   { id: "item:power_tonic", ...meta, name: { th: "ยาเพิ่มพลัง" }, kind: "support", statuses: [{ statusId: "atk_up", chancePct: 100, turns: 3 }], vendorPrice: 25 },
+  // Group buff and thrown items (Claude 2026-10-17, EXAMPLE numbers): Auto Hunt may use them by rule.
+  { id: "item:war_drum_tonic", ...meta, name: { th: "ยากลองศึก" }, kind: "support", area: true, statuses: [{ statusId: "atk_up", chancePct: 100, turns: 3 }], vendorPrice: 60 },
+  { id: "item:fire_flask", ...meta, name: { th: "ขวดไฟ" }, kind: "attack", damage: { damageType: "magic", flat: 120, element: "FIRE" }, vendorPrice: 20 },
+  { id: "item:thunder_bomb", ...meta, name: { th: "ระเบิดฟ้าร้อง" }, kind: "attack", area: true, damage: { damageType: "magic", flat: 60, element: "WIND" }, vendorPrice: 45 },
   ...EXAMPLE_SPECIES.map(
     (s): ItemDefinition => ({
       id: s.captureItemId as ItemDefinition["id"],

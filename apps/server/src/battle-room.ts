@@ -376,6 +376,10 @@ export class BattleRoom {
           // Secret quests (secret-progress.ts): what this fight did, from the final state only.
           ...(state.practice === true ? {} : { secret: secretFightFacts(state, isCapture, account) }),
           ...(state.raceTrial !== undefined ? { raceTrial: { met: state.raceTrial.count >= state.raceTrial.need, count: state.raceTrial.count, need: state.raceTrial.need } } : {}),
+          // A Rebirth trial (P37) writes no HP back, but the claim needs who was still standing.
+          ...(state.rebirthTrial !== undefined
+            ? { rebirthTrial: { stage: state.rebirthTrial.stage, standing: e.allies.filter((a) => !a.ko && a.instanceId !== null).map((a) => a.instanceId!) } }
+            : {}),
         });
         out[K.settle] = { kind: "settle", status: "pending", settlement: settlementFor(state.ownerAccountId, reservationId, e.unusedReserved) };
         const members = (await this.storage.get<Record<string, string>>(K.memberReservations)) ?? {};

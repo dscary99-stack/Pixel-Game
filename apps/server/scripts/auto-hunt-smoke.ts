@@ -1,6 +1,6 @@
 // End-to-end Auto Hunt check (C14, chapter 08) against `wrangler dev`: the server walks the
-// player to a pack, plays the fight, records it as `auto_hunt`, then walks on to the next pack;
-// a hand step stops it, and closing the page stops it (no offline farming). Run
+// player to a pack, plays the fight (a potion and a thrown fire flask by rule), records it as
+// `auto_hunt`, then walks on to the next pack; a hand step stops it, and closing the page stops it (no offline farming). Run
 // `npm run db:migrate:local` and `npm run dev:server` first, then `npm run smoke:auto`.
 import { api, battleCall, connect, run, sleep, toField, type Msg, AUTO_GAP_MS } from "./smoke-lib";
 
@@ -33,8 +33,12 @@ out.noTargets = (await A.wait((m) => m.t === "auto", 4000, from)).reason;
 // Start: the server walks (autoMoved) and opens a fight by itself.
 from = A.inbox.length;
 const startPos = { ...A.pos };
-// Item rule: the character may drink one small potion a fight, on itself, below 95% HP.
-A.send({ t: "autoHunt", settings: { stopBelowHpPercent: 0, itemRules: [{ itemId: "item:small_potion", target: "self", hpBelowPercent: 95, maxPerFight: 1 }] } });
+// Item rules: one small potion a fight on itself below 95% HP, and one fire flask a fight at an enemy.
+await fetch(`${api}/dev/grant`, { method: "POST", headers: { "content-type": "application/json", "x-dev-account": account }, body: JSON.stringify({ operationId: `flask_${run}`, items: { "item:fire_flask": 3 } }) });
+A.send({
+  t: "autoHunt",
+  settings: { stopBelowHpPercent: 0, itemRules: [{ itemId: "item:small_potion", target: "self", hpBelowPercent: 95, maxPerFight: 1 }, { itemId: "item:fire_flask", maxPerFight: 1 }] },
+});
 out.started = (await A.wait((m) => m.t === "auto", 4000, from)).on;
 const enc = await A.wait((m) => m.t === "encounter", 30_000, from);
 out.serverSteps = A.inbox.slice(from).filter((m) => m.t === "autoMoved").length;
@@ -50,7 +54,11 @@ for (let i = 0; i < 300 && view.state.status === "active"; i++) {
 out.fight1 = { status: view.state.status, autopilot: view.autopilot ?? null };
 const events: Msg[] = (await call("GET", "/events?since=0")).events;
 out.serverActions = events.filter((e) => e.type === "ActionResolved").length;
-out.potionsUsedByAuto = events.filter((e) => e.type === "ItemConsumed").length;
+out.potionsUsedByAuto = events.filter((e) => e.type === "ItemConsumed" && e.itemId === "item:small_potion").length;
+// The flask: thrown once, at an enemy.
+const enemyIds = new Set(view.state.units.filter((u: Msg) => u.side === "enemy").map((u: Msg) => u.unitId));
+out.flaskThrows = events.filter((e) => e.type === "ActionResolved" && e.action === "item" && enemyIds.has(e.targetId)).length;
+if (events.filter((e) => e.type === "ItemConsumed" && e.itemId === "item:fire_flask").length !== 1 || (out.flaskThrows as number) !== 1) throw new Error(`flask not thrown once by Auto: ${out.flaskThrows}`);
 out.rewardOrigin = events.find((e) => e.type === "RewardEntitled")?.entitlement.originMode ?? null;
 
 // After the result pause it walks on and starts the next fight.

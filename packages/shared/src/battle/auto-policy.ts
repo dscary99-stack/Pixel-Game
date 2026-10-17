@@ -2,7 +2,10 @@
  * Auto Battle item rules (chapter 08 "allowed items / max spend", rule engine step 1).
  * The player picks which items Auto may use, on whom, below which HP or MP, and how many per fight.
  * Each kind has its own trigger: heal below the HP %, mana below the MP %, revive a fallen ally once it
- * can be revived, support (buffs, cleanse) when the ally lacks the buff or carries a harmful status.
+ * can be revived, support (buffs, cleanse) when the ally lacks the buff or carries a harmful status;
+ * a group support item when at least `minTargets` allies would gain from it; an attack item on the
+ * weakest enemy (an Elite or boss first), or for an area one when at least `minTargets` enemies stand,
+ * with `strongOnly` keeping it for fights with an Elite or boss.
  * Rules run in the listed order before the basic attack; a rule that cannot apply is skipped.
  * They never capture (C15) and never touch anything outside the reserved combat bag.
  */
@@ -19,6 +22,10 @@ export const AutoItemRuleSchema = z
     mpBelowPercent: z.number().int().min(1).max(95).default(30),
     /** At most this many of this item in one fight. */
     maxPerFight: z.number().int().min(1).max(20).default(3),
+    /** Area items: use only when at least this many allies would gain (support) or enemies stand (attack). */
+    minTargets: z.number().int().min(1).max(10).default(2),
+    /** Attack items: only while an Elite or boss stands. */
+    strongOnly: z.boolean().default(false),
   })
   .strict();
 export type AutoItemRule = z.infer<typeof AutoItemRuleSchema>;

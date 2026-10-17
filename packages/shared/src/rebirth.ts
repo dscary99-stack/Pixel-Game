@@ -3,7 +3,9 @@
  *
  * - Any species can be reborn at max level (C: "every species ... Rebirth"), up to `maxRebirths`.
  * - It costs coins and the species' own material, at an NPC in town, outside fights; the owner's
- *   character level is the licence (O04). The trial (บททดสอบ) is not built yet.
+ *   character level is the licence (O04). Before it, the companion's trial (P37): a training-ground
+ *   fight against the tower tyrant at the stage's stat %, won with that companion in the team and still
+ *   standing at the end; one won trial per companion and stage opens that Rebirth.
  * - Level goes back to 1 and EXP to 0; species, element, history, Bond, owner and growth seed stay,
  *   so the same growth path repeats with the stage's bonus on top (+4/+7/+10% total).
  * - Each stage may come with two variant branches (R1 a skill, R2 the innate, R3 another skill +
@@ -41,6 +43,29 @@ export const RebirthBranchRequestSchema = z
   })
   .strict();
 export type RebirthBranchRequest = z.infer<typeof RebirthBranchRequestSchema>;
+
+/** Start (or, with the same operation id, resume) a companion's Rebirth trial (P37) in town. */
+export const RebirthTrialStartRequestSchema = z.object({ operationId: OperationIdSchema, companionId: z.string().min(1).max(120) }).strict();
+
+/** EXAMPLE: the Rebirth trial boss, the tower tyrant (the Class3 trial boss); the rules give it the stage's stat %. */
+export const REBIRTH_TRIAL_BOSS_ID = "boss:rift_spire_tyrant";
+
+/** The trial row's id for a companion's next stage (stored with the class trials). */
+export const rebirthTrialId = (companionId: string, stage: number): string => `rebirth:${stage}:${companionId}`;
+
+/** The Rebirth trial boss's stat % for the stage it opens (1..maxRebirths). */
+export function rebirthTrialStatPct(rules: RulesConfig, stage: number): number | null {
+  return rules.provisional.rebirthTrial.value.statPct[stage - 1] ?? null;
+}
+
+/** A companion's latest trial for its next stage: won only when the fight was won with it standing. */
+export interface RebirthTrialView {
+  companionId: string;
+  stage: number;
+  operationId: string;
+  battleId: string;
+  status: "started" | "won" | "lost";
+}
 
 /** The species' own material: the first material in its loot table's species pool. */
 export function speciesMaterialItem(

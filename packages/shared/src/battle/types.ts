@@ -213,6 +213,8 @@ export interface BattleState {
   };
   /** Divine awakening trial: the race goal and how far the team got (ascension.ts RACE_TRIAL_GOALS). */
   raceTrial?: { raceId: string; kind: RaceTrialGoalKind; need: number; count: number };
+  /** A companion's Rebirth trial (P37): the stage it opens. */
+  rebirthTrial?: { stage: number };
   /** The capture rules this fight started with (capture.ts); absent on states from before pinning = current profile. */
   captureProfile?: CaptureProfile;
   /** Private server RNG state. Never sent to the client. */
@@ -399,6 +401,8 @@ export interface BattleSetup {
   classTrial?: boolean;
   /** 3 for the Class3 trial (its own stat %, P28), "ascend" for the divine awakening trial (P31); a Class2 trial leaves it out. */
   classTrialTier?: 3 | "ascend";
+  /** A companion's Rebirth trial (P37): the stage it opens sets the boss's stat %; a class trial without a tier. */
+  rebirthTrial?: { stage: number };
   /** The divine awakening trial only: the race whose goal (RACE_TRIAL_GOALS) the team must reach. */
   raceTrial?: { raceId: string };
   bag: Record<string, number>;

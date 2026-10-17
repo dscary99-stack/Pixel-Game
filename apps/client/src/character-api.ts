@@ -3,7 +3,7 @@
  * what it gets back. Identity uses the dev header until O11 picks auth.
  */
 import { authHeaders, type Identity } from "./identity";
-import type { AssetSnapshot, CharacterView, CreateCharacterRequest, MarketBrowseQuery, MarketKind, MarketView, TradeKind, TradeSide, TradeView, VaultView, MailView, DisposeQuote, EquipSlot, EquipmentView, FrontierBoardView, FrontierView, PracticeView, ClassView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RefineResult, RolledAffix, SecretQuestView, AttainmentView, FashionLayer, FashionLook } from "@pmrpg/shared";
+import type { AssetSnapshot, CharacterView, CreateCharacterRequest, MarketBrowseQuery, MarketKind, MarketView, TradeKind, TradeSide, TradeView, VaultView, MailView, DisposeQuote, EquipSlot, EquipmentView, FrontierBoardView, FrontierView, PracticeView, ClassView, MonsterInstance, JournalSummary, NpcOrder, PartyView, PrimaryStats, Profession, QuestBoardView, QuestReward, Rarity, RefineResult, RolledAffix, SecretQuestView, AttainmentView, FashionLayer, FashionLook, RebirthTrialView } from "@pmrpg/shared";
 
 export type StoredCompanion = MonsterInstance & { hp: number | null; mp: number | null };
 
@@ -262,6 +262,15 @@ export class CharacterApi {
   }
   leaveParty() {
     return this.call<{ party: PartyView | null }>("POST", "/party/leave", {});
+  }
+
+  /** The latest Rebirth trial of each companion for its next stage (P37). */
+  rebirthTrials() {
+    return this.call<{ trials: RebirthTrialView[] }>("GET", "/class/rebirth");
+  }
+
+  rebirthTrialStart(operationId: string, companionId: string) {
+    return this.call<{ battleId: string; branchId: string; resumed: boolean }>("POST", "/class/rebirth/start", { operationId, companionId });
   }
 
   /** Companion Rebirth at the town NPC. The panel keeps one operation id per companion and stage. */
