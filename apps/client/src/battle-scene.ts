@@ -41,6 +41,9 @@ interface UnitView {
   ring: Phaser.GameObjects.Rectangle;
 }
 
+/** P36 warning window: shown this long before an untouched fight closes. */
+const IDLE_WARN_MS = 120_000;
+
 export class BattleScene extends Phaser.Scene {
   private transport!: BattleTransport;
   private snap!: Snapshot;
@@ -51,6 +54,9 @@ export class BattleScene extends Phaser.Scene {
   private turnText!: Phaser.GameObjects.Text;
   /** Party bonus, tower floor and boss phase: inside the field's top-left, wrapped clear of the enemy columns. */
   private infoText!: Phaser.GameObjects.Text;
+  /** P36: warns before a fight nobody acts in closes as lost. */
+  private idleText!: Phaser.GameObjects.Text;
+  private idleDeadline: number | null = null;
   private autoOn = false;
   private busy = false;
   private autoButton!: Phaser.GameObjects.Text;
@@ -84,6 +90,7 @@ export class BattleScene extends Phaser.Scene {
     this.log = [];
     this.autoOn = false;
     this.busy = false;
+    this.idleDeadline = null;
   }
 
   async create() {
@@ -92,6 +99,8 @@ export class BattleScene extends Phaser.Scene {
     this.add.text(12, 8, this.transport.label, { fontFamily: "sans-serif", fontSize: "13px", color: "#f2c94c" });
     this.turnText = this.add.text(12, 28, "", { fontFamily: "sans-serif", fontSize: "15px", color: "#ffffff" });
     this.infoText = this.add.text(12, 56, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#f2c94c", wordWrap: { width: 520 } });
+    this.idleText = this.add.text(W - 12, 8, "", { fontFamily: "sans-serif", fontSize: "13px", color: "#ff8a80", align: "right" }).setOrigin(1, 0);
+    this.time.addEvent({ delay: 1000, loop: true, callback: () => this.idleTick() });
     this.logText = this.add.text(576, 456, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#d8d4ea", wordWrap: { width: 374 } });
 
     const buttons: [string, () => void][] = [
@@ -174,6 +183,15 @@ export class BattleScene extends Phaser.Scene {
     if (this.watching) return;
     this.autoOn = !this.autoOn;
     this.autoButton.setText(this.autoOn ? "Auto: เปิด" : "Auto: ปิด");
+  }
+
+  /** P36: the last two minutes before an untouched fight closes as lost show a countdown. */
+  private idleTick() {
+    if (this.idleText === undefined) return;
+    const left = this.idleDeadline === null || this.snap?.state.status !== "active" ? null : this.idleDeadline - Date.now();
+    if (left === null || left > IDLE_WARN_MS) return void this.idleText?.setText("");
+    const sec = Math.max(0, Math.ceil(left / 1000));
+    this.idleText.setText(`ไม่มีใครสั่ง: ไฟต์จะปิดและนับเป็นแพ้ใน ${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`);
   }
 
   /** Party boss fight (Nut 2026-10-07): is the unit whose turn it is one of ours? Solo fights: always. */
@@ -397,6 +415,9 @@ export class BattleScene extends Phaser.Scene {
 
   private apply(snapshot: Snapshot, events: BattleEvent[], response?: { status: string; reasonCode?: string; message?: string }) {
     this.snap = snapshot;
+    // The server sends time left, not a clock time, so a skewed device clock cannot move the warning.
+    if (snapshot.abandonInMs !== undefined) this.idleDeadline = snapshot.abandonInMs === null ? null : Date.now() + snapshot.abandonInMs;
+    this.idleTick();
     // A preview made for an older state is out of date (HP, statuses, bag may have moved).
     if (events.length > 0) this.closeCapturePreview();
     if (response?.status === "rejected") this.pushLog(`ปฏิเสธ: ${refusalTh(response.reasonCode, response.message)}`);

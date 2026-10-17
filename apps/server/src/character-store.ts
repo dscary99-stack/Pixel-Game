@@ -451,6 +451,17 @@ export class CharacterStore {
     return rows.results.map((r) => r.instance_id);
   }
 
+  /** Boss firsts (P35) recorded for this owner since `since` (ISO), grouped by boss: for the "Bond +30" notice. */
+  async bossFirstsSince(accountId: string, since: string): Promise<{ bossId: string; companionIds: string[] }[]> {
+    const rows = await this.db
+      .prepare(`SELECT key, instance_id FROM companion_firsts WHERE owner_id = ? AND kind = 'boss' AND created_at >= ? ORDER BY key, instance_id`)
+      .bind(accountId, since)
+      .all<{ key: string; instance_id: string }>();
+    const by = new Map<string, string[]>();
+    for (const r of rows.results) by.set(r.key, [...(by.get(r.key) ?? []), r.instance_id]);
+    return [...by].map(([bossId, companionIds]) => ({ bossId, companionIds }));
+  }
+
   async setTeam(accountId: string, raw: unknown): Promise<SetTeamResult> {
     const parsed = SetTeamRequestSchema.safeParse(raw);
     if (!parsed.success) return { status: "rejected", reason: "INVALID_REQUEST", message: parsed.error.issues.map((i) => i.message).join("; ") };

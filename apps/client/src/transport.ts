@@ -30,6 +30,8 @@ export interface Snapshot {
   you?: string;
   /** Party boss fights: from when another member's stalled turn may be played by Auto (P22). */
   standInAt?: number | null;
+  /** Server only: time left before this fight closes as lost if nobody acts (P36); null while Auto Hunt plays it or once over. */
+  abandonInMs?: number | null;
 }
 
 export interface BattleTransport {

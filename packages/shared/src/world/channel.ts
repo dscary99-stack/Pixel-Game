@@ -76,6 +76,8 @@ export type WorldServerMessage =
   /** Auto Hunt turned on or off; when off, why (and the pack/species for FOUND_SPECIES). */
   /** `summary`: the run's totals, sent when a run that started ends (chapter 08). */
   | { t: "auto"; on: boolean; reason?: AutoStopReason; detail?: string; packId?: string; summary?: HuntSummary }
+  /** Bond from a first time (P35): the team's companions new to this map, or first winners against this boss. */
+  | { t: "bond"; reason: "map" | "boss"; key: string; companionIds: string[]; gain: number }
   /** The server moved this player (Auto Hunt). */
   | { t: "autoMoved"; x: number; y: number; facing: Facing };
 

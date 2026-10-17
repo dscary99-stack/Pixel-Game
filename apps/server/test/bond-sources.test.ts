@@ -107,3 +107,16 @@ describe("first visit to a map (P35)", () => {
     expect(pet().bond).toBe(0);
   });
 });
+
+describe("the boss-first notice (P35)", () => {
+  it("lists only boss firsts since the fight was taken up, grouped by boss", async () => {
+    const add = (id: string, key: string, at: string, kind = "boss") =>
+      db.prepare(`INSERT INTO companion_firsts (instance_id, owner_id, kind, key, token, created_at) VALUES (?, ?, ?, ?, 't', ?)`).run(id, A, kind, key, at);
+    add(PET, "boss:old", "2026-10-13T00:00:00.000Z");
+    add(PET, "boss:crystal_crab_lord", "2026-10-14T00:00:05.000Z");
+    add("mon:other", "boss:crystal_crab_lord", "2026-10-14T00:00:05.000Z");
+    add(PET, "map:dawn_cave", "2026-10-14T00:00:05.000Z", "map");
+    expect(await store.bossFirstsSince(A, "2026-10-14T00:00:00.000Z")).toEqual([{ bossId: "boss:crystal_crab_lord", companionIds: [PET, "mon:other"].sort() }]);
+    expect(await store.bossFirstsSince("acct:b", "2026-10-01T00:00:00.000Z")).toEqual([]);
+  });
+});

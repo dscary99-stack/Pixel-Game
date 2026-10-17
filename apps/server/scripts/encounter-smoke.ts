@@ -139,6 +139,9 @@ if (JSON.stringify(e1.elite?.modifiers) !== JSON.stringify(elite.leader.elite) |
 B.sock.close();
 const callB = battleCall(acct("b"), encB.battleId);
 const HB = { "content-type": "application/json", "x-dev-account": acct("b") };
+const fresh = await callB("GET", "");
+out.abandonInMs = fresh.abandonInMs;
+if (!(typeof fresh.abandonInMs === "number" && fresh.abandonInMs > 0 && fresh.abandonInMs <= 600_000)) throw new Error(`abandonInMs: ${fresh.abandonInMs}`);
 const aged = await fetch(`${api}/dev/battle/idle`, { method: "POST", headers: HB, body: JSON.stringify({ battleId: encB.battleId }) });
 if (!aged.ok) throw new Error(`dev idle: ${await aged.text()}`);
 let viewB = await callB("GET", "");

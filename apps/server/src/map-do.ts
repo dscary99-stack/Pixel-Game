@@ -91,6 +91,8 @@ interface Attachment {
   presence: Presence;
   /** Auto Hunt on for this connection (C14: only while connected). */
   auto?: AutoState | null;
+  /** When this connection's current fight was taken up (ISO): boss-first Bond after it is announced (P35). */
+  fightSince?: string;
 }
 
 interface AutoState {
@@ -224,7 +226,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
 
     await this.journal.recordMap(accountId, mapId);
     // First exploration (chapter 04 §6, P35): the team's companions new to this map gain Bond once.
-    await this.characters.bondFirstVisit(accountId, mapId);
+    const newHere = await this.characters.bondFirstVisit(accountId, mapId);
     const channel = this.ensureChannel(mapId, channelNo);
     const joined = channel.join(accountId, name, claim.pos, Date.now(), look);
     if (!joined.ok) {
@@ -245,6 +247,7 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     const attachment: Attachment = { mapId, channel: channelNo, generation: claim.generation, presence: joined.presence };
     server.serializeAttachment(attachment);
     this.deliver(accountId, joined.out);
+    if (newHere.length > 0) safeSend(server, { t: "bond", reason: "map", key: mapId, companionIds: newHere, gain: this.rules.provisional.bondSources.value.firstMapVisit });
     // Reconnecting in the middle of a fight puts the player straight back into it.
     if (reattach !== null) {
       this.setBattle(server, attachment, reattach);
@@ -575,7 +578,13 @@ export class MapChannelDurableObject extends DurableObject<Env> {
         safeSend(ws, { t: "error", code: "SETTLING", message: "recording the fight; try again" });
         return "settling";
       }
+      const since = (this.att(ws) ?? a).fightSince;
       this.setBattle(ws, this.att(ws) ?? a, null);
+      if (r?.outcome === "victory" && since !== undefined) {
+        for (const f of await this.characters.bossFirstsSince(account, since)) {
+          safeSend(ws, { t: "bond", reason: "boss", key: f.bossId, companionIds: f.companionIds, gain: this.rules.provisional.bondSources.value.firstBossWin });
+        }
+      }
       if (r?.outcome === "defeat") {
         if (this.att(ws)?.auto) await this.stopAuto(ws, "DEFEATED");
         safeSend(ws, { t: "resumed" });
@@ -782,7 +791,8 @@ export class MapChannelDurableObject extends DurableObject<Env> {
 
   private setBattle(ws: WebSocket, a: Attachment, battleId: string | null): void {
     const p = this.ensureChannel(a.mapId, a.channel).setBattle(a.presence.accountId, battleId) ?? { ...a.presence, battleId };
-    ws.serializeAttachment({ ...a, presence: p } satisfies Attachment);
+    const { fightSince: _was, ...rest } = a;
+    ws.serializeAttachment({ ...rest, presence: p, ...(battleId === null ? {} : { fightSince: new Date().toISOString() }) } satisfies Attachment);
   }
 
   private battle(battleId: string) {

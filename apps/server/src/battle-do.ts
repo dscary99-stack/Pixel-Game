@@ -130,6 +130,8 @@ export class BattleDurableObject extends DurableObject<Env> {
               // Party boss fights: who is asking (their units carry controllerId) and when a stalled turn may be played by Auto.
               you: accountId,
               standInAt: await this.room.standInAt(),
+              // P36: time left (not a clock time) before an untouched fight closes as lost.
+              abandonInMs: await this.room.abandonAt().then((at) => (at === null ? null : Math.max(0, at - Date.now()))),
             },
           };
         case "autopilot": {

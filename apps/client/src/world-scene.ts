@@ -354,6 +354,17 @@ export class WorldScene extends Phaser.Scene {
         this.flash("พักในเมือง: HP/MP ฟื้นเต็มแล้ว");
         void this.reloadCharacter();
         break;
+      case "bond": {
+        // P35 firsts. Shown after the map name / rest notice that arrive with the same join.
+        const names = m.companionIds.map((id) => {
+          const c = this.bundle?.companions.find((x) => x.id === id);
+          return c === undefined ? "คู่ใจ" : (c.nickname ?? this.species.get(c.speciesId)?.name.th ?? c.speciesId);
+        });
+        const why = m.reason === "map" ? `มาที่ ${this.maps.get(m.key)?.name.th ?? m.key} ครั้งแรก` : "ชนะบอสตัวนี้ครั้งแรก";
+        this.time.delayedCall(2800, () => this.flash(`${why}: ${names.join(", ")} Bond +${m.gain}`));
+        void this.reloadCharacter();
+        break;
+      }
       case "kicked":
         this.stopped = true;
         this.flash(m.reason === "REPLACED" ? "บัญชีนี้เชื่อมต่อจากที่อื่นแล้ว (หน้านี้หยุดควบคุม)" : "ย้ายไป channel อื่นแล้ว");

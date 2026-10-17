@@ -144,6 +144,10 @@ for (const spawnId of ["meadow_foxes", "pond_crabs"]) {
       const firstTownBond = { before: bondBefore, after: after.companions.find((c: Msg) => c.id === captured)?.bond };
       out.firstTownBond = firstTownBond;
       if (firstTownBond.after !== firstTownBond.before + 10) throw new Error(`first visit Bond: ${JSON.stringify(firstTownBond)}`);
+      // ...and the page is told (bond notice), naming the companion.
+      const notice = await again.wait((m) => m.t === "bond", 3000).catch(() => null);
+      out.firstTownNotice = notice;
+      if (notice?.reason !== "map" || notice.key !== "map:dawn_town" || !notice.companionIds.includes(captured) || notice.gain !== 10) throw new Error(`first visit notice: ${JSON.stringify(notice)}`);
     }
     out.afterRest = { hp: after.character.hp, companionsFull: after.companions.every((c: Msg) => c.hp === null) };
     A = again;
