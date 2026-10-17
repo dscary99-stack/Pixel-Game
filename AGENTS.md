@@ -27,7 +27,7 @@ npm test               # vitest
 npm run dev:client     # http://127.0.0.1:5173 (local preview; หน้าแรก = เดินในแผนที่, ?battle = ฉากต่อสู้; ?server = ต่อ wrangler dev และต้องสร้างตัวละครก่อน; ?server&login = เข้าสู่ระบบและเลือกช่องตัวละครแบบจริง)
 npm run db:migrate:local  # ใส่ D1 migrations ลงฐานข้อมูล local ก่อน dev:server ครั้งแรก/หลังเพิ่ม migration
 npm run dev:server     # wrangler dev :8787; เปิด client ด้วย ?server
-npm run smoke:server   # end-to-end ไฟต์ กับ wrangler dev ที่รันอยู่
+npm run smoke:server   # end-to-end ไฟต์ → เครื่องมือผู้ดูแล `/admin` (ไม่มี token 401, outbox ส่งครบ, retry ไม่มีอะไรทำ) กับ wrangler dev ที่รันอยู่
 npm run smoke:world    # end-to-end การเดิน 2 ผู้เล่น (WebSocket) → ฝูงในทุ่งเดินไปมา (`packMoves`) → ส่งข้อความรัวเกินงบถูกทิ้ง (`RATE_LIMITED` ครั้งเดียว) → channel เต็มแล้วคนถัดไปถูกย้ายไป channel อื่น และหน้าจำนวนคนต่อช่องเห็นว่าเต็ม → ท่วมต่อหลังเตือนถูกตัด (`FLOOD`) → เงียบเกิน heartbeat ถูกตัด (`IDLE`) กับ wrangler dev ที่รันอยู่
 npm run smoke:encounter # end-to-end เดินเข้าทุ่ง → สู้ฝูง → กลับที่เดิม (ไฟต์ส่วนตัว O05) → ฝูง Elite โชว์ความสามารถตรงกับในไฟต์ → สมุดบันทึกมีแผนที่/ชนิดที่พบ → ปิดหน้ากลางไฟต์แล้วไม่มีใครสั่งครบเวลา ไฟต์ปิดเองเป็นแพ้ (P36) แล้ว engage ใหม่ได้ กับ wrangler dev
 npm run smoke:character # end-to-end สร้างตัวละคร → เควสลับล็อก (`{locked:true}` ไม่มีข้อมูลอื่น) → dev เปิดดูได้ชุดเควส → จับคู่ใจ → จัดทีม → ตั้งชื่อเล่น → HP ติดตัว → แพ้แล้วรีโหลดก่อนกดเดินต่อก็กลับเมืองพัก (คู่ใจเข้าหมู่บ้านครั้งแรก Bond +10) → ให้ของโปรดก่อนชนะด้วยกันครบถูกปฏิเสธ → ปล่อยคู่ใจ กับ wrangler dev

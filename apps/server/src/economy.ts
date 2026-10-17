@@ -410,6 +410,15 @@ export class Economy {
     return rows.map((r) => ({ reservationId: r.reservation_id, battleId: r.battle_id }));
   }
 
+  /** Fights whose reservation stayed active since before `beforeIso` (operator view: stuck or very long fights). */
+  async staleActive(beforeIso: string, limit = 50): Promise<{ reservationId: string; battleId: string; accountId: string; updatedAt: string }[]> {
+    const { results: rows } = await this.db
+      .prepare(`SELECT reservation_id, battle_id, account_id, updated_at FROM battle_reservations WHERE status = 'active' AND updated_at < ? ORDER BY updated_at LIMIT ?`)
+      .bind(beforeIso, limit)
+      .all<{ reservation_id: string; battle_id: string; account_id: string; updated_at: string }>();
+    return rows.map((r) => ({ reservationId: r.reservation_id, battleId: r.battle_id, accountId: r.account_id, updatedAt: r.updated_at }));
+  }
+
   /** Current balance of one item, for checks and the dev inventory route. */
   async balance(accountId: string, itemId: string): Promise<number> {
     const r = await this.db

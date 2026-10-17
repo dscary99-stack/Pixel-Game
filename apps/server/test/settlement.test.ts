@@ -224,6 +224,29 @@ describe("battle settlement outbox", () => {
   });
 });
 
+describe("operator retry (admin route)", () => {
+  it("shows why a delivery stopped; after the cause is fixed, a retry delivers the same payload once and settles", async () => {
+    await startBattle();
+    const [first] = await fight();
+    const squat = { ...first!, ...(first!.kind === "kill" ? { items: [{ itemId: "item:river_pebble", quantity: 99 }] } : {}) } as Entitlement;
+    await eco.grant(squat, OWNER);
+    expect(await room.drainOutbox(eco)).toMatchObject({ failed: 1, settled: false });
+    const view = await room.adminOutbox();
+    const stuck = view.entries.filter((e) => e.status === "failed");
+    expect(stuck).toEqual([expect.objectContaining({ kind: "grant", detail: "PAYLOAD_MISMATCH", ref: first!.entitlementId })]);
+    // Retrying before the cause is fixed just fails again, and leaves an audit line each time.
+    expect(await room.adminRetry("ops:a")).toEqual({ retried: [stuck[0]!.key] });
+    expect(await room.drainOutbox(eco)).toMatchObject({ failed: 1, settled: false });
+    // The operator removes the squatting receipt in D1 (the fix), then retries only that key.
+    db.prepare("DELETE FROM reward_receipts WHERE entitlement_id = ?").run(first!.entitlementId);
+    expect(await room.adminRetry("ops:a", [stuck[0]!.key, "out:9:nope"])).toEqual({ retried: [stuck[0]!.key] });
+    expect(await room.adminRetry("ops:a", [stuck[0]!.key])).toEqual({ retried: [] });
+    expect(await room.drainOutbox(eco)).toMatchObject({ failed: 0, pending: 0, settled: true });
+    expect(await eco.reservation(RES)).toMatchObject({ status: "settled" });
+    expect((await room.adminOutbox()).audit).toHaveLength(3);
+  });
+});
+
 describe("reconciler probe", () => {
   it("voids a battle that never started, releases it, and the battle can never start afterwards", async () => {
     const s = setup();

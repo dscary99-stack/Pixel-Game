@@ -441,6 +441,40 @@ export class BattleRoom {
     return this.outboxSummary(entries);
   }
 
+  /** Operator view (admin route): the fight's status and every outbox entry with why it stopped. */
+  async adminOutbox(): Promise<{ status: string | null; owner: string | null; entries: { key: string; kind: OutboxEntry["kind"]; status: OutboxStatus; detail?: string; ref: string }[]; audit: unknown[] }> {
+    const state = await this.storage.get<BattleState>(K.state);
+    const entries = [...(await this.storage.list<OutboxEntry>(K.outbox))].sort(([a], [b]) => (a < b ? -1 : 1));
+    return {
+      status: state?.status ?? null,
+      owner: state?.ownerAccountId ?? null,
+      entries: entries.map(([key, e]) => ({
+        key,
+        kind: e.kind,
+        status: e.status,
+        ...(e.detail === undefined ? {} : { detail: e.detail }),
+        ref: e.kind === "grant" ? e.entitlement.entitlementId : e.kind === "settle" ? e.settlement.reservationId : e.reservationId,
+      })),
+      audit: [...(await this.storage.list<unknown>("admin:")).values()],
+    };
+  }
+
+  /**
+   * Operator retry (admin route), after the cause in D1 was fixed: the failed entries (all, or the listed
+   * keys) go back to pending and the next drain delivers them with the same payload; nothing is re-rolled.
+   * Each call leaves an audit line in the room. Retrying twice is harmless.
+   */
+  async adminRetry(by: string, keys?: string[]): Promise<{ retried: string[] }> {
+    const entries = await this.storage.list<OutboxEntry>(K.outbox);
+    const retried = [...entries].filter(([key, e]) => e.status === "failed" && (keys === undefined || keys.includes(key))).map(([key]) => key);
+    const at = this.now();
+    await this.storage.putMany({
+      ...Object.fromEntries(retried.map((key) => [key, { ...entries.get(key)!, status: "pending" } as OutboxEntry])),
+      [`admin:${String(at).padStart(15, "0")}:${by}`]: { at: new Date(at).toISOString(), by, action: "retry", keys: retried },
+    });
+    return { retried };
+  }
+
   async outbox(): Promise<OutboxSummary> {
     return this.outboxSummary(await this.storage.list<OutboxEntry>(K.outbox));
   }

@@ -55,4 +55,12 @@ for (let i = 0; i < 50; i++) {
 out.settlement = view.settlement;
 out.inventoryAfter = await inventory();
 out.reconcile = await (await fetch(`${api}/dev/reconcile`, { method: "POST", headers: H })).json();
+// Operator tools: refused without the token; with it, the fight's outbox (all delivered) and the stuck list.
+out.adminNoToken = (await fetch(`${api}/admin/battles/stuck`)).status;
+const A = { "x-admin-token": "dev", "content-type": "application/json" };
+const adminView = await (await fetch(`${api}/admin/battles/${battleId}`, { headers: A })).json();
+out.admin = { status: adminView.status, entries: adminView.entries?.length, allDelivered: adminView.entries?.every((e) => e.status === "delivered") };
+out.adminRetryNothing = await (await fetch(`${api}/admin/battles/${battleId}/retry`, { method: "POST", headers: A, body: JSON.stringify({ by: "smoke" }) })).json();
+out.adminStuck = (await fetch(`${api}/admin/battles/stuck?minutes=1`, { headers: A })).status;
+if (out.adminNoToken !== 401 || !out.admin.allDelivered || out.adminRetryNothing.retried?.length !== 0 || out.adminStuck !== 200) throw new Error(`admin: ${JSON.stringify(out)}`);
 console.log(JSON.stringify(out, null, 1));

@@ -212,6 +212,7 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (url.pathname.startsWith("/dev/")) return devRoute(request, env, url);
+    if (url.pathname.startsWith("/admin/")) return adminRoute(request, env, url);
     if (url.pathname.startsWith("/auth/") || url.pathname === "/account" || url.pathname.startsWith("/account/")) return accountRoute(request, env, url);
     if (url.pathname.startsWith("/world/")) return worldRoute(request, env, url);
     if (url.pathname === "/character" || url.pathname.startsWith("/character/") || url.pathname.startsWith("/town/") || url.pathname.startsWith("/quests") || url.pathname === "/journal") return characterRoute(request, env, url);
@@ -661,6 +662,45 @@ async function serviceReply(env: Env, accountId: string, r: ServiceResult<unknow
 
 /** Fallback name for a player who has not created a character: the account id without its prefix. */
 export const displayName = (accountId: string) => accountId.replace(/^acct:/, "").slice(0, 16);
+
+/**
+ * Operator tools (no player route reaches these). The caller sends `x-admin-token`; it must match the
+ * ADMIN_TOKEN secret (compared by hash). In dev without the secret, "dev" is accepted for smokes.
+ *   GET  /admin/battles/stuck?minutes=10   fights still active after that long, with their outbox
+ *   GET  /admin/battles/:id                one fight's outbox and the audit lines
+ *   POST /admin/battles/:id/retry {keys?}  failed deliveries back to pending (after fixing the cause)
+ */
+async function adminRoute(request: Request, env: Env, url: URL): Promise<Response> {
+  const expected = env.ADMIN_TOKEN ?? (env.ENVIRONMENT === "dev" ? "dev" : null);
+  if (expected === null) return json(404, { error: "NOT_CONFIGURED" });
+  const given = request.headers.get("x-admin-token") ?? "";
+  if ((await sha256Hex(given)) !== (await sha256Hex(expected))) return json(401, { error: "UNAUTHENTICATED" });
+  const battle = (id: string) => env.BATTLE.get(env.BATTLE.idFromName(id));
+  if (request.method === "GET" && url.pathname === "/admin/battles/stuck") {
+    const minutes = Math.max(1, Math.min(7 * 24 * 60, Number(url.searchParams.get("minutes") ?? 10) || 10));
+    const rows = await economyFor(env).staleActive(new Date(Date.now() - minutes * 60_000).toISOString());
+    const fights = [];
+    for (const r of rows) {
+      try {
+        fights.push({ ...r, ...((await battle(r.battleId).adminOutbox()) as object) });
+      } catch (e) {
+        fights.push({ ...r, error: String(e) });
+      }
+    }
+    return json(200, { minutes, fights });
+  }
+  const m = url.pathname.match(/^\/admin\/battles\/([a-z0-9_:-]{1,80})(\/retry)?$/);
+  if (m === null) return json(404, { error: "NOT_FOUND" });
+  if (request.method === "GET" && m[2] === undefined) return json(200, await battle(m[1]!).adminOutbox());
+  if (request.method === "POST" && m[2] === "/retry") {
+    const parsed = z.object({ keys: z.array(z.string().min(1).max(300)).max(100).optional(), by: z.string().min(1).max(60) }).strict().safeParse(await readJson(request));
+    if (!parsed.success) return json(400, { error: "INVALID_REQUEST", message: "body: { by: operator name, keys?: outbox keys }" });
+    const r = await battle(m[1]!).adminRetry(parsed.data.by, parsed.data.keys);
+    console.log(JSON.stringify({ admin: "retry", battleId: m[1], by: parsed.data.by, retried: r.retried }));
+    return json(200, r);
+  }
+  return json(404, { error: "NOT_FOUND" });
+}
 
 async function devRoute(request: Request, env: Env, url: URL): Promise<Response> {
   if (env.ENVIRONMENT !== "dev") return json(404, { error: "NOT_FOUND" });

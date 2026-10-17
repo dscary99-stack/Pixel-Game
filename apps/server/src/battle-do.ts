@@ -26,6 +26,8 @@ export interface Env {
   FACEBOOK_APP_ID?: string;
   /** Worker secret (`wrangler secret put FACEBOOK_APP_SECRET`). */
   FACEBOOK_APP_SECRET?: string;
+  /** Worker secret: operator token for /admin routes (`wrangler secret put ADMIN_TOKEN`). Unset: /admin answers NOT_CONFIGURED (dev accepts "dev"). */
+  ADMIN_TOKEN?: string;
   /** Worker secret: HMAC key for secret quest seeds. Required outside dev (`wrangler secret put SECRET_QUEST_KEY`). */
   SECRET_QUEST_KEY?: string;
 }
@@ -103,6 +105,18 @@ export class BattleDurableObject extends DurableObject<Env> {
       const at = await this.ctx.storage.getAlarm();
       if (at === null || at > Date.now() + OUTBOX_RETRY_MS) await this.ctx.storage.setAlarm(Date.now());
     }
+    return r;
+  }
+
+  /** Admin route only (the Worker checked the operator token): see BattleRoom.adminOutbox. */
+  async adminOutbox() {
+    return { ...(await this.room.adminOutbox()), summary: await this.room.outbox() };
+  }
+
+  /** Admin route only: failed entries back to pending, then drain now. */
+  async adminRetry(by: string, keys?: string[]) {
+    const r = await this.room.adminRetry(by, keys);
+    if (r.retried.length > 0) await this.ctx.storage.setAlarm(Date.now());
     return r;
   }
 
