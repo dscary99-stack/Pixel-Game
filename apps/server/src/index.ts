@@ -117,6 +117,7 @@ import {
 } from "@pmrpg/shared";
 import { z } from "zod";
 import { accountsFor, resolveAccount, resolveSession } from "./auth";
+import { sha256Hex } from "./account-store";
 import { verifyFacebookToken, verifyGoogleIdToken } from "./identity-providers";
 import type { Env, RoomOp, RoomReply } from "./battle-do";
 import { CharacterStore } from "./character-store";
@@ -268,12 +269,15 @@ async function accountRoute(request: Request, env: Env, url: URL): Promise<Respo
     });
   }
   const authFail = (r: { reason: string; message: string }) =>
-    json(r.reason === "INVALID_REQUEST" ? 400 : r.reason === "LOGIN_ID_TAKEN" ? 409 : r.reason === "LOCKED" ? 429 : 401, { error: r.reason, message: r.message });
-  if (request.method === "POST" && url.pathname.startsWith("/auth/") && url.pathname !== "/auth/logout") {
+    json(r.reason === "INVALID_REQUEST" ? 400 : r.reason === "LOGIN_ID_TAKEN" || r.reason === "NO_PASSWORD" ? 409 : r.reason === "LOCKED" || r.reason === "RATE_LIMITED" ? 429 : 401, { error: r.reason, message: r.message });
+  if (request.method === "POST" && url.pathname.startsWith("/auth/") && url.pathname !== "/auth/logout" && url.pathname !== "/auth/password") {
     const body = await readJson(request);
     if (body === undefined) return json(400, { error: "INVALID_REQUEST" });
     if (url.pathname === "/auth/register" || url.pathname === "/auth/login") {
-      const r = url.pathname === "/auth/register" ? await accounts.register(body) : await accounts.passwordLogin(body);
+      // Outside dev, sign-ups are limited per caller address (P21); only a hash of it is kept.
+      const ip = env.ENVIRONMENT === "dev" ? null : request.headers.get("CF-Connecting-IP");
+      const ipHash = ip === null ? undefined : await sha256Hex(`signup:${ip}`);
+      const r = url.pathname === "/auth/register" ? await accounts.register(body, ipHash) : await accounts.passwordLogin(body);
       return r.status === "ok" ? json(200, r.grant) : authFail(r);
     }
     if (url.pathname === "/auth/google" || url.pathname === "/auth/facebook") {
@@ -293,6 +297,10 @@ async function accountRoute(request: Request, env: Env, url: URL): Promise<Respo
   if (request.method === "POST" && url.pathname === "/auth/logout") {
     await accounts.logout(session);
     return json(200, { ok: true });
+  }
+  if (request.method === "POST" && url.pathname === "/auth/password") {
+    const r = await accounts.changePassword(session, (await readJson(request)) ?? null);
+    return r.status === "ok" ? json(200, { ok: true }) : authFail(r);
   }
   if (request.method === "GET" && url.pathname === "/account") return json(200, await accounts.view(session.userId, session.selectedSlot));
   if (request.method === "POST" && url.pathname === "/account/select") {

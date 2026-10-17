@@ -232,9 +232,11 @@ export const RULES = {
         /** This many wrong passwords in the window locks password sign-in for that ID until the window ends. */
         failedLoginLimit: 10,
         failedLoginWindowMs: 15 * 60_000,
+        /** New local IDs from one network address per rolling hour (attempts count, taken or not). */
+        signupsPerIpPerHour: 5,
       } as const,
       "P21",
-      "sign-in lasts 30 days; ID 4–24 of a–z 0–9 _ . -; password 8–128; 10 wrong passwords lock that ID for 15 minutes",
+      "sign-in lasts 30 days; ID 4–24 of a–z 0–9 _ . -; password 8–128; 10 wrong passwords lock that ID for 15 minutes; 5 sign-ups per address per hour (Claude 2026-10-17)",
     ),
     /**
      * Party boss fights (Nut 2026-10-07: 5 players, 1 companion each = 10 ally places). Claude's numbers:

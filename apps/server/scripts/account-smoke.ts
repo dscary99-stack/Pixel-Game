@@ -1,6 +1,6 @@
 // End-to-end sign-in check against `wrangler dev` (O10/O11, Nut 2026-10-07): make an in-game ID, wrong
 // password refused, sign in, 10 character places, two characters that share nothing, walk the map with
-// the session (WebSocket), Google/Facebook refused while not set up, sign out ends the session.
+// the session (WebSocket), Google/Facebook refused while not set up, change the password, sign out ends the session.
 // Run `npm run db:migrate:local` and `npm run dev:server` first, then `npm run smoke:account`.
 import { api, run, type Msg } from "./smoke-lib";
 
@@ -68,6 +68,15 @@ ws.close();
 
 out.google = (await call("POST", "/auth/google", { idToken: "x".repeat(40) })).body.error;
 out.facebook = (await call("POST", "/auth/facebook", { accessToken: "x".repeat(40) })).body.error;
+// Change the password (P21): the old one is refused, the other sign-in (from register) ends, this one stays.
+const newPassword = "smoke-password-2";
+out.changeWrong = (await call("POST", "/auth/password", { currentPassword: "nope-nope", newPassword }, token)).body.error;
+out.change = (await call("POST", "/auth/password", { currentPassword: password, newPassword }, token)).status;
+out.otherSignInAfterChange = (await call("GET", "/account", undefined, reg.body.token)).status;
+out.thisSignInAfterChange = (await call("GET", "/account", undefined, token)).status;
+out.oldPassword = (await call("POST", "/auth/login", { loginId, password })).body.error;
+out.newPassword = (await call("POST", "/auth/login", { loginId, password: newPassword })).status;
+must(out.changeWrong === "BAD_CREDENTIALS" && out.change === 200 && out.otherSignInAfterChange === 401 && out.thisSignInAfterChange === 200 && out.oldPassword === "BAD_CREDENTIALS" && out.newPassword === 200, "password change", out);
 await call("POST", "/auth/logout", {}, token);
 out.afterLogout = (await call("GET", "/account", undefined, token)).status;
 out.characterAfterLogout = (await call("GET", "/character", undefined, token)).status;

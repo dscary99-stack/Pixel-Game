@@ -22,6 +22,8 @@ export const PasswordSchema = z.string().min(L.passwordMin).max(L.passwordMax);
 
 export const RegisterRequestSchema = z.object({ loginId: LoginIdSchema, password: PasswordSchema }).strict();
 export const PasswordLoginRequestSchema = z.object({ loginId: LoginIdSchema, password: z.string().min(1).max(L.passwordMax) }).strict();
+/** A new password for the caller's local ID; the current one is checked like a sign-in (same lock). */
+export const ChangePasswordRequestSchema = z.object({ currentPassword: z.string().min(1).max(L.passwordMax), newPassword: PasswordSchema }).strict();
 export const GoogleLoginRequestSchema = z.object({ idToken: z.string().min(20).max(4096) }).strict();
 export const FacebookLoginRequestSchema = z.object({ accessToken: z.string().min(20).max(1024) }).strict();
 export const SelectCharacterRequestSchema = z.object({ slot: z.number().int().min(1).max(PRODUCTION_RULES.confirmed.maxCharactersPerAccount.value) }).strict();

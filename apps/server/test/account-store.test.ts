@@ -218,3 +218,65 @@ describe("Google and Facebook (O11)", () => {
     expect(db.prepare("SELECT COUNT(*) AS n FROM users").get()).toEqual({ n: 2 });
   });
 });
+
+describe("changing the password (P21)", () => {
+  it("needs the current password, keeps this sign-in, ends the others; the old password stops working", async () => {
+    const g = await register();
+    const other = await accounts.passwordLogin({ loginId: "Nut_01", password: "correct horse" });
+    if (other.status !== "ok") throw new Error("login");
+    const me = await sessionOf(g.token);
+    expect(await accounts.changePassword(me, { currentPassword: "wrong one!", newPassword: "battery staple" })).toMatchObject({ status: "rejected", reason: "BAD_CREDENTIALS" });
+    expect(await accounts.changePassword(me, { currentPassword: "correct horse", newPassword: "short" })).toMatchObject({ status: "rejected", reason: "INVALID_REQUEST" });
+    expect(await accounts.changePassword(me, { currentPassword: "correct horse", newPassword: "battery staple" })).toEqual({ status: "ok" });
+    expect(await accounts.resolve(g.token)).not.toBeNull();
+    expect(await accounts.resolve(other.grant.token)).toBeNull();
+    expect(await accounts.passwordLogin({ loginId: "Nut_01", password: "correct horse" })).toMatchObject({ status: "rejected", reason: "BAD_CREDENTIALS" });
+    expect(await accounts.passwordLogin({ loginId: "Nut_01", password: "battery staple" })).toMatchObject({ status: "ok" });
+  });
+
+  it("wrong current passwords count toward the sign-in lock", async () => {
+    const me = await sessionOf((await register()).token);
+    for (let i = 0; i < R.provisional.login.value.failedLoginLimit; i++) await accounts.changePassword(me, { currentPassword: "nope nope", newPassword: "battery staple" });
+    expect(await accounts.changePassword(me, { currentPassword: "correct horse", newPassword: "battery staple" })).toMatchObject({ status: "rejected", reason: "LOCKED" });
+    expect(await accounts.passwordLogin({ loginId: "Nut_01", password: "correct horse" })).toMatchObject({ status: "rejected", reason: "LOCKED" });
+  });
+
+  it("two changes at once from the same password: one lands, and only its password works", async () => {
+    const me = await sessionOf((await register()).token);
+    const [a, b] = await Promise.all([
+      accounts.changePassword(me, { currentPassword: "correct horse", newPassword: "first new one" }),
+      accounts.changePassword(me, { currentPassword: "correct horse", newPassword: "second new one" }),
+    ]);
+    expect([a.status, b.status].sort()).toEqual(["ok", "rejected"]);
+    const won = a.status === "ok" ? "first new one" : "second new one";
+    const lost = a.status === "ok" ? "second new one" : "first new one";
+    expect(await accounts.passwordLogin({ loginId: "Nut_01", password: won })).toMatchObject({ status: "ok" });
+    expect(await accounts.passwordLogin({ loginId: "Nut_01", password: lost })).toMatchObject({ status: "rejected" });
+  });
+
+  it("a Google or Facebook sign-in has no password to change", async () => {
+    const g = await accounts.externalLogin("google", "google-sub-123");
+    expect(await accounts.changePassword(await sessionOf(g.token), { currentPassword: "anything1", newPassword: "battery staple" })).toMatchObject({ status: "rejected", reason: "NO_PASSWORD" });
+  });
+});
+
+describe("sign-ups per address (P21)", () => {
+  const limit = R.provisional.login.value.signupsPerIpPerHour;
+  it("allows the hour's limit from one address, taken IDs included, then refuses until the hour rolls on", async () => {
+    for (let i = 0; i < limit - 1; i++) expect(await accounts.register({ loginId: `ip_user_${i}`, password: "correct horse" }, "ip:a")).toMatchObject({ status: "ok" });
+    // A taken ID still uses one.
+    expect(await accounts.register({ loginId: "ip_user_0", password: "correct horse" }, "ip:a")).toMatchObject({ status: "rejected", reason: "LOGIN_ID_TAKEN" });
+    expect(await accounts.register({ loginId: "ip_user_x", password: "correct horse" }, "ip:a")).toMatchObject({ status: "rejected", reason: "RATE_LIMITED" });
+    expect(await accounts.passwordLogin({ loginId: "ip_user_x", password: "correct horse" })).toMatchObject({ status: "rejected", reason: "BAD_CREDENTIALS" });
+    // Another address is not affected.
+    expect(await accounts.register({ loginId: "ip_user_y", password: "correct horse" }, "ip:b")).toMatchObject({ status: "ok" });
+    now += 3_600_001;
+    expect(await accounts.register({ loginId: "ip_user_x", password: "correct horse" }, "ip:a")).toMatchObject({ status: "ok" });
+  });
+
+  it("many at once from one address: never more than the limit", async () => {
+    const rs = await Promise.all(Array.from({ length: limit + 4 }, (_, i) => accounts.register({ loginId: `burst_${i}`, password: "correct horse" }, "ip:c")));
+    expect(rs.filter((r) => r.status === "ok")).toHaveLength(limit);
+    expect(rs.filter((r) => r.status === "rejected" && r.reason === "RATE_LIMITED")).toHaveLength(4);
+  });
+});

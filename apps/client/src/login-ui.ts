@@ -22,6 +22,8 @@ const ERROR_TH: Record<string, string> = {
   LOGIN_ID_TAKEN: "ID นี้มีคนใช้แล้ว",
   BAD_CREDENTIALS: "ID หรือรหัสผ่านไม่ถูกต้อง",
   LOCKED: "ใส่รหัสผิดหลายครั้ง รอสักครู่แล้วลองใหม่",
+  RATE_LIMITED: "สร้าง ID จากเครือข่ายนี้หลายครั้งแล้ว รอสักชั่วโมงแล้วลองใหม่",
+  NO_PASSWORD: "บัญชีนี้เข้าด้วย Google/Facebook ไม่มีรหัสผ่านให้เปลี่ยน",
   INVALID_TOKEN: "เข้าสู่ระบบกับผู้ให้บริการไม่สำเร็จ",
   NOT_CONFIGURED: "ยังไม่ได้ตั้งค่าการเข้าสู่ระบบแบบนี้",
   PROVIDER_UNAVAILABLE: "ผู้ให้บริการไม่ตอบ ลองใหม่อีกครั้ง",
@@ -198,6 +200,29 @@ function characterScreen(base: string, token: string, account: AccountView): Pro
       location.reload();
     });
     actions.append(out);
+    // P21: change the local ID's password; every other sign-in of this user ends, this one stays.
+    if (account.providers.includes("local")) {
+      const change = el("button", { type: "button" }, "เปลี่ยนรหัสผ่าน");
+      const form = el("form", { class: "pm-row" });
+      form.style.display = "none";
+      const current = el("input", { type: "password", placeholder: "รหัสผ่านเดิม", autocomplete: "current-password" }) as HTMLInputElement;
+      const next = el("input", { type: "password", placeholder: "รหัสผ่านใหม่ (อย่างน้อย 8 ตัว)", autocomplete: "new-password" }) as HTMLInputElement;
+      form.append(current, next, el("button", { type: "submit" }, "บันทึก"));
+      change.addEventListener("click", () => (form.style.display = form.style.display === "none" ? "" : "none"));
+      form.addEventListener("submit", (ev) => {
+        ev.preventDefault();
+        void post(base, "/auth/password", { currentPassword: current.value, newPassword: next.value }, token)
+          .then(() => {
+            error.textContent = "เปลี่ยนรหัสผ่านแล้ว อุปกรณ์อื่นที่เข้าไว้ต้องเข้าสู่ระบบใหม่";
+            form.style.display = "none";
+            current.value = next.value = "";
+          })
+          .catch((e) => (error.textContent = e instanceof Error ? e.message : String(e)));
+      });
+      actions.append(change);
+      panel.append(grid, error, actions, form);
+      return;
+    }
     panel.append(grid, error, actions);
   });
 }

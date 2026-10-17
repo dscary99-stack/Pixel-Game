@@ -7,6 +7,7 @@
  * is removed. A character place is created once (primary key on user + slot, unique play account).
  */
 import {
+  ChangePasswordRequestSchema,
   PasswordLoginRequestSchema,
   RegisterRequestSchema,
   SelectCharacterRequestSchema,
@@ -19,7 +20,7 @@ import {
 } from "@pmrpg/shared";
 import type { SqlDb } from "./reward-ledger";
 
-export type AccountRejection = "INVALID_REQUEST" | "LOGIN_ID_TAKEN" | "BAD_CREDENTIALS" | "LOCKED" | "UNAUTHENTICATED";
+export type AccountRejection = "INVALID_REQUEST" | "LOGIN_ID_TAKEN" | "BAD_CREDENTIALS" | "LOCKED" | "UNAUTHENTICATED" | "RATE_LIMITED" | "NO_PASSWORD";
 export type AccountResult<T> = ({ status: "ok" } & T) | { status: "rejected"; reason: AccountRejection; message: string };
 
 export interface Session {
@@ -69,9 +70,14 @@ export class AccountStore {
   }
 
   /** Make a local ID; the caller is signed in straight away. */
-  async register(raw: unknown): Promise<AccountResult<{ grant: SessionGrant }>> {
+  /**
+   * Make a local ID; the caller is signed in straight away. `ipHash` (the Worker passes a hash of the
+   * caller's address outside dev) takes one of the address's sign-ups for the hour first, taken ID or not.
+   */
+  async register(raw: unknown, ipHash?: string): Promise<AccountResult<{ grant: SessionGrant }>> {
     const parsed = RegisterRequestSchema.safeParse(raw);
     if (!parsed.success) return reject("INVALID_REQUEST", `ID ${this.L.loginIdMin}–${this.L.loginIdMax} of A–Z a–z 0–9 _ . -, password ${this.L.passwordMin}–${this.L.passwordMax}`);
+    if (ipHash !== undefined && !(await this.takeSignup(ipHash))) return reject("RATE_LIMITED", "too many new IDs from this network; try again later");
     const { loginId, password } = parsed.data;
     const salt = randomHex(16);
     const iter = this.L.pbkdf2Iterations;
@@ -84,16 +90,51 @@ export class AccountStore {
   async passwordLogin(raw: unknown): Promise<AccountResult<{ grant: SessionGrant }>> {
     const parsed = PasswordLoginRequestSchema.safeParse(raw);
     if (!parsed.success) return reject("BAD_CREDENTIALS", "wrong ID or password");
-    const { loginId, password } = parsed.data;
+    const checked = await this.checkPassword(`subject = ?`, parsed.data.loginId, parsed.data.password);
+    if (checked.status === "rejected") return checked;
+    return { status: "ok", grant: await this.startSession(checked.userId, "local") };
+  }
+
+  /**
+   * A new password for the signed-in user's local ID. The current password is checked like a sign-in
+   * (wrong ones count toward the same lock). The write only lands on the hash that was checked, so of
+   * two changes at once one wins; every other sign-in of this user is ended, this one stays.
+   */
+  async changePassword(session: Session, raw: unknown): Promise<AccountResult<Record<never, never>>> {
+    const parsed = ChangePasswordRequestSchema.safeParse(raw);
+    if (!parsed.success) return reject("INVALID_REQUEST", `new password ${this.L.passwordMin}–${this.L.passwordMax}`);
+    const checked = await this.checkPassword(`user_id = ?`, session.userId, parsed.data.currentPassword);
+    if (checked.status === "rejected") return checked;
+    const salt = randomHex(16);
+    const iter = this.L.pbkdf2Iterations;
+    const hash = await hashPassword(parsed.data.newPassword, salt, iter);
+    await this.db.batch([
+      this.db
+        .prepare(`UPDATE user_identities SET password_hash = ?, password_salt = ?, password_iter = ? WHERE provider = 'local' AND user_id = ? AND password_hash = ?`)
+        .bind(hash, salt, iter, session.userId, checked.hash),
+      this.db
+        .prepare(
+          `UPDATE sessions SET revoked_at = ? WHERE user_id = ? AND token_hash <> ? AND revoked_at IS NULL
+             AND EXISTS (SELECT 1 FROM user_identities WHERE provider = 'local' AND user_id = ? AND password_hash = ?)`,
+        )
+        .bind(this.iso(), session.userId, session.tokenHash, session.userId, hash),
+    ]);
+    const now = await this.db.prepare(`SELECT password_hash FROM user_identities WHERE provider = 'local' AND user_id = ?`).bind(session.userId).first<{ password_hash: string }>();
+    if (now?.password_hash !== hash) return reject("BAD_CREDENTIALS", "the password changed meanwhile; sign in again");
+    return { status: "ok" };
+  }
+
+  /** One local identity's password check with the failed-attempt lock (P21). */
+  private async checkPassword(where: "subject = ?" | "user_id = ?", key: string, password: string): Promise<AccountResult<{ userId: string; hash: string }>> {
     const row = await this.db
-      .prepare(`SELECT user_id, password_hash, password_salt, password_iter, failed_count, failed_since FROM user_identities WHERE provider = 'local' AND subject = ?`)
-      .bind(loginId)
-      .first<{ user_id: string; password_hash: string; password_salt: string; password_iter: number; failed_count: number; failed_since: string | null }>();
+      .prepare(`SELECT subject, user_id, password_hash, password_salt, password_iter, failed_count, failed_since FROM user_identities WHERE provider = 'local' AND ${where}`)
+      .bind(key)
+      .first<{ subject: string; user_id: string; password_hash: string; password_salt: string; password_iter: number; failed_count: number; failed_since: string | null }>();
     const windowStart = this.iso(this.nowMs() - this.L.failedLoginWindowMs);
     if (row === null) {
       // Same work as a real check, so a missing ID does not answer faster.
       await hashPassword(password, "00".repeat(16), this.L.pbkdf2Iterations);
-      return reject("BAD_CREDENTIALS", "wrong ID or password");
+      return where === "user_id = ?" ? reject("NO_PASSWORD", "this sign-in has no local ID") : reject("BAD_CREDENTIALS", "wrong ID or password");
     }
     if (row.failed_since !== null && row.failed_since >= windowStart && row.failed_count >= this.L.failedLoginLimit) {
       return reject("LOCKED", "too many wrong passwords; try again later");
@@ -108,12 +149,25 @@ export class AccountStore {
              failed_since = CASE WHEN failed_since IS NULL OR failed_since < ? THEN ? ELSE failed_since END
            WHERE provider = 'local' AND subject = ?`,
         )
-        .bind(windowStart, windowStart, now, loginId)
+        .bind(windowStart, windowStart, now, row.subject)
         .run();
       return reject("BAD_CREDENTIALS", "wrong ID or password");
     }
-    await this.db.prepare(`UPDATE user_identities SET failed_count = 0, failed_since = NULL WHERE provider = 'local' AND subject = ?`).bind(loginId).run();
-    return { status: "ok", grant: await this.startSession(row.user_id, "local") };
+    await this.db.prepare(`UPDATE user_identities SET failed_count = 0, failed_since = NULL WHERE provider = 'local' AND subject = ?`).bind(row.subject).run();
+    return { status: "ok", userId: row.user_id, hash: row.password_hash };
+  }
+
+  /** Takes one of this address's sign-ups for the rolling hour, in one INSERT (two at once cannot both take the last). */
+  private async takeSignup(ipHash: string): Promise<boolean> {
+    const nonce = randomHex(12);
+    const now = this.nowMs();
+    await this.db.batch([
+      this.db.prepare(`DELETE FROM signup_attempts WHERE at < ?`).bind(this.iso(now - 86_400_000)),
+      this.db
+        .prepare(`INSERT INTO signup_attempts (nonce, ip_hash, at) SELECT ?, ?, ? WHERE (SELECT COUNT(*) FROM signup_attempts WHERE ip_hash = ? AND at > ?) < ?`)
+        .bind(nonce, ipHash, this.iso(now), ipHash, this.iso(now - 3_600_000), this.L.signupsPerIpPerHour),
+    ]);
+    return (await this.db.prepare(`SELECT 1 AS x FROM signup_attempts WHERE nonce = ?`).bind(nonce).first<{ x: number }>()) !== null;
   }
 
   /** Google or Facebook, after the provider check: the first sign-in makes the user. */
