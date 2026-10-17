@@ -148,6 +148,29 @@ const moved = connect(last, sent.mapId, sent.channel);
 out.fullChannel.landed = (await moved.wait((m) => m.t === "welcome")).channel;
 for (const f of [...fillers, moved]) f.sock.close();
 
+// Still flooding after the warning (P11 kickAfterDropped): the connection is closed.
+const F = connect(acct("flood"));
+await F.wait((m) => m.t === "welcome");
+for (let i = 0; i < 200; i++) if (F.sock.readyState === WebSocket.OPEN) F.sock.send(JSON.stringify({ t: "ping" }));
+const floodKick = await F.wait((m) => m.t === "kicked", 3000);
+for (let i = 0; i < 40 && F.closed === null; i++) await sleep(50);
+out.floodKick = { reason: floodKick.reason, closed: F.closed };
+if (floodKick.reason !== "FLOOD" || F.closed === null) throw new Error(`flood kick: ${JSON.stringify(out.floodKick)}`);
+
+// Silent past the heartbeat (P11 wsHeartbeat; dev makes it look silent): closed as IDLE at the next alarm.
+const O = connect(acct("watcher"));
+await O.wait((m) => m.t === "welcome");
+const G = connect(acct("quiet"));
+const gSid = (await G.wait((m) => m.t === "welcome")).self.sid;
+const forgot = await (await fetch(`${api}/dev/world/idle?dev_account=${encodeURIComponent(acct("quiet"))}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ mapId: "map:dawn_town", channel: 1 }) })).json();
+const idleKick = await G.wait((m) => m.t === "kicked", 15000);
+// The server lets the player go at once (others see them leave); the socket's close frame can lag locally.
+const goneForA = await O.wait((m) => m.t === "left" && m.sid === gSid, 3000).then(() => true, () => false);
+G.sock.close();
+O.sock.close();
+out.idleKick = { sockets: forgot.sockets, reason: idleKick.reason, othersSawLeave: goneForA };
+if (idleKick.reason !== "IDLE" || !goneForA) throw new Error(`idle kick: ${JSON.stringify(out.idleKick)}`);
+
 out.unauthenticated = (await fetch(`${api}/world/where`)).status;
 for (const c of [A, A2, A3, B, B2, B3, T]) c.sock.close();
 console.log(JSON.stringify(out, null, 1));

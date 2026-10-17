@@ -339,6 +339,28 @@ describe("message budget (P11 wsMessageBudget)", () => {
     expect(warns).toBe(1);
   });
 
+  it("keeps flooding past the warning: closed after kickAfterDropped drops in one run; a pause starts over", () => {
+    const { kickAfterDropped } = PRODUCTION_RULES.provisional.wsMessageBudget.value;
+    let b: MessageBucket | undefined;
+    let firstKick = -1;
+    for (let i = 0; i < burst + kickAfterDropped + 5; i++) {
+      const r = takeMessageToken(PRODUCTION_RULES, b, 1000);
+      b = r.bucket;
+      if (r.kick && firstKick < 0) firstKick = i;
+    }
+    expect(firstKick).toBe(burst + kickAfterDropped - 1);
+    // Dropping a little, pausing until the bucket is full again, then a little more never adds up to a kick.
+    b = undefined;
+    for (let round = 0; round < 20; round++) {
+      const at = round * 10_000;
+      for (let i = 0; i < burst + 10; i++) {
+        const r = takeMessageToken(PRODUCTION_RULES, b, at);
+        b = r.bucket;
+        expect(r.kick).toBe(false);
+      }
+    }
+  });
+
   it("honest walking never runs out", () => {
     let b: MessageBucket | undefined;
     for (let t = 0; t < 60_000; t += 250) {

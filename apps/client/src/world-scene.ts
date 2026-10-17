@@ -367,7 +367,15 @@ export class WorldScene extends Phaser.Scene {
       }
       case "kicked":
         this.stopped = true;
-        this.flash(m.reason === "REPLACED" ? "บัญชีนี้เชื่อมต่อจากที่อื่นแล้ว (หน้านี้หยุดควบคุม)" : "ย้ายไป channel อื่นแล้ว");
+        this.flash(
+          m.reason === "REPLACED"
+            ? "บัญชีนี้เชื่อมต่อจากที่อื่นแล้ว (หน้านี้หยุดควบคุม)"
+            : m.reason === "FLOOD"
+              ? "ส่งข้อมูลถี่เกินไป การเชื่อมต่อถูกตัด (โหลดหน้าใหม่เพื่อเล่นต่อ)"
+              : m.reason === "IDLE"
+                ? "ไม่ได้รับสัญญาณจากหน้านี้นานเกินไป การเชื่อมต่อถูกตัด (โหลดหน้าใหม่เพื่อเล่นต่อ)"
+                : "ย้ายไป channel อื่นแล้ว",
+        );
         break;
       case "error":
         if (m.code === "SETTLING") {

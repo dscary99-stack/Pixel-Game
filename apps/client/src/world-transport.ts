@@ -73,7 +73,12 @@ export class ServerWorldTransport implements WorldTransport {
     ws.onmessage = (e) => {
       if (this.ws === ws) onMessage(JSON.parse(String(e.data)) as WorldServerMessage);
     };
+    // Heartbeat (P11 wsHeartbeat): the server closes a connection it has not heard from for a while.
+    const ping = setInterval(() => {
+      if (this.ws === ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ t: "ping" } satisfies WorldClientMessage));
+    }, DEV_FIXTURE_RULES.provisional.wsHeartbeat.value.pingMs);
     ws.onclose = (e) => {
+      clearInterval(ping);
       if (this.ws === ws) this.ws = null;
       onClose(e.reason || String(e.code));
     };

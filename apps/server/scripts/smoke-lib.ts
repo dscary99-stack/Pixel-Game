@@ -40,6 +40,10 @@ export async function connect(account: string, mapId: string, channel = 1): Prom
     },
   };
   sock.onmessage = (e) => c.inbox.push(JSON.parse(String(e.data)));
+  // Heartbeat like the real page (P11 wsHeartbeat), so a long smoke is not closed as silent.
+  const ping = setInterval(() => sock.readyState === WebSocket.OPEN && sock.send(JSON.stringify({ t: "ping" })), PRODUCTION_RULES.provisional.wsHeartbeat.value.pingMs);
+  (ping as { unref?: () => void }).unref?.();
+  sock.addEventListener("close", () => clearInterval(ping));
   const w = await c.wait((m) => m.t === "welcome" || m.t === "transfer");
   if (w.t === "transfer") {
     sock.close();

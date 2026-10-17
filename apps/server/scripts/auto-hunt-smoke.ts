@@ -91,6 +91,8 @@ for (let i = 0; i < 10; i++) {
   from = A.inbox.length;
   await sleep(500);
 }
+// After a loss the server says "resumed" and then sends the team home: give the transfer a moment.
+await A.wait((m) => m.t === "transfer", 800, from).catch(() => null);
 if (A.inbox.slice(from).some((m) => m.t === "transfer")) {
   // Lost it: back in town (rested). Walk out to the field again for the rest.
   out.fight2 = "defeat: back in town";

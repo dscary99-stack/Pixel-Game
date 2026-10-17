@@ -70,7 +70,8 @@ export type WorldServerMessage =
   | { t: "rested" }
   /** Go to this map and channel. `CHANNEL_FULL`: the requested channel was full, this one has room. */
   | { t: "transfer"; mapId: string; channel: number; reason?: "CHANNEL_FULL" }
-  | { t: "kicked"; reason: "REPLACED" | "EVICTED" }
+  /** FLOOD: kept sending past the message budget (P11); IDLE: silent past the heartbeat (P11). */
+  | { t: "kicked"; reason: "REPLACED" | "EVICTED" | "FLOOD" | "IDLE" }
   | { t: "error"; code: WorldErrorCode; message: string }
   | { t: "pong"; serverTime: number }
   /** Auto Hunt turned on or off; when off, why (and the pack/species for FOUND_SPECIES). */
@@ -349,16 +350,20 @@ export interface MessageBucket {
   at: number;
   /** RATE_LIMITED was already sent for this run of dropped messages. */
   warned: boolean;
+  /** Messages dropped since the bucket was last full again (a pause ends the run). */
+  dropped?: number;
 }
 
 /**
  * Spend one message from the bucket. `ok: false` means drop the message; `warn` says to tell the
  * client once (not on every dropped message, which would let a flood double itself).
  */
-export function takeMessageToken(rules: RulesConfig, bucket: MessageBucket | undefined, now: number): { ok: boolean; warn: boolean; bucket: MessageBucket } {
-  const { perSecond, burst } = rules.provisional.wsMessageBudget.value;
+export function takeMessageToken(rules: RulesConfig, bucket: MessageBucket | undefined, now: number): { ok: boolean; warn: boolean; kick: boolean; bucket: MessageBucket } {
+  const { perSecond, burst, kickAfterDropped } = rules.provisional.wsMessageBudget.value;
   const prev = bucket ?? { tokens: burst, at: now, warned: false };
   const tokens = Math.min(burst, prev.tokens + (Math.max(0, now - prev.at) * perSecond) / 1000);
-  if (tokens >= 1) return { ok: true, warn: false, bucket: { tokens: tokens - 1, at: now, warned: false } };
-  return { ok: false, warn: !prev.warned, bucket: { tokens, at: now, warned: true } };
+  // A full bucket again means the client paused: the run of dropped messages is over.
+  const dropped = tokens >= burst ? 0 : (prev.dropped ?? 0);
+  if (tokens >= 1) return { ok: true, warn: false, kick: false, bucket: { tokens: tokens - 1, at: now, warned: false, dropped } };
+  return { ok: false, warn: !prev.warned, kick: dropped + 1 >= kickAfterDropped, bucket: { tokens, at: now, warned: true, dropped: dropped + 1 } };
 }

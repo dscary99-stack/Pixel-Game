@@ -455,7 +455,18 @@ export const RULES = {
     channelCapacity: provisional(50, "P11", "players per channel; not a load-tested number"),
     positionSaveIntervalMs: provisional(10_000, "P11", "how often a channel writes moved players' positions to D1"),
     /** Messages one connection may send: `perSecond` on average, up to `burst` at once; the rest are dropped. */
-    wsMessageBudget: provisional({ perSecond: 10, burst: 20 } as const, "P11", "walking needs 4 steps/s; 10/s leaves room for engage/ping/auto without letting a client flood the channel"),
+    /** `kickAfterDropped`: a connection that keeps sending past the budget is closed after this many dropped messages in one run. */
+    wsMessageBudget: provisional(
+      { perSecond: 10, burst: 20, kickAfterDropped: 100 } as const,
+      "P11",
+      "walking needs 4 steps/s; 10/s leaves room for engage/ping/auto without letting a client flood the channel; 100 drops without a pause ≈ 5 s of flooding closes it (Claude 2026-10-17)",
+    ),
+    /** The page pings every `pingMs`; a connection silent for `closeAfterMs` is treated as gone and closed. */
+    wsHeartbeat: provisional(
+      { pingMs: 20_000, closeAfterMs: 120_000 } as const,
+      "P11",
+      "browsers slow a hidden tab's timers to about once a minute, so the close waits two minutes (Claude 2026-10-17)",
+    ),
     // Encounters (Phase C). Hunting speed numbers are P12 assumptions.
     packRespawnMs: provisional(60_000, "P12", "a visible pack is re-rolled this often; a player who fought it waits for the next one"),
     engageRangeTiles: provisional(1, "P10", "must stand next to (or on) the pack to start a fight"),

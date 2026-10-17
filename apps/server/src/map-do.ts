@@ -131,6 +131,8 @@ export class MapChannelDurableObject extends DurableObject<Env> {
   /** The pack cycle and wander step last sent to the channel (P33). */
   private wanderSent: string | null = null;
   private readonly buckets = new WeakMap<WebSocket, MessageBucket>();
+  /** Last message from each connection (P11 wsHeartbeat); memory only, so after hibernation the clock starts again. */
+  private readonly lastSeen = new WeakMap<WebSocket, number>();
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -274,8 +276,11 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     // object after hibernation starts every connection with a full bucket.
     const spent = takeMessageToken(this.rules, this.buckets.get(ws), Date.now());
     this.buckets.set(ws, spent.bucket);
+    this.lastSeen.set(ws, Date.now());
     if (!spent.ok) {
       if (spent.warn) safeSend(ws, { t: "error", code: "RATE_LIMITED", message: "too many messages; slow down" });
+      // Still flooding after the warning: the connection is closed (P11 kickAfterDropped).
+      if (spent.kick) await this.closeFor(ws, "FLOOD");
       return;
     }
     const channel = this.ensureChannel(a.mapId, a.channel);
@@ -325,6 +330,17 @@ export class MapChannelDurableObject extends DurableObject<Env> {
     await this.drop(ws);
   }
 
+  /** Closes a connection the server gave up on (flooding, or silent past the heartbeat); it leaves like a disconnect. */
+  private async closeFor(ws: WebSocket, reason: "FLOOD" | "IDLE"): Promise<void> {
+    safeSend(ws, { t: "kicked", reason });
+    await this.drop(ws);
+    try {
+      ws.close(4008, reason === "FLOOD" ? "flood" : "idle");
+    } catch {
+      // Already closing.
+    }
+  }
+
   override async webSocketError(ws: WebSocket): Promise<void> {
     await this.drop(ws);
   }
@@ -337,6 +353,15 @@ export class MapChannelDurableObject extends DurableObject<Env> {
   /** Players in this channel now (the channel picker shows it). */
   async playerCount(mapId: string, channel: number): Promise<number> {
     return this.ensureChannel(mapId, channel).size;
+  }
+
+  /** DEV ONLY (smokes): this account's connections look silent past the heartbeat; the next alarm closes them. */
+  async devForgetSeen(accountId: string): Promise<number> {
+    if (this.env.ENVIRONMENT !== "dev") return 0;
+    const sockets = this.ctx.getWebSockets(accountId);
+    for (const ws of sockets) this.lastSeen.set(ws, 0);
+    await this.ctx.storage.setAlarm(Date.now() + 100);
+    return sockets.length;
   }
 
   /** Whether `accountId` could join this channel now (used by a full channel to pick another). */
@@ -812,6 +837,13 @@ export class MapChannelDurableObject extends DurableObject<Env> {
   override async alarm(): Promise<void> {
     const cycleBefore = this.packs?.cycle ?? null;
     const now = Date.now();
+    // Heartbeat (P11): a page pings every pingMs; one silent past closeAfterMs is gone (a dead network
+    // leaves a socket that never closes by itself).
+    for (const ws of this.ctx.getWebSockets()) {
+      const seen = this.lastSeen.get(ws);
+      if (seen === undefined) this.lastSeen.set(ws, now);
+      else if (now - seen > this.rules.provisional.wsHeartbeat.value.closeAfterMs && ws.deserializeAttachment() !== null) await this.closeFor(ws, "IDLE");
+    }
     if (now - this.lastSaveAt >= this.rules.provisional.positionSaveIntervalMs.value) {
       this.lastSaveAt = now;
       for (const ws of this.ctx.getWebSockets()) {

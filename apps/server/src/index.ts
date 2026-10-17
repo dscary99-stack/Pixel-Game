@@ -674,6 +674,13 @@ async function devRoute(request: Request, env: Env, url: URL): Promise<Response>
     return json(200, { balances, reservation });
   }
   if (request.method === "POST" && url.pathname === "/dev/reconcile") return json(200, await reconcile(env, 0));
+  // DEV ONLY: this account's map connections look silent past the heartbeat (P11), so smokes see the close.
+  if (request.method === "POST" && url.pathname === "/dev/world/idle") {
+    const parsed = z.object({ mapId: z.string().min(1).max(100), channel: z.number().int().min(1).max(20) }).strict().safeParse(await readJson(request));
+    if (!parsed.success) return json(400, { error: "INVALID_REQUEST" });
+    const n = await env.MAP.get(env.MAP.idFromName(mapObjectName(parsed.data.mapId, parsed.data.channel))).devForgetSeen(accountId);
+    return json(200, { sockets: n });
+  }
   // DEV ONLY: a fight looks untouched for P36's idle time, so smokes see it close as abandoned.
   if (request.method === "POST" && url.pathname === "/dev/battle/idle") {
     const parsed = z.object({ battleId: z.string().min(1).max(200) }).strict().safeParse(await readJson(request));
