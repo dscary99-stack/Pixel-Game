@@ -56,3 +56,33 @@ describe("loot roll (chapter 06 algorithm)", () => {
     expect(ratio).toBeLessThan(0.72);
   });
 });
+
+describe("party material bonus (P02)", () => {
+  const t = EXAMPLE_LOOT_TABLES[0]!;
+  const isMaterial = (id: string) => id === "item:crab_shell" || id === "item:river_pebble";
+  const count = (bonus: number, origin: "manual" | "auto_hunt", seeds = 4000) => {
+    let mats = 0;
+    let other = 0;
+    for (let i = 0; i < seeds; i++) {
+      for (const l of rollLoot(rules, t, origin, new Rng(seedRng(`p${i}`)), { percent: bonus, isMaterial })) {
+        if (isMaterial(l.itemId)) mats += l.quantity;
+        else other += l.quantity;
+      }
+    }
+    return { mats, other };
+  };
+
+  it("no bonus is the same roll as before (same RNG use)", () => {
+    for (let i = 0; i < 50; i++) {
+      expect(rollLoot(rules, t, "auto_hunt", new Rng(seedRng(`s${i}`)), { percent: 0, isMaterial })).toEqual(rollLoot(rules, t, "auto_hunt", new Rng(seedRng(`s${i}`))));
+    }
+  });
+
+  it("raises expected materials by about the bonus, relative, and nothing else", () => {
+    const base = count(0, "manual");
+    const plus = count(6, "manual");
+    expect(plus.mats / base.mats).toBeGreaterThan(1.03);
+    expect(plus.mats / base.mats).toBeLessThan(1.09);
+    expect(plus.other).toBe(base.other);
+  });
+});

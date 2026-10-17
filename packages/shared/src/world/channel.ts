@@ -1,0 +1,369 @@
+/**
+ * One Map + Channel (chapter 11 §1 "Map Channel Durable Object": presence, validated positions).
+ * Transport-agnostic and pure apart from its own presence table, so it runs in tests, in the
+ * Durable Object, and (non-authoritatively) in the client's local preview.
+ *
+ * One presence per account per channel: a second join from the same account replaces the first
+ * connection instead of adding a second player (P14: one controlling session per account).
+ */
+import { z } from "zod";
+import type { RulesConfig } from "../rules";
+import { portalAt, type MapDefinition, type Portal, type TilePos } from "./map";
+import { DIRECTIONS, artFacing, tryStep, type Direction, type StepRejection } from "./movement";
+import type { VisiblePack } from "./encounter";
+import { AutoHuntSettingsSchema, type AutoStopReason, type HuntSummary } from "./auto-hunt";
+
+// ---------------------------------------------------------------- wire protocol
+
+export const WorldClientMessageSchema = z.discriminatedUnion("t", [
+  z.object({ t: z.literal("step"), seq: z.number().int().min(1).max(2 ** 31), dir: z.enum(DIRECTIONS) }).strict(),
+  z.object({ t: z.literal("ping") }).strict(),
+  /** Start a private fight against a visible pack (O05). */
+  z.object({ t: z.literal("engage"), packId: z.string().min(1).max(120) }).strict(),
+  /** Back from a fight: the server checks the fight is over before letting the player walk. */
+  z.object({ t: z.literal("resume") }).strict(),
+  /** Start Auto Hunt on this map with these settings (C14); the server walks and fights. */
+  z.object({ t: z.literal("autoHunt"), settings: AutoHuntSettingsSchema }).strict(),
+  z.object({ t: z.literal("autoStop") }).strict(),
+]);
+export type WorldClientMessage = z.infer<typeof WorldClientMessageSchema>;
+
+export type Facing = "N" | "E" | "S" | "W";
+
+/**
+ * How a player looks to others (fashion.ts, journal titles): the shown title id and the worn fashion.
+ * Taken when the player joins the channel, so a change shows after the next map change or reconnect.
+ */
+export interface PlayerLook {
+  titleId?: string;
+  fashion?: { layer: string; effect: string; color: string }[];
+}
+
+/** What other players may see. No account id, no timing state. */
+export interface PublicPlayer {
+  sid: string;
+  name: string;
+  x: number;
+  y: number;
+  facing: Facing;
+  look?: PlayerLook;
+}
+
+export type WorldServerMessage =
+  | { t: "welcome"; mapId: string; channel: number; rulesVersion: string; self: PublicPlayer; others: PublicPlayer[] }
+  | { t: "joined"; player: PublicPlayer }
+  | { t: "left"; sid: string }
+  /** A player here changed their shown title or worn fashion (null: nothing shown now). */
+  | { t: "look"; sid: string; look: PlayerLook | null }
+  | { t: "moved"; sid: string; x: number; y: number; facing: Facing }
+  | { t: "ack"; seq: number; x: number; y: number }
+  | { t: "correct"; seq: number; x: number; y: number; reason: StepRejection | "STALE_SEQ" | "IN_BATTLE" }
+  /** The packs this player can engage right now (already-fought ones are left out). */
+  | { t: "packs"; packs: VisiblePack[] }
+  /** Packs here took a wander step (P33): their new tiles. Unknown ids are ignored. */
+  | { t: "packMoves"; moves: { packId: string; x: number; y: number }[] }
+  /** A private fight exists for this player; `resumed` when it was already running (reconnect). */
+  /** `party`: everyone in a party boss fight (Nut 2026-10-07), first the one who started it. */
+  | { t: "encounter"; battleId: string; resumed: boolean; party?: string[] }
+  | { t: "resumed" }
+  /** HP/MP of the character and free companions are full again (town rest, chapter 03 §3). */
+  | { t: "rested" }
+  /** Go to this map and channel. `CHANNEL_FULL`: the requested channel was full, this one has room. */
+  | { t: "transfer"; mapId: string; channel: number; reason?: "CHANNEL_FULL" }
+  /** FLOOD: kept sending past the message budget (P11); IDLE: silent past the heartbeat (P11). */
+  | { t: "kicked"; reason: "REPLACED" | "EVICTED" | "FLOOD" | "IDLE" }
+  | { t: "error"; code: WorldErrorCode; message: string }
+  | { t: "pong"; serverTime: number }
+  /** Auto Hunt turned on or off; when off, why (and the pack/species for FOUND_SPECIES). */
+  /** `summary`: the run's totals, sent when a run that started ends (chapter 08). */
+  | { t: "auto"; on: boolean; reason?: AutoStopReason; detail?: string; packId?: string; summary?: HuntSummary }
+  /** Bond from a first time (P35): the team's companions new to this map, or first winners against this boss. */
+  | { t: "bond"; reason: "map" | "boss"; key: string; companionIds: string[]; gain: number }
+  /** The server moved this player (Auto Hunt). */
+  | { t: "autoMoved"; x: number; y: number; facing: Facing };
+
+export type WorldErrorCode =
+  | "INVALID_MESSAGE"
+  | "NOT_JOINED"
+  | "CHANNEL_FULL"
+  | "WRONG_MAP"
+  | "NO_ACCOUNT"
+  | "UNKNOWN_MAP"
+  | "UNKNOWN_CHANNEL"
+  | "SESSION_REPLACED"
+  | "IN_BATTLE"
+  | "TOO_FAR"
+  | "NO_SUCH_PACK"
+  | "NO_HUNT_HERE"
+  | "NO_CHARACTER"
+  | "ENCOUNTER_REFUSED"
+  /** Nobody in the team can fight; rest in town first. */
+  | "NEED_REST"
+  /** The fight ended but its rewards are still being recorded; ask again shortly. */
+  | "SETTLING"
+  /** Too many messages (P11 wsMessageBudget); they were dropped. Sent once per burst. */
+  | "RATE_LIMITED";
+
+// ---------------------------------------------------------------- presence
+
+export interface Presence {
+  accountId: string;
+  sid: string;
+  name: string;
+  pos: TilePos;
+  facing: Facing;
+  /** Earliest server time the next step may start (see movement.ts). */
+  readyAt: number;
+  /** Highest step seq handled; repeats and older seqs never move the player again. */
+  lastSeq: number;
+  /** Moved since the last position save. */
+  dirty: boolean;
+  /** Set while the player is in a private fight; they cannot walk until it is over. */
+  battleId: string | null;
+  look?: PlayerLook;
+}
+
+/** A message for the acting player, for everyone else in the channel, or for one player. */
+export type Outgoing = { to: "self" | "others"; msg: WorldServerMessage };
+
+export const publicPlayer = (p: Presence): PublicPlayer => ({ sid: p.sid, name: p.name, x: p.pos.x, y: p.pos.y, facing: p.facing, ...(p.look !== undefined ? { look: p.look } : {}) });
+
+/** Two looks show the same (absent and empty are the same). */
+export function sameLook(a: PlayerLook | undefined, b: PlayerLook | undefined): boolean {
+  return JSON.stringify(a ?? {}) === JSON.stringify(b ?? {});
+}
+
+/** A look from untrusted text (a header): a title id and at most one valid look per fashion layer. */
+export function parsePlayerLook(raw: string | null): PlayerLook | undefined {
+  if (raw === null || raw === "") return undefined;
+  try {
+    const o = JSON.parse(raw) as { titleId?: unknown; fashion?: unknown };
+    const titleId = typeof o.titleId === "string" && /^title:[a-z0-9_]{1,80}$/.test(o.titleId) ? o.titleId : undefined;
+    const layers = new Set<string>();
+    const fashion = (Array.isArray(o.fashion) ? o.fashion : []).flatMap((f: { layer?: unknown; effect?: unknown; color?: unknown }) => {
+      if (typeof f?.layer !== "string" || !["head", "body", "back", "aura"].includes(f.layer) || layers.has(f.layer)) return [];
+      if (typeof f.effect !== "string" || !/^[a-z]{1,16}$/.test(f.effect) || typeof f.color !== "string" || !/^#[0-9a-f]{6}$/.test(f.color)) return [];
+      layers.add(f.layer);
+      return [{ layer: f.layer, effect: f.effect, color: f.color }];
+    });
+    const look: PlayerLook = { ...(titleId !== undefined ? { titleId } : {}), ...(fashion.length > 0 ? { fashion } : {}) };
+    return Object.keys(look).length > 0 ? look : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+export type JoinResult =
+  | { ok: true; presence: Presence; replaced: boolean; out: Outgoing[] }
+  | { ok: false; code: WorldErrorCode; message: string };
+
+export type StepOutcome =
+  | { kind: "moved"; presence: Presence; out: Outgoing[]; portal: Portal | null }
+  | { kind: "rejected"; out: Outgoing[] }
+  | { kind: "error"; out: Outgoing[] }
+  /** Needs the server (D1 / Battle DO): the Durable Object finishes it. */
+  | { kind: "intent"; presence: Presence; msg: Extract<WorldClientMessage, { t: "engage" | "resume" | "autoHunt" | "autoStop" }>; out: Outgoing[] };
+
+export class MapChannel {
+  private readonly players = new Map<string, Presence>();
+
+  constructor(
+    private readonly rules: RulesConfig,
+    readonly map: MapDefinition,
+    readonly channel: number,
+    restored: Presence[] = [],
+    private readonly newSid: () => string = () => crypto.randomUUID().slice(0, 8),
+  ) {
+    for (const p of restored) this.players.set(p.accountId, p);
+  }
+
+  get size(): number {
+    return this.players.size;
+  }
+
+  get(accountId: string): Presence | undefined {
+    return this.players.get(accountId);
+  }
+
+  /** Whether this account can join: it is already here, or the channel is below capacity (P11). */
+  hasRoom(accountId: string): boolean {
+    return this.players.has(accountId) || this.players.size < this.rules.provisional.channelCapacity.value;
+  }
+
+  all(): Presence[] {
+    return [...this.players.values()];
+  }
+
+  /**
+   * Enter the channel at `pos` (from the canonical saved position). An account already here keeps
+   * its live position and public id: the old connection is replaced, nobody sees a second player.
+   */
+  join(accountId: string, name: string, pos: TilePos, now: number, look?: PlayerLook): JoinResult {
+    const existing = this.players.get(accountId);
+    if (!this.hasRoom(accountId)) {
+      return { ok: false, code: "CHANNEL_FULL", message: `channel ${this.channel} is full` };
+    }
+    const presence: Presence = existing ?? {
+      accountId,
+      sid: this.newSid(),
+      name,
+      pos: { ...pos },
+      facing: "S",
+      readyAt: now,
+      lastSeq: 0,
+      dirty: false,
+      battleId: null,
+    };
+    // A fresh connection starts its own step numbering, and brings the look the player has now.
+    presence.lastSeq = 0;
+    const lookChanged = existing !== undefined && !sameLook(existing.look, look);
+    if (look !== undefined) presence.look = look;
+    else delete presence.look;
+    this.players.set(accountId, presence);
+    const out: Outgoing[] = [
+      {
+        to: "self",
+        msg: {
+          t: "welcome",
+          mapId: this.map.id,
+          channel: this.channel,
+          rulesVersion: this.rules.rulesVersion,
+          self: publicPlayer(presence),
+          others: this.all()
+            .filter((p) => p.accountId !== accountId)
+            .map(publicPlayer),
+        },
+      },
+    ];
+    if (existing === undefined) out.push({ to: "others", msg: { t: "joined", player: publicPlayer(presence) } });
+    // A reconnect with a new look shows it to everyone already here.
+    else if (lookChanged) out.push({ to: "others", msg: { t: "look", sid: presence.sid, look: presence.look ?? null } });
+    return { ok: true, presence, replaced: existing !== undefined, out };
+  }
+
+  /**
+   * The player changed title or fashion while here (the server read it from D1): everyone here,
+   * the player too, gets the new look. Nothing is sent when the player is not here or nothing changed.
+   */
+  setLook(accountId: string, look: PlayerLook | undefined): { presence: Presence | null; out: Outgoing[] } {
+    const p = this.players.get(accountId);
+    if (p === undefined || sameLook(p.look, look)) return { presence: p ?? null, out: [] };
+    if (look !== undefined) p.look = look;
+    else delete p.look;
+    const msg: WorldServerMessage = { t: "look", sid: p.sid, look: p.look ?? null };
+    return { presence: p, out: [{ to: "self", msg }, { to: "others", msg }] };
+  }
+
+  /** Handle one untrusted client message. */
+  handle(accountId: string, raw: unknown, now: number): StepOutcome {
+    const parsed = WorldClientMessageSchema.safeParse(raw);
+    if (!parsed.success) return { kind: "error", out: [{ to: "self", msg: { t: "error", code: "INVALID_MESSAGE", message: "malformed message" } }] };
+    const p = this.players.get(accountId);
+    if (p === undefined) return { kind: "error", out: [{ to: "self", msg: { t: "error", code: "NOT_JOINED", message: "join first" } }] };
+    const msg = parsed.data;
+    if (msg.t === "ping") return { kind: "rejected", out: [{ to: "self", msg: { t: "pong", serverTime: now } }] };
+    if (msg.t === "engage" || msg.t === "resume" || msg.t === "autoHunt" || msg.t === "autoStop") return { kind: "intent", presence: p, msg, out: [] };
+    return this.step(p, msg.seq, msg.dir, now);
+  }
+
+  /** Mark a player as in (or out of) a private fight. */
+  setBattle(accountId: string, battleId: string | null): Presence | null {
+    const p = this.players.get(accountId);
+    if (p === undefined) return null;
+    p.battleId = battleId;
+    return p;
+  }
+
+  private step(p: Presence, seq: number, dir: Direction, now: number): StepOutcome {
+    if (seq <= p.lastSeq) {
+      return { kind: "rejected", out: [{ to: "self", msg: { t: "correct", seq, x: p.pos.x, y: p.pos.y, reason: "STALE_SEQ" } }] };
+    }
+    p.lastSeq = seq;
+    if (p.battleId !== null) {
+      return { kind: "rejected", out: [{ to: "self", msg: { t: "correct", seq, x: p.pos.x, y: p.pos.y, reason: "IN_BATTLE" } }] };
+    }
+    const r = tryStep(this.rules, this.map, p.pos, dir, p.readyAt, now);
+    if (!r.ok) {
+      return { kind: "rejected", out: [{ to: "self", msg: { t: "correct", seq, x: p.pos.x, y: p.pos.y, reason: r.reason } }] };
+    }
+    p.pos = r.pos;
+    p.readyAt = r.readyAt;
+    p.facing = artFacing(dir);
+    p.dirty = true;
+    return {
+      kind: "moved",
+      presence: p,
+      portal: portalAt(this.map, p.pos.x, p.pos.y),
+      out: [
+        { to: "self", msg: { t: "ack", seq, x: p.pos.x, y: p.pos.y } },
+        { to: "others", msg: { t: "moved", sid: p.sid, x: p.pos.x, y: p.pos.y, facing: p.facing } },
+      ],
+    };
+  }
+
+  /**
+   * A step the server takes for the player (Auto Hunt). Same tile, corner and speed rules as a
+   * client step; the player is told with `autoMoved` instead of an ack.
+   */
+  autoStep(accountId: string, dir: Direction, now: number): StepOutcome {
+    const p = this.players.get(accountId);
+    if (p === undefined) return { kind: "error", out: [] };
+    if (p.battleId !== null) return { kind: "rejected", out: [] };
+    const r = tryStep(this.rules, this.map, p.pos, dir, p.readyAt, now);
+    if (!r.ok) return { kind: "rejected", out: [] };
+    p.pos = r.pos;
+    p.readyAt = r.readyAt;
+    p.facing = artFacing(dir);
+    p.dirty = true;
+    return {
+      kind: "moved",
+      presence: p,
+      portal: portalAt(this.map, p.pos.x, p.pos.y),
+      out: [
+        { to: "self", msg: { t: "autoMoved", x: p.pos.x, y: p.pos.y, facing: p.facing } },
+        { to: "others", msg: { t: "moved", sid: p.sid, x: p.pos.x, y: p.pos.y, facing: p.facing } },
+      ],
+    };
+  }
+
+  /** Remove a player (disconnect, portal, eviction). Others see them leave. */
+  leave(accountId: string): { presence: Presence | null; out: Outgoing[] } {
+    const p = this.players.get(accountId);
+    if (p === undefined) return { presence: null, out: [] };
+    this.players.delete(accountId);
+    return { presence: p, out: [{ to: "others", msg: { t: "left", sid: p.sid } }] };
+  }
+}
+
+/**
+ * The channels to try after `full` is full, in order: the next ones up, then wrapping round
+ * (P11 channelsPerMap). The player's requested channel is never tried twice.
+ */
+export function otherChannels(rules: RulesConfig, full: number): number[] {
+  const n = rules.provisional.channelsPerMap.value;
+  return Array.from({ length: n - 1 }, (_, i) => ((full - 1 + i + 1) % n) + 1);
+}
+
+/** Per-connection message budget (P11 wsMessageBudget): a token bucket. */
+export interface MessageBucket {
+  tokens: number;
+  at: number;
+  /** RATE_LIMITED was already sent for this run of dropped messages. */
+  warned: boolean;
+  /** Messages dropped since the bucket was last full again (a pause ends the run). */
+  dropped?: number;
+}
+
+/**
+ * Spend one message from the bucket. `ok: false` means drop the message; `warn` says to tell the
+ * client once (not on every dropped message, which would let a flood double itself).
+ */
+export function takeMessageToken(rules: RulesConfig, bucket: MessageBucket | undefined, now: number): { ok: boolean; warn: boolean; kick: boolean; bucket: MessageBucket } {
+  const { perSecond, burst, kickAfterDropped } = rules.provisional.wsMessageBudget.value;
+  const prev = bucket ?? { tokens: burst, at: now, warned: false };
+  const tokens = Math.min(burst, prev.tokens + (Math.max(0, now - prev.at) * perSecond) / 1000);
+  // A full bucket again means the client paused: the run of dropped messages is over.
+  const dropped = tokens >= burst ? 0 : (prev.dropped ?? 0);
+  if (tokens >= 1) return { ok: true, warn: false, kick: false, bucket: { tokens: tokens - 1, at: now, warned: false, dropped } };
+  return { ok: false, warn: !prev.warned, kick: dropped + 1 >= kickAfterDropped, bucket: { tokens, at: now, warned: true, dropped: dropped + 1 } };
+}

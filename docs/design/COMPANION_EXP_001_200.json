@@ -1,0 +1,5690 @@
+{
+  "version": "companion-exp-proposal-1.0",
+  "date": "2026-10-03",
+  "status": "PROVISIONAL",
+  "source_player_version": "exp-proposal-1.0",
+  "source_player_sha256": "650ffd0b8129d0ef29607de3f3bc36474d16b44c19a29a4f777dcbe0fae8ed3e",
+  "scope": "companion_current_cycle_level",
+  "max_companion_level_proposed": 200,
+  "max_rebirths": null,
+  "notes": [
+    "Stage 1/2/3 are illustrative scenarios, not approval of a three-Rebirth cap.",
+    "Same EXP curve across species, ranks and elements at the same stage.",
+    "Every eligible starting companion receives its own award; no division by team size; empty or capped slots do not redistribute XP.",
+    "Do not grant this battle XP to freshly captured companions or stored companions.",
+    "Combat power/effective level policy remains a separate unresolved decision.",
+    "No daily/account reward cap, offline EXP or premium multiplier."
+  ],
+  "award_proposal": {
+    "reference_normal_xp_formula": "20 + 6*M + 2*M*M",
+    "snapshot_companion_level_at": "battle_start",
+    "training_level_gap": 10,
+    "scale_per_target": "min(1, E(min(200, snapshotCompanionLevel+10))/E(targetFixedWildLevel))",
+    "raw_reward": "server species XP before party and recipient modifiers",
+    "party_multiplier_max_proposed": 1.15,
+    "auto_multiplier": 1.0,
+    "rounding": "floor once after summing per-target adjusted XP and applying party multiplier for this companion",
+    "current_cycle_level_up": "apply full grant, retain overflow across levels, stop at 200",
+    "rank_effect": "the ratio rescales base and rank awards proportionally; no untested maximum per boss or per hour"
+  },
+  "reference": {
+    "normal_kills_per_hour": 120,
+    "enemy_level": "approximately companion current level",
+    "party_multiplier": 1.0,
+    "quest_xp": 0,
+    "time_is_estimate": true
+  },
+  "cycles": [
+    {
+      "rebirth_stage": 0,
+      "status": "PROVISIONAL",
+      "percent_of_player_requirements": 25,
+      "total_cycle_xp": 1366443240,
+      "reference_total_hours": 212.69136134,
+      "levels": [
+        {
+          "level": 1,
+          "xp_to_next": 20,
+          "cumulative_xp_to_reach_level": 0,
+          "reference_hours_to_next": 0.00595238,
+          "reference_hours_to_reach_level": 0.0
+        },
+        {
+          "level": 2,
+          "xp_to_next": 30,
+          "cumulative_xp_to_reach_level": 20,
+          "reference_hours_to_next": 0.00625,
+          "reference_hours_to_reach_level": 0.00595238
+        },
+        {
+          "level": 3,
+          "xp_to_next": 50,
+          "cumulative_xp_to_reach_level": 50,
+          "reference_hours_to_next": 0.00744048,
+          "reference_hours_to_reach_level": 0.01220238
+        },
+        {
+          "level": 4,
+          "xp_to_next": 80,
+          "cumulative_xp_to_reach_level": 100,
+          "reference_hours_to_next": 0.00877193,
+          "reference_hours_to_reach_level": 0.01964286
+        },
+        {
+          "level": 5,
+          "xp_to_next": 120,
+          "cumulative_xp_to_reach_level": 180,
+          "reference_hours_to_next": 0.01,
+          "reference_hours_to_reach_level": 0.02841479
+        },
+        {
+          "level": 6,
+          "xp_to_next": 170,
+          "cumulative_xp_to_reach_level": 300,
+          "reference_hours_to_next": 0.01106771,
+          "reference_hours_to_reach_level": 0.03841479
+        },
+        {
+          "level": 7,
+          "xp_to_next": 240,
+          "cumulative_xp_to_reach_level": 470,
+          "reference_hours_to_next": 0.0125,
+          "reference_hours_to_reach_level": 0.0494825
+        },
+        {
+          "level": 8,
+          "xp_to_next": 330,
+          "cumulative_xp_to_reach_level": 710,
+          "reference_hours_to_next": 0.01403061,
+          "reference_hours_to_reach_level": 0.0619825
+        },
+        {
+          "level": 9,
+          "xp_to_next": 430,
+          "cumulative_xp_to_reach_level": 1040,
+          "reference_hours_to_next": 0.01518362,
+          "reference_hours_to_reach_level": 0.07601311
+        },
+        {
+          "level": 10,
+          "xp_to_next": 560,
+          "cumulative_xp_to_reach_level": 1470,
+          "reference_hours_to_next": 0.01666667,
+          "reference_hours_to_reach_level": 0.09119672
+        },
+        {
+          "level": 11,
+          "xp_to_next": 740,
+          "cumulative_xp_to_reach_level": 2030,
+          "reference_hours_to_next": 0.01880081,
+          "reference_hours_to_reach_level": 0.10786339
+        },
+        {
+          "level": 12,
+          "xp_to_next": 960,
+          "cumulative_xp_to_reach_level": 2770,
+          "reference_hours_to_next": 0.02105263,
+          "reference_hours_to_reach_level": 0.1266642
+        },
+        {
+          "level": 13,
+          "xp_to_next": 1220,
+          "cumulative_xp_to_reach_level": 3730,
+          "reference_hours_to_next": 0.02331804,
+          "reference_hours_to_reach_level": 0.14771683
+        },
+        {
+          "level": 14,
+          "xp_to_next": 1520,
+          "cumulative_xp_to_reach_level": 4950,
+          "reference_hours_to_next": 0.02553763,
+          "reference_hours_to_reach_level": 0.17103488
+        },
+        {
+          "level": 15,
+          "xp_to_next": 1870,
+          "cumulative_xp_to_reach_level": 6470,
+          "reference_hours_to_next": 0.02782738,
+          "reference_hours_to_reach_level": 0.19657251
+        },
+        {
+          "level": 16,
+          "xp_to_next": 2260,
+          "cumulative_xp_to_reach_level": 8340,
+          "reference_hours_to_next": 0.02998938,
+          "reference_hours_to_reach_level": 0.22439989
+        },
+        {
+          "level": 17,
+          "xp_to_next": 2710,
+          "cumulative_xp_to_reach_level": 10600,
+          "reference_hours_to_next": 0.0322619,
+          "reference_hours_to_reach_level": 0.25438928
+        },
+        {
+          "level": 18,
+          "xp_to_next": 3210,
+          "cumulative_xp_to_reach_level": 13310,
+          "reference_hours_to_next": 0.03447165,
+          "reference_hours_to_reach_level": 0.28665118
+        },
+        {
+          "level": 19,
+          "xp_to_next": 3770,
+          "cumulative_xp_to_reach_level": 16520,
+          "reference_hours_to_next": 0.03670171,
+          "reference_hours_to_reach_level": 0.32112283
+        },
+        {
+          "level": 20,
+          "xp_to_next": 4390,
+          "cumulative_xp_to_reach_level": 20290,
+          "reference_hours_to_next": 0.03891844,
+          "reference_hours_to_reach_level": 0.35782454
+        },
+        {
+          "level": 21,
+          "xp_to_next": 5070,
+          "cumulative_xp_to_reach_level": 24680,
+          "reference_hours_to_next": 0.04109922,
+          "reference_hours_to_reach_level": 0.39674298
+        },
+        {
+          "level": 22,
+          "xp_to_next": 5830,
+          "cumulative_xp_to_reach_level": 29750,
+          "reference_hours_to_next": 0.04337798,
+          "reference_hours_to_reach_level": 0.43784221
+        },
+        {
+          "level": 23,
+          "xp_to_next": 6650,
+          "cumulative_xp_to_reach_level": 35580,
+          "reference_hours_to_next": 0.04557292,
+          "reference_hours_to_reach_level": 0.48122018
+        },
+        {
+          "level": 24,
+          "xp_to_next": 7550,
+          "cumulative_xp_to_reach_level": 42230,
+          "reference_hours_to_next": 0.04780902,
+          "reference_hours_to_reach_level": 0.5267931
+        },
+        {
+          "level": 25,
+          "xp_to_next": 8520,
+          "cumulative_xp_to_reach_level": 49780,
+          "reference_hours_to_next": 0.05,
+          "reference_hours_to_reach_level": 0.57460212
+        },
+        {
+          "level": 26,
+          "xp_to_next": 10060,
+          "cumulative_xp_to_reach_level": 58300,
+          "reference_hours_to_next": 0.05486475,
+          "reference_hours_to_reach_level": 0.62460212
+        },
+        {
+          "level": 27,
+          "xp_to_next": 11750,
+          "cumulative_xp_to_reach_level": 68360,
+          "reference_hours_to_next": 0.05970528,
+          "reference_hours_to_reach_level": 0.67946686
+        },
+        {
+          "level": 28,
+          "xp_to_next": 13610,
+          "cumulative_xp_to_reach_level": 80110,
+          "reference_hours_to_next": 0.06458808,
+          "reference_hours_to_reach_level": 0.73917215
+        },
+        {
+          "level": 29,
+          "xp_to_next": 15630,
+          "cumulative_xp_to_reach_level": 93720,
+          "reference_hours_to_next": 0.06942964,
+          "reference_hours_to_reach_level": 0.80376023
+        },
+        {
+          "level": 30,
+          "xp_to_next": 17830,
+          "cumulative_xp_to_reach_level": 109350,
+          "reference_hours_to_next": 0.07429167,
+          "reference_hours_to_reach_level": 0.87318986
+        },
+        {
+          "level": 31,
+          "xp_to_next": 20220,
+          "cumulative_xp_to_reach_level": 127180,
+          "reference_hours_to_next": 0.07918233,
+          "reference_hours_to_reach_level": 0.94748153
+        },
+        {
+          "level": 32,
+          "xp_to_next": 22790,
+          "cumulative_xp_to_reach_level": 147400,
+          "reference_hours_to_next": 0.08403392,
+          "reference_hours_to_reach_level": 1.02666386
+        },
+        {
+          "level": 33,
+          "xp_to_next": 25560,
+          "cumulative_xp_to_reach_level": 170190,
+          "reference_hours_to_next": 0.08889816,
+          "reference_hours_to_reach_level": 1.11069779
+        },
+        {
+          "level": 34,
+          "xp_to_next": 28530,
+          "cumulative_xp_to_reach_level": 195750,
+          "reference_hours_to_next": 0.09375,
+          "reference_hours_to_reach_level": 1.19959595
+        },
+        {
+          "level": 35,
+          "xp_to_next": 31710,
+          "cumulative_xp_to_reach_level": 224280,
+          "reference_hours_to_next": 0.09860075,
+          "reference_hours_to_reach_level": 1.29334595
+        },
+        {
+          "level": 36,
+          "xp_to_next": 35120,
+          "cumulative_xp_to_reach_level": 255990,
+          "reference_hours_to_next": 0.10348892,
+          "reference_hours_to_reach_level": 1.39194669
+        },
+        {
+          "level": 37,
+          "xp_to_next": 38740,
+          "cumulative_xp_to_reach_level": 291110,
+          "reference_hours_to_next": 0.10833333,
+          "reference_hours_to_reach_level": 1.49543562
+        },
+        {
+          "level": 38,
+          "xp_to_next": 42600,
+          "cumulative_xp_to_reach_level": 329850,
+          "reference_hours_to_next": 0.11320153,
+          "reference_hours_to_reach_level": 1.60376895
+        },
+        {
+          "level": 39,
+          "xp_to_next": 46690,
+          "cumulative_xp_to_reach_level": 372450,
+          "reference_hours_to_next": 0.11804713,
+          "reference_hours_to_reach_level": 1.71697048
+        },
+        {
+          "level": 40,
+          "xp_to_next": 51040,
+          "cumulative_xp_to_reach_level": 419140,
+          "reference_hours_to_next": 0.12292871,
+          "reference_hours_to_reach_level": 1.83501761
+        },
+        {
+          "level": 41,
+          "xp_to_next": 55630,
+          "cumulative_xp_to_reach_level": 470180,
+          "reference_hours_to_next": 0.12777931,
+          "reference_hours_to_reach_level": 1.95794632
+        },
+        {
+          "level": 42,
+          "xp_to_next": 60480,
+          "cumulative_xp_to_reach_level": 525810,
+          "reference_hours_to_next": 0.13263158,
+          "reference_hours_to_reach_level": 2.08572563
+        },
+        {
+          "level": 43,
+          "xp_to_next": 65610,
+          "cumulative_xp_to_reach_level": 586290,
+          "reference_hours_to_next": 0.13751258,
+          "reference_hours_to_reach_level": 2.2183572
+        },
+        {
+          "level": 44,
+          "xp_to_next": 71000,
+          "cumulative_xp_to_reach_level": 651900,
+          "reference_hours_to_next": 0.14236445,
+          "reference_hours_to_reach_level": 2.35586978
+        },
+        {
+          "level": 45,
+          "xp_to_next": 76670,
+          "cumulative_xp_to_reach_level": 722900,
+          "reference_hours_to_next": 0.14721582,
+          "reference_hours_to_reach_level": 2.49823423
+        },
+        {
+          "level": 46,
+          "xp_to_next": 82640,
+          "cumulative_xp_to_reach_level": 799570,
+          "reference_hours_to_next": 0.15209069,
+          "reference_hours_to_reach_level": 2.64545005
+        },
+        {
+          "level": 47,
+          "xp_to_next": 88890,
+          "cumulative_xp_to_reach_level": 882210,
+          "reference_hours_to_next": 0.15693856,
+          "reference_hours_to_reach_level": 2.79754075
+        },
+        {
+          "level": 48,
+          "xp_to_next": 95450,
+          "cumulative_xp_to_reach_level": 971100,
+          "reference_hours_to_next": 0.1618016,
+          "reference_hours_to_reach_level": 2.95447931
+        },
+        {
+          "level": 49,
+          "xp_to_next": 102320,
+          "cumulative_xp_to_reach_level": 1066550,
+          "reference_hours_to_next": 0.16666667,
+          "reference_hours_to_reach_level": 3.11628091
+        },
+        {
+          "level": 50,
+          "xp_to_next": 109060,
+          "cumulative_xp_to_reach_level": 1168870,
+          "reference_hours_to_next": 0.17083333,
+          "reference_hours_to_reach_level": 3.28294758
+        },
+        {
+          "level": 51,
+          "xp_to_next": 117840,
+          "cumulative_xp_to_reach_level": 1277930,
+          "reference_hours_to_next": 0.1776411,
+          "reference_hours_to_reach_level": 3.45378091
+        },
+        {
+          "level": 52,
+          "xp_to_next": 127050,
+          "cumulative_xp_to_reach_level": 1395770,
+          "reference_hours_to_next": 0.18445122,
+          "reference_hours_to_reach_level": 3.63142201
+        },
+        {
+          "level": 53,
+          "xp_to_next": 136690,
+          "cumulative_xp_to_reach_level": 1522820,
+          "reference_hours_to_next": 0.19124972,
+          "reference_hours_to_reach_level": 3.81587323
+        },
+        {
+          "level": 54,
+          "xp_to_next": 146780,
+          "cumulative_xp_to_reach_level": 1659510,
+          "reference_hours_to_next": 0.1980516,
+          "reference_hours_to_reach_level": 4.00712295
+        },
+        {
+          "level": 55,
+          "xp_to_next": 157330,
+          "cumulative_xp_to_reach_level": 1806290,
+          "reference_hours_to_next": 0.20485677,
+          "reference_hours_to_reach_level": 4.20517455
+        },
+        {
+          "level": 56,
+          "xp_to_next": 168350,
+          "cumulative_xp_to_reach_level": 1963620,
+          "reference_hours_to_next": 0.21166516,
+          "reference_hours_to_reach_level": 4.41003132
+        },
+        {
+          "level": 57,
+          "xp_to_next": 179850,
+          "cumulative_xp_to_reach_level": 2131970,
+          "reference_hours_to_next": 0.21847668,
+          "reference_hours_to_reach_level": 4.62169647
+        },
+        {
+          "level": 58,
+          "xp_to_next": 191830,
+          "cumulative_xp_to_reach_level": 2311820,
+          "reference_hours_to_next": 0.2252795,
+          "reference_hours_to_reach_level": 4.84017315
+        },
+        {
+          "level": 59,
+          "xp_to_next": 204310,
+          "cumulative_xp_to_reach_level": 2503650,
+          "reference_hours_to_next": 0.23208606,
+          "reference_hours_to_reach_level": 5.06545265
+        },
+        {
+          "level": 60,
+          "xp_to_next": 217290,
+          "cumulative_xp_to_reach_level": 2707960,
+          "reference_hours_to_next": 0.23888522,
+          "reference_hours_to_reach_level": 5.29753871
+        },
+        {
+          "level": 61,
+          "xp_to_next": 230800,
+          "cumulative_xp_to_reach_level": 2925250,
+          "reference_hours_to_next": 0.2456992,
+          "reference_hours_to_reach_level": 5.53642394
+        },
+        {
+          "level": 62,
+          "xp_to_next": 244830,
+          "cumulative_xp_to_reach_level": 3156050,
+          "reference_hours_to_next": 0.25250619,
+          "reference_hours_to_reach_level": 5.78212313
+        },
+        {
+          "level": 63,
+          "xp_to_next": 259390,
+          "cumulative_xp_to_reach_level": 3400880,
+          "reference_hours_to_next": 0.25930702,
+          "reference_hours_to_reach_level": 6.03462932
+        },
+        {
+          "level": 64,
+          "xp_to_next": 274500,
+          "cumulative_xp_to_reach_level": 3660270,
+          "reference_hours_to_next": 0.26611215,
+          "reference_hours_to_reach_level": 6.29393634
+        },
+        {
+          "level": 65,
+          "xp_to_next": 290170,
+          "cumulative_xp_to_reach_level": 3934770,
+          "reference_hours_to_next": 0.27292137,
+          "reference_hours_to_reach_level": 6.56004849
+        },
+        {
+          "level": 66,
+          "xp_to_next": 306400,
+          "cumulative_xp_to_reach_level": 4224940,
+          "reference_hours_to_next": 0.27972539,
+          "reference_hours_to_reach_level": 6.83296986
+        },
+        {
+          "level": 67,
+          "xp_to_next": 323200,
+          "cumulative_xp_to_reach_level": 4531340,
+          "reference_hours_to_next": 0.28652482,
+          "reference_hours_to_reach_level": 7.11269525
+        },
+        {
+          "level": 68,
+          "xp_to_next": 340600,
+          "cumulative_xp_to_reach_level": 4854540,
+          "reference_hours_to_next": 0.29333747,
+          "reference_hours_to_reach_level": 7.39922007
+        },
+        {
+          "level": 69,
+          "xp_to_next": 358580,
+          "cumulative_xp_to_reach_level": 5195140,
+          "reference_hours_to_next": 0.30013727,
+          "reference_hours_to_reach_level": 7.69255754
+        },
+        {
+          "level": 70,
+          "xp_to_next": 377170,
+          "cumulative_xp_to_reach_level": 5553720,
+          "reference_hours_to_next": 0.30694173,
+          "reference_hours_to_reach_level": 7.99269481
+        },
+        {
+          "level": 71,
+          "xp_to_next": 396380,
+          "cumulative_xp_to_reach_level": 5930890,
+          "reference_hours_to_next": 0.31375063,
+          "reference_hours_to_reach_level": 8.29963654
+        },
+        {
+          "level": 72,
+          "xp_to_next": 416210,
+          "cumulative_xp_to_reach_level": 6327270,
+          "reference_hours_to_next": 0.32055607,
+          "reference_hours_to_reach_level": 8.61338717
+        },
+        {
+          "level": 73,
+          "xp_to_next": 436670,
+          "cumulative_xp_to_reach_level": 6743480,
+          "reference_hours_to_next": 0.32735846,
+          "reference_hours_to_reach_level": 8.93394324
+        },
+        {
+          "level": 74,
+          "xp_to_next": 457780,
+          "cumulative_xp_to_reach_level": 7180150,
+          "reference_hours_to_next": 0.3341655,
+          "reference_hours_to_reach_level": 9.2613017
+        },
+        {
+          "level": 75,
+          "xp_to_next": 479540,
+          "cumulative_xp_to_reach_level": 7637930,
+          "reference_hours_to_next": 0.34096985,
+          "reference_hours_to_reach_level": 9.5954672
+        },
+        {
+          "level": 76,
+          "xp_to_next": 501970,
+          "cumulative_xp_to_reach_level": 8117470,
+          "reference_hours_to_next": 0.34777879,
+          "reference_hours_to_reach_level": 9.93643705
+        },
+        {
+          "level": 77,
+          "xp_to_next": 525070,
+          "cumulative_xp_to_reach_level": 8619440,
+          "reference_hours_to_next": 0.35458536,
+          "reference_hours_to_reach_level": 10.28421585
+        },
+        {
+          "level": 78,
+          "xp_to_next": 548850,
+          "cumulative_xp_to_reach_level": 9144510,
+          "reference_hours_to_next": 0.36138985,
+          "reference_hours_to_reach_level": 10.63880121
+        },
+        {
+          "level": 79,
+          "xp_to_next": 573320,
+          "cumulative_xp_to_reach_level": 9693360,
+          "reference_hours_to_next": 0.36819256,
+          "reference_hours_to_reach_level": 11.00019106
+        },
+        {
+          "level": 80,
+          "xp_to_next": 598500,
+          "cumulative_xp_to_reach_level": 10266680,
+          "reference_hours_to_next": 0.375,
+          "reference_hours_to_reach_level": 11.36838362
+        },
+        {
+          "level": 81,
+          "xp_to_next": 628990,
+          "cumulative_xp_to_reach_level": 10865180,
+          "reference_hours_to_next": 0.38461868,
+          "reference_hours_to_reach_level": 11.74338362
+        },
+        {
+          "level": 82,
+          "xp_to_next": 660420,
+          "cumulative_xp_to_reach_level": 11494170,
+          "reference_hours_to_next": 0.39423352,
+          "reference_hours_to_reach_level": 12.1280023
+        },
+        {
+          "level": 83,
+          "xp_to_next": 692810,
+          "cumulative_xp_to_reach_level": 12154590,
+          "reference_hours_to_next": 0.4038484,
+          "reference_hours_to_reach_level": 12.52223582
+        },
+        {
+          "level": 84,
+          "xp_to_next": 726170,
+          "cumulative_xp_to_reach_level": 12847400,
+          "reference_hours_to_next": 0.4134611,
+          "reference_hours_to_reach_level": 12.92608422
+        },
+        {
+          "level": 85,
+          "xp_to_next": 760520,
+          "cumulative_xp_to_reach_level": 13573570,
+          "reference_hours_to_next": 0.42307521,
+          "reference_hours_to_reach_level": 13.33954532
+        },
+        {
+          "level": 86,
+          "xp_to_next": 795880,
+          "cumulative_xp_to_reach_level": 14334090,
+          "reference_hours_to_next": 0.43269398,
+          "reference_hours_to_reach_level": 13.76262053
+        },
+        {
+          "level": 87,
+          "xp_to_next": 832250,
+          "cumulative_xp_to_reach_level": 15129970,
+          "reference_hours_to_next": 0.44230974,
+          "reference_hours_to_reach_level": 14.19531451
+        },
+        {
+          "level": 88,
+          "xp_to_next": 869650,
+          "cumulative_xp_to_reach_level": 15962220,
+          "reference_hours_to_next": 0.45192588,
+          "reference_hours_to_reach_level": 14.63762425
+        },
+        {
+          "level": 89,
+          "xp_to_next": 908090,
+          "cumulative_xp_to_reach_level": 16831870,
+          "reference_hours_to_next": 0.46154042,
+          "reference_hours_to_reach_level": 15.08955012
+        },
+        {
+          "level": 90,
+          "xp_to_next": 947590,
+          "cumulative_xp_to_reach_level": 17739960,
+          "reference_hours_to_next": 0.47115652,
+          "reference_hours_to_reach_level": 15.55109054
+        },
+        {
+          "level": 91,
+          "xp_to_next": 988160,
+          "cumulative_xp_to_reach_level": 18687550,
+          "reference_hours_to_next": 0.48077222,
+          "reference_hours_to_reach_level": 16.02224706
+        },
+        {
+          "level": 92,
+          "xp_to_next": 1029810,
+          "cumulative_xp_to_reach_level": 19675710,
+          "reference_hours_to_next": 0.49038571,
+          "reference_hours_to_reach_level": 16.50301929
+        },
+        {
+          "level": 93,
+          "xp_to_next": 1072560,
+          "cumulative_xp_to_reach_level": 20705520,
+          "reference_hours_to_next": 0.5,
+          "reference_hours_to_reach_level": 16.993405
+        },
+        {
+          "level": 94,
+          "xp_to_next": 1116430,
+          "cumulative_xp_to_reach_level": 21778080,
+          "reference_hours_to_next": 0.50961784,
+          "reference_hours_to_reach_level": 17.493405
+        },
+        {
+          "level": 95,
+          "xp_to_next": 1161420,
+          "cumulative_xp_to_reach_level": 22894510,
+          "reference_hours_to_next": 0.51923283,
+          "reference_hours_to_reach_level": 18.00302285
+        },
+        {
+          "level": 96,
+          "xp_to_next": 1207550,
+          "cumulative_xp_to_reach_level": 24055930,
+          "reference_hours_to_next": 0.52884784,
+          "reference_hours_to_reach_level": 18.52225568
+        },
+        {
+          "level": 97,
+          "xp_to_next": 1254830,
+          "cumulative_xp_to_reach_level": 25263480,
+          "reference_hours_to_next": 0.53846121,
+          "reference_hours_to_reach_level": 19.05110352
+        },
+        {
+          "level": 98,
+          "xp_to_next": 1303280,
+          "cumulative_xp_to_reach_level": 26518310,
+          "reference_hours_to_next": 0.54807563,
+          "reference_hours_to_reach_level": 19.58956472
+        },
+        {
+          "level": 99,
+          "xp_to_next": 1352920,
+          "cumulative_xp_to_reach_level": 27821590,
+          "reference_hours_to_next": 0.55769358,
+          "reference_hours_to_reach_level": 20.13764035
+        },
+        {
+          "level": 100,
+          "xp_to_next": 1403750,
+          "cumulative_xp_to_reach_level": 29174510,
+          "reference_hours_to_next": 0.56730925,
+          "reference_hours_to_reach_level": 20.69533393
+        },
+        {
+          "level": 101,
+          "xp_to_next": 1455790,
+          "cumulative_xp_to_reach_level": 30578260,
+          "reference_hours_to_next": 0.57692521,
+          "reference_hours_to_reach_level": 21.26264318
+        },
+        {
+          "level": 102,
+          "xp_to_next": 1509050,
+          "cumulative_xp_to_reach_level": 32034050,
+          "reference_hours_to_next": 0.58653996,
+          "reference_hours_to_reach_level": 21.83956839
+        },
+        {
+          "level": 103,
+          "xp_to_next": 1563550,
+          "cumulative_xp_to_reach_level": 33543100,
+          "reference_hours_to_next": 0.5961559,
+          "reference_hours_to_reach_level": 22.42610834
+        },
+        {
+          "level": 104,
+          "xp_to_next": 1619300,
+          "cumulative_xp_to_reach_level": 35106650,
+          "reference_hours_to_next": 0.60577153,
+          "reference_hours_to_reach_level": 23.02226424
+        },
+        {
+          "level": 105,
+          "xp_to_next": 1676310,
+          "cumulative_xp_to_reach_level": 36725950,
+          "reference_hours_to_next": 0.61538546,
+          "reference_hours_to_reach_level": 23.62803578
+        },
+        {
+          "level": 106,
+          "xp_to_next": 1734600,
+          "cumulative_xp_to_reach_level": 38402260,
+          "reference_hours_to_next": 0.625,
+          "reference_hours_to_reach_level": 24.24342124
+        },
+        {
+          "level": 107,
+          "xp_to_next": 1794190,
+          "cumulative_xp_to_reach_level": 40136860,
+          "reference_hours_to_next": 0.63461729,
+          "reference_hours_to_reach_level": 24.86842124
+        },
+        {
+          "level": 108,
+          "xp_to_next": 1855080,
+          "cumulative_xp_to_reach_level": 41931050,
+          "reference_hours_to_next": 0.64423237,
+          "reference_hours_to_reach_level": 25.50303853
+        },
+        {
+          "level": 109,
+          "xp_to_next": 1917290,
+          "cumulative_xp_to_reach_level": 43786130,
+          "reference_hours_to_next": 0.65384747,
+          "reference_hours_to_reach_level": 26.1472709
+        },
+        {
+          "level": 110,
+          "xp_to_next": 1980830,
+          "cumulative_xp_to_reach_level": 45703420,
+          "reference_hours_to_next": 0.66346128,
+          "reference_hours_to_reach_level": 26.80111837
+        },
+        {
+          "level": 111,
+          "xp_to_next": 2045720,
+          "cumulative_xp_to_reach_level": 47684250,
+          "reference_hours_to_next": 0.67307591,
+          "reference_hours_to_reach_level": 27.46457965
+        },
+        {
+          "level": 112,
+          "xp_to_next": 2111980,
+          "cumulative_xp_to_reach_level": 49729970,
+          "reference_hours_to_next": 0.6826933,
+          "reference_hours_to_reach_level": 28.13765556
+        },
+        {
+          "level": 113,
+          "xp_to_next": 2179610,
+          "cumulative_xp_to_reach_level": 51841950,
+          "reference_hours_to_next": 0.69230891,
+          "reference_hours_to_reach_level": 28.82034886
+        },
+        {
+          "level": 114,
+          "xp_to_next": 2248630,
+          "cumulative_xp_to_reach_level": 54021560,
+          "reference_hours_to_next": 0.70192476,
+          "reference_hours_to_reach_level": 29.51265777
+        },
+        {
+          "level": 115,
+          "xp_to_next": 2319050,
+          "cumulative_xp_to_reach_level": 56270190,
+          "reference_hours_to_next": 0.71153964,
+          "reference_hours_to_reach_level": 30.21458253
+        },
+        {
+          "level": 116,
+          "xp_to_next": 2390890,
+          "cumulative_xp_to_reach_level": 58589240,
+          "reference_hours_to_next": 0.72115547,
+          "reference_hours_to_reach_level": 30.92612217
+        },
+        {
+          "level": 117,
+          "xp_to_next": 2464160,
+          "cumulative_xp_to_reach_level": 60980130,
+          "reference_hours_to_next": 0.73077106,
+          "reference_hours_to_reach_level": 31.64727764
+        },
+        {
+          "level": 118,
+          "xp_to_next": 2538870,
+          "cumulative_xp_to_reach_level": 63444290,
+          "reference_hours_to_next": 0.74038529,
+          "reference_hours_to_reach_level": 32.3780487
+        },
+        {
+          "level": 119,
+          "xp_to_next": 2615040,
+          "cumulative_xp_to_reach_level": 65983160,
+          "reference_hours_to_next": 0.75,
+          "reference_hours_to_reach_level": 33.11843399
+        },
+        {
+          "level": 120,
+          "xp_to_next": 2732450,
+          "cumulative_xp_to_reach_level": 68598200,
+          "reference_hours_to_next": 0.77083333,
+          "reference_hours_to_reach_level": 33.86843399
+        },
+        {
+          "level": 121,
+          "xp_to_next": 2865170,
+          "cumulative_xp_to_reach_level": 71330650,
+          "reference_hours_to_next": 0.79513843,
+          "reference_hours_to_reach_level": 34.63926732
+        },
+        {
+          "level": 122,
+          "xp_to_next": 3001130,
+          "cumulative_xp_to_reach_level": 74195820,
+          "reference_hours_to_next": 0.81944353,
+          "reference_hours_to_reach_level": 35.43440575
+        },
+        {
+          "level": 123,
+          "xp_to_next": 3140370,
+          "cumulative_xp_to_reach_level": 77196950,
+          "reference_hours_to_next": 0.84375,
+          "reference_hours_to_reach_level": 36.25384928
+        },
+        {
+          "level": 124,
+          "xp_to_next": 3282920,
+          "cumulative_xp_to_reach_level": 80337320,
+          "reference_hours_to_next": 0.86805644,
+          "reference_hours_to_reach_level": 37.09759928
+        },
+        {
+          "level": 125,
+          "xp_to_next": 3428810,
+          "cumulative_xp_to_reach_level": 83620240,
+          "reference_hours_to_next": 0.89236154,
+          "reference_hours_to_reach_level": 37.96565572
+        },
+        {
+          "level": 126,
+          "xp_to_next": 3578080,
+          "cumulative_xp_to_reach_level": 87049050,
+          "reference_hours_to_next": 0.91666667,
+          "reference_hours_to_reach_level": 38.85801726
+        },
+        {
+          "level": 127,
+          "xp_to_next": 3730770,
+          "cumulative_xp_to_reach_level": 90627130,
+          "reference_hours_to_next": 0.94097306,
+          "reference_hours_to_reach_level": 39.77468393
+        },
+        {
+          "level": 128,
+          "xp_to_next": 3886900,
+          "cumulative_xp_to_reach_level": 94357900,
+          "reference_hours_to_next": 0.96527695,
+          "reference_hours_to_reach_level": 40.71565699
+        },
+        {
+          "level": 129,
+          "xp_to_next": 4046530,
+          "cumulative_xp_to_reach_level": 98244800,
+          "reference_hours_to_next": 0.98958456,
+          "reference_hours_to_reach_level": 41.68093394
+        },
+        {
+          "level": 130,
+          "xp_to_next": 4209670,
+          "cumulative_xp_to_reach_level": 102291330,
+          "reference_hours_to_next": 1.01388969,
+          "reference_hours_to_reach_level": 42.6705185
+        },
+        {
+          "level": 131,
+          "xp_to_next": 4376360,
+          "cumulative_xp_to_reach_level": 106501000,
+          "reference_hours_to_next": 1.03819365,
+          "reference_hours_to_reach_level": 43.68440819
+        },
+        {
+          "level": 132,
+          "xp_to_next": 4546650,
+          "cumulative_xp_to_reach_level": 110877360,
+          "reference_hours_to_next": 1.0625,
+          "reference_hours_to_reach_level": 44.72260184
+        },
+        {
+          "level": 133,
+          "xp_to_next": 4720560,
+          "cumulative_xp_to_reach_level": 115424010,
+          "reference_hours_to_next": 1.08680517,
+          "reference_hours_to_reach_level": 45.78510184
+        },
+        {
+          "level": 134,
+          "xp_to_next": 4898130,
+          "cumulative_xp_to_reach_level": 120144570,
+          "reference_hours_to_next": 1.11111035,
+          "reference_hours_to_reach_level": 46.87190702
+        },
+        {
+          "level": 135,
+          "xp_to_next": 5079400,
+          "cumulative_xp_to_reach_level": 125042700,
+          "reference_hours_to_next": 1.13541667,
+          "reference_hours_to_reach_level": 47.98301737
+        },
+        {
+          "level": 136,
+          "xp_to_next": 5264400,
+          "cumulative_xp_to_reach_level": 130122100,
+          "reference_hours_to_next": 1.15972296,
+          "reference_hours_to_reach_level": 49.11843404
+        },
+        {
+          "level": 137,
+          "xp_to_next": 5453160,
+          "cumulative_xp_to_reach_level": 135386500,
+          "reference_hours_to_next": 1.18402814,
+          "reference_hours_to_reach_level": 50.27815699
+        },
+        {
+          "level": 138,
+          "xp_to_next": 5645720,
+          "cumulative_xp_to_reach_level": 140839660,
+          "reference_hours_to_next": 1.20833333,
+          "reference_hours_to_reach_level": 51.46218513
+        },
+        {
+          "level": 139,
+          "xp_to_next": 5842120,
+          "cumulative_xp_to_reach_level": 146485380,
+          "reference_hours_to_next": 1.23263959,
+          "reference_hours_to_reach_level": 52.67051847
+        },
+        {
+          "level": 140,
+          "xp_to_next": 6042380,
+          "cumulative_xp_to_reach_level": 152327500,
+          "reference_hours_to_next": 1.25694375,
+          "reference_hours_to_reach_level": 53.90315806
+        },
+        {
+          "level": 141,
+          "xp_to_next": 6246560,
+          "cumulative_xp_to_reach_level": 158369880,
+          "reference_hours_to_next": 1.28125103,
+          "reference_hours_to_reach_level": 55.16010181
+        },
+        {
+          "level": 142,
+          "xp_to_next": 6454670,
+          "cumulative_xp_to_reach_level": 164616440,
+          "reference_hours_to_next": 1.30555623,
+          "reference_hours_to_reach_level": 56.44135284
+        },
+        {
+          "level": 143,
+          "xp_to_next": 6666750,
+          "cumulative_xp_to_reach_level": 171071110,
+          "reference_hours_to_next": 1.32986045,
+          "reference_hours_to_reach_level": 57.74690907
+        },
+        {
+          "level": 144,
+          "xp_to_next": 6882850,
+          "cumulative_xp_to_reach_level": 177737860,
+          "reference_hours_to_next": 1.35416667,
+          "reference_hours_to_reach_level": 59.07676951
+        },
+        {
+          "level": 145,
+          "xp_to_next": 7102990,
+          "cumulative_xp_to_reach_level": 184620710,
+          "reference_hours_to_next": 1.3784719,
+          "reference_hours_to_reach_level": 60.43093618
+        },
+        {
+          "level": 146,
+          "xp_to_next": 7327210,
+          "cumulative_xp_to_reach_level": 191723700,
+          "reference_hours_to_next": 1.40277714,
+          "reference_hours_to_reach_level": 61.80940808
+        },
+        {
+          "level": 147,
+          "xp_to_next": 7555550,
+          "cumulative_xp_to_reach_level": 199050910,
+          "reference_hours_to_next": 1.42708333,
+          "reference_hours_to_reach_level": 63.21218522
+        },
+        {
+          "level": 148,
+          "xp_to_next": 7788040,
+          "cumulative_xp_to_reach_level": 206606460,
+          "reference_hours_to_next": 1.45138951,
+          "reference_hours_to_reach_level": 64.63926855
+        },
+        {
+          "level": 149,
+          "xp_to_next": 8024710,
+          "cumulative_xp_to_reach_level": 214394500,
+          "reference_hours_to_next": 1.47569475,
+          "reference_hours_to_reach_level": 66.09065806
+        },
+        {
+          "level": 150,
+          "xp_to_next": 8265600,
+          "cumulative_xp_to_reach_level": 222419210,
+          "reference_hours_to_next": 1.5,
+          "reference_hours_to_reach_level": 67.56635281
+        },
+        {
+          "level": 151,
+          "xp_to_next": 8654210,
+          "cumulative_xp_to_reach_level": 230684810,
+          "reference_hours_to_next": 1.55000036,
+          "reference_hours_to_reach_level": 69.06635281
+        },
+        {
+          "level": 152,
+          "xp_to_next": 9050880,
+          "cumulative_xp_to_reach_level": 239339020,
+          "reference_hours_to_next": 1.6,
+          "reference_hours_to_reach_level": 70.61635317
+        },
+        {
+          "level": 153,
+          "xp_to_next": 9455690,
+          "cumulative_xp_to_reach_level": 248389900,
+          "reference_hours_to_next": 1.65000035,
+          "reference_hours_to_reach_level": 72.21635317
+        },
+        {
+          "level": 154,
+          "xp_to_next": 9868710,
+          "cumulative_xp_to_reach_level": 257845590,
+          "reference_hours_to_next": 1.70000103,
+          "reference_hours_to_reach_level": 73.86635352
+        },
+        {
+          "level": 155,
+          "xp_to_next": 10290000,
+          "cumulative_xp_to_reach_level": 267714300,
+          "reference_hours_to_next": 1.75,
+          "reference_hours_to_reach_level": 75.56635455
+        },
+        {
+          "level": 156,
+          "xp_to_next": 10719650,
+          "cumulative_xp_to_reach_level": 278004300,
+          "reference_hours_to_next": 1.80000034,
+          "reference_hours_to_reach_level": 77.31635455
+        },
+        {
+          "level": 157,
+          "xp_to_next": 11157720,
+          "cumulative_xp_to_reach_level": 288723950,
+          "reference_hours_to_next": 1.85,
+          "reference_hours_to_reach_level": 79.11635489
+        },
+        {
+          "level": 158,
+          "xp_to_next": 11604290,
+          "cumulative_xp_to_reach_level": 299881670,
+          "reference_hours_to_next": 1.90000033,
+          "reference_hours_to_reach_level": 80.96635489
+        },
+        {
+          "level": 159,
+          "xp_to_next": 12059430,
+          "cumulative_xp_to_reach_level": 311485960,
+          "reference_hours_to_next": 1.95000097,
+          "reference_hours_to_reach_level": 82.86635521
+        },
+        {
+          "level": 160,
+          "xp_to_next": 12523200,
+          "cumulative_xp_to_reach_level": 323545390,
+          "reference_hours_to_next": 2.0,
+          "reference_hours_to_reach_level": 84.81635618
+        },
+        {
+          "level": 161,
+          "xp_to_next": 12995690,
+          "cumulative_xp_to_reach_level": 336068590,
+          "reference_hours_to_next": 2.05000032,
+          "reference_hours_to_reach_level": 86.81635618
+        },
+        {
+          "level": 162,
+          "xp_to_next": 13476960,
+          "cumulative_xp_to_reach_level": 349064280,
+          "reference_hours_to_next": 2.1,
+          "reference_hours_to_reach_level": 88.8663565
+        },
+        {
+          "level": 163,
+          "xp_to_next": 13967090,
+          "cumulative_xp_to_reach_level": 362541240,
+          "reference_hours_to_next": 2.15000031,
+          "reference_hours_to_reach_level": 90.9663565
+        },
+        {
+          "level": 164,
+          "xp_to_next": 14466150,
+          "cumulative_xp_to_reach_level": 376508330,
+          "reference_hours_to_next": 2.20000091,
+          "reference_hours_to_reach_level": 93.11635681
+        },
+        {
+          "level": 165,
+          "xp_to_next": 14974200,
+          "cumulative_xp_to_reach_level": 390974480,
+          "reference_hours_to_next": 2.25,
+          "reference_hours_to_reach_level": 95.31635772
+        },
+        {
+          "level": 166,
+          "xp_to_next": 15491330,
+          "cumulative_xp_to_reach_level": 405948680,
+          "reference_hours_to_next": 2.3000003,
+          "reference_hours_to_reach_level": 97.56635772
+        },
+        {
+          "level": 167,
+          "xp_to_next": 16017600,
+          "cumulative_xp_to_reach_level": 421440010,
+          "reference_hours_to_next": 2.35,
+          "reference_hours_to_reach_level": 99.86635802
+        },
+        {
+          "level": 168,
+          "xp_to_next": 16553090,
+          "cumulative_xp_to_reach_level": 437457610,
+          "reference_hours_to_next": 2.40000029,
+          "reference_hours_to_reach_level": 102.21635802
+        },
+        {
+          "level": 169,
+          "xp_to_next": 17097870,
+          "cumulative_xp_to_reach_level": 454010700,
+          "reference_hours_to_next": 2.45000086,
+          "reference_hours_to_reach_level": 104.61635831
+        },
+        {
+          "level": 170,
+          "xp_to_next": 17652000,
+          "cumulative_xp_to_reach_level": 471108570,
+          "reference_hours_to_next": 2.5,
+          "reference_hours_to_reach_level": 107.06635917
+        },
+        {
+          "level": 171,
+          "xp_to_next": 18304860,
+          "cumulative_xp_to_reach_level": 488760570,
+          "reference_hours_to_next": 2.5625,
+          "reference_hours_to_reach_level": 109.56635917
+        },
+        {
+          "level": 172,
+          "xp_to_next": 18969300,
+          "cumulative_xp_to_reach_level": 507065430,
+          "reference_hours_to_next": 2.625,
+          "reference_hours_to_reach_level": 112.12885917
+        },
+        {
+          "level": 173,
+          "xp_to_next": 19645410,
+          "cumulative_xp_to_reach_level": 526034730,
+          "reference_hours_to_next": 2.6875,
+          "reference_hours_to_reach_level": 114.75385917
+        },
+        {
+          "level": 174,
+          "xp_to_next": 20333280,
+          "cumulative_xp_to_reach_level": 545680140,
+          "reference_hours_to_next": 2.75,
+          "reference_hours_to_reach_level": 117.44135917
+        },
+        {
+          "level": 175,
+          "xp_to_next": 21033000,
+          "cumulative_xp_to_reach_level": 566013420,
+          "reference_hours_to_next": 2.8125,
+          "reference_hours_to_reach_level": 120.19135917
+        },
+        {
+          "level": 176,
+          "xp_to_next": 21744660,
+          "cumulative_xp_to_reach_level": 587046420,
+          "reference_hours_to_next": 2.875,
+          "reference_hours_to_reach_level": 123.00385917
+        },
+        {
+          "level": 177,
+          "xp_to_next": 22468350,
+          "cumulative_xp_to_reach_level": 608791080,
+          "reference_hours_to_next": 2.9375,
+          "reference_hours_to_reach_level": 125.87885917
+        },
+        {
+          "level": 178,
+          "xp_to_next": 23204160,
+          "cumulative_xp_to_reach_level": 631259430,
+          "reference_hours_to_next": 3.0,
+          "reference_hours_to_reach_level": 128.81635917
+        },
+        {
+          "level": 179,
+          "xp_to_next": 23952180,
+          "cumulative_xp_to_reach_level": 654463590,
+          "reference_hours_to_next": 3.0625,
+          "reference_hours_to_reach_level": 131.81635917
+        },
+        {
+          "level": 180,
+          "xp_to_next": 24712500,
+          "cumulative_xp_to_reach_level": 678415770,
+          "reference_hours_to_next": 3.125,
+          "reference_hours_to_reach_level": 134.87885917
+        },
+        {
+          "level": 181,
+          "xp_to_next": 25485210,
+          "cumulative_xp_to_reach_level": 703128270,
+          "reference_hours_to_next": 3.1875,
+          "reference_hours_to_reach_level": 138.00385917
+        },
+        {
+          "level": 182,
+          "xp_to_next": 26270400,
+          "cumulative_xp_to_reach_level": 728613480,
+          "reference_hours_to_next": 3.25,
+          "reference_hours_to_reach_level": 141.19135917
+        },
+        {
+          "level": 183,
+          "xp_to_next": 27068160,
+          "cumulative_xp_to_reach_level": 754883880,
+          "reference_hours_to_next": 3.3125,
+          "reference_hours_to_reach_level": 144.44135917
+        },
+        {
+          "level": 184,
+          "xp_to_next": 27878580,
+          "cumulative_xp_to_reach_level": 781952040,
+          "reference_hours_to_next": 3.375,
+          "reference_hours_to_reach_level": 147.75385917
+        },
+        {
+          "level": 185,
+          "xp_to_next": 28701750,
+          "cumulative_xp_to_reach_level": 809830620,
+          "reference_hours_to_next": 3.4375,
+          "reference_hours_to_reach_level": 151.12885917
+        },
+        {
+          "level": 186,
+          "xp_to_next": 29537760,
+          "cumulative_xp_to_reach_level": 838532370,
+          "reference_hours_to_next": 3.5,
+          "reference_hours_to_reach_level": 154.56635917
+        },
+        {
+          "level": 187,
+          "xp_to_next": 30386700,
+          "cumulative_xp_to_reach_level": 868070130,
+          "reference_hours_to_next": 3.5625,
+          "reference_hours_to_reach_level": 158.06635917
+        },
+        {
+          "level": 188,
+          "xp_to_next": 31248660,
+          "cumulative_xp_to_reach_level": 898456830,
+          "reference_hours_to_next": 3.625,
+          "reference_hours_to_reach_level": 161.62885917
+        },
+        {
+          "level": 189,
+          "xp_to_next": 32123730,
+          "cumulative_xp_to_reach_level": 929705490,
+          "reference_hours_to_next": 3.6875,
+          "reference_hours_to_reach_level": 165.25385917
+        },
+        {
+          "level": 190,
+          "xp_to_next": 33012000,
+          "cumulative_xp_to_reach_level": 961829220,
+          "reference_hours_to_next": 3.75,
+          "reference_hours_to_reach_level": 168.94135917
+        },
+        {
+          "level": 191,
+          "xp_to_next": 34593070,
+          "cumulative_xp_to_reach_level": 994841220,
+          "reference_hours_to_next": 3.88888926,
+          "reference_hours_to_reach_level": 172.69135917
+        },
+        {
+          "level": 192,
+          "xp_to_next": 36201670,
+          "cumulative_xp_to_reach_level": 1029434290,
+          "reference_hours_to_next": 4.02777815,
+          "reference_hours_to_reach_level": 176.58024843
+        },
+        {
+          "level": 193,
+          "xp_to_next": 37838000,
+          "cumulative_xp_to_reach_level": 1065635960,
+          "reference_hours_to_next": 4.16666667,
+          "reference_hours_to_reach_level": 180.60802658
+        },
+        {
+          "level": 194,
+          "xp_to_next": 39502270,
+          "cumulative_xp_to_reach_level": 1103473960,
+          "reference_hours_to_next": 4.30555592,
+          "reference_hours_to_reach_level": 184.77469325
+        },
+        {
+          "level": 195,
+          "xp_to_next": 41194670,
+          "cumulative_xp_to_reach_level": 1142976230,
+          "reference_hours_to_next": 4.4444448,
+          "reference_hours_to_reach_level": 189.08024917
+        },
+        {
+          "level": 196,
+          "xp_to_next": 42915400,
+          "cumulative_xp_to_reach_level": 1184170900,
+          "reference_hours_to_next": 4.58333333,
+          "reference_hours_to_reach_level": 193.52469397
+        },
+        {
+          "level": 197,
+          "xp_to_next": 44664670,
+          "cumulative_xp_to_reach_level": 1227086300,
+          "reference_hours_to_next": 4.72222257,
+          "reference_hours_to_reach_level": 198.1080273
+        },
+        {
+          "level": 198,
+          "xp_to_next": 46442670,
+          "cumulative_xp_to_reach_level": 1271750970,
+          "reference_hours_to_next": 4.86111146,
+          "reference_hours_to_reach_level": 202.83024988
+        },
+        {
+          "level": 199,
+          "xp_to_next": 48249600,
+          "cumulative_xp_to_reach_level": 1318193640,
+          "reference_hours_to_next": 5.0,
+          "reference_hours_to_reach_level": 207.69136134
+        },
+        {
+          "level": 200,
+          "xp_to_next": null,
+          "cumulative_xp_to_reach_level": 1366443240,
+          "reference_hours_to_next": null,
+          "reference_hours_to_reach_level": 212.69136134
+        }
+      ]
+    },
+    {
+      "rebirth_stage": 1,
+      "status": "SCENARIO_ONLY_PENDING_REBIRTH_DECISION",
+      "percent_of_player_requirements": 30,
+      "total_cycle_xp": 1639731620,
+      "reference_total_hours": 255.22564671,
+      "levels": [
+        {
+          "level": 1,
+          "xp_to_next": 20,
+          "cumulative_xp_to_reach_level": 0,
+          "reference_hours_to_next": 0.00595238,
+          "reference_hours_to_reach_level": 0.0
+        },
+        {
+          "level": 2,
+          "xp_to_next": 30,
+          "cumulative_xp_to_reach_level": 20,
+          "reference_hours_to_next": 0.00625,
+          "reference_hours_to_reach_level": 0.00595238
+        },
+        {
+          "level": 3,
+          "xp_to_next": 60,
+          "cumulative_xp_to_reach_level": 50,
+          "reference_hours_to_next": 0.00892857,
+          "reference_hours_to_reach_level": 0.01220238
+        },
+        {
+          "level": 4,
+          "xp_to_next": 90,
+          "cumulative_xp_to_reach_level": 110,
+          "reference_hours_to_next": 0.00986842,
+          "reference_hours_to_reach_level": 0.02113095
+        },
+        {
+          "level": 5,
+          "xp_to_next": 140,
+          "cumulative_xp_to_reach_level": 200,
+          "reference_hours_to_next": 0.01166667,
+          "reference_hours_to_reach_level": 0.03099937
+        },
+        {
+          "level": 6,
+          "xp_to_next": 200,
+          "cumulative_xp_to_reach_level": 340,
+          "reference_hours_to_next": 0.01302083,
+          "reference_hours_to_reach_level": 0.04266604
+        },
+        {
+          "level": 7,
+          "xp_to_next": 290,
+          "cumulative_xp_to_reach_level": 540,
+          "reference_hours_to_next": 0.01510417,
+          "reference_hours_to_reach_level": 0.05568687
+        },
+        {
+          "level": 8,
+          "xp_to_next": 390,
+          "cumulative_xp_to_reach_level": 830,
+          "reference_hours_to_next": 0.01658163,
+          "reference_hours_to_reach_level": 0.07079104
+        },
+        {
+          "level": 9,
+          "xp_to_next": 520,
+          "cumulative_xp_to_reach_level": 1220,
+          "reference_hours_to_next": 0.01836158,
+          "reference_hours_to_reach_level": 0.08737267
+        },
+        {
+          "level": 10,
+          "xp_to_next": 670,
+          "cumulative_xp_to_reach_level": 1740,
+          "reference_hours_to_next": 0.01994048,
+          "reference_hours_to_reach_level": 0.10573425
+        },
+        {
+          "level": 11,
+          "xp_to_next": 890,
+          "cumulative_xp_to_reach_level": 2410,
+          "reference_hours_to_next": 0.02261179,
+          "reference_hours_to_reach_level": 0.12567473
+        },
+        {
+          "level": 12,
+          "xp_to_next": 1160,
+          "cumulative_xp_to_reach_level": 3300,
+          "reference_hours_to_next": 0.0254386,
+          "reference_hours_to_reach_level": 0.14828652
+        },
+        {
+          "level": 13,
+          "xp_to_next": 1460,
+          "cumulative_xp_to_reach_level": 4460,
+          "reference_hours_to_next": 0.0279052,
+          "reference_hours_to_reach_level": 0.17372512
+        },
+        {
+          "level": 14,
+          "xp_to_next": 1820,
+          "cumulative_xp_to_reach_level": 5920,
+          "reference_hours_to_next": 0.03057796,
+          "reference_hours_to_reach_level": 0.20163031
+        },
+        {
+          "level": 15,
+          "xp_to_next": 2240,
+          "cumulative_xp_to_reach_level": 7740,
+          "reference_hours_to_next": 0.03333333,
+          "reference_hours_to_reach_level": 0.23220827
+        },
+        {
+          "level": 16,
+          "xp_to_next": 2710,
+          "cumulative_xp_to_reach_level": 9980,
+          "reference_hours_to_next": 0.03596072,
+          "reference_hours_to_reach_level": 0.26554161
+        },
+        {
+          "level": 17,
+          "xp_to_next": 3250,
+          "cumulative_xp_to_reach_level": 12690,
+          "reference_hours_to_next": 0.03869048,
+          "reference_hours_to_reach_level": 0.30150233
+        },
+        {
+          "level": 18,
+          "xp_to_next": 3850,
+          "cumulative_xp_to_reach_level": 15940,
+          "reference_hours_to_next": 0.0413445,
+          "reference_hours_to_reach_level": 0.3401928
+        },
+        {
+          "level": 19,
+          "xp_to_next": 4520,
+          "cumulative_xp_to_reach_level": 19790,
+          "reference_hours_to_next": 0.04400312,
+          "reference_hours_to_reach_level": 0.3815373
+        },
+        {
+          "level": 20,
+          "xp_to_next": 5270,
+          "cumulative_xp_to_reach_level": 24310,
+          "reference_hours_to_next": 0.04671986,
+          "reference_hours_to_reach_level": 0.42554042
+        },
+        {
+          "level": 21,
+          "xp_to_next": 6090,
+          "cumulative_xp_to_reach_level": 29580,
+          "reference_hours_to_next": 0.0493677,
+          "reference_hours_to_reach_level": 0.47226028
+        },
+        {
+          "level": 22,
+          "xp_to_next": 6990,
+          "cumulative_xp_to_reach_level": 35670,
+          "reference_hours_to_next": 0.05200893,
+          "reference_hours_to_reach_level": 0.52162798
+        },
+        {
+          "level": 23,
+          "xp_to_next": 7980,
+          "cumulative_xp_to_reach_level": 42660,
+          "reference_hours_to_next": 0.0546875,
+          "reference_hours_to_reach_level": 0.57363691
+        },
+        {
+          "level": 24,
+          "xp_to_next": 9050,
+          "cumulative_xp_to_reach_level": 50640,
+          "reference_hours_to_next": 0.0573075,
+          "reference_hours_to_reach_level": 0.62832441
+        },
+        {
+          "level": 25,
+          "xp_to_next": 10220,
+          "cumulative_xp_to_reach_level": 59690,
+          "reference_hours_to_next": 0.05997653,
+          "reference_hours_to_reach_level": 0.68563191
+        },
+        {
+          "level": 26,
+          "xp_to_next": 12070,
+          "cumulative_xp_to_reach_level": 69910,
+          "reference_hours_to_next": 0.06582679,
+          "reference_hours_to_reach_level": 0.74560843
+        },
+        {
+          "level": 27,
+          "xp_to_next": 14100,
+          "cumulative_xp_to_reach_level": 81980,
+          "reference_hours_to_next": 0.07164634,
+          "reference_hours_to_reach_level": 0.81143522
+        },
+        {
+          "level": 28,
+          "xp_to_next": 16330,
+          "cumulative_xp_to_reach_level": 96080,
+          "reference_hours_to_next": 0.0774962,
+          "reference_hours_to_reach_level": 0.88308156
+        },
+        {
+          "level": 29,
+          "xp_to_next": 18760,
+          "cumulative_xp_to_reach_level": 112410,
+          "reference_hours_to_next": 0.08333333,
+          "reference_hours_to_reach_level": 0.96057777
+        },
+        {
+          "level": 30,
+          "xp_to_next": 21400,
+          "cumulative_xp_to_reach_level": 131170,
+          "reference_hours_to_next": 0.08916667,
+          "reference_hours_to_reach_level": 1.0439111
+        },
+        {
+          "level": 31,
+          "xp_to_next": 24260,
+          "cumulative_xp_to_reach_level": 152570,
+          "reference_hours_to_next": 0.09500313,
+          "reference_hours_to_reach_level": 1.13307777
+        },
+        {
+          "level": 32,
+          "xp_to_next": 27350,
+          "cumulative_xp_to_reach_level": 176830,
+          "reference_hours_to_next": 0.10084808,
+          "reference_hours_to_reach_level": 1.2280809
+        },
+        {
+          "level": 33,
+          "xp_to_next": 30670,
+          "cumulative_xp_to_reach_level": 204180,
+          "reference_hours_to_next": 0.10667084,
+          "reference_hours_to_reach_level": 1.32892898
+        },
+        {
+          "level": 34,
+          "xp_to_next": 34240,
+          "cumulative_xp_to_reach_level": 234850,
+          "reference_hours_to_next": 0.11251314,
+          "reference_hours_to_reach_level": 1.43559982
+        },
+        {
+          "level": 35,
+          "xp_to_next": 38060,
+          "cumulative_xp_to_reach_level": 269090,
+          "reference_hours_to_next": 0.11834577,
+          "reference_hours_to_reach_level": 1.54811297
+        },
+        {
+          "level": 36,
+          "xp_to_next": 42140,
+          "cumulative_xp_to_reach_level": 307150,
+          "reference_hours_to_next": 0.12417492,
+          "reference_hours_to_reach_level": 1.66645874
+        },
+        {
+          "level": 37,
+          "xp_to_next": 46490,
+          "cumulative_xp_to_reach_level": 349290,
+          "reference_hours_to_next": 0.13000559,
+          "reference_hours_to_reach_level": 1.79063366
+        },
+        {
+          "level": 38,
+          "xp_to_next": 51120,
+          "cumulative_xp_to_reach_level": 395780,
+          "reference_hours_to_next": 0.13584184,
+          "reference_hours_to_reach_level": 1.92063925
+        },
+        {
+          "level": 39,
+          "xp_to_next": 56030,
+          "cumulative_xp_to_reach_level": 446900,
+          "reference_hours_to_next": 0.14166161,
+          "reference_hours_to_reach_level": 2.05648109
+        },
+        {
+          "level": 40,
+          "xp_to_next": 61240,
+          "cumulative_xp_to_reach_level": 502930,
+          "reference_hours_to_next": 0.14749518,
+          "reference_hours_to_reach_level": 2.1981427
+        },
+        {
+          "level": 41,
+          "xp_to_next": 66760,
+          "cumulative_xp_to_reach_level": 564170,
+          "reference_hours_to_next": 0.15334436,
+          "reference_hours_to_reach_level": 2.34563788
+        },
+        {
+          "level": 42,
+          "xp_to_next": 72580,
+          "cumulative_xp_to_reach_level": 630930,
+          "reference_hours_to_next": 0.15916667,
+          "reference_hours_to_reach_level": 2.49898224
+        },
+        {
+          "level": 43,
+          "xp_to_next": 78730,
+          "cumulative_xp_to_reach_level": 703510,
+          "reference_hours_to_next": 0.1650109,
+          "reference_hours_to_reach_level": 2.6581489
+        },
+        {
+          "level": 44,
+          "xp_to_next": 85200,
+          "cumulative_xp_to_reach_level": 782240,
+          "reference_hours_to_next": 0.17083734,
+          "reference_hours_to_reach_level": 2.8231598
+        },
+        {
+          "level": 45,
+          "xp_to_next": 92010,
+          "cumulative_xp_to_reach_level": 867440,
+          "reference_hours_to_next": 0.17667051,
+          "reference_hours_to_reach_level": 2.99399715
+        },
+        {
+          "level": 46,
+          "xp_to_next": 99160,
+          "cumulative_xp_to_reach_level": 959450,
+          "reference_hours_to_next": 0.18249411,
+          "reference_hours_to_reach_level": 3.17066765
+        },
+        {
+          "level": 47,
+          "xp_to_next": 106670,
+          "cumulative_xp_to_reach_level": 1058610,
+          "reference_hours_to_next": 0.1883298,
+          "reference_hours_to_reach_level": 3.35316176
+        },
+        {
+          "level": 48,
+          "xp_to_next": 114540,
+          "cumulative_xp_to_reach_level": 1165280,
+          "reference_hours_to_next": 0.19416192,
+          "reference_hours_to_reach_level": 3.54149157
+        },
+        {
+          "level": 49,
+          "xp_to_next": 122780,
+          "cumulative_xp_to_reach_level": 1279820,
+          "reference_hours_to_next": 0.19999348,
+          "reference_hours_to_reach_level": 3.73565349
+        },
+        {
+          "level": 50,
+          "xp_to_next": 130870,
+          "cumulative_xp_to_reach_level": 1402600,
+          "reference_hours_to_next": 0.20499687,
+          "reference_hours_to_reach_level": 3.93564697
+        },
+        {
+          "level": 51,
+          "xp_to_next": 141410,
+          "cumulative_xp_to_reach_level": 1533470,
+          "reference_hours_to_next": 0.21317233,
+          "reference_hours_to_reach_level": 4.14064384
+        },
+        {
+          "level": 52,
+          "xp_to_next": 152450,
+          "cumulative_xp_to_reach_level": 1674880,
+          "reference_hours_to_next": 0.22132695,
+          "reference_hours_to_reach_level": 4.35381617
+        },
+        {
+          "level": 53,
+          "xp_to_next": 164030,
+          "cumulative_xp_to_reach_level": 1827330,
+          "reference_hours_to_next": 0.22950246,
+          "reference_hours_to_reach_level": 4.57514312
+        },
+        {
+          "level": 54,
+          "xp_to_next": 176140,
+          "cumulative_xp_to_reach_level": 1991360,
+          "reference_hours_to_next": 0.23766731,
+          "reference_hours_to_reach_level": 4.80464558
+        },
+        {
+          "level": 55,
+          "xp_to_next": 188800,
+          "cumulative_xp_to_reach_level": 2167500,
+          "reference_hours_to_next": 0.24583333,
+          "reference_hours_to_reach_level": 5.0423129
+        },
+        {
+          "level": 56,
+          "xp_to_next": 202020,
+          "cumulative_xp_to_reach_level": 2356300,
+          "reference_hours_to_next": 0.25399819,
+          "reference_hours_to_reach_level": 5.28814623
+        },
+        {
+          "level": 57,
+          "xp_to_next": 215820,
+          "cumulative_xp_to_reach_level": 2558320,
+          "reference_hours_to_next": 0.26217201,
+          "reference_hours_to_reach_level": 5.54214442
+        },
+        {
+          "level": 58,
+          "xp_to_next": 230190,
+          "cumulative_xp_to_reach_level": 2774140,
+          "reference_hours_to_next": 0.27032835,
+          "reference_hours_to_reach_level": 5.80431643
+        },
+        {
+          "level": 59,
+          "xp_to_next": 245170,
+          "cumulative_xp_to_reach_level": 3004330,
+          "reference_hours_to_next": 0.278501,
+          "reference_hours_to_reach_level": 6.07464478
+        },
+        {
+          "level": 60,
+          "xp_to_next": 260750,
+          "cumulative_xp_to_reach_level": 3249500,
+          "reference_hours_to_next": 0.28666447,
+          "reference_hours_to_reach_level": 6.35314578
+        },
+        {
+          "level": 61,
+          "xp_to_next": 276950,
+          "cumulative_xp_to_reach_level": 3510250,
+          "reference_hours_to_next": 0.29482839,
+          "reference_hours_to_reach_level": 6.63981025
+        },
+        {
+          "level": 62,
+          "xp_to_next": 293790,
+          "cumulative_xp_to_reach_level": 3787200,
+          "reference_hours_to_next": 0.30300124,
+          "reference_hours_to_reach_level": 6.93463865
+        },
+        {
+          "level": 63,
+          "xp_to_next": 311270,
+          "cumulative_xp_to_reach_level": 4080990,
+          "reference_hours_to_next": 0.31117043,
+          "reference_hours_to_reach_level": 7.23763988
+        },
+        {
+          "level": 64,
+          "xp_to_next": 329400,
+          "cumulative_xp_to_reach_level": 4392260,
+          "reference_hours_to_next": 0.31933457,
+          "reference_hours_to_reach_level": 7.54881031
+        },
+        {
+          "level": 65,
+          "xp_to_next": 348200,
+          "cumulative_xp_to_reach_level": 4721660,
+          "reference_hours_to_next": 0.32750188,
+          "reference_hours_to_reach_level": 7.86814488
+        },
+        {
+          "level": 66,
+          "xp_to_next": 367680,
+          "cumulative_xp_to_reach_level": 5069860,
+          "reference_hours_to_next": 0.33567046,
+          "reference_hours_to_reach_level": 8.19564676
+        },
+        {
+          "level": 67,
+          "xp_to_next": 387840,
+          "cumulative_xp_to_reach_level": 5437540,
+          "reference_hours_to_next": 0.34382979,
+          "reference_hours_to_reach_level": 8.53131723
+        },
+        {
+          "level": 68,
+          "xp_to_next": 408710,
+          "cumulative_xp_to_reach_level": 5825380,
+          "reference_hours_to_next": 0.35199635,
+          "reference_hours_to_reach_level": 8.87514702
+        },
+        {
+          "level": 69,
+          "xp_to_next": 430300,
+          "cumulative_xp_to_reach_level": 6234090,
+          "reference_hours_to_next": 0.36016807,
+          "reference_hours_to_reach_level": 9.22714336
+        },
+        {
+          "level": 70,
+          "xp_to_next": 452610,
+          "cumulative_xp_to_reach_level": 6664390,
+          "reference_hours_to_next": 0.36833496,
+          "reference_hours_to_reach_level": 9.58731144
+        },
+        {
+          "level": 71,
+          "xp_to_next": 475660,
+          "cumulative_xp_to_reach_level": 7117000,
+          "reference_hours_to_next": 0.37650393,
+          "reference_hours_to_reach_level": 9.9556464
+        },
+        {
+          "level": 72,
+          "xp_to_next": 499450,
+          "cumulative_xp_to_reach_level": 7592660,
+          "reference_hours_to_next": 0.38466574,
+          "reference_hours_to_reach_level": 10.33215032
+        },
+        {
+          "level": 73,
+          "xp_to_next": 524010,
+          "cumulative_xp_to_reach_level": 8092110,
+          "reference_hours_to_next": 0.39283465,
+          "reference_hours_to_reach_level": 10.71681607
+        },
+        {
+          "level": 74,
+          "xp_to_next": 549340,
+          "cumulative_xp_to_reach_level": 8616120,
+          "reference_hours_to_next": 0.40100152,
+          "reference_hours_to_reach_level": 11.10965072
+        },
+        {
+          "level": 75,
+          "xp_to_next": 575450,
+          "cumulative_xp_to_reach_level": 9165460,
+          "reference_hours_to_next": 0.40916524,
+          "reference_hours_to_reach_level": 11.51065224
+        },
+        {
+          "level": 76,
+          "xp_to_next": 602360,
+          "cumulative_xp_to_reach_level": 9740910,
+          "reference_hours_to_next": 0.41733178,
+          "reference_hours_to_reach_level": 11.91981748
+        },
+        {
+          "level": 77,
+          "xp_to_next": 630080,
+          "cumulative_xp_to_reach_level": 10343270,
+          "reference_hours_to_next": 0.42549973,
+          "reference_hours_to_reach_level": 12.33714926
+        },
+        {
+          "level": 78,
+          "xp_to_next": 658620,
+          "cumulative_xp_to_reach_level": 10973350,
+          "reference_hours_to_next": 0.43366783,
+          "reference_hours_to_reach_level": 12.76264899
+        },
+        {
+          "level": 79,
+          "xp_to_next": 687990,
+          "cumulative_xp_to_reach_level": 11631970,
+          "reference_hours_to_next": 0.44183493,
+          "reference_hours_to_reach_level": 13.19631682
+        },
+        {
+          "level": 80,
+          "xp_to_next": 718200,
+          "cumulative_xp_to_reach_level": 12319960,
+          "reference_hours_to_next": 0.45,
+          "reference_hours_to_reach_level": 13.63815174
+        },
+        {
+          "level": 81,
+          "xp_to_next": 754780,
+          "cumulative_xp_to_reach_level": 13038160,
+          "reference_hours_to_next": 0.46153752,
+          "reference_hours_to_reach_level": 14.08815174
+        },
+        {
+          "level": 82,
+          "xp_to_next": 792500,
+          "cumulative_xp_to_reach_level": 13792940,
+          "reference_hours_to_next": 0.47307784,
+          "reference_hours_to_reach_level": 14.54968927
+        },
+        {
+          "level": 83,
+          "xp_to_next": 831370,
+          "cumulative_xp_to_reach_level": 14585440,
+          "reference_hours_to_next": 0.48461691,
+          "reference_hours_to_reach_level": 15.02276711
+        },
+        {
+          "level": 84,
+          "xp_to_next": 871400,
+          "cumulative_xp_to_reach_level": 15416810,
+          "reference_hours_to_next": 0.49615104,
+          "reference_hours_to_reach_level": 15.50738402
+        },
+        {
+          "level": 85,
+          "xp_to_next": 912630,
+          "cumulative_xp_to_reach_level": 16288210,
+          "reference_hours_to_next": 0.50769359,
+          "reference_hours_to_reach_level": 16.00353506
+        },
+        {
+          "level": 86,
+          "xp_to_next": 955050,
+          "cumulative_xp_to_reach_level": 17200840,
+          "reference_hours_to_next": 0.51922951,
+          "reference_hours_to_reach_level": 16.51122865
+        },
+        {
+          "level": 87,
+          "xp_to_next": 998690,
+          "cumulative_xp_to_reach_level": 18155890,
+          "reference_hours_to_next": 0.53076637,
+          "reference_hours_to_reach_level": 17.03045817
+        },
+        {
+          "level": 88,
+          "xp_to_next": 1043570,
+          "cumulative_xp_to_reach_level": 19154580,
+          "reference_hours_to_next": 0.54230585,
+          "reference_hours_to_reach_level": 17.56122453
+        },
+        {
+          "level": 89,
+          "xp_to_next": 1089700,
+          "cumulative_xp_to_reach_level": 20198150,
+          "reference_hours_to_next": 0.55384443,
+          "reference_hours_to_reach_level": 18.10353039
+        },
+        {
+          "level": 90,
+          "xp_to_next": 1137100,
+          "cumulative_xp_to_reach_level": 21287850,
+          "reference_hours_to_next": 0.56538385,
+          "reference_hours_to_reach_level": 18.65737482
+        },
+        {
+          "level": 91,
+          "xp_to_next": 1185790,
+          "cumulative_xp_to_reach_level": 22424950,
+          "reference_hours_to_next": 0.5769257,
+          "reference_hours_to_reach_level": 19.22275867
+        },
+        {
+          "level": 92,
+          "xp_to_next": 1235770,
+          "cumulative_xp_to_reach_level": 23610740,
+          "reference_hours_to_next": 0.5884619,
+          "reference_hours_to_reach_level": 19.79968437
+        },
+        {
+          "level": 93,
+          "xp_to_next": 1287070,
+          "cumulative_xp_to_reach_level": 24846510,
+          "reference_hours_to_next": 0.59999907,
+          "reference_hours_to_reach_level": 20.38814627
+        },
+        {
+          "level": 94,
+          "xp_to_next": 1339710,
+          "cumulative_xp_to_reach_level": 26133580,
+          "reference_hours_to_next": 0.61153867,
+          "reference_hours_to_reach_level": 20.98814534
+        },
+        {
+          "level": 95,
+          "xp_to_next": 1393700,
+          "cumulative_xp_to_reach_level": 27473290,
+          "reference_hours_to_next": 0.62307761,
+          "reference_hours_to_reach_level": 21.59968401
+        },
+        {
+          "level": 96,
+          "xp_to_next": 1449050,
+          "cumulative_xp_to_reach_level": 28866990,
+          "reference_hours_to_next": 0.63461303,
+          "reference_hours_to_reach_level": 22.22276162
+        },
+        {
+          "level": 97,
+          "xp_to_next": 1505800,
+          "cumulative_xp_to_reach_level": 30316040,
+          "reference_hours_to_next": 0.64615517,
+          "reference_hours_to_reach_level": 22.85737465
+        },
+        {
+          "level": 98,
+          "xp_to_next": 1563940,
+          "cumulative_xp_to_reach_level": 31821840,
+          "reference_hours_to_next": 0.65769244,
+          "reference_hours_to_reach_level": 23.50352982
+        },
+        {
+          "level": 99,
+          "xp_to_next": 1623500,
+          "cumulative_xp_to_reach_level": 33385780,
+          "reference_hours_to_next": 0.66923064,
+          "reference_hours_to_reach_level": 24.16122225
+        },
+        {
+          "level": 100,
+          "xp_to_next": 1684490,
+          "cumulative_xp_to_reach_level": 35009280,
+          "reference_hours_to_next": 0.68076705,
+          "reference_hours_to_reach_level": 24.8304529
+        },
+        {
+          "level": 101,
+          "xp_to_next": 1746940,
+          "cumulative_xp_to_reach_level": 36693770,
+          "reference_hours_to_next": 0.69230708,
+          "reference_hours_to_reach_level": 25.51121995
+        },
+        {
+          "level": 102,
+          "xp_to_next": 1810850,
+          "cumulative_xp_to_reach_level": 38440710,
+          "reference_hours_to_next": 0.70384406,
+          "reference_hours_to_reach_level": 26.20352703
+        },
+        {
+          "level": 103,
+          "xp_to_next": 1876250,
+          "cumulative_xp_to_reach_level": 40251560,
+          "reference_hours_to_next": 0.71538327,
+          "reference_hours_to_reach_level": 26.90737109
+        },
+        {
+          "level": 104,
+          "xp_to_next": 1943150,
+          "cumulative_xp_to_reach_level": 42127810,
+          "reference_hours_to_next": 0.7269221,
+          "reference_hours_to_reach_level": 27.62275436
+        },
+        {
+          "level": 105,
+          "xp_to_next": 2011570,
+          "cumulative_xp_to_reach_level": 44070960,
+          "reference_hours_to_next": 0.73846182,
+          "reference_hours_to_reach_level": 28.34967646
+        },
+        {
+          "level": 106,
+          "xp_to_next": 2081520,
+          "cumulative_xp_to_reach_level": 46082530,
+          "reference_hours_to_next": 0.75,
+          "reference_hours_to_reach_level": 29.08813828
+        },
+        {
+          "level": 107,
+          "xp_to_next": 2153020,
+          "cumulative_xp_to_reach_level": 48164050,
+          "reference_hours_to_next": 0.76153792,
+          "reference_hours_to_reach_level": 29.83813828
+        },
+        {
+          "level": 108,
+          "xp_to_next": 2226090,
+          "cumulative_xp_to_reach_level": 50317070,
+          "reference_hours_to_next": 0.77307676,
+          "reference_hours_to_reach_level": 30.5996762
+        },
+        {
+          "level": 109,
+          "xp_to_next": 2300740,
+          "cumulative_xp_to_reach_level": 52543160,
+          "reference_hours_to_next": 0.78461423,
+          "reference_hours_to_reach_level": 31.37275296
+        },
+        {
+          "level": 110,
+          "xp_to_next": 2377000,
+          "cumulative_xp_to_reach_level": 54843900,
+          "reference_hours_to_next": 0.79615488,
+          "reference_hours_to_reach_level": 32.15736719
+        },
+        {
+          "level": 111,
+          "xp_to_next": 2454870,
+          "cumulative_xp_to_reach_level": 57220900,
+          "reference_hours_to_next": 0.80769307,
+          "reference_hours_to_reach_level": 32.95352207
+        },
+        {
+          "level": 112,
+          "xp_to_next": 2534370,
+          "cumulative_xp_to_reach_level": 59675770,
+          "reference_hours_to_next": 0.81923002,
+          "reference_hours_to_reach_level": 33.76121513
+        },
+        {
+          "level": 113,
+          "xp_to_next": 2615530,
+          "cumulative_xp_to_reach_level": 62210140,
+          "reference_hours_to_next": 0.83077006,
+          "reference_hours_to_reach_level": 34.58044516
+        },
+        {
+          "level": 114,
+          "xp_to_next": 2698350,
+          "cumulative_xp_to_reach_level": 64825670,
+          "reference_hours_to_next": 0.84230784,
+          "reference_hours_to_reach_level": 35.41121522
+        },
+        {
+          "level": 115,
+          "xp_to_next": 2782850,
+          "cumulative_xp_to_reach_level": 67524020,
+          "reference_hours_to_next": 0.8538445,
+          "reference_hours_to_reach_level": 36.25352306
+        },
+        {
+          "level": 116,
+          "xp_to_next": 2869060,
+          "cumulative_xp_to_reach_level": 70306870,
+          "reference_hours_to_next": 0.86538415,
+          "reference_hours_to_reach_level": 37.10736756
+        },
+        {
+          "level": 117,
+          "xp_to_next": 2956990,
+          "cumulative_xp_to_reach_level": 73175930,
+          "reference_hours_to_next": 0.87692467,
+          "reference_hours_to_reach_level": 37.97275171
+        },
+        {
+          "level": 118,
+          "xp_to_next": 3046640,
+          "cumulative_xp_to_reach_level": 76132920,
+          "reference_hours_to_next": 0.88846118,
+          "reference_hours_to_reach_level": 38.84967638
+        },
+        {
+          "level": 119,
+          "xp_to_next": 3138050,
+          "cumulative_xp_to_reach_level": 79179560,
+          "reference_hours_to_next": 0.90000057,
+          "reference_hours_to_reach_level": 39.73813756
+        },
+        {
+          "level": 120,
+          "xp_to_next": 3278940,
+          "cumulative_xp_to_reach_level": 82317610,
+          "reference_hours_to_next": 0.925,
+          "reference_hours_to_reach_level": 40.63813814
+        },
+        {
+          "level": 121,
+          "xp_to_next": 3438210,
+          "cumulative_xp_to_reach_level": 85596550,
+          "reference_hours_to_next": 0.95416778,
+          "reference_hours_to_reach_level": 41.56313814
+        },
+        {
+          "level": 122,
+          "xp_to_next": 3601360,
+          "cumulative_xp_to_reach_level": 89034760,
+          "reference_hours_to_next": 0.98333333,
+          "reference_hours_to_reach_level": 42.51730591
+        },
+        {
+          "level": 123,
+          "xp_to_next": 3768440,
+          "cumulative_xp_to_reach_level": 92636120,
+          "reference_hours_to_next": 1.01249893,
+          "reference_hours_to_reach_level": 43.50063925
+        },
+        {
+          "level": 124,
+          "xp_to_next": 3939500,
+          "cumulative_xp_to_reach_level": 96404560,
+          "reference_hours_to_next": 1.04166667,
+          "reference_hours_to_reach_level": 44.51313817
+        },
+        {
+          "level": 125,
+          "xp_to_next": 4114570,
+          "cumulative_xp_to_reach_level": 100344060,
+          "reference_hours_to_next": 1.07083333,
+          "reference_hours_to_reach_level": 45.55480484
+        },
+        {
+          "level": 126,
+          "xp_to_next": 4293700,
+          "cumulative_xp_to_reach_level": 104458630,
+          "reference_hours_to_next": 1.10000102,
+          "reference_hours_to_reach_level": 46.62563817
+        },
+        {
+          "level": 127,
+          "xp_to_next": 4476920,
+          "cumulative_xp_to_reach_level": 108752330,
+          "reference_hours_to_next": 1.12916667,
+          "reference_hours_to_reach_level": 47.7256392
+        },
+        {
+          "level": 128,
+          "xp_to_next": 4664280,
+          "cumulative_xp_to_reach_level": 113229250,
+          "reference_hours_to_next": 1.15833234,
+          "reference_hours_to_reach_level": 48.85480586
+        },
+        {
+          "level": 129,
+          "xp_to_next": 4855830,
+          "cumulative_xp_to_reach_level": 117893530,
+          "reference_hours_to_next": 1.1875,
+          "reference_hours_to_reach_level": 50.0131382
+        },
+        {
+          "level": 130,
+          "xp_to_next": 5051600,
+          "cumulative_xp_to_reach_level": 122749360,
+          "reference_hours_to_next": 1.21666667,
+          "reference_hours_to_reach_level": 51.2006382
+        },
+        {
+          "level": 131,
+          "xp_to_next": 5251640,
+          "cumulative_xp_to_reach_level": 127800960,
+          "reference_hours_to_next": 1.24583428,
+          "reference_hours_to_reach_level": 52.41730487
+        },
+        {
+          "level": 132,
+          "xp_to_next": 5455980,
+          "cumulative_xp_to_reach_level": 133052600,
+          "reference_hours_to_next": 1.275,
+          "reference_hours_to_reach_level": 53.66313915
+        },
+        {
+          "level": 133,
+          "xp_to_next": 5664680,
+          "cumulative_xp_to_reach_level": 138508580,
+          "reference_hours_to_next": 1.30416805,
+          "reference_hours_to_reach_level": 54.93813915
+        },
+        {
+          "level": 134,
+          "xp_to_next": 5877760,
+          "cumulative_xp_to_reach_level": 144173260,
+          "reference_hours_to_next": 1.33333333,
+          "reference_hours_to_reach_level": 56.2423072
+        },
+        {
+          "level": 135,
+          "xp_to_next": 6095280,
+          "cumulative_xp_to_reach_level": 150051020,
+          "reference_hours_to_next": 1.3625,
+          "reference_hours_to_reach_level": 57.57564053
+        },
+        {
+          "level": 136,
+          "xp_to_next": 6317280,
+          "cumulative_xp_to_reach_level": 156146300,
+          "reference_hours_to_next": 1.39166755,
+          "reference_hours_to_reach_level": 58.93814053
+        },
+        {
+          "level": 137,
+          "xp_to_next": 6543790,
+          "cumulative_xp_to_reach_level": 162463580,
+          "reference_hours_to_next": 1.42083333,
+          "reference_hours_to_reach_level": 60.32980808
+        },
+        {
+          "level": 138,
+          "xp_to_next": 6774860,
+          "cumulative_xp_to_reach_level": 169007370,
+          "reference_hours_to_next": 1.44999914,
+          "reference_hours_to_reach_level": 61.75064141
+        },
+        {
+          "level": 139,
+          "xp_to_next": 7010540,
+          "cumulative_xp_to_reach_level": 175782230,
+          "reference_hours_to_next": 1.47916667,
+          "reference_hours_to_reach_level": 63.20064056
+        },
+        {
+          "level": 140,
+          "xp_to_next": 7250860,
+          "cumulative_xp_to_reach_level": 182792770,
+          "reference_hours_to_next": 1.50833333,
+          "reference_hours_to_reach_level": 64.67980722
+        },
+        {
+          "level": 141,
+          "xp_to_next": 7495870,
+          "cumulative_xp_to_reach_level": 190043630,
+          "reference_hours_to_next": 1.53750082,
+          "reference_hours_to_reach_level": 66.18814056
+        },
+        {
+          "level": 142,
+          "xp_to_next": 7745600,
+          "cumulative_xp_to_reach_level": 197539500,
+          "reference_hours_to_next": 1.56666667,
+          "reference_hours_to_reach_level": 67.72564138
+        },
+        {
+          "level": 143,
+          "xp_to_next": 8000100,
+          "cumulative_xp_to_reach_level": 205285100,
+          "reference_hours_to_next": 1.59583254,
+          "reference_hours_to_reach_level": 69.29230805
+        },
+        {
+          "level": 144,
+          "xp_to_next": 8259420,
+          "cumulative_xp_to_reach_level": 213285200,
+          "reference_hours_to_next": 1.625,
+          "reference_hours_to_reach_level": 70.88814058
+        },
+        {
+          "level": 145,
+          "xp_to_next": 8523590,
+          "cumulative_xp_to_reach_level": 221544620,
+          "reference_hours_to_next": 1.65416667,
+          "reference_hours_to_reach_level": 72.51314058
+        },
+        {
+          "level": 146,
+          "xp_to_next": 8792660,
+          "cumulative_xp_to_reach_level": 230068210,
+          "reference_hours_to_next": 1.6833341,
+          "reference_hours_to_reach_level": 74.16730725
+        },
+        {
+          "level": 147,
+          "xp_to_next": 9066660,
+          "cumulative_xp_to_reach_level": 238860870,
+          "reference_hours_to_next": 1.7125,
+          "reference_hours_to_reach_level": 75.85064135
+        },
+        {
+          "level": 148,
+          "xp_to_next": 9345650,
+          "cumulative_xp_to_reach_level": 247927530,
+          "reference_hours_to_next": 1.74166778,
+          "reference_hours_to_reach_level": 77.56314135
+        },
+        {
+          "level": 149,
+          "xp_to_next": 9629650,
+          "cumulative_xp_to_reach_level": 257273180,
+          "reference_hours_to_next": 1.77083333,
+          "reference_hours_to_reach_level": 79.30480913
+        },
+        {
+          "level": 150,
+          "xp_to_next": 9918720,
+          "cumulative_xp_to_reach_level": 266902830,
+          "reference_hours_to_next": 1.8,
+          "reference_hours_to_reach_level": 81.07564246
+        },
+        {
+          "level": 151,
+          "xp_to_next": 10385050,
+          "cumulative_xp_to_reach_level": 276821550,
+          "reference_hours_to_next": 1.86000007,
+          "reference_hours_to_reach_level": 82.87564246
+        },
+        {
+          "level": 152,
+          "xp_to_next": 10861060,
+          "cumulative_xp_to_reach_level": 287206600,
+          "reference_hours_to_next": 1.92000071,
+          "reference_hours_to_reach_level": 84.73564254
+        },
+        {
+          "level": 153,
+          "xp_to_next": 11346830,
+          "cumulative_xp_to_reach_level": 298067660,
+          "reference_hours_to_next": 1.98000077,
+          "reference_hours_to_reach_level": 86.65564324
+        },
+        {
+          "level": 154,
+          "xp_to_next": 11842450,
+          "cumulative_xp_to_reach_level": 309414490,
+          "reference_hours_to_next": 2.0400009,
+          "reference_hours_to_reach_level": 88.63564401
+        },
+        {
+          "level": 155,
+          "xp_to_next": 12348000,
+          "cumulative_xp_to_reach_level": 321256940,
+          "reference_hours_to_next": 2.1,
+          "reference_hours_to_reach_level": 90.67564491
+        },
+        {
+          "level": 156,
+          "xp_to_next": 12863580,
+          "cumulative_xp_to_reach_level": 333604940,
+          "reference_hours_to_next": 2.1600004,
+          "reference_hours_to_reach_level": 92.77564491
+        },
+        {
+          "level": 157,
+          "xp_to_next": 13389260,
+          "cumulative_xp_to_reach_level": 346468520,
+          "reference_hours_to_next": 2.21999934,
+          "reference_hours_to_reach_level": 94.93564531
+        },
+        {
+          "level": 158,
+          "xp_to_next": 13925150,
+          "cumulative_xp_to_reach_level": 359857780,
+          "reference_hours_to_next": 2.28000072,
+          "reference_hours_to_reach_level": 97.15564465
+        },
+        {
+          "level": 159,
+          "xp_to_next": 14471310,
+          "cumulative_xp_to_reach_level": 373782930,
+          "reference_hours_to_next": 2.34000019,
+          "reference_hours_to_reach_level": 99.43564537
+        },
+        {
+          "level": 160,
+          "xp_to_next": 15027840,
+          "cumulative_xp_to_reach_level": 388254240,
+          "reference_hours_to_next": 2.4,
+          "reference_hours_to_reach_level": 101.77564556
+        },
+        {
+          "level": 161,
+          "xp_to_next": 15594830,
+          "cumulative_xp_to_reach_level": 403282080,
+          "reference_hours_to_next": 2.46000069,
+          "reference_hours_to_reach_level": 104.17564556
+        },
+        {
+          "level": 162,
+          "xp_to_next": 16172350,
+          "cumulative_xp_to_reach_level": 418876910,
+          "reference_hours_to_next": 2.51999969,
+          "reference_hours_to_reach_level": 106.63564626
+        },
+        {
+          "level": 163,
+          "xp_to_next": 16760510,
+          "cumulative_xp_to_reach_level": 435049260,
+          "reference_hours_to_next": 2.58000068,
+          "reference_hours_to_reach_level": 109.15564594
+        },
+        {
+          "level": 164,
+          "xp_to_next": 17359370,
+          "cumulative_xp_to_reach_level": 451809770,
+          "reference_hours_to_next": 2.63999957,
+          "reference_hours_to_reach_level": 111.73564662
+        },
+        {
+          "level": 165,
+          "xp_to_next": 17969040,
+          "cumulative_xp_to_reach_level": 469169140,
+          "reference_hours_to_next": 2.7,
+          "reference_hours_to_reach_level": 114.37564619
+        },
+        {
+          "level": 166,
+          "xp_to_next": 18589590,
+          "cumulative_xp_to_reach_level": 487138180,
+          "reference_hours_to_next": 2.75999947,
+          "reference_hours_to_reach_level": 117.07564619
+        },
+        {
+          "level": 167,
+          "xp_to_next": 19221120,
+          "cumulative_xp_to_reach_level": 505727770,
+          "reference_hours_to_next": 2.82,
+          "reference_hours_to_reach_level": 119.83564566
+        },
+        {
+          "level": 168,
+          "xp_to_next": 19863710,
+          "cumulative_xp_to_reach_level": 524948890,
+          "reference_hours_to_next": 2.88000064,
+          "reference_hours_to_reach_level": 122.65564566
+        },
+        {
+          "level": 169,
+          "xp_to_next": 20517440,
+          "cumulative_xp_to_reach_level": 544812600,
+          "reference_hours_to_next": 2.94000046,
+          "reference_hours_to_reach_level": 125.5356463
+        },
+        {
+          "level": 170,
+          "xp_to_next": 21182400,
+          "cumulative_xp_to_reach_level": 565330040,
+          "reference_hours_to_next": 3.0,
+          "reference_hours_to_reach_level": 128.47564676
+        },
+        {
+          "level": 171,
+          "xp_to_next": 21965830,
+          "cumulative_xp_to_reach_level": 586512440,
+          "reference_hours_to_next": 3.07499972,
+          "reference_hours_to_reach_level": 131.47564676
+        },
+        {
+          "level": 172,
+          "xp_to_next": 22763160,
+          "cumulative_xp_to_reach_level": 608478270,
+          "reference_hours_to_next": 3.15,
+          "reference_hours_to_reach_level": 134.55064648
+        },
+        {
+          "level": 173,
+          "xp_to_next": 23574490,
+          "cumulative_xp_to_reach_level": 631241430,
+          "reference_hours_to_next": 3.22499973,
+          "reference_hours_to_reach_level": 137.70064648
+        },
+        {
+          "level": 174,
+          "xp_to_next": 24399940,
+          "cumulative_xp_to_reach_level": 654815920,
+          "reference_hours_to_next": 3.30000054,
+          "reference_hours_to_reach_level": 140.9256462
+        },
+        {
+          "level": 175,
+          "xp_to_next": 25239600,
+          "cumulative_xp_to_reach_level": 679215860,
+          "reference_hours_to_next": 3.375,
+          "reference_hours_to_reach_level": 144.22564674
+        },
+        {
+          "level": 176,
+          "xp_to_next": 26093590,
+          "cumulative_xp_to_reach_level": 704455460,
+          "reference_hours_to_next": 3.44999974,
+          "reference_hours_to_reach_level": 147.60064674
+        },
+        {
+          "level": 177,
+          "xp_to_next": 26962020,
+          "cumulative_xp_to_reach_level": 730549050,
+          "reference_hours_to_next": 3.525,
+          "reference_hours_to_reach_level": 151.05064648
+        },
+        {
+          "level": 178,
+          "xp_to_next": 27844990,
+          "cumulative_xp_to_reach_level": 757511070,
+          "reference_hours_to_next": 3.59999974,
+          "reference_hours_to_reach_level": 154.57564648
+        },
+        {
+          "level": 179,
+          "xp_to_next": 28742620,
+          "cumulative_xp_to_reach_level": 785356060,
+          "reference_hours_to_next": 3.67500051,
+          "reference_hours_to_reach_level": 158.17564622
+        },
+        {
+          "level": 180,
+          "xp_to_next": 29655000,
+          "cumulative_xp_to_reach_level": 814098680,
+          "reference_hours_to_next": 3.75,
+          "reference_hours_to_reach_level": 161.85064673
+        },
+        {
+          "level": 181,
+          "xp_to_next": 30582250,
+          "cumulative_xp_to_reach_level": 843753680,
+          "reference_hours_to_next": 3.82499975,
+          "reference_hours_to_reach_level": 165.60064673
+        },
+        {
+          "level": 182,
+          "xp_to_next": 31524480,
+          "cumulative_xp_to_reach_level": 874335930,
+          "reference_hours_to_next": 3.9,
+          "reference_hours_to_reach_level": 169.42564648
+        },
+        {
+          "level": 183,
+          "xp_to_next": 32481790,
+          "cumulative_xp_to_reach_level": 905860410,
+          "reference_hours_to_next": 3.97499976,
+          "reference_hours_to_reach_level": 173.32564648
+        },
+        {
+          "level": 184,
+          "xp_to_next": 33454300,
+          "cumulative_xp_to_reach_level": 938342200,
+          "reference_hours_to_next": 4.05000048,
+          "reference_hours_to_reach_level": 177.30064624
+        },
+        {
+          "level": 185,
+          "xp_to_next": 34442100,
+          "cumulative_xp_to_reach_level": 971796500,
+          "reference_hours_to_next": 4.125,
+          "reference_hours_to_reach_level": 181.35064672
+        },
+        {
+          "level": 186,
+          "xp_to_next": 35445310,
+          "cumulative_xp_to_reach_level": 1006238600,
+          "reference_hours_to_next": 4.19999976,
+          "reference_hours_to_reach_level": 185.47564672
+        },
+        {
+          "level": 187,
+          "xp_to_next": 36464040,
+          "cumulative_xp_to_reach_level": 1041683910,
+          "reference_hours_to_next": 4.275,
+          "reference_hours_to_reach_level": 189.67564649
+        },
+        {
+          "level": 188,
+          "xp_to_next": 37498390,
+          "cumulative_xp_to_reach_level": 1078147950,
+          "reference_hours_to_next": 4.34999977,
+          "reference_hours_to_reach_level": 193.95064649
+        },
+        {
+          "level": 189,
+          "xp_to_next": 38548480,
+          "cumulative_xp_to_reach_level": 1115646340,
+          "reference_hours_to_next": 4.42500046,
+          "reference_hours_to_reach_level": 198.30064625
+        },
+        {
+          "level": 190,
+          "xp_to_next": 39614400,
+          "cumulative_xp_to_reach_level": 1154194820,
+          "reference_hours_to_next": 4.5,
+          "reference_hours_to_reach_level": 202.72564671
+        },
+        {
+          "level": 191,
+          "xp_to_next": 41511680,
+          "cumulative_xp_to_reach_level": 1193809220,
+          "reference_hours_to_next": 4.66666667,
+          "reference_hours_to_reach_level": 207.22564671
+        },
+        {
+          "level": 192,
+          "xp_to_next": 43442000,
+          "cumulative_xp_to_reach_level": 1235320900,
+          "reference_hours_to_next": 4.83333333,
+          "reference_hours_to_reach_level": 211.89231338
+        },
+        {
+          "level": 193,
+          "xp_to_next": 45405600,
+          "cumulative_xp_to_reach_level": 1278762900,
+          "reference_hours_to_next": 5.0,
+          "reference_hours_to_reach_level": 216.72564671
+        },
+        {
+          "level": 194,
+          "xp_to_next": 47402720,
+          "cumulative_xp_to_reach_level": 1324168500,
+          "reference_hours_to_next": 5.16666667,
+          "reference_hours_to_reach_level": 221.72564671
+        },
+        {
+          "level": 195,
+          "xp_to_next": 49433600,
+          "cumulative_xp_to_reach_level": 1371571220,
+          "reference_hours_to_next": 5.33333333,
+          "reference_hours_to_reach_level": 226.89231338
+        },
+        {
+          "level": 196,
+          "xp_to_next": 51498480,
+          "cumulative_xp_to_reach_level": 1421004820,
+          "reference_hours_to_next": 5.5,
+          "reference_hours_to_reach_level": 232.22564671
+        },
+        {
+          "level": 197,
+          "xp_to_next": 53597600,
+          "cumulative_xp_to_reach_level": 1472503300,
+          "reference_hours_to_next": 5.66666667,
+          "reference_hours_to_reach_level": 237.72564671
+        },
+        {
+          "level": 198,
+          "xp_to_next": 55731200,
+          "cumulative_xp_to_reach_level": 1526100900,
+          "reference_hours_to_next": 5.83333333,
+          "reference_hours_to_reach_level": 243.39231338
+        },
+        {
+          "level": 199,
+          "xp_to_next": 57899520,
+          "cumulative_xp_to_reach_level": 1581832100,
+          "reference_hours_to_next": 6.0,
+          "reference_hours_to_reach_level": 249.22564671
+        },
+        {
+          "level": 200,
+          "xp_to_next": null,
+          "cumulative_xp_to_reach_level": 1639731620,
+          "reference_hours_to_next": null,
+          "reference_hours_to_reach_level": 255.22564671
+        }
+      ]
+    },
+    {
+      "rebirth_stage": 2,
+      "status": "SCENARIO_ONLY_PENDING_REBIRTH_DECISION",
+      "percent_of_player_requirements": 35,
+      "total_cycle_xp": 1913020110,
+      "reference_total_hours": 297.76432886,
+      "levels": [
+        {
+          "level": 1,
+          "xp_to_next": 20,
+          "cumulative_xp_to_reach_level": 0,
+          "reference_hours_to_next": 0.00595238,
+          "reference_hours_to_reach_level": 0.0
+        },
+        {
+          "level": 2,
+          "xp_to_next": 40,
+          "cumulative_xp_to_reach_level": 20,
+          "reference_hours_to_next": 0.00833333,
+          "reference_hours_to_reach_level": 0.00595238
+        },
+        {
+          "level": 3,
+          "xp_to_next": 70,
+          "cumulative_xp_to_reach_level": 60,
+          "reference_hours_to_next": 0.01041667,
+          "reference_hours_to_reach_level": 0.01428571
+        },
+        {
+          "level": 4,
+          "xp_to_next": 110,
+          "cumulative_xp_to_reach_level": 130,
+          "reference_hours_to_next": 0.0120614,
+          "reference_hours_to_reach_level": 0.02470238
+        },
+        {
+          "level": 5,
+          "xp_to_next": 160,
+          "cumulative_xp_to_reach_level": 240,
+          "reference_hours_to_next": 0.01333333,
+          "reference_hours_to_reach_level": 0.03676378
+        },
+        {
+          "level": 6,
+          "xp_to_next": 240,
+          "cumulative_xp_to_reach_level": 400,
+          "reference_hours_to_next": 0.015625,
+          "reference_hours_to_reach_level": 0.05009712
+        },
+        {
+          "level": 7,
+          "xp_to_next": 340,
+          "cumulative_xp_to_reach_level": 640,
+          "reference_hours_to_next": 0.01770833,
+          "reference_hours_to_reach_level": 0.06572212
+        },
+        {
+          "level": 8,
+          "xp_to_next": 460,
+          "cumulative_xp_to_reach_level": 980,
+          "reference_hours_to_next": 0.01955782,
+          "reference_hours_to_reach_level": 0.08343045
+        },
+        {
+          "level": 9,
+          "xp_to_next": 610,
+          "cumulative_xp_to_reach_level": 1440,
+          "reference_hours_to_next": 0.02153955,
+          "reference_hours_to_reach_level": 0.10298827
+        },
+        {
+          "level": 10,
+          "xp_to_next": 780,
+          "cumulative_xp_to_reach_level": 2050,
+          "reference_hours_to_next": 0.02321429,
+          "reference_hours_to_reach_level": 0.12452782
+        },
+        {
+          "level": 11,
+          "xp_to_next": 1040,
+          "cumulative_xp_to_reach_level": 2830,
+          "reference_hours_to_next": 0.02642276,
+          "reference_hours_to_reach_level": 0.14774211
+        },
+        {
+          "level": 12,
+          "xp_to_next": 1350,
+          "cumulative_xp_to_reach_level": 3870,
+          "reference_hours_to_next": 0.02960526,
+          "reference_hours_to_reach_level": 0.17416487
+        },
+        {
+          "level": 13,
+          "xp_to_next": 1710,
+          "cumulative_xp_to_reach_level": 5220,
+          "reference_hours_to_next": 0.03268349,
+          "reference_hours_to_reach_level": 0.20377014
+        },
+        {
+          "level": 14,
+          "xp_to_next": 2130,
+          "cumulative_xp_to_reach_level": 6930,
+          "reference_hours_to_next": 0.03578629,
+          "reference_hours_to_reach_level": 0.23645362
+        },
+        {
+          "level": 15,
+          "xp_to_next": 2610,
+          "cumulative_xp_to_reach_level": 9060,
+          "reference_hours_to_next": 0.03883929,
+          "reference_hours_to_reach_level": 0.27223991
+        },
+        {
+          "level": 16,
+          "xp_to_next": 3160,
+          "cumulative_xp_to_reach_level": 11670,
+          "reference_hours_to_next": 0.04193206,
+          "reference_hours_to_reach_level": 0.3110792
+        },
+        {
+          "level": 17,
+          "xp_to_next": 3790,
+          "cumulative_xp_to_reach_level": 14830,
+          "reference_hours_to_next": 0.04511905,
+          "reference_hours_to_reach_level": 0.35301126
+        },
+        {
+          "level": 18,
+          "xp_to_next": 4490,
+          "cumulative_xp_to_reach_level": 18620,
+          "reference_hours_to_next": 0.04821735,
+          "reference_hours_to_reach_level": 0.3981303
+        },
+        {
+          "level": 19,
+          "xp_to_next": 5270,
+          "cumulative_xp_to_reach_level": 23110,
+          "reference_hours_to_next": 0.05130452,
+          "reference_hours_to_reach_level": 0.44634766
+        },
+        {
+          "level": 20,
+          "xp_to_next": 6140,
+          "cumulative_xp_to_reach_level": 28380,
+          "reference_hours_to_next": 0.05443262,
+          "reference_hours_to_reach_level": 0.49765218
+        },
+        {
+          "level": 21,
+          "xp_to_next": 7100,
+          "cumulative_xp_to_reach_level": 34520,
+          "reference_hours_to_next": 0.05755512,
+          "reference_hours_to_reach_level": 0.5520848
+        },
+        {
+          "level": 22,
+          "xp_to_next": 8160,
+          "cumulative_xp_to_reach_level": 41620,
+          "reference_hours_to_next": 0.06071429,
+          "reference_hours_to_reach_level": 0.60963992
+        },
+        {
+          "level": 23,
+          "xp_to_next": 9310,
+          "cumulative_xp_to_reach_level": 49780,
+          "reference_hours_to_next": 0.06380208,
+          "reference_hours_to_reach_level": 0.67035421
+        },
+        {
+          "level": 24,
+          "xp_to_next": 10560,
+          "cumulative_xp_to_reach_level": 59090,
+          "reference_hours_to_next": 0.0668693,
+          "reference_hours_to_reach_level": 0.73415629
+        },
+        {
+          "level": 25,
+          "xp_to_next": 11930,
+          "cumulative_xp_to_reach_level": 69650,
+          "reference_hours_to_next": 0.07001174,
+          "reference_hours_to_reach_level": 0.80102559
+        },
+        {
+          "level": 26,
+          "xp_to_next": 14080,
+          "cumulative_xp_to_reach_level": 81580,
+          "reference_hours_to_next": 0.07678883,
+          "reference_hours_to_reach_level": 0.87103733
+        },
+        {
+          "level": 27,
+          "xp_to_next": 16450,
+          "cumulative_xp_to_reach_level": 95660,
+          "reference_hours_to_next": 0.0835874,
+          "reference_hours_to_reach_level": 0.94782616
+        },
+        {
+          "level": 28,
+          "xp_to_next": 19050,
+          "cumulative_xp_to_reach_level": 112110,
+          "reference_hours_to_next": 0.09040433,
+          "reference_hours_to_reach_level": 1.03141356
+        },
+        {
+          "level": 29,
+          "xp_to_next": 21890,
+          "cumulative_xp_to_reach_level": 131160,
+          "reference_hours_to_next": 0.09723703,
+          "reference_hours_to_reach_level": 1.12181789
+        },
+        {
+          "level": 30,
+          "xp_to_next": 24970,
+          "cumulative_xp_to_reach_level": 153050,
+          "reference_hours_to_next": 0.10404167,
+          "reference_hours_to_reach_level": 1.21905492
+        },
+        {
+          "level": 31,
+          "xp_to_next": 28300,
+          "cumulative_xp_to_reach_level": 178020,
+          "reference_hours_to_next": 0.11082393,
+          "reference_hours_to_reach_level": 1.32309658
+        },
+        {
+          "level": 32,
+          "xp_to_next": 31900,
+          "cumulative_xp_to_reach_level": 206320,
+          "reference_hours_to_next": 0.11762537,
+          "reference_hours_to_reach_level": 1.43392052
+        },
+        {
+          "level": 33,
+          "xp_to_next": 35780,
+          "cumulative_xp_to_reach_level": 238220,
+          "reference_hours_to_next": 0.12444352,
+          "reference_hours_to_reach_level": 1.55154589
+        },
+        {
+          "level": 34,
+          "xp_to_next": 39940,
+          "cumulative_xp_to_reach_level": 274000,
+          "reference_hours_to_next": 0.13124343,
+          "reference_hours_to_reach_level": 1.6759894
+        },
+        {
+          "level": 35,
+          "xp_to_next": 44400,
+          "cumulative_xp_to_reach_level": 313940,
+          "reference_hours_to_next": 0.1380597,
+          "reference_hours_to_reach_level": 1.80723283
+        },
+        {
+          "level": 36,
+          "xp_to_next": 49160,
+          "cumulative_xp_to_reach_level": 358340,
+          "reference_hours_to_next": 0.14486091,
+          "reference_hours_to_reach_level": 1.94529253
+        },
+        {
+          "level": 37,
+          "xp_to_next": 54240,
+          "cumulative_xp_to_reach_level": 407500,
+          "reference_hours_to_next": 0.15167785,
+          "reference_hours_to_reach_level": 2.09015345
+        },
+        {
+          "level": 38,
+          "xp_to_next": 59640,
+          "cumulative_xp_to_reach_level": 461740,
+          "reference_hours_to_next": 0.15848214,
+          "reference_hours_to_reach_level": 2.2418313
+        },
+        {
+          "level": 39,
+          "xp_to_next": 65370,
+          "cumulative_xp_to_reach_level": 521380,
+          "reference_hours_to_next": 0.16527609,
+          "reference_hours_to_reach_level": 2.40031344
+        },
+        {
+          "level": 40,
+          "xp_to_next": 71450,
+          "cumulative_xp_to_reach_level": 586750,
+          "reference_hours_to_next": 0.17208574,
+          "reference_hours_to_reach_level": 2.56558954
+        },
+        {
+          "level": 41,
+          "xp_to_next": 77880,
+          "cumulative_xp_to_reach_level": 658200,
+          "reference_hours_to_next": 0.17888644,
+          "reference_hours_to_reach_level": 2.73767528
+        },
+        {
+          "level": 42,
+          "xp_to_next": 84680,
+          "cumulative_xp_to_reach_level": 736080,
+          "reference_hours_to_next": 0.18570175,
+          "reference_hours_to_reach_level": 2.91656172
+        },
+        {
+          "level": 43,
+          "xp_to_next": 91850,
+          "cumulative_xp_to_reach_level": 820760,
+          "reference_hours_to_next": 0.19250922,
+          "reference_hours_to_reach_level": 3.10226347
+        },
+        {
+          "level": 44,
+          "xp_to_next": 99400,
+          "cumulative_xp_to_reach_level": 912610,
+          "reference_hours_to_next": 0.19931023,
+          "reference_hours_to_reach_level": 3.29477269
+        },
+        {
+          "level": 45,
+          "xp_to_next": 107340,
+          "cumulative_xp_to_reach_level": 1012010,
+          "reference_hours_to_next": 0.20610599,
+          "reference_hours_to_reach_level": 3.49408293
+        },
+        {
+          "level": 46,
+          "xp_to_next": 115690,
+          "cumulative_xp_to_reach_level": 1119350,
+          "reference_hours_to_next": 0.21291593,
+          "reference_hours_to_reach_level": 3.70018892
+        },
+        {
+          "level": 47,
+          "xp_to_next": 124450,
+          "cumulative_xp_to_reach_level": 1235040,
+          "reference_hours_to_next": 0.21972105,
+          "reference_hours_to_reach_level": 3.91310485
+        },
+        {
+          "level": 48,
+          "xp_to_next": 133630,
+          "cumulative_xp_to_reach_level": 1359490,
+          "reference_hours_to_next": 0.22652224,
+          "reference_hours_to_reach_level": 4.13282589
+        },
+        {
+          "level": 49,
+          "xp_to_next": 143250,
+          "cumulative_xp_to_reach_level": 1493120,
+          "reference_hours_to_next": 0.23333659,
+          "reference_hours_to_reach_level": 4.35934813
+        },
+        {
+          "level": 50,
+          "xp_to_next": 152680,
+          "cumulative_xp_to_reach_level": 1636370,
+          "reference_hours_to_next": 0.2391604,
+          "reference_hours_to_reach_level": 4.59268472
+        },
+        {
+          "level": 51,
+          "xp_to_next": 164970,
+          "cumulative_xp_to_reach_level": 1789050,
+          "reference_hours_to_next": 0.24868849,
+          "reference_hours_to_reach_level": 4.83184513
+        },
+        {
+          "level": 52,
+          "xp_to_next": 177860,
+          "cumulative_xp_to_reach_level": 1954020,
+          "reference_hours_to_next": 0.25821719,
+          "reference_hours_to_reach_level": 5.08053362
+        },
+        {
+          "level": 53,
+          "xp_to_next": 191370,
+          "cumulative_xp_to_reach_level": 2131880,
+          "reference_hours_to_next": 0.2677552,
+          "reference_hours_to_reach_level": 5.33875081
+        },
+        {
+          "level": 54,
+          "xp_to_next": 205500,
+          "cumulative_xp_to_reach_level": 2323250,
+          "reference_hours_to_next": 0.27728303,
+          "reference_hours_to_reach_level": 5.60650601
+        },
+        {
+          "level": 55,
+          "xp_to_next": 220270,
+          "cumulative_xp_to_reach_level": 2528750,
+          "reference_hours_to_next": 0.2868099,
+          "reference_hours_to_reach_level": 5.88378905
+        },
+        {
+          "level": 56,
+          "xp_to_next": 235690,
+          "cumulative_xp_to_reach_level": 2749020,
+          "reference_hours_to_next": 0.29633122,
+          "reference_hours_to_reach_level": 6.17059894
+        },
+        {
+          "level": 57,
+          "xp_to_next": 251790,
+          "cumulative_xp_to_reach_level": 2984710,
+          "reference_hours_to_next": 0.30586735,
+          "reference_hours_to_reach_level": 6.46693016
+        },
+        {
+          "level": 58,
+          "xp_to_next": 268560,
+          "cumulative_xp_to_reach_level": 3236500,
+          "reference_hours_to_next": 0.31538895,
+          "reference_hours_to_reach_level": 6.77279751
+        },
+        {
+          "level": 59,
+          "xp_to_next": 286030,
+          "cumulative_xp_to_reach_level": 3505060,
+          "reference_hours_to_next": 0.32491594,
+          "reference_hours_to_reach_level": 7.08818646
+        },
+        {
+          "level": 60,
+          "xp_to_next": 304210,
+          "cumulative_xp_to_reach_level": 3791090,
+          "reference_hours_to_next": 0.33444371,
+          "reference_hours_to_reach_level": 7.4131024
+        },
+        {
+          "level": 61,
+          "xp_to_next": 323110,
+          "cumulative_xp_to_reach_level": 4095300,
+          "reference_hours_to_next": 0.34396823,
+          "reference_hours_to_reach_level": 7.74754611
+        },
+        {
+          "level": 62,
+          "xp_to_next": 342760,
+          "cumulative_xp_to_reach_level": 4418410,
+          "reference_hours_to_next": 0.3535066,
+          "reference_hours_to_reach_level": 8.09151435
+        },
+        {
+          "level": 63,
+          "xp_to_next": 363140,
+          "cumulative_xp_to_reach_level": 4761170,
+          "reference_hours_to_next": 0.36302383,
+          "reference_hours_to_reach_level": 8.44502095
+        },
+        {
+          "level": 64,
+          "xp_to_next": 384300,
+          "cumulative_xp_to_reach_level": 5124310,
+          "reference_hours_to_next": 0.372557,
+          "reference_hours_to_reach_level": 8.80804478
+        },
+        {
+          "level": 65,
+          "xp_to_next": 406230,
+          "cumulative_xp_to_reach_level": 5508610,
+          "reference_hours_to_next": 0.38208239,
+          "reference_hours_to_reach_level": 9.18060178
+        },
+        {
+          "level": 66,
+          "xp_to_next": 428960,
+          "cumulative_xp_to_reach_level": 5914840,
+          "reference_hours_to_next": 0.39161554,
+          "reference_hours_to_reach_level": 9.56268417
+        },
+        {
+          "level": 67,
+          "xp_to_next": 452480,
+          "cumulative_xp_to_reach_level": 6343800,
+          "reference_hours_to_next": 0.40113475,
+          "reference_hours_to_reach_level": 9.95429972
+        },
+        {
+          "level": 68,
+          "xp_to_next": 476830,
+          "cumulative_xp_to_reach_level": 6796280,
+          "reference_hours_to_next": 0.41066384,
+          "reference_hours_to_reach_level": 10.35543447
+        },
+        {
+          "level": 69,
+          "xp_to_next": 502020,
+          "cumulative_xp_to_reach_level": 7273110,
+          "reference_hours_to_next": 0.42019888,
+          "reference_hours_to_reach_level": 10.76609831
+        },
+        {
+          "level": 70,
+          "xp_to_next": 528040,
+          "cumulative_xp_to_reach_level": 7775130,
+          "reference_hours_to_next": 0.42972005,
+          "reference_hours_to_reach_level": 11.18629719
+        },
+        {
+          "level": 71,
+          "xp_to_next": 554930,
+          "cumulative_xp_to_reach_level": 8303170,
+          "reference_hours_to_next": 0.4392493,
+          "reference_hours_to_reach_level": 11.61601724
+        },
+        {
+          "level": 72,
+          "xp_to_next": 582690,
+          "cumulative_xp_to_reach_level": 8858100,
+          "reference_hours_to_next": 0.44877542,
+          "reference_hours_to_reach_level": 12.05526654
+        },
+        {
+          "level": 73,
+          "xp_to_next": 611340,
+          "cumulative_xp_to_reach_level": 9440790,
+          "reference_hours_to_next": 0.45830335,
+          "reference_hours_to_reach_level": 12.50404196
+        },
+        {
+          "level": 74,
+          "xp_to_next": 640900,
+          "cumulative_xp_to_reach_level": 10052130,
+          "reference_hours_to_next": 0.46783754,
+          "reference_hours_to_reach_level": 12.9623453
+        },
+        {
+          "level": 75,
+          "xp_to_next": 671360,
+          "cumulative_xp_to_reach_level": 10693030,
+          "reference_hours_to_next": 0.47736064,
+          "reference_hours_to_reach_level": 13.43018284
+        },
+        {
+          "level": 76,
+          "xp_to_next": 702750,
+          "cumulative_xp_to_reach_level": 11364390,
+          "reference_hours_to_next": 0.48688477,
+          "reference_hours_to_reach_level": 13.90754348
+        },
+        {
+          "level": 77,
+          "xp_to_next": 735090,
+          "cumulative_xp_to_reach_level": 12067140,
+          "reference_hours_to_next": 0.4964141,
+          "reference_hours_to_reach_level": 14.39442825
+        },
+        {
+          "level": 78,
+          "xp_to_next": 768390,
+          "cumulative_xp_to_reach_level": 12802230,
+          "reference_hours_to_next": 0.5059458,
+          "reference_hours_to_reach_level": 14.89084235
+        },
+        {
+          "level": 79,
+          "xp_to_next": 802650,
+          "cumulative_xp_to_reach_level": 13570620,
+          "reference_hours_to_next": 0.51547087,
+          "reference_hours_to_reach_level": 15.39678814
+        },
+        {
+          "level": 80,
+          "xp_to_next": 837900,
+          "cumulative_xp_to_reach_level": 14373270,
+          "reference_hours_to_next": 0.525,
+          "reference_hours_to_reach_level": 15.91225901
+        },
+        {
+          "level": 81,
+          "xp_to_next": 880580,
+          "cumulative_xp_to_reach_level": 15211170,
+          "reference_hours_to_next": 0.53846248,
+          "reference_hours_to_reach_level": 16.43725901
+        },
+        {
+          "level": 82,
+          "xp_to_next": 924580,
+          "cumulative_xp_to_reach_level": 16091750,
+          "reference_hours_to_next": 0.55192216,
+          "reference_hours_to_reach_level": 16.97572149
+        },
+        {
+          "level": 83,
+          "xp_to_next": 969930,
+          "cumulative_xp_to_reach_level": 17016330,
+          "reference_hours_to_next": 0.56538542,
+          "reference_hours_to_reach_level": 17.52764365
+        },
+        {
+          "level": 84,
+          "xp_to_next": 1016640,
+          "cumulative_xp_to_reach_level": 17986260,
+          "reference_hours_to_next": 0.57884668,
+          "reference_hours_to_reach_level": 18.09302907
+        },
+        {
+          "level": 85,
+          "xp_to_next": 1064730,
+          "cumulative_xp_to_reach_level": 19002900,
+          "reference_hours_to_next": 0.59230641,
+          "reference_hours_to_reach_level": 18.67187575
+        },
+        {
+          "level": 86,
+          "xp_to_next": 1114230,
+          "cumulative_xp_to_reach_level": 20067630,
+          "reference_hours_to_next": 0.60577049,
+          "reference_hours_to_reach_level": 19.26418216
+        },
+        {
+          "level": 87,
+          "xp_to_next": 1165140,
+          "cumulative_xp_to_reach_level": 21181860,
+          "reference_hours_to_next": 0.61922832,
+          "reference_hours_to_reach_level": 19.86995265
+        },
+        {
+          "level": 88,
+          "xp_to_next": 1217500,
+          "cumulative_xp_to_reach_level": 22347000,
+          "reference_hours_to_next": 0.63269103,
+          "reference_hours_to_reach_level": 20.48918096
+        },
+        {
+          "level": 89,
+          "xp_to_next": 1271320,
+          "cumulative_xp_to_reach_level": 23564500,
+          "reference_hours_to_next": 0.64615353,
+          "reference_hours_to_reach_level": 21.12187199
+        },
+        {
+          "level": 90,
+          "xp_to_next": 1326620,
+          "cumulative_xp_to_reach_level": 24835820,
+          "reference_hours_to_next": 0.65961615,
+          "reference_hours_to_reach_level": 21.76802553
+        },
+        {
+          "level": 91,
+          "xp_to_next": 1383420,
+          "cumulative_xp_to_reach_level": 26162440,
+          "reference_hours_to_next": 0.67307917,
+          "reference_hours_to_reach_level": 22.42764167
+        },
+        {
+          "level": 92,
+          "xp_to_next": 1441730,
+          "cumulative_xp_to_reach_level": 27545860,
+          "reference_hours_to_next": 0.6865381,
+          "reference_hours_to_reach_level": 23.10072084
+        },
+        {
+          "level": 93,
+          "xp_to_next": 1501580,
+          "cumulative_xp_to_reach_level": 28987590,
+          "reference_hours_to_next": 0.69999814,
+          "reference_hours_to_reach_level": 23.78725894
+        },
+        {
+          "level": 94,
+          "xp_to_next": 1563000,
+          "cumulative_xp_to_reach_level": 30489170,
+          "reference_hours_to_next": 0.71346407,
+          "reference_hours_to_reach_level": 24.48725707
+        },
+        {
+          "level": 95,
+          "xp_to_next": 1625980,
+          "cumulative_xp_to_reach_level": 32052170,
+          "reference_hours_to_next": 0.72692239,
+          "reference_hours_to_reach_level": 25.20072114
+        },
+        {
+          "level": 96,
+          "xp_to_next": 1690560,
+          "cumulative_xp_to_reach_level": 33678150,
+          "reference_hours_to_next": 0.74038259,
+          "reference_hours_to_reach_level": 25.92764353
+        },
+        {
+          "level": 97,
+          "xp_to_next": 1756760,
+          "cumulative_xp_to_reach_level": 35368710,
+          "reference_hours_to_next": 0.75384483,
+          "reference_hours_to_reach_level": 26.66802612
+        },
+        {
+          "level": 98,
+          "xp_to_next": 1824600,
+          "cumulative_xp_to_reach_level": 37125470,
+          "reference_hours_to_next": 0.76730925,
+          "reference_hours_to_reach_level": 27.42187096
+        },
+        {
+          "level": 99,
+          "xp_to_next": 1894080,
+          "cumulative_xp_to_reach_level": 38950070,
+          "reference_hours_to_next": 0.78076771,
+          "reference_hours_to_reach_level": 28.1891802
+        },
+        {
+          "level": 100,
+          "xp_to_next": 1965240,
+          "cumulative_xp_to_reach_level": 40844150,
+          "reference_hours_to_next": 0.7942289,
+          "reference_hours_to_reach_level": 28.96994791
+        },
+        {
+          "level": 101,
+          "xp_to_next": 2038100,
+          "cumulative_xp_to_reach_level": 42809390,
+          "reference_hours_to_next": 0.80769292,
+          "reference_hours_to_reach_level": 29.76417682
+        },
+        {
+          "level": 102,
+          "xp_to_next": 2112660,
+          "cumulative_xp_to_reach_level": 44847490,
+          "reference_hours_to_next": 0.82115205,
+          "reference_hours_to_reach_level": 30.57186973
+        },
+        {
+          "level": 103,
+          "xp_to_next": 2188960,
+          "cumulative_xp_to_reach_level": 46960150,
+          "reference_hours_to_next": 0.83461445,
+          "reference_hours_to_reach_level": 31.39302178
+        },
+        {
+          "level": 104,
+          "xp_to_next": 2267010,
+          "cumulative_xp_to_reach_level": 49149110,
+          "reference_hours_to_next": 0.84807641,
+          "reference_hours_to_reach_level": 32.22763623
+        },
+        {
+          "level": 105,
+          "xp_to_next": 2346830,
+          "cumulative_xp_to_reach_level": 51416120,
+          "reference_hours_to_next": 0.86153818,
+          "reference_hours_to_reach_level": 33.07571264
+        },
+        {
+          "level": 106,
+          "xp_to_next": 2428440,
+          "cumulative_xp_to_reach_level": 53762950,
+          "reference_hours_to_next": 0.875,
+          "reference_hours_to_reach_level": 33.93725082
+        },
+        {
+          "level": 107,
+          "xp_to_next": 2511860,
+          "cumulative_xp_to_reach_level": 56191390,
+          "reference_hours_to_next": 0.88846208,
+          "reference_hours_to_reach_level": 34.81225082
+        },
+        {
+          "level": 108,
+          "xp_to_next": 2597110,
+          "cumulative_xp_to_reach_level": 58703250,
+          "reference_hours_to_next": 0.90192463,
+          "reference_hours_to_reach_level": 35.7007129
+        },
+        {
+          "level": 109,
+          "xp_to_next": 2684200,
+          "cumulative_xp_to_reach_level": 61300360,
+          "reference_hours_to_next": 0.91538441,
+          "reference_hours_to_reach_level": 36.60263752
+        },
+        {
+          "level": 110,
+          "xp_to_next": 2773160,
+          "cumulative_xp_to_reach_level": 63984560,
+          "reference_hours_to_next": 0.92884512,
+          "reference_hours_to_reach_level": 37.51802193
+        },
+        {
+          "level": 111,
+          "xp_to_next": 2864010,
+          "cumulative_xp_to_reach_level": 66757720,
+          "reference_hours_to_next": 0.94230693,
+          "reference_hours_to_reach_level": 38.44686705
+        },
+        {
+          "level": 112,
+          "xp_to_next": 2956770,
+          "cumulative_xp_to_reach_level": 69621730,
+          "reference_hours_to_next": 0.95576998,
+          "reference_hours_to_reach_level": 39.38917399
+        },
+        {
+          "level": 113,
+          "xp_to_next": 3051450,
+          "cumulative_xp_to_reach_level": 72578500,
+          "reference_hours_to_next": 0.96923121,
+          "reference_hours_to_reach_level": 40.34494396
+        },
+        {
+          "level": 114,
+          "xp_to_next": 3148080,
+          "cumulative_xp_to_reach_level": 75629950,
+          "reference_hours_to_next": 0.98269404,
+          "reference_hours_to_reach_level": 41.31417517
+        },
+        {
+          "level": 115,
+          "xp_to_next": 3246660,
+          "cumulative_xp_to_reach_level": 78778030,
+          "reference_hours_to_next": 0.99615243,
+          "reference_hours_to_reach_level": 42.29686921
+        },
+        {
+          "level": 116,
+          "xp_to_next": 3347240,
+          "cumulative_xp_to_reach_level": 82024690,
+          "reference_hours_to_next": 1.00961585,
+          "reference_hours_to_reach_level": 43.29302164
+        },
+        {
+          "level": 117,
+          "xp_to_next": 3449820,
+          "cumulative_xp_to_reach_level": 85371930,
+          "reference_hours_to_next": 1.02307829,
+          "reference_hours_to_reach_level": 44.30263749
+        },
+        {
+          "level": 118,
+          "xp_to_next": 3554410,
+          "cumulative_xp_to_reach_level": 88821750,
+          "reference_hours_to_next": 1.03653707,
+          "reference_hours_to_reach_level": 45.32571578
+        },
+        {
+          "level": 119,
+          "xp_to_next": 3661060,
+          "cumulative_xp_to_reach_level": 92376160,
+          "reference_hours_to_next": 1.05000115,
+          "reference_hours_to_reach_level": 46.36225285
+        },
+        {
+          "level": 120,
+          "xp_to_next": 3825430,
+          "cumulative_xp_to_reach_level": 96037220,
+          "reference_hours_to_next": 1.07916667,
+          "reference_hours_to_reach_level": 47.412254
+        },
+        {
+          "level": 121,
+          "xp_to_next": 4011240,
+          "cumulative_xp_to_reach_level": 99862650,
+          "reference_hours_to_next": 1.11319435,
+          "reference_hours_to_reach_level": 48.49142066
+        },
+        {
+          "level": 122,
+          "xp_to_next": 4201590,
+          "cumulative_xp_to_reach_level": 103873890,
+          "reference_hours_to_next": 1.14722313,
+          "reference_hours_to_reach_level": 49.60461502
+        },
+        {
+          "level": 123,
+          "xp_to_next": 4396520,
+          "cumulative_xp_to_reach_level": 108075480,
+          "reference_hours_to_next": 1.18125054,
+          "reference_hours_to_reach_level": 50.75183815
+        },
+        {
+          "level": 124,
+          "xp_to_next": 4596080,
+          "cumulative_xp_to_reach_level": 112472000,
+          "reference_hours_to_next": 1.2152769,
+          "reference_hours_to_reach_level": 51.93308868
+        },
+        {
+          "level": 125,
+          "xp_to_next": 4800330,
+          "cumulative_xp_to_reach_level": 117068080,
+          "reference_hours_to_next": 1.24930512,
+          "reference_hours_to_reach_level": 53.14836558
+        },
+        {
+          "level": 126,
+          "xp_to_next": 5009310,
+          "cumulative_xp_to_reach_level": 121868410,
+          "reference_hours_to_next": 1.28333282,
+          "reference_hours_to_reach_level": 54.3976707
+        },
+        {
+          "level": 127,
+          "xp_to_next": 5223070,
+          "cumulative_xp_to_reach_level": 126877720,
+          "reference_hours_to_next": 1.31736027,
+          "reference_hours_to_reach_level": 55.68100352
+        },
+        {
+          "level": 128,
+          "xp_to_next": 5441660,
+          "cumulative_xp_to_reach_level": 132100790,
+          "reference_hours_to_next": 1.35138773,
+          "reference_hours_to_reach_level": 56.99836379
+        },
+        {
+          "level": 129,
+          "xp_to_next": 5665140,
+          "cumulative_xp_to_reach_level": 137542450,
+          "reference_hours_to_next": 1.38541789,
+          "reference_hours_to_reach_level": 58.34975152
+        },
+        {
+          "level": 130,
+          "xp_to_next": 5893530,
+          "cumulative_xp_to_reach_level": 143207590,
+          "reference_hours_to_next": 1.41944364,
+          "reference_hours_to_reach_level": 59.73516941
+        },
+        {
+          "level": 131,
+          "xp_to_next": 6126910,
+          "cumulative_xp_to_reach_level": 149101120,
+          "reference_hours_to_next": 1.45347254,
+          "reference_hours_to_reach_level": 61.15461306
+        },
+        {
+          "level": 132,
+          "xp_to_next": 6365310,
+          "cumulative_xp_to_reach_level": 155228030,
+          "reference_hours_to_next": 1.4875,
+          "reference_hours_to_reach_level": 62.60808559
+        },
+        {
+          "level": 133,
+          "xp_to_next": 6608790,
+          "cumulative_xp_to_reach_level": 161593340,
+          "reference_hours_to_next": 1.52152862,
+          "reference_hours_to_reach_level": 64.09558559
+        },
+        {
+          "level": 134,
+          "xp_to_next": 6857390,
+          "cumulative_xp_to_reach_level": 168202130,
+          "reference_hours_to_next": 1.55555631,
+          "reference_hours_to_reach_level": 65.61711422
+        },
+        {
+          "level": 135,
+          "xp_to_next": 7111160,
+          "cumulative_xp_to_reach_level": 175059520,
+          "reference_hours_to_next": 1.58958333,
+          "reference_hours_to_reach_level": 67.17267053
+        },
+        {
+          "level": 136,
+          "xp_to_next": 7370160,
+          "cumulative_xp_to_reach_level": 182170680,
+          "reference_hours_to_next": 1.62361214,
+          "reference_hours_to_reach_level": 68.76225386
+        },
+        {
+          "level": 137,
+          "xp_to_next": 7634420,
+          "cumulative_xp_to_reach_level": 189540840,
+          "reference_hours_to_next": 1.65763853,
+          "reference_hours_to_reach_level": 70.385866
+        },
+        {
+          "level": 138,
+          "xp_to_next": 7904010,
+          "cumulative_xp_to_reach_level": 197175260,
+          "reference_hours_to_next": 1.69166709,
+          "reference_hours_to_reach_level": 72.04350453
+        },
+        {
+          "level": 139,
+          "xp_to_next": 8178960,
+          "cumulative_xp_to_reach_level": 205079270,
+          "reference_hours_to_next": 1.72569374,
+          "reference_hours_to_reach_level": 73.73517162
+        },
+        {
+          "level": 140,
+          "xp_to_next": 8459340,
+          "cumulative_xp_to_reach_level": 213258230,
+          "reference_hours_to_next": 1.75972292,
+          "reference_hours_to_reach_level": 75.46086536
+        },
+        {
+          "level": 141,
+          "xp_to_next": 8745180,
+          "cumulative_xp_to_reach_level": 221717570,
+          "reference_hours_to_next": 1.79375062,
+          "reference_hours_to_reach_level": 77.22058828
+        },
+        {
+          "level": 142,
+          "xp_to_next": 9036530,
+          "cumulative_xp_to_reach_level": 230462750,
+          "reference_hours_to_next": 1.8277771,
+          "reference_hours_to_reach_level": 79.01433889
+        },
+        {
+          "level": 143,
+          "xp_to_next": 9333450,
+          "cumulative_xp_to_reach_level": 239499280,
+          "reference_hours_to_next": 1.86180462,
+          "reference_hours_to_reach_level": 80.842116
+        },
+        {
+          "level": 144,
+          "xp_to_next": 9635990,
+          "cumulative_xp_to_reach_level": 248832730,
+          "reference_hours_to_next": 1.89583333,
+          "reference_hours_to_reach_level": 82.70392062
+        },
+        {
+          "level": 145,
+          "xp_to_next": 9944190,
+          "cumulative_xp_to_reach_level": 258468720,
+          "reference_hours_to_next": 1.92986143,
+          "reference_hours_to_reach_level": 84.59975396
+        },
+        {
+          "level": 146,
+          "xp_to_next": 10258100,
+          "cumulative_xp_to_reach_level": 268412910,
+          "reference_hours_to_next": 1.96388914,
+          "reference_hours_to_reach_level": 86.52961539
+        },
+        {
+          "level": 147,
+          "xp_to_next": 10577770,
+          "cumulative_xp_to_reach_level": 278671010,
+          "reference_hours_to_next": 1.99791667,
+          "reference_hours_to_reach_level": 88.49350453
+        },
+        {
+          "level": 148,
+          "xp_to_next": 10903250,
+          "cumulative_xp_to_reach_level": 289248780,
+          "reference_hours_to_next": 2.0319442,
+          "reference_hours_to_reach_level": 90.4914212
+        },
+        {
+          "level": 149,
+          "xp_to_next": 11234590,
+          "cumulative_xp_to_reach_level": 300152030,
+          "reference_hours_to_next": 2.06597192,
+          "reference_hours_to_reach_level": 92.5233654
+        },
+        {
+          "level": 150,
+          "xp_to_next": 11571840,
+          "cumulative_xp_to_reach_level": 311386620,
+          "reference_hours_to_next": 2.1,
+          "reference_hours_to_reach_level": 94.58933731
+        },
+        {
+          "level": 151,
+          "xp_to_next": 12115890,
+          "cumulative_xp_to_reach_level": 322958460,
+          "reference_hours_to_next": 2.16999979,
+          "reference_hours_to_reach_level": 96.68933731
+        },
+        {
+          "level": 152,
+          "xp_to_next": 12671230,
+          "cumulative_xp_to_reach_level": 335074350,
+          "reference_hours_to_next": 2.23999965,
+          "reference_hours_to_reach_level": 98.8593371
+        },
+        {
+          "level": 153,
+          "xp_to_next": 13237960,
+          "cumulative_xp_to_reach_level": 347745580,
+          "reference_hours_to_next": 2.30999944,
+          "reference_hours_to_reach_level": 101.09933674
+        },
+        {
+          "level": 154,
+          "xp_to_next": 13816190,
+          "cumulative_xp_to_reach_level": 360983540,
+          "reference_hours_to_next": 2.38000076,
+          "reference_hours_to_reach_level": 103.40933619
+        },
+        {
+          "level": 155,
+          "xp_to_next": 14406000,
+          "cumulative_xp_to_reach_level": 374799730,
+          "reference_hours_to_next": 2.45,
+          "reference_hours_to_reach_level": 105.78933694
+        },
+        {
+          "level": 156,
+          "xp_to_next": 15007510,
+          "cumulative_xp_to_reach_level": 389205730,
+          "reference_hours_to_next": 2.52000047,
+          "reference_hours_to_reach_level": 108.23933694
+        },
+        {
+          "level": 157,
+          "xp_to_next": 15620810,
+          "cumulative_xp_to_reach_level": 404213240,
+          "reference_hours_to_next": 2.59000033,
+          "reference_hours_to_reach_level": 110.75933741
+        },
+        {
+          "level": 158,
+          "xp_to_next": 16246000,
+          "cumulative_xp_to_reach_level": 419834050,
+          "reference_hours_to_next": 2.65999948,
+          "reference_hours_to_reach_level": 113.34933775
+        },
+        {
+          "level": 159,
+          "xp_to_next": 16883200,
+          "cumulative_xp_to_reach_level": 436080050,
+          "reference_hours_to_next": 2.73000103,
+          "reference_hours_to_reach_level": 116.00933722
+        },
+        {
+          "level": 160,
+          "xp_to_next": 17532480,
+          "cumulative_xp_to_reach_level": 452963250,
+          "reference_hours_to_next": 2.8,
+          "reference_hours_to_reach_level": 118.73933826
+        },
+        {
+          "level": 161,
+          "xp_to_next": 18193960,
+          "cumulative_xp_to_reach_level": 470495730,
+          "reference_hours_to_next": 2.8699995,
+          "reference_hours_to_reach_level": 121.53933826
+        },
+        {
+          "level": 162,
+          "xp_to_next": 18867740,
+          "cumulative_xp_to_reach_level": 488689690,
+          "reference_hours_to_next": 2.93999938,
+          "reference_hours_to_reach_level": 124.40933775
+        },
+        {
+          "level": 163,
+          "xp_to_next": 19553920,
+          "cumulative_xp_to_reach_level": 507557430,
+          "reference_hours_to_next": 3.00999951,
+          "reference_hours_to_reach_level": 127.34933713
+        },
+        {
+          "level": 164,
+          "xp_to_next": 20252600,
+          "cumulative_xp_to_reach_level": 527111350,
+          "reference_hours_to_next": 3.07999976,
+          "reference_hours_to_reach_level": 130.35933664
+        },
+        {
+          "level": 165,
+          "xp_to_next": 20963880,
+          "cumulative_xp_to_reach_level": 547363950,
+          "reference_hours_to_next": 3.15,
+          "reference_hours_to_reach_level": 133.43933639
+        },
+        {
+          "level": 166,
+          "xp_to_next": 21687860,
+          "cumulative_xp_to_reach_level": 568327830,
+          "reference_hours_to_next": 3.22000012,
+          "reference_hours_to_reach_level": 136.58933639
+        },
+        {
+          "level": 167,
+          "xp_to_next": 22424640,
+          "cumulative_xp_to_reach_level": 590015690,
+          "reference_hours_to_next": 3.29,
+          "reference_hours_to_reach_level": 139.80933651
+        },
+        {
+          "level": 168,
+          "xp_to_next": 23174320,
+          "cumulative_xp_to_reach_level": 612440330,
+          "reference_hours_to_next": 3.35999954,
+          "reference_hours_to_reach_level": 143.09933651
+        },
+        {
+          "level": 169,
+          "xp_to_next": 23937010,
+          "cumulative_xp_to_reach_level": 635614650,
+          "reference_hours_to_next": 3.43000006,
+          "reference_hours_to_reach_level": 146.45933605
+        },
+        {
+          "level": 170,
+          "xp_to_next": 24712800,
+          "cumulative_xp_to_reach_level": 659551660,
+          "reference_hours_to_next": 3.5,
+          "reference_hours_to_reach_level": 149.8893361
+        },
+        {
+          "level": 171,
+          "xp_to_next": 25626800,
+          "cumulative_xp_to_reach_level": 684264460,
+          "reference_hours_to_next": 3.58749944,
+          "reference_hours_to_reach_level": 153.3893361
+        },
+        {
+          "level": 172,
+          "xp_to_next": 26557020,
+          "cumulative_xp_to_reach_level": 709891260,
+          "reference_hours_to_next": 3.675,
+          "reference_hours_to_reach_level": 156.97683554
+        },
+        {
+          "level": 173,
+          "xp_to_next": 27503570,
+          "cumulative_xp_to_reach_level": 736448280,
+          "reference_hours_to_next": 3.76249945,
+          "reference_hours_to_reach_level": 160.65183554
+        },
+        {
+          "level": 174,
+          "xp_to_next": 28466590,
+          "cumulative_xp_to_reach_level": 763951850,
+          "reference_hours_to_next": 3.84999973,
+          "reference_hours_to_reach_level": 164.414335
+        },
+        {
+          "level": 175,
+          "xp_to_next": 29446200,
+          "cumulative_xp_to_reach_level": 792418440,
+          "reference_hours_to_next": 3.9375,
+          "reference_hours_to_reach_level": 168.26433473
+        },
+        {
+          "level": 176,
+          "xp_to_next": 30442520,
+          "cumulative_xp_to_reach_level": 821864640,
+          "reference_hours_to_next": 4.02499947,
+          "reference_hours_to_reach_level": 172.20183473
+        },
+        {
+          "level": 177,
+          "xp_to_next": 31455690,
+          "cumulative_xp_to_reach_level": 852307160,
+          "reference_hours_to_next": 4.1125,
+          "reference_hours_to_reach_level": 176.2268342
+        },
+        {
+          "level": 178,
+          "xp_to_next": 32485820,
+          "cumulative_xp_to_reach_level": 883762850,
+          "reference_hours_to_next": 4.19999948,
+          "reference_hours_to_reach_level": 180.3393342
+        },
+        {
+          "level": 179,
+          "xp_to_next": 33533050,
+          "cumulative_xp_to_reach_level": 916248670,
+          "reference_hours_to_next": 4.28749974,
+          "reference_hours_to_reach_level": 184.53933368
+        },
+        {
+          "level": 180,
+          "xp_to_next": 34597500,
+          "cumulative_xp_to_reach_level": 949781720,
+          "reference_hours_to_next": 4.375,
+          "reference_hours_to_reach_level": 188.82683343
+        },
+        {
+          "level": 181,
+          "xp_to_next": 35679290,
+          "cumulative_xp_to_reach_level": 984379220,
+          "reference_hours_to_next": 4.4624995,
+          "reference_hours_to_reach_level": 193.20183343
+        },
+        {
+          "level": 182,
+          "xp_to_next": 36778560,
+          "cumulative_xp_to_reach_level": 1020058510,
+          "reference_hours_to_next": 4.55,
+          "reference_hours_to_reach_level": 197.66433292
+        },
+        {
+          "level": 183,
+          "xp_to_next": 37895420,
+          "cumulative_xp_to_reach_level": 1056837070,
+          "reference_hours_to_next": 4.63749951,
+          "reference_hours_to_reach_level": 202.21433292
+        },
+        {
+          "level": 184,
+          "xp_to_next": 39030010,
+          "cumulative_xp_to_reach_level": 1094732490,
+          "reference_hours_to_next": 4.72499976,
+          "reference_hours_to_reach_level": 206.85183244
+        },
+        {
+          "level": 185,
+          "xp_to_next": 40182450,
+          "cumulative_xp_to_reach_level": 1133762500,
+          "reference_hours_to_next": 4.8125,
+          "reference_hours_to_reach_level": 211.57683219
+        },
+        {
+          "level": 186,
+          "xp_to_next": 41352860,
+          "cumulative_xp_to_reach_level": 1173944950,
+          "reference_hours_to_next": 4.89999953,
+          "reference_hours_to_reach_level": 216.38933219
+        },
+        {
+          "level": 187,
+          "xp_to_next": 42541380,
+          "cumulative_xp_to_reach_level": 1215297810,
+          "reference_hours_to_next": 4.9875,
+          "reference_hours_to_reach_level": 221.28933172
+        },
+        {
+          "level": 188,
+          "xp_to_next": 43748120,
+          "cumulative_xp_to_reach_level": 1257839190,
+          "reference_hours_to_next": 5.07499954,
+          "reference_hours_to_reach_level": 226.27683172
+        },
+        {
+          "level": 189,
+          "xp_to_next": 44973220,
+          "cumulative_xp_to_reach_level": 1301587310,
+          "reference_hours_to_next": 5.16249977,
+          "reference_hours_to_reach_level": 231.35183126
+        },
+        {
+          "level": 190,
+          "xp_to_next": 46216800,
+          "cumulative_xp_to_reach_level": 1346560530,
+          "reference_hours_to_next": 5.25,
+          "reference_hours_to_reach_level": 236.51433103
+        },
+        {
+          "level": 191,
+          "xp_to_next": 48430290,
+          "cumulative_xp_to_reach_level": 1392777330,
+          "reference_hours_to_next": 5.44444407,
+          "reference_hours_to_reach_level": 241.76433103
+        },
+        {
+          "level": 192,
+          "xp_to_next": 50682330,
+          "cumulative_xp_to_reach_level": 1441207620,
+          "reference_hours_to_next": 5.63888852,
+          "reference_hours_to_reach_level": 247.2087751
+        },
+        {
+          "level": 193,
+          "xp_to_next": 52973200,
+          "cumulative_xp_to_reach_level": 1491889950,
+          "reference_hours_to_next": 5.83333333,
+          "reference_hours_to_reach_level": 252.84766361
+        },
+        {
+          "level": 194,
+          "xp_to_next": 55303170,
+          "cumulative_xp_to_reach_level": 1544863150,
+          "reference_hours_to_next": 6.02777741,
+          "reference_hours_to_reach_level": 258.68099695
+        },
+        {
+          "level": 195,
+          "xp_to_next": 57672530,
+          "cumulative_xp_to_reach_level": 1600166320,
+          "reference_hours_to_next": 6.22222186,
+          "reference_hours_to_reach_level": 264.70877436
+        },
+        {
+          "level": 196,
+          "xp_to_next": 60081560,
+          "cumulative_xp_to_reach_level": 1657838850,
+          "reference_hours_to_next": 6.41666667,
+          "reference_hours_to_reach_level": 270.93099622
+        },
+        {
+          "level": 197,
+          "xp_to_next": 62530530,
+          "cumulative_xp_to_reach_level": 1717920410,
+          "reference_hours_to_next": 6.61111076,
+          "reference_hours_to_reach_level": 277.34766289
+        },
+        {
+          "level": 198,
+          "xp_to_next": 65019730,
+          "cumulative_xp_to_reach_level": 1780450940,
+          "reference_hours_to_next": 6.80555521,
+          "reference_hours_to_reach_level": 283.95877365
+        },
+        {
+          "level": 199,
+          "xp_to_next": 67549440,
+          "cumulative_xp_to_reach_level": 1845470670,
+          "reference_hours_to_next": 7.0,
+          "reference_hours_to_reach_level": 290.76432886
+        },
+        {
+          "level": 200,
+          "xp_to_next": null,
+          "cumulative_xp_to_reach_level": 1913020110,
+          "reference_hours_to_next": null,
+          "reference_hours_to_reach_level": 297.76432886
+        }
+      ]
+    },
+    {
+      "rebirth_stage": 3,
+      "status": "SCENARIO_ONLY_PENDING_REBIRTH_DECISION",
+      "percent_of_player_requirements": 40,
+      "total_cycle_xp": 2186308840,
+      "reference_total_hours": 340.29917217,
+      "levels": [
+        {
+          "level": 1,
+          "xp_to_next": 20,
+          "cumulative_xp_to_reach_level": 0,
+          "reference_hours_to_next": 0.00595238,
+          "reference_hours_to_reach_level": 0.0
+        },
+        {
+          "level": 2,
+          "xp_to_next": 40,
+          "cumulative_xp_to_reach_level": 20,
+          "reference_hours_to_next": 0.00833333,
+          "reference_hours_to_reach_level": 0.00595238
+        },
+        {
+          "level": 3,
+          "xp_to_next": 80,
+          "cumulative_xp_to_reach_level": 60,
+          "reference_hours_to_next": 0.01190476,
+          "reference_hours_to_reach_level": 0.01428571
+        },
+        {
+          "level": 4,
+          "xp_to_next": 120,
+          "cumulative_xp_to_reach_level": 140,
+          "reference_hours_to_next": 0.01315789,
+          "reference_hours_to_reach_level": 0.02619048
+        },
+        {
+          "level": 5,
+          "xp_to_next": 190,
+          "cumulative_xp_to_reach_level": 260,
+          "reference_hours_to_next": 0.01583333,
+          "reference_hours_to_reach_level": 0.03934837
+        },
+        {
+          "level": 6,
+          "xp_to_next": 270,
+          "cumulative_xp_to_reach_level": 450,
+          "reference_hours_to_next": 0.01757812,
+          "reference_hours_to_reach_level": 0.0551817
+        },
+        {
+          "level": 7,
+          "xp_to_next": 380,
+          "cumulative_xp_to_reach_level": 720,
+          "reference_hours_to_next": 0.01979167,
+          "reference_hours_to_reach_level": 0.07275983
+        },
+        {
+          "level": 8,
+          "xp_to_next": 520,
+          "cumulative_xp_to_reach_level": 1100,
+          "reference_hours_to_next": 0.02210884,
+          "reference_hours_to_reach_level": 0.0925515
+        },
+        {
+          "level": 9,
+          "xp_to_next": 690,
+          "cumulative_xp_to_reach_level": 1620,
+          "reference_hours_to_next": 0.02436441,
+          "reference_hours_to_reach_level": 0.11466034
+        },
+        {
+          "level": 10,
+          "xp_to_next": 900,
+          "cumulative_xp_to_reach_level": 2310,
+          "reference_hours_to_next": 0.02678571,
+          "reference_hours_to_reach_level": 0.13902475
+        },
+        {
+          "level": 11,
+          "xp_to_next": 1190,
+          "cumulative_xp_to_reach_level": 3210,
+          "reference_hours_to_next": 0.03023374,
+          "reference_hours_to_reach_level": 0.16581046
+        },
+        {
+          "level": 12,
+          "xp_to_next": 1540,
+          "cumulative_xp_to_reach_level": 4400,
+          "reference_hours_to_next": 0.03377193,
+          "reference_hours_to_reach_level": 0.1960442
+        },
+        {
+          "level": 13,
+          "xp_to_next": 1950,
+          "cumulative_xp_to_reach_level": 5940,
+          "reference_hours_to_next": 0.03727064,
+          "reference_hours_to_reach_level": 0.22981613
+        },
+        {
+          "level": 14,
+          "xp_to_next": 2430,
+          "cumulative_xp_to_reach_level": 7890,
+          "reference_hours_to_next": 0.04082661,
+          "reference_hours_to_reach_level": 0.26708677
+        },
+        {
+          "level": 15,
+          "xp_to_next": 2990,
+          "cumulative_xp_to_reach_level": 10320,
+          "reference_hours_to_next": 0.04449405,
+          "reference_hours_to_reach_level": 0.30791339
+        },
+        {
+          "level": 16,
+          "xp_to_next": 3620,
+          "cumulative_xp_to_reach_level": 13310,
+          "reference_hours_to_next": 0.04803609,
+          "reference_hours_to_reach_level": 0.35240743
+        },
+        {
+          "level": 17,
+          "xp_to_next": 4330,
+          "cumulative_xp_to_reach_level": 16930,
+          "reference_hours_to_next": 0.05154762,
+          "reference_hours_to_reach_level": 0.40044353
+        },
+        {
+          "level": 18,
+          "xp_to_next": 5130,
+          "cumulative_xp_to_reach_level": 21260,
+          "reference_hours_to_next": 0.05509021,
+          "reference_hours_to_reach_level": 0.45199115
+        },
+        {
+          "level": 19,
+          "xp_to_next": 6030,
+          "cumulative_xp_to_reach_level": 26390,
+          "reference_hours_to_next": 0.05870327,
+          "reference_hours_to_reach_level": 0.50708135
+        },
+        {
+          "level": 20,
+          "xp_to_next": 7020,
+          "cumulative_xp_to_reach_level": 32420,
+          "reference_hours_to_next": 0.06223404,
+          "reference_hours_to_reach_level": 0.56578462
+        },
+        {
+          "level": 21,
+          "xp_to_next": 8120,
+          "cumulative_xp_to_reach_level": 39440,
+          "reference_hours_to_next": 0.06582361,
+          "reference_hours_to_reach_level": 0.62801867
+        },
+        {
+          "level": 22,
+          "xp_to_next": 9320,
+          "cumulative_xp_to_reach_level": 47560,
+          "reference_hours_to_next": 0.06934524,
+          "reference_hours_to_reach_level": 0.69384227
+        },
+        {
+          "level": 23,
+          "xp_to_next": 10640,
+          "cumulative_xp_to_reach_level": 56880,
+          "reference_hours_to_next": 0.07291667,
+          "reference_hours_to_reach_level": 0.76318751
+        },
+        {
+          "level": 24,
+          "xp_to_next": 12070,
+          "cumulative_xp_to_reach_level": 67520,
+          "reference_hours_to_next": 0.0764311,
+          "reference_hours_to_reach_level": 0.83610418
+        },
+        {
+          "level": 25,
+          "xp_to_next": 13630,
+          "cumulative_xp_to_reach_level": 79590,
+          "reference_hours_to_next": 0.07998826,
+          "reference_hours_to_reach_level": 0.91253528
+        },
+        {
+          "level": 26,
+          "xp_to_next": 16100,
+          "cumulative_xp_to_reach_level": 93220,
+          "reference_hours_to_next": 0.08780541,
+          "reference_hours_to_reach_level": 0.99252354
+        },
+        {
+          "level": 27,
+          "xp_to_next": 18800,
+          "cumulative_xp_to_reach_level": 109320,
+          "reference_hours_to_next": 0.09552846,
+          "reference_hours_to_reach_level": 1.08032895
+        },
+        {
+          "level": 28,
+          "xp_to_next": 21780,
+          "cumulative_xp_to_reach_level": 128120,
+          "reference_hours_to_next": 0.10335991,
+          "reference_hours_to_reach_level": 1.17585741
+        },
+        {
+          "level": 29,
+          "xp_to_next": 25010,
+          "cumulative_xp_to_reach_level": 149900,
+          "reference_hours_to_next": 0.1110963,
+          "reference_hours_to_reach_level": 1.27921732
+        },
+        {
+          "level": 30,
+          "xp_to_next": 28530,
+          "cumulative_xp_to_reach_level": 174910,
+          "reference_hours_to_next": 0.118875,
+          "reference_hours_to_reach_level": 1.39031362
+        },
+        {
+          "level": 31,
+          "xp_to_next": 32340,
+          "cumulative_xp_to_reach_level": 203440,
+          "reference_hours_to_next": 0.12664474,
+          "reference_hours_to_reach_level": 1.50918862
+        },
+        {
+          "level": 32,
+          "xp_to_next": 36460,
+          "cumulative_xp_to_reach_level": 235780,
+          "reference_hours_to_next": 0.13443953,
+          "reference_hours_to_reach_level": 1.63583336
+        },
+        {
+          "level": 33,
+          "xp_to_next": 40890,
+          "cumulative_xp_to_reach_level": 272240,
+          "reference_hours_to_next": 0.14221619,
+          "reference_hours_to_reach_level": 1.77027289
+        },
+        {
+          "level": 34,
+          "xp_to_next": 45650,
+          "cumulative_xp_to_reach_level": 313130,
+          "reference_hours_to_next": 0.15000657,
+          "reference_hours_to_reach_level": 1.91248908
+        },
+        {
+          "level": 35,
+          "xp_to_next": 50740,
+          "cumulative_xp_to_reach_level": 358780,
+          "reference_hours_to_next": 0.15777363,
+          "reference_hours_to_reach_level": 2.06249565
+        },
+        {
+          "level": 36,
+          "xp_to_next": 56180,
+          "cumulative_xp_to_reach_level": 409520,
+          "reference_hours_to_next": 0.16554691,
+          "reference_hours_to_reach_level": 2.22026928
+        },
+        {
+          "level": 37,
+          "xp_to_next": 61980,
+          "cumulative_xp_to_reach_level": 465700,
+          "reference_hours_to_next": 0.17332215,
+          "reference_hours_to_reach_level": 2.3858162
+        },
+        {
+          "level": 38,
+          "xp_to_next": 68160,
+          "cumulative_xp_to_reach_level": 527680,
+          "reference_hours_to_next": 0.18112245,
+          "reference_hours_to_reach_level": 2.55913834
+        },
+        {
+          "level": 39,
+          "xp_to_next": 74710,
+          "cumulative_xp_to_reach_level": 595840,
+          "reference_hours_to_next": 0.18889057,
+          "reference_hours_to_reach_level": 2.74026079
+        },
+        {
+          "level": 40,
+          "xp_to_next": 81660,
+          "cumulative_xp_to_reach_level": 670550,
+          "reference_hours_to_next": 0.1966763,
+          "reference_hours_to_reach_level": 2.92915137
+        },
+        {
+          "level": 41,
+          "xp_to_next": 89010,
+          "cumulative_xp_to_reach_level": 752210,
+          "reference_hours_to_next": 0.20445149,
+          "reference_hours_to_reach_level": 3.12582767
+        },
+        {
+          "level": 42,
+          "xp_to_next": 96770,
+          "cumulative_xp_to_reach_level": 841220,
+          "reference_hours_to_next": 0.21221491,
+          "reference_hours_to_reach_level": 3.33027916
+        },
+        {
+          "level": 43,
+          "xp_to_next": 104970,
+          "cumulative_xp_to_reach_level": 937990,
+          "reference_hours_to_next": 0.22000755,
+          "reference_hours_to_reach_level": 3.54249407
+        },
+        {
+          "level": 44,
+          "xp_to_next": 113600,
+          "cumulative_xp_to_reach_level": 1042960,
+          "reference_hours_to_next": 0.22778312,
+          "reference_hours_to_reach_level": 3.76250161
+        },
+        {
+          "level": 45,
+          "xp_to_next": 122680,
+          "cumulative_xp_to_reach_level": 1156560,
+          "reference_hours_to_next": 0.23556068,
+          "reference_hours_to_reach_level": 3.99028474
+        },
+        {
+          "level": 46,
+          "xp_to_next": 132220,
+          "cumulative_xp_to_reach_level": 1279240,
+          "reference_hours_to_next": 0.24333775,
+          "reference_hours_to_reach_level": 4.22584541
+        },
+        {
+          "level": 47,
+          "xp_to_next": 142230,
+          "cumulative_xp_to_reach_level": 1411460,
+          "reference_hours_to_next": 0.25111229,
+          "reference_hours_to_reach_level": 4.46918316
+        },
+        {
+          "level": 48,
+          "xp_to_next": 152720,
+          "cumulative_xp_to_reach_level": 1553690,
+          "reference_hours_to_next": 0.25888256,
+          "reference_hours_to_reach_level": 4.72029545
+        },
+        {
+          "level": 49,
+          "xp_to_next": 163710,
+          "cumulative_xp_to_reach_level": 1706410,
+          "reference_hours_to_next": 0.26666341,
+          "reference_hours_to_reach_level": 4.97917801
+        },
+        {
+          "level": 50,
+          "xp_to_next": 174500,
+          "cumulative_xp_to_reach_level": 1870120,
+          "reference_hours_to_next": 0.2733396,
+          "reference_hours_to_reach_level": 5.24584142
+        },
+        {
+          "level": 51,
+          "xp_to_next": 188540,
+          "cumulative_xp_to_reach_level": 2044620,
+          "reference_hours_to_next": 0.28421973,
+          "reference_hours_to_reach_level": 5.51918102
+        },
+        {
+          "level": 52,
+          "xp_to_next": 203270,
+          "cumulative_xp_to_reach_level": 2233160,
+          "reference_hours_to_next": 0.29510743,
+          "reference_hours_to_reach_level": 5.80340075
+        },
+        {
+          "level": 53,
+          "xp_to_next": 218700,
+          "cumulative_xp_to_reach_level": 2436430,
+          "reference_hours_to_next": 0.30599396,
+          "reference_hours_to_reach_level": 6.09850818
+        },
+        {
+          "level": 54,
+          "xp_to_next": 234850,
+          "cumulative_xp_to_reach_level": 2655130,
+          "reference_hours_to_next": 0.31688525,
+          "reference_hours_to_reach_level": 6.40450214
+        },
+        {
+          "level": 55,
+          "xp_to_next": 251730,
+          "cumulative_xp_to_reach_level": 2889980,
+          "reference_hours_to_next": 0.32777344,
+          "reference_hours_to_reach_level": 6.72138739
+        },
+        {
+          "level": 56,
+          "xp_to_next": 269360,
+          "cumulative_xp_to_reach_level": 3141710,
+          "reference_hours_to_next": 0.33866425,
+          "reference_hours_to_reach_level": 7.04916083
+        },
+        {
+          "level": 57,
+          "xp_to_next": 287760,
+          "cumulative_xp_to_reach_level": 3411070,
+          "reference_hours_to_next": 0.34956268,
+          "reference_hours_to_reach_level": 7.38782508
+        },
+        {
+          "level": 58,
+          "xp_to_next": 306920,
+          "cumulative_xp_to_reach_level": 3698830,
+          "reference_hours_to_next": 0.36043781,
+          "reference_hours_to_reach_level": 7.73738777
+        },
+        {
+          "level": 59,
+          "xp_to_next": 326890,
+          "cumulative_xp_to_reach_level": 4005750,
+          "reference_hours_to_next": 0.37133088,
+          "reference_hours_to_reach_level": 8.09782557
+        },
+        {
+          "level": 60,
+          "xp_to_next": 347670,
+          "cumulative_xp_to_reach_level": 4332640,
+          "reference_hours_to_next": 0.38222296,
+          "reference_hours_to_reach_level": 8.46915645
+        },
+        {
+          "level": 61,
+          "xp_to_next": 369270,
+          "cumulative_xp_to_reach_level": 4680310,
+          "reference_hours_to_next": 0.39310807,
+          "reference_hours_to_reach_level": 8.85137941
+        },
+        {
+          "level": 62,
+          "xp_to_next": 391720,
+          "cumulative_xp_to_reach_level": 5049580,
+          "reference_hours_to_next": 0.40400165,
+          "reference_hours_to_reach_level": 9.24448748
+        },
+        {
+          "level": 63,
+          "xp_to_next": 415020,
+          "cumulative_xp_to_reach_level": 5441300,
+          "reference_hours_to_next": 0.41488724,
+          "reference_hours_to_reach_level": 9.64848913
+        },
+        {
+          "level": 64,
+          "xp_to_next": 439200,
+          "cumulative_xp_to_reach_level": 5856320,
+          "reference_hours_to_next": 0.42577943,
+          "reference_hours_to_reach_level": 10.06337637
+        },
+        {
+          "level": 65,
+          "xp_to_next": 464260,
+          "cumulative_xp_to_reach_level": 6295520,
+          "reference_hours_to_next": 0.4366629,
+          "reference_hours_to_reach_level": 10.4891558
+        },
+        {
+          "level": 66,
+          "xp_to_next": 490240,
+          "cumulative_xp_to_reach_level": 6759780,
+          "reference_hours_to_next": 0.44756062,
+          "reference_hours_to_reach_level": 10.9258187
+        },
+        {
+          "level": 67,
+          "xp_to_next": 517120,
+          "cumulative_xp_to_reach_level": 7250020,
+          "reference_hours_to_next": 0.45843972,
+          "reference_hours_to_reach_level": 11.37337932
+        },
+        {
+          "level": 68,
+          "xp_to_next": 544950,
+          "cumulative_xp_to_reach_level": 7767140,
+          "reference_hours_to_next": 0.46933134,
+          "reference_hours_to_reach_level": 11.83181904
+        },
+        {
+          "level": 69,
+          "xp_to_next": 573730,
+          "cumulative_xp_to_reach_level": 8312090,
+          "reference_hours_to_next": 0.48022131,
+          "reference_hours_to_reach_level": 12.30115037
+        },
+        {
+          "level": 70,
+          "xp_to_next": 603480,
+          "cumulative_xp_to_reach_level": 8885820,
+          "reference_hours_to_next": 0.49111328,
+          "reference_hours_to_reach_level": 12.78137168
+        },
+        {
+          "level": 71,
+          "xp_to_next": 634210,
+          "cumulative_xp_to_reach_level": 9489300,
+          "reference_hours_to_next": 0.5020026,
+          "reference_hours_to_reach_level": 13.27248496
+        },
+        {
+          "level": 72,
+          "xp_to_next": 665940,
+          "cumulative_xp_to_reach_level": 10123510,
+          "reference_hours_to_next": 0.51289279,
+          "reference_hours_to_reach_level": 13.77448756
+        },
+        {
+          "level": 73,
+          "xp_to_next": 698680,
+          "cumulative_xp_to_reach_level": 10789450,
+          "reference_hours_to_next": 0.52377954,
+          "reference_hours_to_reach_level": 14.28738035
+        },
+        {
+          "level": 74,
+          "xp_to_next": 732450,
+          "cumulative_xp_to_reach_level": 11488130,
+          "reference_hours_to_next": 0.53466626,
+          "reference_hours_to_reach_level": 14.81115989
+        },
+        {
+          "level": 75,
+          "xp_to_next": 767270,
+          "cumulative_xp_to_reach_level": 12220580,
+          "reference_hours_to_next": 0.54555603,
+          "reference_hours_to_reach_level": 15.34582614
+        },
+        {
+          "level": 76,
+          "xp_to_next": 803150,
+          "cumulative_xp_to_reach_level": 12987850,
+          "reference_hours_to_next": 0.55644468,
+          "reference_hours_to_reach_level": 15.89138217
+        },
+        {
+          "level": 77,
+          "xp_to_next": 840110,
+          "cumulative_xp_to_reach_level": 13791000,
+          "reference_hours_to_next": 0.56733522,
+          "reference_hours_to_reach_level": 16.44782686
+        },
+        {
+          "level": 78,
+          "xp_to_next": 878160,
+          "cumulative_xp_to_reach_level": 14631110,
+          "reference_hours_to_next": 0.57822377,
+          "reference_hours_to_reach_level": 17.01516208
+        },
+        {
+          "level": 79,
+          "xp_to_next": 917320,
+          "cumulative_xp_to_reach_level": 15509270,
+          "reference_hours_to_next": 0.58911323,
+          "reference_hours_to_reach_level": 17.59338585
+        },
+        {
+          "level": 80,
+          "xp_to_next": 957600,
+          "cumulative_xp_to_reach_level": 16426590,
+          "reference_hours_to_next": 0.6,
+          "reference_hours_to_reach_level": 18.18249909
+        },
+        {
+          "level": 81,
+          "xp_to_next": 1006380,
+          "cumulative_xp_to_reach_level": 17384190,
+          "reference_hours_to_next": 0.61538744,
+          "reference_hours_to_reach_level": 18.78249909
+        },
+        {
+          "level": 82,
+          "xp_to_next": 1056660,
+          "cumulative_xp_to_reach_level": 18390570,
+          "reference_hours_to_next": 0.63076648,
+          "reference_hours_to_reach_level": 19.39788652
+        },
+        {
+          "level": 83,
+          "xp_to_next": 1108490,
+          "cumulative_xp_to_reach_level": 19447230,
+          "reference_hours_to_next": 0.64615394,
+          "reference_hours_to_reach_level": 20.028653
+        },
+        {
+          "level": 84,
+          "xp_to_next": 1161870,
+          "cumulative_xp_to_reach_level": 20555720,
+          "reference_hours_to_next": 0.66153662,
+          "reference_hours_to_reach_level": 20.67480693
+        },
+        {
+          "level": 85,
+          "xp_to_next": 1216840,
+          "cumulative_xp_to_reach_level": 21717590,
+          "reference_hours_to_next": 0.67692479,
+          "reference_hours_to_reach_level": 21.33634356
+        },
+        {
+          "level": 86,
+          "xp_to_next": 1273400,
+          "cumulative_xp_to_reach_level": 22934430,
+          "reference_hours_to_next": 0.69230602,
+          "reference_hours_to_reach_level": 22.01326834
+        },
+        {
+          "level": 87,
+          "xp_to_next": 1331590,
+          "cumulative_xp_to_reach_level": 24207830,
+          "reference_hours_to_next": 0.70769026,
+          "reference_hours_to_reach_level": 22.70557436
+        },
+        {
+          "level": 88,
+          "xp_to_next": 1391430,
+          "cumulative_xp_to_reach_level": 25539420,
+          "reference_hours_to_next": 0.7230762,
+          "reference_hours_to_reach_level": 23.41326463
+        },
+        {
+          "level": 89,
+          "xp_to_next": 1452940,
+          "cumulative_xp_to_reach_level": 26930850,
+          "reference_hours_to_next": 0.73846263,
+          "reference_hours_to_reach_level": 24.13634083
+        },
+        {
+          "level": 90,
+          "xp_to_next": 1516140,
+          "cumulative_xp_to_reach_level": 28383790,
+          "reference_hours_to_next": 0.75384845,
+          "reference_hours_to_reach_level": 24.87480346
+        },
+        {
+          "level": 91,
+          "xp_to_next": 1581050,
+          "cumulative_xp_to_reach_level": 29899930,
+          "reference_hours_to_next": 0.76923264,
+          "reference_hours_to_reach_level": 25.62865191
+        },
+        {
+          "level": 92,
+          "xp_to_next": 1647690,
+          "cumulative_xp_to_reach_level": 31480980,
+          "reference_hours_to_next": 0.78461429,
+          "reference_hours_to_reach_level": 26.39788455
+        },
+        {
+          "level": 93,
+          "xp_to_next": 1716100,
+          "cumulative_xp_to_reach_level": 33128670,
+          "reference_hours_to_next": 0.80000186,
+          "reference_hours_to_reach_level": 27.18249884
+        },
+        {
+          "level": 94,
+          "xp_to_next": 1786280,
+          "cumulative_xp_to_reach_level": 34844770,
+          "reference_hours_to_next": 0.8153849,
+          "reference_hours_to_reach_level": 27.9825007
+        },
+        {
+          "level": 95,
+          "xp_to_next": 1858260,
+          "cumulative_xp_to_reach_level": 36631050,
+          "reference_hours_to_next": 0.83076717,
+          "reference_hours_to_reach_level": 28.7978856
+        },
+        {
+          "level": 96,
+          "xp_to_next": 1932070,
+          "cumulative_xp_to_reach_level": 38489310,
+          "reference_hours_to_next": 0.84615216,
+          "reference_hours_to_reach_level": 29.62865277
+        },
+        {
+          "level": 97,
+          "xp_to_next": 2007730,
+          "cumulative_xp_to_reach_level": 40421380,
+          "reference_hours_to_next": 0.86153879,
+          "reference_hours_to_reach_level": 30.47480493
+        },
+        {
+          "level": 98,
+          "xp_to_next": 2085250,
+          "cumulative_xp_to_reach_level": 42429110,
+          "reference_hours_to_next": 0.87692185,
+          "reference_hours_to_reach_level": 31.33634372
+        },
+        {
+          "level": 99,
+          "xp_to_next": 2164670,
+          "cumulative_xp_to_reach_level": 44514360,
+          "reference_hours_to_next": 0.8923089,
+          "reference_hours_to_reach_level": 32.21326557
+        },
+        {
+          "level": 100,
+          "xp_to_next": 2245990,
+          "cumulative_xp_to_reach_level": 46679030,
+          "reference_hours_to_next": 0.90769075,
+          "reference_hours_to_reach_level": 33.10557447
+        },
+        {
+          "level": 101,
+          "xp_to_next": 2329260,
+          "cumulative_xp_to_reach_level": 48925020,
+          "reference_hours_to_next": 0.92307875,
+          "reference_hours_to_reach_level": 34.01326522
+        },
+        {
+          "level": 102,
+          "xp_to_next": 2414470,
+          "cumulative_xp_to_reach_level": 51254280,
+          "reference_hours_to_next": 0.93846004,
+          "reference_hours_to_reach_level": 34.93634397
+        },
+        {
+          "level": 103,
+          "xp_to_next": 2501670,
+          "cumulative_xp_to_reach_level": 53668750,
+          "reference_hours_to_next": 0.95384563,
+          "reference_hours_to_reach_level": 35.87480402
+        },
+        {
+          "level": 104,
+          "xp_to_next": 2590870,
+          "cumulative_xp_to_reach_level": 56170420,
+          "reference_hours_to_next": 0.96923071,
+          "reference_hours_to_reach_level": 36.82864964
+        },
+        {
+          "level": 105,
+          "xp_to_next": 2682090,
+          "cumulative_xp_to_reach_level": 58761290,
+          "reference_hours_to_next": 0.98461454,
+          "reference_hours_to_reach_level": 37.79788035
+        },
+        {
+          "level": 106,
+          "xp_to_next": 2775360,
+          "cumulative_xp_to_reach_level": 61443380,
+          "reference_hours_to_next": 1.0,
+          "reference_hours_to_reach_level": 38.78249489
+        },
+        {
+          "level": 107,
+          "xp_to_next": 2870700,
+          "cumulative_xp_to_reach_level": 64218740,
+          "reference_hours_to_next": 1.01538625,
+          "reference_hours_to_reach_level": 39.78249489
+        },
+        {
+          "level": 108,
+          "xp_to_next": 2968120,
+          "cumulative_xp_to_reach_level": 67089440,
+          "reference_hours_to_next": 1.03076902,
+          "reference_hours_to_reach_level": 40.79788114
+        },
+        {
+          "level": 109,
+          "xp_to_next": 3067660,
+          "cumulative_xp_to_reach_level": 70057560,
+          "reference_hours_to_next": 1.04615458,
+          "reference_hours_to_reach_level": 41.82865016
+        },
+        {
+          "level": 110,
+          "xp_to_next": 3169330,
+          "cumulative_xp_to_reach_level": 73125220,
+          "reference_hours_to_next": 1.06153872,
+          "reference_hours_to_reach_level": 42.87480474
+        },
+        {
+          "level": 111,
+          "xp_to_next": 3273160,
+          "cumulative_xp_to_reach_level": 76294550,
+          "reference_hours_to_next": 1.07692409,
+          "reference_hours_to_reach_level": 43.93634346
+        },
+        {
+          "level": 112,
+          "xp_to_next": 3379160,
+          "cumulative_xp_to_reach_level": 79567710,
+          "reference_hours_to_next": 1.0923067,
+          "reference_hours_to_reach_level": 45.01326754
+        },
+        {
+          "level": 113,
+          "xp_to_next": 3487370,
+          "cumulative_xp_to_reach_level": 82946870,
+          "reference_hours_to_next": 1.10769236,
+          "reference_hours_to_reach_level": 46.10557424
+        },
+        {
+          "level": 114,
+          "xp_to_next": 3597800,
+          "cumulative_xp_to_reach_level": 86434240,
+          "reference_hours_to_next": 1.12307712,
+          "reference_hours_to_reach_level": 47.2132666
+        },
+        {
+          "level": 115,
+          "xp_to_next": 3710470,
+          "cumulative_xp_to_reach_level": 90032040,
+          "reference_hours_to_next": 1.13846036,
+          "reference_hours_to_reach_level": 48.33634371
+        },
+        {
+          "level": 116,
+          "xp_to_next": 3825420,
+          "cumulative_xp_to_reach_level": 93742510,
+          "reference_hours_to_next": 1.15384755,
+          "reference_hours_to_reach_level": 49.47480407
+        },
+        {
+          "level": 117,
+          "xp_to_next": 3942650,
+          "cumulative_xp_to_reach_level": 97567930,
+          "reference_hours_to_next": 1.16923191,
+          "reference_hours_to_reach_level": 50.62865162
+        },
+        {
+          "level": 118,
+          "xp_to_next": 4062190,
+          "cumulative_xp_to_reach_level": 101510580,
+          "reference_hours_to_next": 1.18461588,
+          "reference_hours_to_reach_level": 51.79788353
+        },
+        {
+          "level": 119,
+          "xp_to_next": 4184060,
+          "cumulative_xp_to_reach_level": 105572770,
+          "reference_hours_to_next": 1.19999885,
+          "reference_hours_to_reach_level": 52.98249941
+        },
+        {
+          "level": 120,
+          "xp_to_next": 4371920,
+          "cumulative_xp_to_reach_level": 109756830,
+          "reference_hours_to_next": 1.23333333,
+          "reference_hours_to_reach_level": 54.18249826
+        },
+        {
+          "level": 121,
+          "xp_to_next": 4584280,
+          "cumulative_xp_to_reach_level": 114128750,
+          "reference_hours_to_next": 1.2722237,
+          "reference_hours_to_reach_level": 55.41583159
+        },
+        {
+          "level": 122,
+          "xp_to_next": 4801810,
+          "cumulative_xp_to_reach_level": 118713030,
+          "reference_hours_to_next": 1.3111102,
+          "reference_hours_to_reach_level": 56.68805529
+        },
+        {
+          "level": 123,
+          "xp_to_next": 5024590,
+          "cumulative_xp_to_reach_level": 123514840,
+          "reference_hours_to_next": 1.34999946,
+          "reference_hours_to_reach_level": 57.9991655
+        },
+        {
+          "level": 124,
+          "xp_to_next": 5252670,
+          "cumulative_xp_to_reach_level": 128539430,
+          "reference_hours_to_next": 1.38888977,
+          "reference_hours_to_reach_level": 59.34916496
+        },
+        {
+          "level": 125,
+          "xp_to_next": 5486090,
+          "cumulative_xp_to_reach_level": 133792100,
+          "reference_hours_to_next": 1.42777691,
+          "reference_hours_to_reach_level": 60.73805473
+        },
+        {
+          "level": 126,
+          "xp_to_next": 5724930,
+          "cumulative_xp_to_reach_level": 139278190,
+          "reference_hours_to_next": 1.46666718,
+          "reference_hours_to_reach_level": 62.16583164
+        },
+        {
+          "level": 127,
+          "xp_to_next": 5969230,
+          "cumulative_xp_to_reach_level": 145003120,
+          "reference_hours_to_next": 1.5055564,
+          "reference_hours_to_reach_level": 63.63249882
+        },
+        {
+          "level": 128,
+          "xp_to_next": 6219040,
+          "cumulative_xp_to_reach_level": 150972350,
+          "reference_hours_to_next": 1.54444312,
+          "reference_hours_to_reach_level": 65.13805521
+        },
+        {
+          "level": 129,
+          "xp_to_next": 6474440,
+          "cumulative_xp_to_reach_level": 157191390,
+          "reference_hours_to_next": 1.58333333,
+          "reference_hours_to_reach_level": 66.68249833
+        },
+        {
+          "level": 130,
+          "xp_to_next": 6735470,
+          "cumulative_xp_to_reach_level": 163665830,
+          "reference_hours_to_next": 1.62222303,
+          "reference_hours_to_reach_level": 68.26583167
+        },
+        {
+          "level": 131,
+          "xp_to_next": 7002180,
+          "cumulative_xp_to_reach_level": 170401300,
+          "reference_hours_to_next": 1.66111079,
+          "reference_hours_to_reach_level": 69.88805469
+        },
+        {
+          "level": 132,
+          "xp_to_next": 7274640,
+          "cumulative_xp_to_reach_level": 177403480,
+          "reference_hours_to_next": 1.7,
+          "reference_hours_to_reach_level": 71.54916549
+        },
+        {
+          "level": 133,
+          "xp_to_next": 7552900,
+          "cumulative_xp_to_reach_level": 184678120,
+          "reference_hours_to_next": 1.7388892,
+          "reference_hours_to_reach_level": 73.24916549
+        },
+        {
+          "level": 134,
+          "xp_to_next": 7837010,
+          "cumulative_xp_to_reach_level": 192231020,
+          "reference_hours_to_next": 1.77777702,
+          "reference_hours_to_reach_level": 74.98805468
+        },
+        {
+          "level": 135,
+          "xp_to_next": 8127040,
+          "cumulative_xp_to_reach_level": 200068030,
+          "reference_hours_to_next": 1.81666667,
+          "reference_hours_to_reach_level": 76.7658317
+        },
+        {
+          "level": 136,
+          "xp_to_next": 8423040,
+          "cumulative_xp_to_reach_level": 208195070,
+          "reference_hours_to_next": 1.85555673,
+          "reference_hours_to_reach_level": 78.58249837
+        },
+        {
+          "level": 137,
+          "xp_to_next": 8725050,
+          "cumulative_xp_to_reach_level": 216618110,
+          "reference_hours_to_next": 1.89444372,
+          "reference_hours_to_reach_level": 80.4380551
+        },
+        {
+          "level": 138,
+          "xp_to_next": 9033150,
+          "cumulative_xp_to_reach_level": 225343160,
+          "reference_hours_to_next": 1.93333291,
+          "reference_hours_to_reach_level": 82.33249882
+        },
+        {
+          "level": 139,
+          "xp_to_next": 9347390,
+          "cumulative_xp_to_reach_level": 234376310,
+          "reference_hours_to_next": 1.97222293,
+          "reference_hours_to_reach_level": 84.26583173
+        },
+        {
+          "level": 140,
+          "xp_to_next": 9667810,
+          "cumulative_xp_to_reach_level": 243723700,
+          "reference_hours_to_next": 2.01111042,
+          "reference_hours_to_reach_level": 86.23805465
+        },
+        {
+          "level": 141,
+          "xp_to_next": 9994490,
+          "cumulative_xp_to_reach_level": 253391510,
+          "reference_hours_to_next": 2.05000041,
+          "reference_hours_to_reach_level": 88.24916507
+        },
+        {
+          "level": 142,
+          "xp_to_next": 10327470,
+          "cumulative_xp_to_reach_level": 263386000,
+          "reference_hours_to_next": 2.08888956,
+          "reference_hours_to_reach_level": 90.29916548
+        },
+        {
+          "level": 143,
+          "xp_to_next": 10666800,
+          "cumulative_xp_to_reach_level": 273713470,
+          "reference_hours_to_next": 2.12777671,
+          "reference_hours_to_reach_level": 92.38805504
+        },
+        {
+          "level": 144,
+          "xp_to_next": 11012560,
+          "cumulative_xp_to_reach_level": 284380270,
+          "reference_hours_to_next": 2.16666667,
+          "reference_hours_to_reach_level": 94.51583176
+        },
+        {
+          "level": 145,
+          "xp_to_next": 11364790,
+          "cumulative_xp_to_reach_level": 295392830,
+          "reference_hours_to_next": 2.2055562,
+          "reference_hours_to_reach_level": 96.68249842
+        },
+        {
+          "level": 146,
+          "xp_to_next": 11723540,
+          "cumulative_xp_to_reach_level": 306757620,
+          "reference_hours_to_next": 2.24444419,
+          "reference_hours_to_reach_level": 98.88805463
+        },
+        {
+          "level": 147,
+          "xp_to_next": 12088880,
+          "cumulative_xp_to_reach_level": 318481160,
+          "reference_hours_to_next": 2.28333333,
+          "reference_hours_to_reach_level": 101.13249882
+        },
+        {
+          "level": 148,
+          "xp_to_next": 12460860,
+          "cumulative_xp_to_reach_level": 330570040,
+          "reference_hours_to_next": 2.32222247,
+          "reference_hours_to_reach_level": 103.41583215
+        },
+        {
+          "level": 149,
+          "xp_to_next": 12839530,
+          "cumulative_xp_to_reach_level": 343030900,
+          "reference_hours_to_next": 2.3611105,
+          "reference_hours_to_reach_level": 105.73805462
+        },
+        {
+          "level": 150,
+          "xp_to_next": 13224960,
+          "cumulative_xp_to_reach_level": 355870430,
+          "reference_hours_to_next": 2.4,
+          "reference_hours_to_reach_level": 108.09916512
+        },
+        {
+          "level": 151,
+          "xp_to_next": 13846730,
+          "cumulative_xp_to_reach_level": 369095390,
+          "reference_hours_to_next": 2.4799995,
+          "reference_hours_to_reach_level": 110.49916512
+        },
+        {
+          "level": 152,
+          "xp_to_next": 14481410,
+          "cumulative_xp_to_reach_level": 382942120,
+          "reference_hours_to_next": 2.56000035,
+          "reference_hours_to_reach_level": 112.97916462
+        },
+        {
+          "level": 153,
+          "xp_to_next": 15129100,
+          "cumulative_xp_to_reach_level": 397423530,
+          "reference_hours_to_next": 2.63999986,
+          "reference_hours_to_reach_level": 115.53916497
+        },
+        {
+          "level": 154,
+          "xp_to_next": 15789930,
+          "cumulative_xp_to_reach_level": 412552630,
+          "reference_hours_to_next": 2.72000062,
+          "reference_hours_to_reach_level": 118.17916483
+        },
+        {
+          "level": 155,
+          "xp_to_next": 16464000,
+          "cumulative_xp_to_reach_level": 428342560,
+          "reference_hours_to_next": 2.8,
+          "reference_hours_to_reach_level": 120.89916545
+        },
+        {
+          "level": 156,
+          "xp_to_next": 17151440,
+          "cumulative_xp_to_reach_level": 444806560,
+          "reference_hours_to_next": 2.88000054,
+          "reference_hours_to_reach_level": 123.69916545
+        },
+        {
+          "level": 157,
+          "xp_to_next": 17852350,
+          "cumulative_xp_to_reach_level": 461958000,
+          "reference_hours_to_next": 2.95999967,
+          "reference_hours_to_reach_level": 126.57916599
+        },
+        {
+          "level": 158,
+          "xp_to_next": 18566860,
+          "cumulative_xp_to_reach_level": 479810350,
+          "reference_hours_to_next": 3.03999987,
+          "reference_hours_to_reach_level": 129.53916566
+        },
+        {
+          "level": 159,
+          "xp_to_next": 19295080,
+          "cumulative_xp_to_reach_level": 498377210,
+          "reference_hours_to_next": 3.12000026,
+          "reference_hours_to_reach_level": 132.57916553
+        },
+        {
+          "level": 160,
+          "xp_to_next": 20037120,
+          "cumulative_xp_to_reach_level": 517672290,
+          "reference_hours_to_next": 3.2,
+          "reference_hours_to_reach_level": 135.69916578
+        },
+        {
+          "level": 161,
+          "xp_to_next": 20793100,
+          "cumulative_xp_to_reach_level": 537709410,
+          "reference_hours_to_next": 3.27999987,
+          "reference_hours_to_reach_level": 138.89916578
+        },
+        {
+          "level": 162,
+          "xp_to_next": 21563140,
+          "cumulative_xp_to_reach_level": 558502510,
+          "reference_hours_to_next": 3.36000062,
+          "reference_hours_to_reach_level": 142.17916566
+        },
+        {
+          "level": 163,
+          "xp_to_next": 22347340,
+          "cumulative_xp_to_reach_level": 580065650,
+          "reference_hours_to_next": 3.43999988,
+          "reference_hours_to_reach_level": 145.53916628
+        },
+        {
+          "level": 164,
+          "xp_to_next": 23145830,
+          "cumulative_xp_to_reach_level": 602412990,
+          "reference_hours_to_next": 3.51999994,
+          "reference_hours_to_reach_level": 148.97916616
+        },
+        {
+          "level": 165,
+          "xp_to_next": 23958720,
+          "cumulative_xp_to_reach_level": 625558820,
+          "reference_hours_to_next": 3.6,
+          "reference_hours_to_reach_level": 152.4991661
+        },
+        {
+          "level": 166,
+          "xp_to_next": 24786120,
+          "cumulative_xp_to_reach_level": 649517540,
+          "reference_hours_to_next": 3.67999929,
+          "reference_hours_to_reach_level": 156.0991661
+        },
+        {
+          "level": 167,
+          "xp_to_next": 25628160,
+          "cumulative_xp_to_reach_level": 674303660,
+          "reference_hours_to_next": 3.76,
+          "reference_hours_to_reach_level": 159.77916539
+        },
+        {
+          "level": 168,
+          "xp_to_next": 26484940,
+          "cumulative_xp_to_reach_level": 699931820,
+          "reference_hours_to_next": 3.83999988,
+          "reference_hours_to_reach_level": 163.53916539
+        },
+        {
+          "level": 169,
+          "xp_to_next": 27356580,
+          "cumulative_xp_to_reach_level": 726416760,
+          "reference_hours_to_next": 3.91999966,
+          "reference_hours_to_reach_level": 167.37916527
+        },
+        {
+          "level": 170,
+          "xp_to_next": 28243200,
+          "cumulative_xp_to_reach_level": 753773340,
+          "reference_hours_to_next": 4.0,
+          "reference_hours_to_reach_level": 171.29916493
+        },
+        {
+          "level": 171,
+          "xp_to_next": 29287780,
+          "cumulative_xp_to_reach_level": 782016540,
+          "reference_hours_to_next": 4.10000056,
+          "reference_hours_to_reach_level": 175.29916493
+        },
+        {
+          "level": 172,
+          "xp_to_next": 30350880,
+          "cumulative_xp_to_reach_level": 811304320,
+          "reference_hours_to_next": 4.2,
+          "reference_hours_to_reach_level": 179.39916549
+        },
+        {
+          "level": 173,
+          "xp_to_next": 31432660,
+          "cumulative_xp_to_reach_level": 841655200,
+          "reference_hours_to_next": 4.30000055,
+          "reference_hours_to_reach_level": 183.59916549
+        },
+        {
+          "level": 174,
+          "xp_to_next": 32533250,
+          "cumulative_xp_to_reach_level": 873087860,
+          "reference_hours_to_next": 4.40000027,
+          "reference_hours_to_reach_level": 187.89916603
+        },
+        {
+          "level": 175,
+          "xp_to_next": 33652800,
+          "cumulative_xp_to_reach_level": 905621110,
+          "reference_hours_to_next": 4.5,
+          "reference_hours_to_reach_level": 192.2991663
+        },
+        {
+          "level": 176,
+          "xp_to_next": 34791460,
+          "cumulative_xp_to_reach_level": 939273910,
+          "reference_hours_to_next": 4.60000053,
+          "reference_hours_to_reach_level": 196.7991663
+        },
+        {
+          "level": 177,
+          "xp_to_next": 35949360,
+          "cumulative_xp_to_reach_level": 974065370,
+          "reference_hours_to_next": 4.7,
+          "reference_hours_to_reach_level": 201.39916683
+        },
+        {
+          "level": 178,
+          "xp_to_next": 37126660,
+          "cumulative_xp_to_reach_level": 1010014730,
+          "reference_hours_to_next": 4.80000052,
+          "reference_hours_to_reach_level": 206.09916683
+        },
+        {
+          "level": 179,
+          "xp_to_next": 38323490,
+          "cumulative_xp_to_reach_level": 1047141390,
+          "reference_hours_to_next": 4.90000026,
+          "reference_hours_to_reach_level": 210.89916735
+        },
+        {
+          "level": 180,
+          "xp_to_next": 39540000,
+          "cumulative_xp_to_reach_level": 1085464880,
+          "reference_hours_to_next": 5.0,
+          "reference_hours_to_reach_level": 215.7991676
+        },
+        {
+          "level": 181,
+          "xp_to_next": 40776340,
+          "cumulative_xp_to_reach_level": 1125004880,
+          "reference_hours_to_next": 5.1000005,
+          "reference_hours_to_reach_level": 220.7991676
+        },
+        {
+          "level": 182,
+          "xp_to_next": 42032640,
+          "cumulative_xp_to_reach_level": 1165781220,
+          "reference_hours_to_next": 5.2,
+          "reference_hours_to_reach_level": 225.89916811
+        },
+        {
+          "level": 183,
+          "xp_to_next": 43309060,
+          "cumulative_xp_to_reach_level": 1207813860,
+          "reference_hours_to_next": 5.30000049,
+          "reference_hours_to_reach_level": 231.09916811
+        },
+        {
+          "level": 184,
+          "xp_to_next": 44605730,
+          "cumulative_xp_to_reach_level": 1251122920,
+          "reference_hours_to_next": 5.40000024,
+          "reference_hours_to_reach_level": 236.39916859
+        },
+        {
+          "level": 185,
+          "xp_to_next": 45922800,
+          "cumulative_xp_to_reach_level": 1295728650,
+          "reference_hours_to_next": 5.5,
+          "reference_hours_to_reach_level": 241.79916884
+        },
+        {
+          "level": 186,
+          "xp_to_next": 47260420,
+          "cumulative_xp_to_reach_level": 1341651450,
+          "reference_hours_to_next": 5.60000047,
+          "reference_hours_to_reach_level": 247.29916884
+        },
+        {
+          "level": 187,
+          "xp_to_next": 48618720,
+          "cumulative_xp_to_reach_level": 1388911870,
+          "reference_hours_to_next": 5.7,
+          "reference_hours_to_reach_level": 252.89916931
+        },
+        {
+          "level": 188,
+          "xp_to_next": 49997860,
+          "cumulative_xp_to_reach_level": 1437530590,
+          "reference_hours_to_next": 5.80000046,
+          "reference_hours_to_reach_level": 258.59916931
+        },
+        {
+          "level": 189,
+          "xp_to_next": 51397970,
+          "cumulative_xp_to_reach_level": 1487528450,
+          "reference_hours_to_next": 5.90000023,
+          "reference_hours_to_reach_level": 264.39916977
+        },
+        {
+          "level": 190,
+          "xp_to_next": 52819200,
+          "cumulative_xp_to_reach_level": 1538926420,
+          "reference_hours_to_next": 6.0,
+          "reference_hours_to_reach_level": 270.29917
+        },
+        {
+          "level": 191,
+          "xp_to_next": 55348910,
+          "cumulative_xp_to_reach_level": 1591745620,
+          "reference_hours_to_next": 6.2222226,
+          "reference_hours_to_reach_level": 276.29917
+        },
+        {
+          "level": 192,
+          "xp_to_next": 57922670,
+          "cumulative_xp_to_reach_level": 1647094530,
+          "reference_hours_to_next": 6.44444482,
+          "reference_hours_to_reach_level": 282.5213926
+        },
+        {
+          "level": 193,
+          "xp_to_next": 60540800,
+          "cumulative_xp_to_reach_level": 1705017200,
+          "reference_hours_to_next": 6.66666667,
+          "reference_hours_to_reach_level": 288.96583742
+        },
+        {
+          "level": 194,
+          "xp_to_next": 63203630,
+          "cumulative_xp_to_reach_level": 1765558000,
+          "reference_hours_to_next": 6.88888925,
+          "reference_hours_to_reach_level": 295.63250408
+        },
+        {
+          "level": 195,
+          "xp_to_next": 65911470,
+          "cumulative_xp_to_reach_level": 1828761630,
+          "reference_hours_to_next": 7.11111147,
+          "reference_hours_to_reach_level": 302.52139334
+        },
+        {
+          "level": 196,
+          "xp_to_next": 68664640,
+          "cumulative_xp_to_reach_level": 1894673100,
+          "reference_hours_to_next": 7.33333333,
+          "reference_hours_to_reach_level": 309.63250481
+        },
+        {
+          "level": 197,
+          "xp_to_next": 71463470,
+          "cumulative_xp_to_reach_level": 1963337740,
+          "reference_hours_to_next": 7.55555591,
+          "reference_hours_to_reach_level": 316.96583814
+        },
+        {
+          "level": 198,
+          "xp_to_next": 74308270,
+          "cumulative_xp_to_reach_level": 2034801210,
+          "reference_hours_to_next": 7.77777813,
+          "reference_hours_to_reach_level": 324.52139405
+        },
+        {
+          "level": 199,
+          "xp_to_next": 77199360,
+          "cumulative_xp_to_reach_level": 2109109480,
+          "reference_hours_to_next": 8.0,
+          "reference_hours_to_reach_level": 332.29917217
+        },
+        {
+          "level": 200,
+          "xp_to_next": null,
+          "cumulative_xp_to_reach_level": 2186308840,
+          "reference_hours_to_next": null,
+          "reference_hours_to_reach_level": 340.29917217
+        }
+      ]
+    }
+  ],
+  "progression_only_simulation": {
+    "description": "owner200, enemy200, 3 normal enemies per encounter, 90 seconds per encounter, gap+10 adjustment, floor per battle, no party, no quest",
+    "hours_to_200": 188.25,
+    "milestone_hours": {
+      "25": 0.275,
+      "50": 2.025,
+      "80": 8.15,
+      "120": 26.825,
+      "150": 56.125,
+      "170": 91.15,
+      "190": 146.725,
+      "200": 188.25
+    }
+  },
+  "checks": "200 rows per cycle; 199 positive transitions; monotonic requirements; cumulative reconciliation; no level201; grant gap boundaries; stage ordering passed"
+}

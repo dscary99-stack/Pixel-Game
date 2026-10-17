@@ -18,6 +18,7 @@ export const BattleCommandSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("capture"), actorId: UnitRef, targetId: UnitRef, itemId: z.string().min(1).max(80) }).strict(),
   z.object({ type: z.literal("move"), actorId: UnitRef, row: Row, slot: z.number().int().min(0).max(4) }).strict(),
   z.object({ type: z.literal("flee"), actorId: UnitRef }).strict(),
+  z.object({ type: z.literal("awaken"), actorId: UnitRef }).strict(),
 ]);
 
 // Compile-time guard: the wire schema and the kernel's command type must stay in sync.
