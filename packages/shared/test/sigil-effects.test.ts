@@ -5,6 +5,7 @@ import {
   currentActor,
   equipmentDisplayName,
   scaleSigilAction,
+  sigilModifierTotalPct,
   sigilTriggerChanceBp,
   wornGear,
   type BattleCommand,
@@ -119,6 +120,11 @@ describe("Sigil effects in a fight", () => {
     expect(scaleSigilAction(rules, { kind: "heal", target: "self", pctMaxHp: 30 }, 3)).toMatchObject({ pctMaxHp: 50 });
     expect(scaleSigilAction(rules, { kind: "status", target: "other", statuses: [{ statusId: "burn", chancePct: 40, turns: 2 }] }, 2)).toMatchObject({ statuses: [{ chancePct: 64 }] });
     expect(scaleSigilAction(rules, { kind: "restore_mp", target: "self", amount: 3 }, 1)).toEqual({ kind: "restore_mp", target: "self", amount: 3 });
+    // The preview's totals for always-on copies match what the kernel multiplies (fox ×1.21 above).
+    expect(sigilModifierTotalPct({ kind: "damage_vs_status", statusId: "burn", bonusPct: 10 }, 2)).toBe(21);
+    expect(sigilModifierTotalPct({ kind: "guard_reduction", reductionPct: 10 }, 1)).toBe(10);
+    expect(sigilModifierTotalPct({ kind: "guard_reduction", reductionPct: 10 }, 2)).toBe(19);
+    expect(sigilModifierTotalPct({ kind: "heal_low_hp", belowHpPct: 40, bonusPct: 15 }, 0)).toBe(0);
   });
 
   it("a Sigil procs once per turn slot, however many hits a skill lands (P34 proc budget)", () => {
@@ -133,5 +139,26 @@ describe("Sigil effects in a fight", () => {
     const hits = r.events.filter((e) => e.type === "ActionResolved" && e.actorId === "player" && e.skillId === skillId && (e.damage ?? 0) > 0).length;
     expect(hits).toBeGreaterThan(1);
     expect(of(r.events, "PassiveTriggered").filter((e) => e.sourceId === "sigil:test_echo")).toHaveLength(1);
+  });
+
+  it("Sigils of one group share a cooldown counted in the owner's turns (chapter 05 §5)", () => {
+    const c = content();
+    const base = c.sigils.get("sigil:supply_mole")!;
+    const echo = (id: string) => ({ ...base, id, stackingGroup: "group:echo", cooldownTurns: 2, effect: { modifiers: [], triggers: [{ on: "dealt_damage" as const, chancePct: 100, oncePerBattle: false, then: [{ kind: "restore_mp" as const, target: "self" as const, amount: 1 }] }] } });
+    c.sigils.set("sigil:echo_a", echo("sigil:echo_a"));
+    c.sigils.set("sigil:echo_b", echo("sigil:echo_b"));
+    const setup = baseSetup({ battleId: "battle:sigil-cd", seed: "cd", enemies: [{ unitId: "e1", speciesId: "species:armor_crab", element: "EARTH", row: "front", slot: 0 }] });
+    setup.player = { ...setup.player, sigilIds: ["sigil:echo_a", "sigil:echo_b"] };
+    let st: BattleState = ok(createBattle(rules, c, setup)).state;
+    unit(st, "e1").hp = 999_999;
+    const procs: number[] = [];
+    for (let turn = 0; turn < 4; turn++) {
+      for (let i = 0; i < 30 && currentActor(st)?.unitId !== "player"; i++) st = ok(applyCommand(rules, c, st, { type: "guard", actorId: currentActor(st)!.unitId }, { source: "player" })).state;
+      const r = ok(applyCommand(rules, c, st, { type: "attack", actorId: "player", targetId: "e1" }, { source: "player" }));
+      procs.push(of(r.events, "PassiveTriggered").filter((e) => e.unitId === "player" && e.sourceId.startsWith("sigil:echo")).length);
+      st = r.state;
+    }
+    // One of the two fires, then the group waits two of the player's turns.
+    expect(procs).toEqual([1, 0, 1, 0]);
   });
 });

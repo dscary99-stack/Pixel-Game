@@ -841,6 +841,11 @@ export const SigilDefinitionSchema = z
      * Absent = no effect built yet.
      */
     effect: PassiveSchema.optional(),
+    /**
+     * Shared cooldown (chapter 05 §5): after a trigger of this Sigil fires, every trigger Sigil of the same
+     * `stackingGroup` on that unit waits this many of the owner's turns. Absent or 0: none.
+     */
+    cooldownTurns: z.number().int().min(0).max(10).optional(),
     scope: z.enum(["global", "weapon_local"]),
     /** Probability 0–1 (0.00005 = 0.005%). Never a percent (chapter 12 §3). */
     baseDropProbability: z.number().min(C.sigilBaseDropRange.value[0]).max(C.sigilBaseDropRange.value[1]),

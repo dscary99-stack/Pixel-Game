@@ -77,6 +77,8 @@ export interface BattleUnit {
   passivesUsed?: string[];
   /** Trigger Sigil procs in the current turn slot ("round:turnIndex"), per Sigil id (P34 budget). */
   sigilProcs?: { slot: string; used: Record<string, number> };
+  /** Sigil shared cooldowns (chapter 05 §5): stackingGroup → the owner's turns left. */
+  sigilCooldowns?: Record<string, number>;
   ko: boolean;
   /** The round this unit fell in (0 = it started the fight down). Revive works from the next round (O15). */
   downRound?: number;

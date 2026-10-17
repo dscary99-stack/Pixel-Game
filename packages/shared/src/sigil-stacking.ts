@@ -3,7 +3,7 @@
  * stronger effect, never one roll per copy. Used by the battle kernel and shown before installing.
  */
 import type { RulesConfig } from "./rules";
-import type { PassiveAction } from "./schemas";
+import type { PassiveAction, PassiveModifier } from "./schemas";
 
 /** Chance in basis points that one roll for `copies` copies of a `chancePct` trigger succeeds (P34). */
 export function sigilTriggerChanceBp(chancePct: number, copies: number): number {
@@ -19,3 +19,13 @@ export function scaleSigilAction(rules: RulesConfig, a: PassiveAction, copies: n
   return { ...a, statuses: a.statuses.map((x) => ({ ...x, chancePct: Math.max(1, Math.min(100, Math.round(sigilTriggerChanceBp(x.chancePct, f) / 100))) })) };
 }
 
+
+/**
+ * What `copies` of one always-on modifier add in total, in % (the kernel multiplies copies, Nut 2026-10-04):
+ * more damage / more healing as +%, guard as % less taken. For the before-install preview (chapter 05 §5).
+ */
+export function sigilModifierTotalPct(m: PassiveModifier, copies: number): number {
+  const n = Math.max(0, copies);
+  if (m.kind === "guard_reduction") return Math.round(1000 * (1 - Math.pow(1 - m.reductionPct / 100, n))) / 10;
+  return Math.round(1000 * (Math.pow(1 + m.bonusPct / 100, n) - 1)) / 10;
+}

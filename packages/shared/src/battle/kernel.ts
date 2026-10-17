@@ -644,6 +644,7 @@ function beginTurn(ctx: Ctx, u: BattleUnit): void {
   // Cooldowns count the owner's turns (O15, Nut 2026-10-07): once per round, even if control takes the turn.
   if (ra.first && ctx.rules.confirmed.cooldownTick.value === "owner_turn_start") {
     for (const k of Object.keys(u.cooldowns)) u.cooldowns[k] = Math.max(0, (u.cooldowns[k] ?? 0) - 1);
+    for (const k of Object.keys(u.sigilCooldowns ?? {})) u.sigilCooldowns![k] = Math.max(0, (u.sigilCooldowns![k] ?? 0) - 1);
   }
   ctx.emit({ type: "TurnStarted", unitId: u.unitId, guardEnded, ...(ra.of > 1 ? { action: ra.n, actionsThisRound: ra.of } : {}) });
 }
@@ -868,6 +869,9 @@ interface PassiveSource {
   passive: Passive;
   count: number;
   sigil: boolean;
+  /** Sigils: the shared-cooldown group and its length (chapter 05 §5). */
+  group?: string;
+  cooldownTurns?: number;
 }
 
 /** The passives a unit can use now: its passive skills and worn Sigils; none while sealed (catalog §3.5). */
@@ -880,7 +884,7 @@ function livePassives(ctx: Ctx, u: BattleUnit): PassiveSource[] {
   }
   for (const [id, count] of Object.entries(u.sigils ?? {})) {
     const sg = ctx.content.sigils?.get(id);
-    if (sg?.effect !== undefined) out.push({ id, passive: sg.effect, count, sigil: true });
+    if (sg?.effect !== undefined) out.push({ id, passive: sg.effect, count, sigil: true, group: sg.stackingGroup, cooldownTurns: sg.cooldownTurns ?? 0 });
   }
   return out;
 }
@@ -926,12 +930,14 @@ function firePassives(ctx: Ctx, u: BattleUnit, on: PassiveEvent, info: PassiveIn
       if (tr.oncePerBattle && (u.passivesUsed ?? []).includes(key)) return;
       const procs = sk.sigil ? (u.sigilProcs?.slot === slot ? (u.sigilProcs.used[sk.id] ?? 0) : 0) : 0;
       if (sk.sigil && procs >= budget) return;
+      if (sk.group !== undefined && (u.sigilCooldowns?.[sk.group] ?? 0) > 0) return;
       const bp = sk.sigil ? sigilTriggerChanceBp(tr.chancePct, sk.count) : tr.chancePct * 100;
       if (bp < 10_000 && !ctx.rng.chanceBp(bp)) return;
       if (tr.oncePerBattle) (u.passivesUsed ??= []).push(key);
       if (sk.sigil) {
         if (u.sigilProcs?.slot !== slot) u.sigilProcs = { slot, used: {} };
         u.sigilProcs.used[sk.id] = procs + 1;
+        if (sk.group !== undefined && (sk.cooldownTurns ?? 0) > 0) (u.sigilCooldowns ??= {})[sk.group] = sk.cooldownTurns!;
       }
       ctx.emit({ type: "PassiveTriggered", unitId: u.unitId, sourceId: sk.id, on });
       ctx.inPassive = true;
@@ -2237,6 +2243,7 @@ function endBattle(ctx: Ctx, outcome: "victory" | "defeat" | "fled", abandoned =
   for (const u of s.units) {
     u.guarding = false;
     u.cooldowns = {};
+    delete u.sigilCooldowns;
     u.statuses = [];
   }
   ctx.emit({

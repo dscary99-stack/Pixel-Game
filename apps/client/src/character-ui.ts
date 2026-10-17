@@ -82,6 +82,7 @@ import {
   sigilFits,
   sigilRemovalCost,
   scaleSigilAction,
+  sigilModifierTotalPct,
   sigilTriggerChanceBp,
   type SigilDefinition,
   affixRerollCost,
@@ -2977,7 +2978,20 @@ export function classPanel(api: CharacterApi): Promise<string | null> {
 function sigilStackNote(sg: SigilDefinition, worn: number): string {
   const tr = sg.effect?.triggers?.[0];
   const head = `ใส่อยู่ ${worn} ดวง → ${worn + 1} ดวง: `;
-  if (tr === undefined) return `${head}ผล % ของทุกดวงคูณซ้อนกัน`;
+  // Chapter 05 §5: say what one more copy adds, and say so plainly when it adds nothing.
+  if (tr === undefined) {
+    const mods = sg.effect?.modifiers ?? [];
+    if (mods.length === 0) return `${head}ยังไม่มีผล`;
+    const say = (m: (typeof mods)[number], n: number) => {
+      const v = sigilModifierTotalPct(m, n);
+      return m.kind === "guard_reduction"
+        ? `ป้องกันแล้วรับดาเมจลดอีก ${v}%`
+        : m.kind === "damage_vs_status"
+          ? `ดาเมจใส่เป้าที่${STATUS_DEFINITIONS[m.statusId].th} +${v}%`
+          : `ฮีลเป้า HP ต่ำกว่า ${m.belowHpPct}% +${v}%`;
+    };
+    return `${head}${mods.map((m) => `${say(m, worn)} → ${say(m, worn + 1)}`).join(" · ")} · % ของทุกดวงคูณซ้อนกัน`;
+  }
   const pct = (n: number) => (n === 0 ? "0%" : `${Math.round(sigilTriggerChanceBp(tr.chancePct, n) / 100)}%`);
   const what = (n: number) =>
     n === 0
@@ -2988,5 +3002,8 @@ function sigilStackNote(sg: SigilDefinition, worn: number): string {
             return x.kind === "heal" ? `ฟื้น HP ${x.pctMaxHp}%` : x.kind === "restore_mp" ? `คืน MP ${x.amount}` : x.statuses.map((y) => `${STATUS_DEFINITIONS[y.statusId].th} ${y.chancePct}%`).join(", ");
           })
           .join(" + ");
-  return `${head}โอกาสทำงาน ${pct(worn)} → ${pct(worn + 1)} · ${what(worn)} → ${what(worn + 1)} · ทอยครั้งเดียว ทำงานได้ ${RULES.provisional.sigilTriggerStacking.value.procsPerTurn} ครั้งต่อเทิร์น`;
+  const capped = worn > 0 && pct(worn) === pct(worn + 1) && what(worn) === what(worn + 1);
+  const cd = (sg.cooldownTurns ?? 0) > 0 ? ` · ทำงานแล้ว Sigil กลุ่มเดียวกันพัก ${sg.cooldownTurns} เทิร์น` : "";
+  if (capped) return `${head}ถึงเพดานแล้ว ดวงที่เพิ่มไม่ให้ผลเพิ่ม (โอกาส ${pct(worn)} · ${what(worn)})${cd}`;
+  return `${head}โอกาสทำงาน ${pct(worn)} → ${pct(worn + 1)} · ${what(worn)} → ${what(worn + 1)} · ทอยครั้งเดียว ทำงานได้ ${RULES.provisional.sigilTriggerStacking.value.procsPerTurn} ครั้งต่อเทิร์น${cd}`;
 }
