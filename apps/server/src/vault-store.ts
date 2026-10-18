@@ -66,10 +66,15 @@ export class VaultStore extends ExchangeBase {
     };
   }
 
-  /** The vault's newest moves by any of the login's characters (the anchors only exist for moves that happened). */
+  /** The vault's newest moves by any of the login's characters, deleted ones included (the anchors only exist for moves that happened). */
   private async history(accountId: string, vault: { id: string; shared: boolean }): Promise<VaultHistoryEntry[]> {
     const members = vault.shared
-      ? (await this.db.prepare(`SELECT account_id FROM user_characters WHERE user_id = ?`).bind(vault.id.slice("user:".length)).all<{ account_id: string }>()).results.map((r) => r.account_id)
+      ? (
+          await this.db
+            .prepare(`SELECT account_id FROM user_characters WHERE user_id = ? UNION SELECT account_id FROM deleted_characters WHERE user_id = ?`)
+            .bind(vault.id.slice("user:".length), vault.id.slice("user:".length))
+            .all<{ account_id: string }>()
+        ).results.map((r) => r.account_id)
       : [accountId];
     if (members.length === 0) return [];
     const { results } = await this.db

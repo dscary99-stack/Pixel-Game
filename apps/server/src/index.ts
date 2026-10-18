@@ -70,6 +70,8 @@
  *   GET  /account                  the user's 10 character places (O10) and which one this sign-in plays
  *   POST /account/select {slot}    play that place (empty: then POST /character makes the character there)
  *   POST /account/deselect         back to the character screen
+ *   POST /account/delete {operationId, slot, confirmName, password?}  delete that place's character: everything it had
+ *                                  is lost except what is in the account vault (Nut 2026-10-18; not in a fight; retry-safe)
  *   GET  /market?kind=&q=&sort=&page=  World Market: open listings (anyone, anywhere) and your own listings
  *   POST /market/list              list an item stack, a piece or a companion (operationId, kind, assetId, quantity, price, expectedFee; in town)
  *   POST /market/buy               buy a listing at the shown price (operationId, listingId, expectedPrice; anywhere but a fight; not from your own account)
@@ -129,6 +131,7 @@ import { mapObjectName } from "./map-do";
 import { WorldStore } from "./world-store";
 import { TownServices, type ServiceResult } from "./town-services";
 import { PartyStore, type PartyResult } from "./party-store";
+import { afterCharacterDeleted } from "./character-delete";
 import { QuestStore } from "./quest-store";
 import { JournalStore } from "./journal-store";
 import { NpcOrderStore } from "./npc-order-store";
@@ -313,6 +316,15 @@ async function accountRoute(request: Request, env: Env, url: URL): Promise<Respo
     return json(200, { account: r.account });
   }
   if (request.method === "POST" && url.pathname === "/account/deselect") return json(200, await accounts.deselect(session));
+  if (request.method === "POST" && url.pathname === "/account/delete") {
+    const r = await accounts.deleteCharacter(session, (await readJson(request)) ?? null);
+    if (r.status === "rejected") {
+      const code = { NOT_FOUND: 404, IN_BATTLE: 409, BAD_CREDENTIALS: 403, LOCKED: 429 }[r.reason as string] ?? 400;
+      return json(code, { error: r.reason, message: r.message });
+    }
+    await afterCharacterDeleted(r.accountId, tradeFor(env), new PartyStore(env.DB, rules));
+    return json(200, { account: r.account });
+  }
   return json(404, { error: "NOT_FOUND" });
 }
 

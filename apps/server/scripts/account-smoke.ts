@@ -1,6 +1,7 @@
 // End-to-end sign-in check against `wrangler dev` (O10/O11, Nut 2026-10-07): make an in-game ID, wrong
 // password refused, sign in, 10 character places, two characters that share nothing, walk the map with
-// the session (WebSocket), Google/Facebook refused while not set up, change the password, sign out ends the session.
+// the session (WebSocket), Google/Facebook refused while not set up, change the password, delete a character
+// (Nut 2026-10-18: everything goes except what is in the account vault), sign out ends the session.
 // Run `npm run db:migrate:local` and `npm run dev:server` first, then `npm run smoke:account`.
 import { api, run, type Msg } from "./smoke-lib";
 
@@ -77,6 +78,38 @@ out.thisSignInAfterChange = (await call("GET", "/account", undefined, token)).st
 out.oldPassword = (await call("POST", "/auth/login", { loginId, password })).body.error;
 out.newPassword = (await call("POST", "/auth/login", { loginId, password: newPassword })).status;
 must(out.changeWrong === "BAD_CREDENTIALS" && out.change === 200 && out.otherSignInAfterChange === 401 && out.thisSignInAfterChange === 200 && out.oldPassword === "BAD_CREDENTIALS" && out.newPassword === 200, "password change", out);
+
+// Delete slot 10 (Nut 2026-10-18): what it put in the vault stays; the place starts over from nothing.
+await call("POST", "/account/select", { slot: 10 }, token);
+const ws10 = new WebSocket(`${api.replace(/^http/, "ws")}/world/map:dawn_town/1?session=${encodeURIComponent(token)}`);
+await new Promise<void>((resolve, reject) => {
+  const t = setTimeout(() => reject(new Error("no welcome")), 5000);
+  ws10.onmessage = (e) => {
+    if (JSON.parse(String(e.data)).t === "welcome") {
+      clearTimeout(t);
+      resolve();
+    }
+  };
+});
+const dep = await call("POST", "/vault/deposit", { operationId: `accdep_${run}`, items: [{ itemId: "item:small_potion", quantity: 2 }], equipmentIds: [], coins: 0 }, token);
+must(dep.status === 200, "deposit before delete", dep);
+ws10.close();
+const delBody = { operationId: `accdel_${run}`, slot: 10, confirmName: "สิบ", password: newPassword };
+out.deleteWrongName = (await call("POST", "/account/delete", { ...delBody, confirmName: "สิ" }, token)).body.error;
+out.deleteWrongPassword = (await call("POST", "/account/delete", { ...delBody, password: "nope-nope" }, token)).body.error;
+const del1 = await call("POST", "/account/delete", delBody, token);
+const del2 = await call("POST", "/account/delete", delBody, token);
+must(del1.status === 200 && del2.status === 200 && del1.body.account.slots[9].character === null, "delete", [del1, del2]);
+out.characterAfterDelete = (await call("GET", "/character", undefined, token)).status;
+await call("POST", "/account/select", { slot: 10 }, token);
+out.placeAfterDelete = (await call("GET", "/character", undefined, token)).status;
+await call("POST", "/account/select", { slot: 1 }, token);
+out.vaultKept = (await call("GET", "/vault", undefined, token)).body.items.map((i: Msg) => `${i.itemId}×${i.quantity}`);
+must(
+  out.deleteWrongName === "NAME_MISMATCH" && out.deleteWrongPassword === "BAD_CREDENTIALS" && out.characterAfterDelete === 401 && out.placeAfterDelete === 404 && String(out.vaultKept) === "item:small_potion×2",
+  "character delete",
+  out,
+);
 await call("POST", "/auth/logout", {}, token);
 out.afterLogout = (await call("GET", "/account", undefined, token)).status;
 out.characterAfterLogout = (await call("GET", "/character", undefined, token)).status;

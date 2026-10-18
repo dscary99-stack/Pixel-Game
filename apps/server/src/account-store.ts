@@ -5,9 +5,14 @@
  *
  * Races: a local ID is taken by whichever INSERT lands first (primary key); the loser's empty user row
  * is removed. A character place is created once (primary key on user + slot, unique play account).
+ *
+ * Deleting a character (migration 0040, Nut 2026-10-18) retires its play account rather than wiping it:
+ * the place is freed and the next character there gets a new play account (`playAccountId` generation),
+ * so everything the old one had is gone except what it put in the account vault (keyed by the login).
  */
 import {
   ChangePasswordRequestSchema,
+  DeleteCharacterRequestSchema,
   PasswordLoginRequestSchema,
   RegisterRequestSchema,
   SelectCharacterRequestSchema,
@@ -20,7 +25,17 @@ import {
 } from "@pmrpg/shared";
 import type { SqlDb } from "./reward-ledger";
 
-export type AccountRejection = "INVALID_REQUEST" | "LOGIN_ID_TAKEN" | "BAD_CREDENTIALS" | "LOCKED" | "UNAUTHENTICATED" | "RATE_LIMITED" | "NO_PASSWORD";
+export type AccountRejection =
+  | "INVALID_REQUEST"
+  | "LOGIN_ID_TAKEN"
+  | "BAD_CREDENTIALS"
+  | "LOCKED"
+  | "UNAUTHENTICATED"
+  | "RATE_LIMITED"
+  | "NO_PASSWORD"
+  | "NOT_FOUND"
+  | "NAME_MISMATCH"
+  | "IN_BATTLE";
 export type AccountResult<T> = ({ status: "ok" } & T) | { status: "rejected"; reason: AccountRejection; message: string };
 
 export interface Session {
@@ -225,14 +240,100 @@ export class AccountStore {
       return reject("INVALID_REQUEST", `slot 1–${this.rules.confirmed.maxCharactersPerAccount.value}`);
     }
     const { slot } = parsed.data;
-    const accountId = playAccountId(session.userId, slot);
+    // A place emptied by deletion gets the next generation's play account. A deletion landing between the
+    // count and the insert makes the insert a no-op (that account is retired), so count again.
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const held = await this.placeAccount(session.userId, slot);
+      const gen = (await this.db.prepare(`SELECT COUNT(*) AS n FROM deleted_characters WHERE user_id = ? AND slot = ?`).bind(session.userId, slot).first<{ n: number }>())?.n ?? 0;
+      const fresh = held ?? playAccountId(session.userId, slot, gen);
+      const at = this.iso();
+      await this.db.batch([
+        this.db.prepare(`INSERT INTO accounts (id, created_at) VALUES (?, ?) ON CONFLICT DO NOTHING`).bind(fresh, at),
+        this.db
+          .prepare(
+            `INSERT INTO user_characters (user_id, slot, account_id, created_at) SELECT ?, ?, ?, ?
+             WHERE NOT EXISTS (SELECT 1 FROM deleted_characters WHERE account_id = ?) ON CONFLICT DO NOTHING`,
+          )
+          .bind(session.userId, slot, fresh, at, fresh),
+        this.db.prepare(`UPDATE sessions SET selected_slot = ? WHERE token_hash = ? AND revoked_at IS NULL`).bind(slot, session.tokenHash),
+      ]);
+      const accountId = await this.placeAccount(session.userId, slot);
+      if (accountId !== null) return { status: "ok", account: await this.view(session.userId, slot), accountId };
+    }
+    return reject("INVALID_REQUEST", "that place changed meanwhile; try again");
+  }
+
+  private async placeAccount(userId: string, slot: number): Promise<string | null> {
+    const r = await this.db.prepare(`SELECT account_id FROM user_characters WHERE user_id = ? AND slot = ?`).bind(userId, slot).first<{ account_id: string }>();
+    return r?.account_id ?? null;
+  }
+
+  /**
+   * Delete the character in one place (Nut 2026-10-18): it is lost with everything it had, except what is
+   * in the account vault. The name is typed again; a sign-in with a local ID gives its password too (a
+   * Google/Facebook sign-in already proved who it is). Not during a fight.
+   *
+   * One batch, all guarded on the record row it inserts: the place is freed, sign-ins playing it go back
+   * to the character screen, its open market listings and its own trade offers close without returning
+   * anything, and its trade code is cleared. Retry with the same `operationId` gets the same answer; two
+   * deletes of the same character land once (the play account is the record's key). The caller then
+   * declines offers made to it and takes it out of its party (`/account/delete` in index.ts).
+   */
+  async deleteCharacter(session: Session, raw: unknown): Promise<AccountResult<{ account: AccountView; accountId: string }>> {
+    const parsed = DeleteCharacterRequestSchema.safeParse(raw);
+    if (!parsed.success || parsed.data.slot > this.rules.confirmed.maxCharactersPerAccount.value) return reject("INVALID_REQUEST", "operationId, slot, confirmName");
+    const { operationId, slot, confirmName, password } = parsed.data;
+    const done = async () => {
+      const r = await this.db
+        .prepare(`SELECT account_id, slot FROM deleted_characters WHERE user_id = ? AND operation_id = ?`)
+        .bind(session.userId, operationId)
+        .first<{ account_id: string; slot: number }>();
+      if (r === null) return null;
+      if (r.slot !== slot) return reject("INVALID_REQUEST", "that operationId was used for another place");
+      const selected = await this.db.prepare(`SELECT selected_slot FROM sessions WHERE token_hash = ?`).bind(session.tokenHash).first<{ selected_slot: number | null }>();
+      return { status: "ok" as const, account: await this.view(session.userId, selected?.selected_slot ?? null), accountId: r.account_id };
+    };
+    const prior = await done();
+    if (prior !== null) return prior;
+
+    const row = await this.db
+      .prepare(`SELECT u.account_id, c.name FROM user_characters u JOIN characters c ON c.account_id = u.account_id WHERE u.user_id = ? AND u.slot = ?`)
+      .bind(session.userId, slot)
+      .first<{ account_id: string; name: string }>();
+    if (row === null) return reject("NOT_FOUND", "no character in that place");
+    if (row.name !== confirmName) return reject("NAME_MISMATCH", "type the character's name exactly");
+    if (session.provider === "local") {
+      if (password === undefined) return reject("BAD_CREDENTIALS", "give your password");
+      const checked = await this.checkPassword(`user_id = ?`, session.userId, password);
+      if (checked.status === "rejected") return checked;
+    }
+    const accountId = row.account_id;
     const at = this.iso();
+    const mine = `EXISTS (SELECT 1 FROM deleted_characters WHERE account_id = ? AND user_id = ? AND operation_id = ?)`;
+    const m = [accountId, session.userId, operationId];
     await this.db.batch([
-      this.db.prepare(`INSERT INTO accounts (id, created_at) VALUES (?, ?) ON CONFLICT DO NOTHING`).bind(accountId, at),
-      this.db.prepare(`INSERT INTO user_characters (user_id, slot, account_id, created_at) VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING`).bind(session.userId, slot, accountId, at),
-      this.db.prepare(`UPDATE sessions SET selected_slot = ? WHERE token_hash = ? AND revoked_at IS NULL`).bind(slot, session.tokenHash),
+      this.db
+        .prepare(
+          `INSERT INTO deleted_characters (account_id, user_id, slot, operation_id, name, deleted_at) SELECT ?, ?, ?, ?, ?, ?
+           WHERE EXISTS (SELECT 1 FROM user_characters u JOIN characters c ON c.account_id = u.account_id WHERE u.user_id = ? AND u.slot = ? AND u.account_id = ? AND c.name = ?)
+             AND NOT EXISTS (SELECT 1 FROM battle_reservations WHERE account_id = ? AND status IN ('reserved', 'active'))
+           ON CONFLICT DO NOTHING`,
+        )
+        .bind(accountId, session.userId, slot, operationId, row.name, at, session.userId, slot, accountId, row.name, accountId),
+      this.db.prepare(`DELETE FROM user_characters WHERE user_id = ? AND slot = ? AND account_id = ? AND ${mine}`).bind(session.userId, slot, accountId, ...m),
+      this.db.prepare(`UPDATE sessions SET selected_slot = NULL WHERE user_id = ? AND selected_slot = ? AND ${mine}`).bind(session.userId, slot, ...m),
+      this.db.prepare(`UPDATE market_listings SET status = 'cancelled', closed_at = ? WHERE seller_id = ? AND status = 'active' AND ${mine}`).bind(at, accountId, ...m),
+      this.db.prepare(`UPDATE trade_offers SET status = 'cancelled', closed_at = ? WHERE from_id = ? AND status = 'open' AND ${mine}`).bind(at, accountId, ...m),
+      this.db.prepare(`UPDATE characters SET trade_code = NULL WHERE account_id = ? AND ${mine}`).bind(accountId, ...m),
     ]);
-    return { status: "ok", account: await this.view(session.userId, slot), accountId };
+    const landed = await done();
+    if (landed !== null) return landed;
+    const fight = await this.db
+      .prepare(`SELECT 1 AS x FROM battle_reservations WHERE account_id = ? AND status IN ('reserved', 'active')`)
+      .bind(accountId)
+      .first<{ x: number }>();
+    if (fight !== null) return reject("IN_BATTLE", "finish or leave the fight first");
+    return reject("NOT_FOUND", "that character is already gone");
   }
 
   /** Back to the character screen. */

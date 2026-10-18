@@ -27,6 +27,9 @@ const ERROR_TH: Record<string, string> = {
   INVALID_TOKEN: "เข้าสู่ระบบกับผู้ให้บริการไม่สำเร็จ",
   NOT_CONFIGURED: "ยังไม่ได้ตั้งค่าการเข้าสู่ระบบแบบนี้",
   PROVIDER_UNAVAILABLE: "ผู้ให้บริการไม่ตอบ ลองใหม่อีกครั้ง",
+  NOT_FOUND: "ช่องนี้ไม่มีตัวละครแล้ว",
+  NAME_MISMATCH: "พิมพ์ชื่อตัวละครให้ตรงทุกตัวอักษร",
+  IN_BATTLE: "ตัวละครนี้อยู่ในไฟต์ จบไฟต์ก่อนแล้วค่อยลบ",
 };
 
 async function post<T>(base: string, path: string, body: unknown, token?: string): Promise<T> {
@@ -170,7 +173,7 @@ function characterScreen(base: string, token: string, account: AccountView): Pro
   return new Promise((resolve) => {
     const { panel, close } = overlay();
     panel.append(el("h2", {}, `เลือกตัวละคร (${account.slots.filter((s) => s.character !== null).length}/${account.maxCharacters})`));
-    panel.append(el("div", { class: "pm-note" }, "แต่ละตัวมีของ เหรียญ คู่ใจ และเควสของตัวเอง ไม่ใช้ร่วมกัน"));
+    panel.append(el("div", { class: "pm-note" }, "แต่ละตัวมีของ เหรียญ คู่ใจ และเควสของตัวเอง ใช้ร่วมกันได้เฉพาะคลังรวม"));
     const grid = el("div", { class: "pm-slots" });
     grid.style.marginTop = "10px";
     const error = el("div", { class: "pm-error", role: "alert" });
@@ -221,8 +224,39 @@ function characterScreen(base: string, token: string, account: AccountView): Pro
       });
       actions.append(change);
       panel.append(grid, error, actions, form);
-      return;
-    }
-    panel.append(grid, error, actions);
+    } else panel.append(grid, error, actions);
+
+    // Nut 2026-10-18: a deleted character loses everything it had; only what is in the account vault stays.
+    const occupied = account.slots.filter((s) => s.character !== null);
+    if (occupied.length === 0) return;
+    const del = el("button", { type: "button" }, "ลบตัวละคร");
+    actions.append(del);
+    const delForm = el("form", { class: "pm-row" });
+    delForm.style.cssText = "display:none;flex-wrap:wrap;gap:6px";
+    const which = el("select", { "aria-label": "ตัวละครที่จะลบ" }) as HTMLSelectElement;
+    for (const s of occupied) which.append(el("option", { value: String(s.slot) }, `ช่อง ${s.slot} · ${s.character!.name}`));
+    const name = el("input", { type: "text", placeholder: "พิมพ์ชื่อตัวละครเพื่อยืนยัน", maxlength: "40" }) as HTMLInputElement;
+    const local = account.providers.includes("local");
+    const pw = el("input", { type: "password", placeholder: "รหัสผ่าน", autocomplete: "current-password" }) as HTMLInputElement;
+    const warn = el("div", { class: "pm-note" }, "ของ เหรียญ คู่ใจ เควส ของที่วางขาย และจดหมายของตัวนี้หายทั้งหมด กู้คืนไม่ได้ ของที่ฝากไว้ในคลังรวมยังอยู่");
+    warn.style.width = "100%";
+    delForm.append(warn, which, name, ...(local ? [pw] : []), el("button", { type: "submit" }, "ลบถาวร"));
+    panel.append(delForm);
+    // One operation id per opened form, so a retry after a lost reply lands once.
+    let operationId = "";
+    del.addEventListener("click", () => {
+      operationId = `chdel_${crypto.randomUUID().replace(/-/g, "")}`;
+      delForm.style.display = delForm.style.display === "none" ? "flex" : "none";
+    });
+    delForm.addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      const body = { operationId, slot: Number(which.value), confirmName: name.value.trim(), ...(local ? { password: pw.value } : {}) };
+      void post<{ account: AccountView }>(base, "/account/delete", body, token)
+        .then((r) => {
+          close();
+          resolve(characterScreen(base, token, r.account));
+        })
+        .catch((e) => (error.textContent = e instanceof Error ? e.message : String(e)));
+    });
   });
 }

@@ -350,7 +350,8 @@ export class FrontierStore {
 
   /**
    * This week's board: the best `leaderboardSize` characters by best floor, ties to whoever reached it
-   * first (the floor's settlement time), plus this character's own line wherever it stands.
+   * first (the floor's settlement time), plus this character's own line wherever it stands. Deleted
+   * characters leave the board.
    */
   async board(accountId: string): Promise<FrontierBoardView | null> {
     const ch = await this.character(accountId);
@@ -360,7 +361,8 @@ export class FrontierStore {
     const rows = `SELECT r.character_id AS cid, c.name AS name, r.best_floor AS best, f.settled_at AS at
       FROM frontier_runs r JOIN characters c ON c.id = r.character_id
       JOIN frontier_floor_results f ON f.run_id = r.run_id AND f.floor = r.best_floor
-      WHERE r.frontier_id = ? AND r.week_id = ? AND r.best_floor > 0`;
+      WHERE r.frontier_id = ? AND r.week_id = ? AND r.best_floor > 0
+        AND NOT EXISTS (SELECT 1 FROM deleted_characters d WHERE d.account_id = c.account_id)`;
     type Row = { cid: string; name: string; best: number; at: string };
     const { results } = await this.db
       .prepare(`${rows} ORDER BY best DESC, at ASC, cid ASC LIMIT ?`)

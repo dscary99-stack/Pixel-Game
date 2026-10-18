@@ -818,8 +818,9 @@ export class TradeStore extends ExchangeBase {
     const expiresAt = addHours(at, t.offerHours);
     const result: OfferResult = { offerId, expiresAt };
     const g = this.sideGuards(accountId, give);
-    const guards = [this.townGuard(), `NOT ${OPEN_BATTLE}`, `NOT ${SAME_LOGIN}`, `(SELECT COUNT(*) FROM trade_offers WHERE from_id = ? AND status = 'open') < ?`, ...g.sql];
-    const args = [accountId, ...this.townMapIds, accountId, accountId, target.account_id, accountId, t.maxOpenOffers, ...g.args];
+    // The receiver may have been deleted since its code was read (its offers would then never be answered).
+    const guards = [this.townGuard(), `NOT ${OPEN_BATTLE}`, `NOT ${SAME_LOGIN}`, `(SELECT COUNT(*) FROM trade_offers WHERE from_id = ? AND status = 'open') < ?`, ...g.sql, `NOT EXISTS (SELECT 1 FROM deleted_characters WHERE account_id = ?)`];
+    const args = [accountId, ...this.townMapIds, accountId, accountId, target.account_id, accountId, t.maxOpenOffers, ...g.args, target.account_id];
     const token = crypto.randomUUID();
     const ours = this.ours(accountId, operationId, token);
     const view = { give: { coins: give.coins, assets: mine.snaps }, want: { coins: want.coins, assets: theirs.snaps } };
@@ -947,6 +948,12 @@ export class TradeStore extends ExchangeBase {
       const now = await this.offerRow(offerId);
       return reject("CLOSED", `that offer is already ${now?.status ?? "gone"}`);
     });
+  }
+
+  /** Open offers made to this account (a deleted character's are declined, so proposers get their side back). */
+  async openOffersTo(accountId: string): Promise<string[]> {
+    const { results } = await this.db.prepare(`SELECT id FROM trade_offers WHERE to_id = ? AND status = 'open' ORDER BY id`).bind(accountId).all<{ id: string }>();
+    return results.map((r) => r.id);
   }
 
   async view(accountId: string): Promise<TradeView | null> {
