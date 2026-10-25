@@ -137,6 +137,8 @@ Repo: https://github.com/dscary99-stack/Pixel-Game · Phase A merge แล้ว
 | ปรับสกิลรอบที่ 1: Class1 (นัท 9 ต.ค. 17:14Z ข้อ 4 "ค่อยๆคิด") | `content/class-trees.ts` (ไม้ตาย `U(...)` แถว 4 คอลัมน์ละ 1 รวม 36 สกิล, `capstoneReq`, `CAPSTONE_COST` 2), เลเวลสูงสุด 5 ของสกิลควบคุมแรง/ดันคิว 5 สกิล | ทุกต้น Class1 มีไม้ตายท้ายคอลัมน์กาย/เวท/สนับสนุน/ก่อกวน (Lv5 สูงสุด ขั้นละ 2 แต้ม cooldown 6 ต้องสกิลลึกสุดของคอลัมน์ Lv5) ต้นละ 136–151 แต้ม; สกิลควบคุมแรงและดันคิวสูงสุด Lv5; หลักการและตารางไม้ตายใน `docs/design/JOB_SKILL_TREE.md` หัวข้อ 7; Class2 รอบถัดไป |
 | Reconciler | `apps/server/src/index.ts` (`scheduled`, cron ทุกนาที) | reservation ที่ค้าง `reserved` เกิน 2 นาที → ถาม DO ก่อน; DO ไม่มีไฟต์ → เขียน tombstone แล้วจึงคืนของ; ไฟต์ที่เริ่มแล้วไม่ถูกแตะ |
 
+เอกสาร `docs/GUI_SCREENS.md` (25 ต.ค. 2026) รวมทุกหน้าจอ สิ่งที่แสดง ปุ่ม เงื่อนไข และ API ที่ใช้ สำหรับนัทร่างโครง GUI (ไม่มีโค้ดเปลี่ยน)
+
 ## ผลตรวจล่าสุด
 
 - `npm run check` ผ่าน: typecheck 3 แพ็กเกจ, **795 tests** (87 ไฟล์)
