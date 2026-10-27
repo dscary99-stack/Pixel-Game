@@ -35,6 +35,7 @@ import type { CharacterApi, CharacterBundle } from "./character-api";
 import { autoHuntPanel, armoryPanel, classPanel, practicePanel, craftPanel, refinePanel, frontierPanel, journalPanel, ordersPanel, questPanel, titleName, equipmentPanel, partyPanel, rebirthPanel, secretQuestPanel, shopPanel, skillPanel, statsPanel, skillTreePanel, teamPanel, vitals } from "./character-ui";
 import { mailPanel, marketPanel, tradePanel, vaultPanel } from "./market-ui";
 import type { WorldTransport } from "./world-transport";
+import { UiBar, UiButton, loadUiKit, uiKey, uiPanel, type MenuIcon } from "./ui-kit";
 
 const W = 960;
 const H = 540;
@@ -140,6 +141,12 @@ export class WorldScene extends Phaser.Scene {
   private nextConnect: { mapId: string; channel: number } | null = null;
   private stopped = false;
   private hud!: Phaser.GameObjects.Text;
+  /** Kit frame behind the HUD text, and the character's HP/MP/EXP bars inside it (GUI draft, screen 4). */
+  private hudPanel!: Phaser.GameObjects.NineSlice;
+  private hudBars: UiBar[] = [];
+  /** The open menu group (GUI draft, screen 5): its frame and buttons, or null. */
+  private groupMenu: { group: MenuIcon; parts: { destroy(): void }[] } | null = null;
+  private autoHuntButton: UiButton | null = null;
   private notice!: Phaser.GameObjects.Text;
   /** The last Auto Hunt run's totals (chapter 08); tap to close. */
   private huntBox!: Phaser.GameObjects.Text;
@@ -156,11 +163,17 @@ export class WorldScene extends Phaser.Scene {
     this.bundle = data.bundle;
   }
 
+  preload() {
+    loadUiKit(this);
+  }
+
   create() {
     this.cameras.main.setBackgroundColor("#14121c");
     const style = { fontFamily: "sans-serif", fontSize: "13px", color: "#ffffff", backgroundColor: "#00000099", padding: { x: 8, y: 6 } };
     this.add.text(8, 8, this.transport.label, { ...style, color: "#f2c94c" }).setScrollFactor(0).setDepth(100);
-    this.hud = this.add.text(8, 40, "", style).setScrollFactor(0).setDepth(100);
+    this.hudPanel = uiPanel(this, 6, 38, 300, 60).setScrollFactor(0).setDepth(99);
+    this.hud = this.add.text(18, 48, "", { ...style, backgroundColor: undefined, padding: { x: 0, y: 0 }, lineSpacing: 4 }).setScrollFactor(0).setDepth(100);
+    this.hudBars = (["hp_ally", "mp", "exp"] as const).map((k, i) => new UiBar(this, 18, 0, 220, k, i === 0 ? 8 : i === 1 ? 6 : 4).fixed(100));
     this.notice = this.add.text(W / 2, H - 90, "", { ...style, fontSize: "15px" }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
     this.huntBox = this.add
       .text(W / 2, H / 2, "", { ...style, fontSize: "14px", backgroundColor: "#1d1a2bee", padding: { x: 14, y: 12 } })
@@ -174,7 +187,7 @@ export class WorldScene extends Phaser.Scene {
         this.huntBox.setVisible(false);
       });
     this.add
-      .text(W - 8, 8, `ลูกศร/WASD เดิน · คลิกเพื่อเดินไป · คลิกฝูงมอนสเตอร์เพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · C สเตตัส · T ทีม · E อุปกรณ์ · B ร้าน / F สร้างของ / O งานสั่ง / G หอคอย / R จุติคู่ใจ (ในเมือง) · K สกิล/Bond · H ล่าอัตโนมัติ · P ปาร์ตี้ · Q เควส · J สมุด · L เควสลับ · M ตลาด · V คลัง" : ""}`, style)
+      .text(W - 8, 8, `ลูกศร/WASD หรือคลิกพื้นเพื่อเดิน · คลิกฝูงเพื่อสู้ · 1/2 เปลี่ยน channel${this.api ? " · เมนูมุมขวาล่าง (มีคีย์ลัดทุกหน้า)" : ""}`, style)
       .setOrigin(1, 0)
       .setScrollFactor(0)
       .setDepth(100);
@@ -208,52 +221,23 @@ export class WorldScene extends Phaser.Scene {
     // Channel fullness for the HUD (the picker is keys 1/2); a light GET, not per frame.
     this.time.addEvent({ delay: 15_000, loop: true, callback: () => void this.refreshChannelCounts() });
     if (this.api !== null) {
-      const button = (x: number, label: string, open: () => Promise<void>) =>
-        this.add
-          .text(x, H - 8, label, { ...style, backgroundColor: "#463f6b", padding: { x: 10, y: 10 } })
-          .setOrigin(0, 1)
-          .setScrollFactor(0)
-          .setDepth(100)
-          .setInteractive({ useHandCursor: true })
-          .on("pointerdown", (_p: Pointer, _x: number, _y: number, e: Phaser.Types.Input.EventData) => {
-            e.stopPropagation();
-            void open();
-          });
-      // Left to right along the bottom; a button that would run off the edge starts a row above.
-      const entries: [string, () => Promise<void>][] = [
-        ["ทีมคู่ใจ (T)", () => this.openTeam()],
-        ["อุปกรณ์ (E)", () => this.openEquipment()],
-        ["ร้าน (B)", () => this.openShop()],
-        ["อุปกรณ์ร้าน (U)", () => this.openArmory()],
-        ["สร้างของ (F)", () => this.openCraft()],
-        ["งานสั่ง (O)", () => this.openOrders()],
-        ["หอคอย (G)", () => this.openFrontier()],
-        ["สเตตัส (C)", () => this.openStats()],
-        ["สกิลอาชีพ (X)", () => this.openSkillTree()],
-        ["ล่าอัตโนมัติ (H)", () => this.toggleAutoHunt()],
-        ["จุติ (R)", () => this.openRebirth()],
-        ["ปาร์ตี้ (P)", () => this.openParty()],
-        ["สกิลคู่ใจ (K)", () => this.openSkills()],
-        ["เควส (Q)", () => this.openQuests()],
-        ["สมุด (J)", () => this.openJournal()],
-        ["เควสลับ (L)", () => this.openSecretQuests()],
-        ["ตลาด (M)", () => this.openMarket()],
-        ["คลัง (V)", () => this.openVault()],
-        ["จดหมาย (N)", () => this.openMail()],
-        ["ลานทดสอบ (Y)", () => this.openPractice()],
-        ["เปลี่ยนอาชีพ (I)", () => this.openClass()],
+      // GUI draft screen 4: Auto Hunt and mail bottom-left, the five menu groups bottom-right (screen 5).
+      this.autoHuntButton = new UiButton(this, 8, H - 56, 132, "ล่าอัตโนมัติ (H)", () => void this.toggleAutoHunt(), { fixed: true, depth: 100, fontSize: 13 });
+      new UiButton(this, 146, H - 56, 112, "จดหมาย (N)", () => void this.openMail(), { fixed: true, depth: 100, fontSize: 13 });
+      const groups: [MenuIcon, string][] = [
+        ["character", "ตัวละคร"],
+        ["companion", "คู่ใจ"],
+        ["inventory", "ของ"],
+        ["activities", "กิจกรรม"],
+        ["social", "สังคม"],
       ];
-      let x = 8;
-      let lift = 0;
-      for (const [label, open] of entries) {
-        const b = button(x, label, open);
-        if (x > 8 && x + b.width > W - 8) {
-          x = 8;
-          lift += b.height + 6;
-        }
-        b.setPosition(x, H - 8 - lift);
-        x += b.width + 6;
-      }
+      groups.forEach(([g, label], i) => {
+        new UiButton(this, W - 8 - (groups.length - i) * 78 + 4, H - 56, 74, label, () => this.toggleGroup(g, W - 8 - (groups.length - i) * 78 + 4), {
+          icon: uiKey.menu(g),
+          fixed: true,
+          depth: 100,
+        });
+      });
     }
     this.input.on("pointerdown", (p: Phaser.Input.Pointer) => this.tapMove(p));
 
@@ -634,6 +618,47 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
+  /** What each menu group opens (GUI draft screen 5); the keys still open them directly. */
+  private groupEntries(g: MenuIcon): [string, () => Promise<void>][] {
+    switch (g) {
+      case "character":
+        return [["สเตตัส (C)", () => this.openStats()], ["อุปกรณ์ (E)", () => this.openEquipment()], ["สกิลอาชีพ (X)", () => this.openSkillTree()], ["เปลี่ยนอาชีพ (I)", () => this.openClass()]];
+      case "companion":
+        return [["ทีมคู่ใจ (T)", () => this.openTeam()], ["สกิลคู่ใจ (K)", () => this.openSkills()], ["จุติ (R)", () => this.openRebirth()]];
+      case "inventory":
+        return [["ร้าน (B)", () => this.openShop()], ["อุปกรณ์ร้าน (U)", () => this.openArmory()], ["สร้างของ (F)", () => this.openCraft()], ["คลัง (V)", () => this.openVault()], ["จดหมาย (N)", () => this.openMail()], ["ตลาด (M)", () => this.openMarket()]];
+      case "activities":
+        return [["เควส (Q)", () => this.openQuests()], ["งานสั่ง (O)", () => this.openOrders()], ["เควสลับ (L)", () => this.openSecretQuests()], ["หอคอย (G)", () => this.openFrontier()], ["ลานทดสอบ (Y)", () => this.openPractice()], ["ล่าอัตโนมัติ (H)", () => this.toggleAutoHunt()]];
+      case "social":
+        return [["ปาร์ตี้ (P)", () => this.openParty()], ["สมุด/ฉายา (J)", () => this.openJournal()]];
+    }
+  }
+
+  /** Opens a group's list above its button; the same button (or picking an entry) closes it. */
+  private toggleGroup(g: MenuIcon, x: number) {
+    const was = this.groupMenu?.group;
+    this.groupMenu?.parts.forEach((o) => o.destroy());
+    this.groupMenu = null;
+    if (was === g) return;
+    const entries = this.groupEntries(g);
+    const w = 168;
+    const h = entries.length * 52 + 20;
+    const left = Math.min(x, W - 8 - w);
+    const top = H - 62 - h;
+    const frame = uiPanel(this, left, top, w, h).setScrollFactor(0).setDepth(104).setInteractive();
+    frame.on("pointerdown", (_p: Pointer, _x: number, _y: number, e: Phaser.Types.Input.EventData) => e.stopPropagation());
+    const parts: { destroy(): void }[] = [frame];
+    entries.forEach(([label, open], i) => {
+      parts.push(
+        new UiButton(this, left + 10, top + 10 + i * 52, w - 20, label, () => {
+          this.toggleGroup(g, x);
+          void open();
+        }, { fixed: true, depth: 105, fontSize: 13 }),
+      );
+    });
+    this.groupMenu = { group: g, parts };
+  }
+
   private refreshHud() {
     const m = this.map;
     const where =
@@ -641,12 +666,29 @@ export class WorldScene extends Phaser.Scene {
         ? "กำลังเชื่อมต่อ…"
         : `${m.name.th} · channel ${this.channelNo}${this.channelCounts === "" ? "" : ` (${this.channelCounts})`} · ผู้เล่นที่เห็น ${this.players.size} คน${this.autoOn ? " · ล่าอัตโนมัติ: เปิด" : ""}`;
     const c = this.bundle?.character;
-    if (c === undefined) return void this.hud.setText(where);
+    this.autoHuntButton?.setKind(this.autoOn ? "selected" : "normal").setLabel(this.autoOn ? "ล่าอัตโนมัติ: เปิด" : "ล่าอัตโนมัติ (H)");
+    if (c === undefined) {
+      this.hud.setText(where);
+      this.hudBars.forEach((b) => b.setVisible(false));
+      return void this.hudPanel.setSize(this.hud.width + 24, this.hud.height + 20);
+    }
     const v = vitals(c, this.bundle?.equipment ?? []);
     const xp = expProgress(rules, "player", c.xp);
     const points = unspentPoints(rules, c.level, c.primaryStats);
     const title = titleName(this.bundle?.titleId);
     this.hud.setText(`${where}\n${title === null ? "" : `[${title}] `}${c.name} Lv${c.level} (EXP ${xp.need === null ? "MAX" : `${xp.into}/${xp.need}`})${points > 0 ? ` · แต้มว่าง ${points}` : ""} · HP ${v.hp}/${v.maxHp} · MP ${v.mp}/${v.maxMp} · ทีม ${c.team.length}/5 · เหรียญ ${this.bundle?.coins ?? 0}`);
+    // HP, MP and EXP bars under the text, inside the same frame.
+    let y = 48 + this.hud.height + 8;
+    const fills: [number, number][] = [
+      [v.hp, v.maxHp],
+      [v.mp, v.maxMp],
+      [xp.into, xp.need ?? 1],
+    ];
+    this.hudBars.forEach((b, i) => {
+      b.setVisible(true).setPosition(18, y).set(fills[i]![0], fills[i]![1]);
+      y += 10;
+    });
+    this.hudPanel.setSize(Math.max(this.hud.width, 220) + 24, y - 38 + 6);
   }
 
   private async reloadCharacter() {

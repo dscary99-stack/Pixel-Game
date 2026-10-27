@@ -534,3 +534,13 @@ O02–O04 นัทให้ Claude คิดเอง (3 ต.ค. 2026) ย้�
 สาขา codex/ui-kit จาก claude/project-thread-ektp0t (115cc24): เพิ่ม51 PNG UI native พร้อม per-asset metadata/index, กรอบ9-slice16px, ปุ่ม48px5แบบ, ช่อง48/64ครบ5rarity+ล็อก, แถบค่า5ชนิดสูง4/6/8, คำสั่ง24px9อัน และกลุ่มเมนู24px5อัน ดู art/ui/PROOF.md และ qa-report.json; ไม่มีการแก้ source ใน apps/ หรือ packages/.
 
 ตรวจขนาด/alpha/hash/manifest/9-slice continuity และมุมจากภาพประกอบ960×540ผ่าน; เปิดดู sheet/contrast proof แล้ว npm run check ผ่าน (typecheck/tests/client build/server dry-run) ไม่ deploy. status grid_ready ยังไม่ production-approved; Phaser integration, mobile FIT และการเทียบ Claude artifact โดยตรงยังไม่ตรวจ (ลิงก์ artifact เปิดไม่ได้). รอบถัดไป status/element/class/race/item/damage/target/title/21 menu ยังไม่ทำ.
+
+## ต่อ UI kit ของ Codex เข้าเกม — Claude, 27 ต.ค. 2026
+
+รวม `codex/ui-kit` (2e53b47) เข้า branch นี้ แล้วต่อ asset v001 เข้า client:
+
+- `apps/client/src/ui-kit.ts`: `loadUiKit` (โหลดทั้ง 51 ชิ้นใน preload ของแต่ละฉาก ข้ามที่โหลดแล้ว), `uiPanel` (กรอบ 9-slice มุม 16), `UiButton` (ปุ่มสูง 48 พร้อมไอคอน 24 เหนือข้อความ เปลี่ยนแบบ normal/selected/primary/disabled/danger ได้ กดแล้วไม่ทะลุไปสั่งเดินในแผนที่), `UiBar` (track + fill 3-slice ตาม fillRule ซ่อน fill เมื่อเป็น 0)
+- ฉากต่อสู้: ปุ่มคำสั่ง 8 ปุ่มมีไอคอน, Auto เป็นปุ่ม selected ตอนเปิด, เมนูสกิล (ติดคูลดาวน์ = disabled) และเมนูยา, ยืนยันหนี/จับ, หยุด Auto (danger), กลับไปเดินต่อ (primary), กรอบ log 4 บรรทัด, แถบ HP พวก/ศัตรู
+- แผนที่: HUD มีกรอบและแถบ HP/MP/EXP; ปุ่มล่าง 21 ปุ่มเหลือ "ล่าอัตโนมัติ (H)", "จดหมาย (N)" และ 5 กลุ่ม (ตัวละคร คู่ใจ ของ กิจกรรม สังคม) กดแล้วเปิดแผงรายการหน้าต่างพร้อมคีย์ลัด; คีย์ลัดเดิมใช้ได้ทุกตัว
+
+ตรวจ: `npm run check` ผ่าน (795 tests); ถ่ายภาพหน้าจอฉากต่อสู้ (`?battle`) และแผนที่ (`?server`) ด้วย Playwright ไม่มี error ในหน้า. ข้อจำกัด: หน้าต่าง HTML (ทีม อุปกรณ์ ร้าน ฯลฯ) ยังเป็นแบบเดิม ยังไม่ใช้ช่อง slot/ป้ายล็อก; หน้าเข้าสู่ระบบ/เลือกตัวละครยังเป็น HTML เดิม; ยังไม่ได้ตรวจบนมือถือจริง; asset รอบสองยังไม่มี (ไอคอนสถานะ ธาตุ อาชีพ/เผ่า ไอเทม ตัวเลขเด้ง วงเลือกเป้า ภาพหัวเกม ไอคอนเมนู 21 อัน)

@@ -9,6 +9,7 @@ import type { BattleTransport, Snapshot } from "./transport";
 import { savedAutoPolicy } from "./character-ui";
 import { capturePreview, pct2 } from "./capture-ui";
 import { fleePreview, refusalTh, reviveRefusal, skillButtonLine } from "./command-ui";
+import { UiBar, UiButton, loadUiKit, uiKey, uiPanel, type CommandIcon } from "./ui-kit";
 
 const CONTENT = exampleContentMaps();
 /** Display name for a loot line: item or equipment, falling back to the id. */
@@ -31,7 +32,7 @@ export const ELEMENT_COLOR: Record<Element, number> = {
 
 interface UnitView {
   body: Phaser.GameObjects.Rectangle;
-  hpBar: Phaser.GameObjects.Rectangle;
+  hpBar: UiBar;
   label: Phaser.GameObjects.Text;
   /**
    * Allies: under the HP bar. Enemies: beside the body (statuses, elite modifiers, reinforcement),
@@ -59,7 +60,7 @@ export class BattleScene extends Phaser.Scene {
   private idleDeadline: number | null = null;
   private autoOn = false;
   private busy = false;
-  private autoButton!: Phaser.GameObjects.Text;
+  private autoButton!: UiButton;
 
   constructor() {
     super("battle");
@@ -70,8 +71,8 @@ export class BattleScene extends Phaser.Scene {
   private watching = false;
   private onStopAuto: (() => void) | null = null;
   private cursor = 0;
-  private watchUi: Phaser.GameObjects.GameObject[] = [];
-  private exitButton: Phaser.GameObjects.Text | null = null;
+  private watchUi: { destroy(): void }[] = [];
+  private exitButton: UiButton | null = null;
 
   /**
    * `onExit` is set when the fight came from the world: once the fight is over a button takes the
@@ -93,6 +94,10 @@ export class BattleScene extends Phaser.Scene {
     this.idleDeadline = null;
   }
 
+  preload() {
+    loadUiKit(this);
+  }
+
   async create() {
     this.cameras.main.setBackgroundColor("#1d1a2b");
     this.add.rectangle(W / 2, 250, W, 400, 0x2a2540).setStrokeStyle(2, 0x0b0a12);
@@ -101,21 +106,22 @@ export class BattleScene extends Phaser.Scene {
     this.infoText = this.add.text(12, 56, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#f2c94c", wordWrap: { width: 520 } });
     this.idleText = this.add.text(W - 12, 8, "", { fontFamily: "sans-serif", fontSize: "13px", color: "#ff8a80", align: "right" }).setOrigin(1, 0);
     this.time.addEvent({ delay: 1000, loop: true, callback: () => this.idleTick() });
-    this.logText = this.add.text(576, 456, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#d8d4ea", wordWrap: { width: 374 } });
+    uiPanel(this, 568, 446, 384, 88);
+    this.logText = this.add.text(580, 456, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#d8d4ea", wordWrap: { width: 362 } });
 
-    const buttons: [string, () => void][] = [
-      ["โจมตี", () => this.act("attack")],
-      ["สกิล", () => this.act("skill")],
-      ["ป้องกัน", () => this.act("guard")],
-      ["ยา", () => this.act("item")],
-      ["ชุบ", () => this.act("revive")],
-      ["จับ", () => this.act("capture")],
-      ["หนี", () => this.act("flee")],
-      ["จุติ", () => this.act("awaken")],
+    const buttons: [string, CommandIcon, () => void][] = [
+      ["โจมตี", "attack", () => this.act("attack")],
+      ["สกิล", "skill", () => this.act("skill")],
+      ["ป้องกัน", "guard", () => this.act("guard")],
+      ["ยา", "potion", () => this.act("item")],
+      ["ชุบ", "revive", () => this.act("revive")],
+      ["จับ", "capture", () => this.act("capture")],
+      ["หนี", "flee", () => this.act("flee")],
+      ["จุติ", "ascend", () => this.act("awaken")],
     ];
-    // Eight buttons and Auto left of the log: 56px wide, 48px tall (P10 touch target height).
-    buttons.forEach(([label, fn], i) => this.button(16 + i * 60, 470, label, fn, 56));
-    this.autoButton = this.button(16 + buttons.length * 60, 470, "Auto: ปิด", () => this.toggleAuto(), 72);
+    // Eight kit buttons (icon + label) and Auto left of the log: 56px wide, 48px tall (P10 touch target height).
+    buttons.forEach(([label, icon, fn], i) => new UiButton(this, 16 + i * 60, 470, 56, label, fn, { icon: uiKey.command(icon) }));
+    this.autoButton = new UiButton(this, 16 + buttons.length * 60, 470, 72, "Auto: ปิด", () => this.toggleAuto(), { icon: uiKey.command("auto") });
 
     // Auto only runs while this page is open and visible (C14: no offline farming).
     // The server holds Auto to one action per autoBattleActionMs, the same as Auto Hunt.
@@ -153,7 +159,7 @@ export class BattleScene extends Phaser.Scene {
     const banner = this.add
       .text(W / 2, 430, "ล่าอัตโนมัติ: server กำลังสู้ให้", { fontFamily: "sans-serif", fontSize: "15px", color: "#0b0a12", backgroundColor: "#f2c94c", padding: { x: 10, y: 4 } })
       .setOrigin(0.5);
-    const stop = this.button(W - 200, 20, "หยุดล่า (คุมเอง)", () => this.onStopAuto?.()).setFixedSize(184, 48).setBackgroundColor("#a33b3b");
+    const stop = new UiButton(this, W - 200, 20, 184, "หยุดล่า (คุมเอง)", () => this.onStopAuto?.(), { kind: "danger", depth: 30 });
     this.watchUi = [banner, stop];
   }
 
@@ -170,19 +176,10 @@ export class BattleScene extends Phaser.Scene {
     }
   }
 
-  private button(x: number, y: number, label: string, fn: () => void, width = 62) {
-    // 48px tall touch targets for mobile landscape (P10).
-    const t = this.add
-      .text(x, y, label, { fontFamily: "sans-serif", fontSize: "15px", color: "#ffffff", backgroundColor: "#463f6b", padding: { x: 4, y: 14 }, fixedWidth: width, align: "center" })
-      .setInteractive({ useHandCursor: true });
-    t.on("pointerdown", fn);
-    return t;
-  }
-
   private toggleAuto() {
     if (this.watching) return;
     this.autoOn = !this.autoOn;
-    this.autoButton.setText(this.autoOn ? "Auto: เปิด" : "Auto: ปิด");
+    this.autoButton.setLabel(this.autoOn ? "Auto: เปิด" : "Auto: ปิด").setKind(this.autoOn ? "selected" : "normal");
   }
 
   /** P36: the last two minutes before an untouched fight closes as lost show a countdown. */
@@ -238,7 +235,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /** The skill menu: one button per skill of the unit whose turn it is (name and MP). */
-  private skillMenu: Phaser.GameObjects.Text[] = [];
+  private skillMenu: UiButton[] = [];
   private closeSkillMenu() {
     for (const b of this.skillMenu) b.destroy();
     this.skillMenu = [];
@@ -251,13 +248,18 @@ export class BattleScene extends Phaser.Scene {
       const area = sk && ["all_enemies", "enemy_row", "all_allies"].includes(sk.targetRule) ? " (หมู่)" : "";
       // Cooldowns count the unit's own turns (O15): "ทุก N ตา", or how long until it is ready.
       const left = actor.cooldowns[id] ?? 0;
-      const b = this.add
-        .text(16 + i * 132, 410, `${sk?.name.th ?? id}${area}\n${skillButtonLine(sk, left)}`, { fontFamily: "sans-serif", fontSize: "12px", color: left > 0 ? "#b8b4c8" : "#ffffff", backgroundColor: left > 0 ? "#3a3a46" : "#2f6b5a", padding: { x: 6, y: 6 }, fixedWidth: 124, align: "center" })
-        .setInteractive({ useHandCursor: true });
-      b.on("pointerdown", () => {
-        this.closeSkillMenu();
-        void this.useSkill(actor, id);
-      });
+      const b = new UiButton(
+        this,
+        16 + i * 132,
+        410,
+        124,
+        `${sk?.name.th ?? id}${area}\n${skillButtonLine(sk, left)}`,
+        () => {
+          this.closeSkillMenu();
+          void this.useSkill(actor, id);
+        },
+        { kind: left > 0 ? "disabled" : "selected", fontSize: 12 },
+      );
       this.skillMenu.push(b);
     });
   }
@@ -282,10 +284,7 @@ export class BattleScene extends Phaser.Scene {
             : def.kind === "attack"
               ? `โจมตี ${def.damage!.flat}${all}`
               : `${(def.statuses ?? []).map((a) => STATUS_DEFINITIONS[a.statusId].th).join(", ")}${all}`;
-      const b = this.add
-        .text(16 + i * 132, 410, `${def.name.th} ×${n}\n${what}`, { fontFamily: "sans-serif", fontSize: "12px", color: "#ffffff", backgroundColor: "#2f6b5a", padding: { x: 6, y: 6 }, fixedWidth: 124, align: "center" })
-        .setInteractive({ useHandCursor: true });
-      b.on("pointerdown", () => {
+      const b = new UiButton(this, 16 + i * 132, 410, 124, `${def.name.th} ×${n}\n${what}`, () => {
         this.closeSkillMenu();
         const sel = this.selectedTarget === null ? undefined : this.unit(this.selectedTarget);
         const target =
@@ -298,7 +297,7 @@ export class BattleScene extends Phaser.Scene {
               : actor.unitId;
         if (target === null) return;
         void this.send({ type: "item", actorId: actor.unitId, itemId: id, targetId: target });
-      });
+      }, { kind: "selected", fontSize: 12 });
       this.skillMenu.push(b);
     });
   }
@@ -326,7 +325,7 @@ export class BattleScene extends Phaser.Scene {
   }
 
   /** The capture preview: the chance and how it was made, then confirm or cancel (O07 capture-v1). */
-  private capturePanel: Phaser.GameObjects.Text[] = [];
+  private capturePanel: { destroy(): void }[] = [];
   private closeCapturePreview() {
     for (const b of this.capturePanel) b.destroy();
     this.capturePanel = [];
@@ -350,20 +349,14 @@ export class BattleScene extends Phaser.Scene {
       .text(16, 300, lines.join("\n"), { fontFamily: "sans-serif", fontSize: "12px", color: ok ? "#ffffff" : "#ffb3b3", backgroundColor: "#1d1a2e", padding: { x: 8, y: 6 }, lineSpacing: 5, wordWrap: { width: 520 } })
       .setDepth(20);
     this.capturePanel.push(text);
-    const btn = (x: number, label: string, color: string, fn: () => void) => {
-      const b = this.add
-        .text(x, 410, label, { fontFamily: "sans-serif", fontSize: "13px", color: "#ffffff", backgroundColor: color, padding: { x: 10, y: 6 } })
-        .setDepth(20)
-        .setInteractive({ useHandCursor: true });
-      b.on("pointerdown", fn);
-      this.capturePanel.push(b);
-    };
+    const btn = (x: number, label: string, kind: "primary" | "normal", fn: () => void) =>
+      this.capturePanel.push(new UiButton(this, x, 410, 120, label, fn, { kind, depth: 20 }));
     if (ok)
-      btn(16, confirmLabel, "#2f6b5a", () => {
+      btn(16, confirmLabel, "primary", () => {
         this.closeCapturePreview();
         onConfirm();
       });
-    btn(ok ? 120 : 16, ok ? "ยกเลิก" : "ปิด", "#4a4560", () => this.closeCapturePreview());
+    btn(ok ? 144 : 16, ok ? "ยกเลิก" : "ปิด", "normal", () => this.closeCapturePreview());
   }
 
   private async act(kind: "attack" | "skill" | "guard" | "item" | "capture" | "flee" | "revive" | "awaken") {
@@ -631,8 +624,7 @@ export class BattleScene extends Phaser.Scene {
         if (u.cosmetic !== undefined) this.drawCosmetic(body, u.cosmetic);
         if (u.fashion !== undefined) this.drawFashion(body, u.fashion);
         const ring = this.add.rectangle(x, y, 60, bh + 12).setStrokeStyle(2, 0xffffff).setVisible(false);
-        this.add.rectangle(x, y + bh / 2 + 8, 52, 6, 0x0b0a12);
-        const hpBar = this.add.rectangle(x - 25, y + bh / 2 + 8, 50, 4, 0x6be36b).setOrigin(0, 0.5);
+        const hpBar = new UiBar(this, x - 26, y + bh / 2 + 8, 52, enemy ? "hp_enemy" : "hp_ally", 4);
         // Bottom-anchored so a second line (statuses) grows upwards.
         const label = this.add.text(x, y - bh / 2 - 9, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#ffffff", align: "center" }).setOrigin(0.5, 1);
         const sub = enemy
@@ -646,7 +638,7 @@ export class BattleScene extends Phaser.Scene {
       v.body.setPosition(x, y).setAlpha(u.ko || u.retired ? 0.25 : 1);
       v.ring.setPosition(x, y).setVisible(u.unitId === this.snap.actor || u.unitId === this.selectedTarget);
       v.ring.setStrokeStyle(2, u.unitId === this.snap.actor ? 0x7dff9b : 0xff6b6b);
-      v.hpBar.setPosition(x - 25, y + bh / 2 + 8).setSize(Math.max(0, 50 * (u.hp / u.stats.maxHp)), 4);
+      v.hpBar.setPosition(x - 26, y + bh / 2 + 8).set(u.hp, u.stats.maxHp);
       const tags = (u.statuses ?? []).map((st) => `${STATUS_DEFINITIONS[st.statusId].th}${st.turnsLeft}`).join(" ");
       // An elite leader says so, with its modifiers (chapter 07 §3), readable without colour.
       const elite = u.elite === undefined ? "" : `★ชั้นยอด\n${u.elite.modifiers.map((m) => ELITE_MODIFIER_TH[m].name).join(", ")}${u.elite.counterOn !== null ? " ⚠สวน!" : ""}`;
@@ -711,7 +703,7 @@ export class BattleScene extends Phaser.Scene {
     this.infoText.setText(`${party}${tower}${bossLine}`.replace(/^\n/, ""));
     if (state.status !== "active" && this.onExit !== null && this.exitButton === null && !this.watching) {
       const exit = this.onExit;
-      this.exitButton = this.button(W - 200, 20, "กลับไปเดินต่อ", () => exit()).setFixedSize(184, 48).setBackgroundColor("#2f7a4a");
+      this.exitButton = new UiButton(this, W - 200, 20, 184, "กลับไปเดินต่อ", () => exit(), { kind: "primary", depth: 30 });
     }
   }
 
@@ -771,7 +763,8 @@ export class BattleScene extends Phaser.Scene {
 
   private pushLog(line: string) {
     this.log.push(line);
-    this.log = this.log.slice(-5);
+    // Four lines fit the kit frame (one may wrap).
+    this.log = this.log.slice(-4);
     this.logText?.setText(this.log.join("\n"));
   }
 
