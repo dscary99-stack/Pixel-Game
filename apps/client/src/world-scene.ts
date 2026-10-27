@@ -584,6 +584,13 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
+  /** EXP before the fight, for the summary's level-up line (BattleScene.showResult). */
+  private battleProgress() {
+    const b = this.bundle;
+    if (b === undefined || b === null) return undefined;
+    return { xp: b.character.xp, companions: Object.fromEntries(b.companions.map((c) => [c.id, c.xp])) };
+  }
+
   private startBattle(battleId: string, resumed: boolean) {
     this.path = [];
     this.pendingEngage = null;
@@ -593,6 +600,7 @@ export class WorldScene extends Phaser.Scene {
     this.flash(resumed ? "กลับเข้าไฟต์ที่ค้างอยู่" : "เข้าไฟต์!");
     this.scene.launch("battle", {
       transport: this.transport.battle(battleId),
+      progress: this.battleProgress(),
       watch: this.autoOn,
       onStopAuto: () => this.transport.autoStop(),
       onExit: () => {
@@ -829,6 +837,7 @@ export class WorldScene extends Phaser.Scene {
     this.flash(flash);
     this.scene.launch("battle", {
       transport: this.transport.battle(battleId),
+      progress: this.battleProgress(),
       watch: false,
       onStopAuto: () => undefined,
       onExit: () => {

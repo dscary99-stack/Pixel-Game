@@ -4,7 +4,7 @@
  * it never computes damage, loot, capture or ownership itself (chapter 11 §1).
  */
 import Phaser from "phaser";
-import { DEV_FIXTURE_RULES, ascensionPath, raceTrialGoal, ELITE_MODIFIER_TH, combatBagOf, EXAMPLE_FRONTIER, FRONTIER_MODIFIER_TH, STATUS_DEFINITIONS, exampleContentMaps, type BattleCommand, type BattleEvent, type BattleUnit, type Element, type PublicBattleState } from "@pmrpg/shared";
+import { DEV_FIXTURE_RULES, ascensionPath, expProgress, totalStatPointsAtLevel, raceTrialGoal, ELITE_MODIFIER_TH, combatBagOf, EXAMPLE_FRONTIER, FRONTIER_MODIFIER_TH, STATUS_DEFINITIONS, exampleContentMaps, type BattleCommand, type BattleEvent, type BattleUnit, type Element, type PublicBattleState } from "@pmrpg/shared";
 import type { BattleTransport, Snapshot } from "./transport";
 import { savedAutoPolicy } from "./character-ui";
 import { capturePreview, pct2 } from "./capture-ui";
@@ -78,13 +78,16 @@ export class BattleScene extends Phaser.Scene {
   /** The end-of-fight summary (GUI draft "Result"): built once, hidden with "ดูสนาม". */
   private resultUi: { destroy(): void; setVisible(v: boolean): unknown }[] | null = null;
   private abandoned = false;
+  /** EXP the character and each companion had when the fight opened, so the summary can show level-ups. */
+  private progress: { xp: number; companions: Record<string, number> } | null = null;
 
   /**
    * `onExit` is set when the fight came from the world: once the fight is over a button takes the
    * player back to where they stood. Phaser reuses this scene object, so every field resets here.
    */
-  init(data: { transport: BattleTransport; onExit?: () => void; watch?: boolean; onStopAuto?: () => void }) {
+  init(data: { transport: BattleTransport; onExit?: () => void; watch?: boolean; onStopAuto?: () => void; progress?: { xp: number; companions: Record<string, number> } }) {
     this.transport = data.transport;
+    this.progress = data.progress ?? null;
     this.onExit = data.onExit ?? null;
     this.watching = data.watch ?? false;
     this.onStopAuto = data.onStopAuto ?? null;
@@ -760,7 +763,18 @@ export class BattleScene extends Phaser.Scene {
     ui.push(uiPanel(this, px + 20, top, 280, 96, "background").setDepth(40));
     const player = state.units.find((u) => u.kind === "player" && (u.controllerId ?? state.ownerAccountId) === me);
     text(px + 32, top + 12, `${player?.name ?? "ตัวละคร"}  EXP +${exp.toLocaleString()}`, 14);
-    if (player !== undefined) {
+    // Level-ups are worked out here from the EXP the fight owes (display only: the server applies it on settlement).
+    const rules = DEV_FIXTURE_RULES;
+    if (this.progress !== null) {
+      const was = expProgress(rules, "player", this.progress.xp);
+      const now = expProgress(rules, "player", this.progress.xp + exp);
+      text(px + 32, top + 36, now.need === null ? `Lv${now.level} (สูงสุด)` : `Lv${now.level} · EXP ${now.into.toLocaleString()}/${now.need.toLocaleString()}`, 11, "#b8b2d6");
+      ui.push(new UiBar(this, px + 32, top + 58, 256, "exp", 6).set(now.need === null ? 1 : now.into, now.need ?? 1).setDepth(41));
+      if (now.level > was.level) {
+        const points = totalStatPointsAtLevel(rules, now.level) - totalStatPointsAtLevel(rules, was.level);
+        text(px + 32, top + 70, `เลเวลอัป! Lv${was.level} → Lv${now.level}${points > 0 ? ` · แต้มสเตตัส +${points}` : ""}`, 12, "#f2c94c");
+      }
+    } else if (player !== undefined) {
       text(px + 32, top + 40, `HP ${player.hp}/${player.stats.maxHp}`, 11, "#b8b2d6");
       ui.push(new UiBar(this, px + 32, top + 64, 256, "hp_ally", 6).set(player.hp, player.stats.maxHp).setDepth(41));
     }
@@ -769,7 +783,10 @@ export class BattleScene extends Phaser.Scene {
     const lines = [...companions].map(([id, g]) => {
       const u = this.unit(`ally:${id}`);
       const bond = g.bond === 0 ? "" : ` · Bond ${g.bond > 0 ? "+" : ""}${g.bond}`;
-      return `${u?.name ?? id}${u?.ko ? " (ล้ม)" : ""} EXP +${g.exp}${bond}${g.mastery > 0 ? ` · ชำนาญ +${g.mastery}` : ""}`;
+      const had = this.progress?.companions[id];
+      const up = had === undefined ? null : [expProgress(rules, "companion", had).level, expProgress(rules, "companion", had + g.exp).level];
+      const lv = up !== null && up[1]! > up[0]! ? ` · Lv${up[0]}→${up[1]}!` : "";
+      return `${u?.name ?? id}${u?.ko ? " (ล้ม)" : ""} EXP +${g.exp}${lv}${bond}${g.mastery > 0 ? ` · ชำนาญ +${g.mastery}` : ""}`;
     });
     text(px + 332, top + 30, lines.slice(0, 4).join("\n") || "-", 11, "#d8d4ea", 256);
 

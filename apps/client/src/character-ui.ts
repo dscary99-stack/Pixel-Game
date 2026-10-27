@@ -126,6 +126,9 @@ export const ELEMENT_TH: Record<Element, string> = {
   NEUTRAL: "ไร้ธาตุ",
 };
 
+/** Element colours for the create form's swatches (same as ELEMENT_CSS below). */
+const ELEMENT_SWATCH: Record<string, string> = { FIRE: "#f26b3a", WATER: "#3a8ef2", EARTH: "#b08a4a", WIND: "#5fd18b", LIGHT: "#f2df6b", SHADOW: "#8a5fd1" };
+
 const CSS = `
 .pm-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
   background: #0b0a12cc; z-index: 10; font-family: sans-serif; color: #fff; padding: 16px; box-sizing: border-box; }
@@ -192,6 +195,8 @@ const CSS = `
 .pm-slot, .pm-node, .pm-node-info, .pm-item-rule { border: 8px solid transparent; border-radius: 0; background: none;
   border-image: url(${uiAssetUrl("window_background")}) 16 fill / 16px; image-rendering: pixelated; }
 .pm-slot { display: flow-root; }
+.pm-panel button.pm-slot[aria-current=true] { border-image-source: url(${uiAssetUrl("button_selected")}); }
+${Object.entries(ELEMENT_SWATCH).map(([e, c]) => `.pm-choices button[data-value=${e}]::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 6px; background: ${c}; }`).join("\n")}
 .pm-node.learned { border-image-source: url(${uiAssetUrl("button_selected")}); }
 .pm-panel .pm-node button { white-space: normal; }
 .pm-list li[data-companion], .pm-list li[data-piece] { flex-wrap: wrap; }
@@ -287,7 +292,7 @@ export function createCharacterForm(api: CharacterApi): Promise<CharacterBundle>
     const race = choices(panel, RACE_DEFINITIONS.map((r) => ({ value: r.id, label: r.name.th })), RACE_DEFINITIONS[0]!.id);
     panel.append(el("label", {}, "ธาตุ"));
     const element = choices(panel, PLAYER_ELEMENTS.map((e) => ({ value: e, label: ELEMENT_TH[e] })), PLAYER_ELEMENTS[0]);
-    panel.append(el("div", { class: "pm-note" }, "รายชื่ออาชีพและเผ่าเป็นแบบร่าง (P16) ยังไม่มีสกิลหรือ passive เฉพาะ ทุกค่าสเตตัสเริ่มที่ 10"));
+    panel.append(el("div", { class: "pm-note" }, "ชื่ออาชีพและเผ่าเป็นแบบร่าง (P16) · ทุกค่าสเตตัสเริ่มที่ 10"));
     const error = el("div", { class: "pm-error", role: "alert" });
     panel.append(error);
     const actions = el("div", { class: "pm-actions" });

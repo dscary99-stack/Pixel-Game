@@ -4,7 +4,7 @@
  * Facebook tokens itself; the client only passes them on. The sign-in is remembered in localStorage
  * (a per-browser convenience; the server decides whether it is still valid).
  */
-import type { AccountView, SessionGrant } from "@pmrpg/shared";
+import { CLASS1_DEFINITIONS, type AccountView, type SessionGrant } from "@pmrpg/shared";
 import { el, overlay } from "./character-ui";
 import type { Identity } from "./identity";
 
@@ -178,10 +178,11 @@ function characterScreen(base: string, token: string, account: AccountView): Pro
     grid.style.marginTop = "10px";
     const error = el("div", { class: "pm-error", role: "alert" });
     for (const s of account.slots) {
-      const b = el("button", { type: "button", class: "pm-slot", "data-slot": String(s.slot) });
+      // The last-played slot wears the kit's selected frame.
+      const b = el("button", { type: "button", class: "pm-slot", "data-slot": String(s.slot), "aria-current": String(account.selectedSlot === s.slot) });
       b.style.cssText = "color:#fff;cursor:pointer;text-align:left";
       b.append(el("b", {}, `ช่อง ${s.slot}${account.selectedSlot === s.slot ? " · เล่นล่าสุด" : ""}`));
-      b.append(document.createTextNode(s.character === null ? "+ สร้างตัวละครใหม่" : `${s.character.name} · Lv${s.character.level}`));
+      b.append(document.createTextNode(s.character === null ? "+ สร้างตัวละครใหม่" : `${s.character.name} · Lv${s.character.level} · ${CLASS1_DEFINITIONS.find((d) => d.id === s.character!.classId)?.name.th ?? s.character.classId}`));
       b.addEventListener("click", () => {
         void (async () => {
           try {

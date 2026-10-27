@@ -34,7 +34,9 @@ if (params.has("battle")) {
     server !== null
       ? new HttpTransport(server, `battle:${crypto.randomUUID().slice(0, 8)}`, devIdentity(`acct:dev_${crypto.randomUUID().slice(0, 8)}`))
       : new LocalPreviewTransport(previewSetup(params.get("seed") ?? "preview"));
-  game.scene.add("battle", BattleScene, true, { transport });
+  // `?xp=N`: the EXP the summary counts level-ups from (the world passes the character's real EXP).
+  const xp = Number(params.get("xp"));
+  game.scene.add("battle", BattleScene, true, { transport, progress: params.has("xp") && Number.isFinite(xp) ? { xp, companions: {} } : undefined });
 } else {
   // Dev identity: `?account=name` picks one (open two tabs with different names to see each other);
   // otherwise one per browser tab, kept across reloads so a reload is a reconnect, not a new player.
