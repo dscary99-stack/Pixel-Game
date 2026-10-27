@@ -109,6 +109,7 @@ import {
   unspentPoints,
 } from "@pmrpg/shared";
 import { ApiError, type CharacterApi, type CharacterBundle } from "./character-api";
+import { uiAssetUrl } from "./ui-kit";
 
 const maps = exampleMapRegistry();
 const { species, equipment: equipmentDefs, items: itemDefs, sigils: sigilDefs, skills: skillDefs, bosses: bossDefs, affixPools } = exampleContentMaps();
@@ -174,6 +175,33 @@ const CSS = `
 .pm-node button { min-height: 30px; padding: 2px 6px; font-size: 12px; border-radius: 4px; border: 1px solid #463f6b; background: #2f7a4a; color: #fff; cursor: pointer; }
 .pm-node button:disabled { background: #322b4d; opacity: 0.6; cursor: default; }
 .pm-node-info { font-size: 12px; color: #d8d4ea; background: #1b1830; border: 1px solid #463f6b; border-radius: 6px; padding: 8px; min-height: 36px; }
+
+/* Codex UI kit v001 (ART_HANDOFF §11): every overlay window and button is skinned with the same 9-slice art
+   as the Phaser scenes. Corners stay 16px (native size) so the pixels are never resampled. */
+.pm-panel { border: 16px solid transparent; border-radius: 0; padding: 6px 8px; background: #241f36 padding-box;
+  border-image: url(${uiAssetUrl("window_frame")}) 16 fill / 16px; image-rendering: pixelated; }
+.pm-panel button, .pm-panel .pm-list li button, .pm-panel .pm-node button, .pm-panel .pm-slot button, .pm-panel .pm-choices button, .pm-panel .pm-actions button { border: 6px solid transparent; border-radius: 0;
+  background: none; color: #f4f2fb; min-height: 36px; white-space: nowrap; opacity: 1;
+  border-image: url(${uiAssetUrl("button_normal")}) 16 fill / 16px; image-rendering: pixelated; }
+.pm-panel .pm-choices button[aria-pressed=true] { border-image-source: url(${uiAssetUrl("button_selected")}); background: none; color: #f4f2fb; }
+.pm-panel .pm-actions .primary { border-image-source: url(${uiAssetUrl("button_primary")}); background: none; color: #fff4d6; }
+.pm-panel .pm-list li button[data-release], .pm-panel .pm-list li button[data-sell], .pm-panel .pm-list li button[data-salvage], .pm-panel .pm-list li button[data-delete] {
+  border-image-source: url(${uiAssetUrl("button_danger")}); color: #ffe1de; }
+.pm-panel button:disabled, .pm-panel .pm-list li button:disabled, .pm-panel .pm-node button:disabled, .pm-panel .pm-slot button:disabled, .pm-panel .pm-choices button:disabled, .pm-panel .pm-actions button:disabled { border-image-source: url(${uiAssetUrl("button_disabled")});
+  background: none; color: #8a84a8; opacity: 1; }
+.pm-slot, .pm-node, .pm-node-info, .pm-item-rule { border: 8px solid transparent; border-radius: 0; background: none;
+  border-image: url(${uiAssetUrl("window_background")}) 16 fill / 16px; image-rendering: pixelated; }
+.pm-slot { display: flow-root; }
+.pm-node.learned { border-image-source: url(${uiAssetUrl("button_selected")}); }
+.pm-panel .pm-node button { white-space: normal; }
+.pm-list li[data-companion], .pm-list li[data-piece] { flex-wrap: wrap; }
+.pm-icon { position: relative; flex: none; width: 48px; height: 48px; display: inline-block; vertical-align: middle;
+  background: url(${uiAssetUrl("slot_48_common")}) no-repeat; image-rendering: pixelated; }
+.pm-slot .pm-icon { float: left; margin: 0 8px 2px 0; }
+.pm-icon.empty { opacity: 0.5; }
+.pm-icon .pm-portrait { position: absolute; left: 12px; top: 12px; width: 24px; height: 24px; }
+.pm-icon .pm-lock { position: absolute; left: 30px; top: 30px; width: 16px; height: 16px; background: url(${uiAssetUrl("badge_lock")}); }
+${["uncommon", "rare", "epic", "legendary"].map((r) => `.pm-icon[data-rarity=${r.toUpperCase()}] { background-image: url(${uiAssetUrl(`slot_48_${r}`)}); }`).join("\n")}
 `;
 
 const ELEMENT_CSS: Record<Element, string> = {
@@ -200,6 +228,21 @@ export function overlay(): { root: HTMLDivElement; panel: HTMLDivElement; close:
   root.append(panel);
   document.body.append(root);
   return { root, panel, close: () => root.remove() };
+}
+
+/**
+ * A 48px kit slot: rarity rim, a 24px square in the middle (element colour until item and portrait
+ * icons land, ART_HANDOFF §11 round 2) and the lock badge on protected things.
+ */
+function slotIcon(opts: { rarity?: string; color?: string; locked?: boolean; empty?: boolean }): HTMLElement {
+  const box = el("span", { class: opts.empty === true ? "pm-icon empty" : "pm-icon", "data-rarity": opts.rarity ?? "COMMON" });
+  if (opts.color !== undefined) {
+    const p = el("span", { class: "pm-portrait" });
+    p.style.background = opts.color;
+    box.append(p);
+  }
+  if (opts.locked === true) box.append(el("span", { class: "pm-lock", title: "ล็อกอยู่" }));
+  return box;
 }
 
 export function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, text?: string): HTMLElementTagNameMap[K] {
@@ -426,6 +469,7 @@ export function equipmentPanel(api: CharacterApi, start: CharacterBundle): Promi
         box.append(el("b", {}, SLOT_TH[slot]));
         const piece = worn.get(slot);
         const def = piece === undefined ? undefined : equipmentDefs.get(piece.definitionId);
+        box.prepend(slotIcon(piece === undefined ? { empty: true } : { rarity: piece.rarity, locked: piece.protected }));
         if (def === undefined) box.append(document.createTextNode(piece === undefined ? "ว่าง" : piece.definitionId));
         else box.append(gearName(def, piece!), el("small", { class: "pm-affix" }, affixLine(piece!)));
         if (piece !== undefined) {
@@ -452,8 +496,7 @@ export function equipmentPanel(api: CharacterApi, start: CharacterBundle): Promi
             ` · Lv${def.requiredLevel}${def.handedness === "two_hand" ? " · สองมือ" : ""} · ${statLine(refinedBaseStats(def, piece.refineLevel))}`,
             el("small", { class: "pm-affix" }, affixLine(piece)),
           );
-        if (piece.protected) text.prepend("🔒 ");
-        li.append(text);
+        li.append(slotIcon({ rarity: piece.rarity, locked: piece.protected }), text);
         const targets = def === undefined ? [] : def.handedness === "two_hand" ? (["MAIN_HAND"] as const) : SLOT_FOR_CATEGORY[def.category];
         for (const slot of targets) {
           const b = el("button", { type: "button" }, targets.length > 1 ? `ใส่${SLOT_TH[slot]}` : "ใส่");
@@ -727,12 +770,11 @@ export function teamPanel(api: CharacterApi, start: CharacterBundle): Promise<Ch
           cellOf.set(c.id, cellSel.value);
           refresh();
         });
-        const dot = el("span", { class: "pm-dot" });
-        dot.style.background = ELEMENT_CSS[c.element];
+        const dot = slotIcon({ color: ELEMENT_CSS[c.element], locked: c.protected });
         const bar = expProgress(RULES, "companion", c.xp);
         const exp = bar.need === null ? "EXP สูงสุด" : `EXP ${bar.into.toLocaleString()}/${bar.need.toLocaleString()}`;
         const name = c.nickname ? `${c.nickname} (${sp?.name.th ?? c.speciesId})` : (sp?.name.th ?? c.speciesId);
-        const label = el("label", { for: `pm-${c.id}`, class: "pm-grow" }, `${c.protected ? "🔒 " : ""}${name}${c.rebirthStage > 0 ? ` ★R${c.rebirthStage}` : ""} · ${ELEMENT_TH[c.element]} · Lv${c.currentLevel}${prof.level < c.currentLevel ? ` (สู้เป็น Lv${prof.level})` : ""} (${exp}) · HP ${hp}/${maxHp}${hp <= 0 ? " (ล้ม พักในเมือง)" : ""} · Bond ${c.bond} ${BOND_TIER_NAMES[bondTier(RULES, c.bond)]} · ${PRIMARY_KEYS.map((k) => `${k} ${prof.primaryStats[k]}`).join(" ")}`);
+        const label = el("label", { for: `pm-${c.id}`, class: "pm-grow" }, `${name}${c.rebirthStage > 0 ? ` ★R${c.rebirthStage}` : ""} · ${ELEMENT_TH[c.element]} · Lv${c.currentLevel}${prof.level < c.currentLevel ? ` (สู้เป็น Lv${prof.level})` : ""} (${exp}) · HP ${hp}/${maxHp}${hp <= 0 ? " (ล้ม พักในเมือง)" : ""} · Bond ${c.bond} ${BOND_TIER_NAMES[bondTier(RULES, c.bond)]} · ${PRIMARY_KEYS.map((k) => `${k} ${prof.primaryStats[k]}`).join(" ")}`);
         label.style.margin = "0";
         const rename = el("button", { type: "button", "data-rename": c.id }, "ตั้งชื่อ");
         rename.addEventListener("click", () => {

@@ -22,6 +22,8 @@ export type BarKind = Exclude<(typeof BARS)[number], "track">;
 export type BarHeight = (typeof BAR_HEIGHTS)[number];
 
 const key = (name: string) => `ui_${name}`;
+/** Public URL of one kit image, for HTML windows that skin themselves with the same art. */
+export const uiAssetUrl = (name: string) => `/assets/sprites/ui/ui_${name}_${V}.png`;
 /** Texture keys, for scenes that place a kit image themselves. */
 export const uiKey = {
   button: (k: ButtonKind) => key(`button_${k}`),
@@ -35,7 +37,7 @@ export const uiKey = {
 
 export function loadUiKit(scene: Phaser.Scene) {
   const add = (name: string) => {
-    if (!scene.textures.exists(key(name))) scene.load.image(key(name), `/assets/sprites/ui/ui_${name}_${V}.png`);
+    if (!scene.textures.exists(key(name))) scene.load.image(key(name), uiAssetUrl(name));
   };
   for (const b of BUTTONS) add(`button_${b}`);
   for (const c of COMMANDS) add(`command_${c}`);
@@ -46,8 +48,8 @@ export function loadUiKit(scene: Phaser.Scene) {
   add("badge_lock");
 }
 
-/** Window frame or title strip (corners 16, metadata `nineSlice`); top-left at x, y. */
-export function uiPanel(scene: Phaser.Scene, x: number, y: number, w: number, h: number, part: "frame" | "title" = "frame") {
+/** Window frame, inner background or title strip (corners 16, metadata `nineSlice`); top-left at x, y. */
+export function uiPanel(scene: Phaser.Scene, x: number, y: number, w: number, h: number, part: "frame" | "background" | "title" = "frame") {
   return scene.add.nineslice(x, y, uiKey.window(part), undefined, w, h, 16, 16, 16, 16).setOrigin(0, 0);
 }
 
@@ -153,6 +155,15 @@ export class UiBar {
   fixed(depth: number) {
     for (const o of [this.track, this.fill]) o.setScrollFactor(0).setDepth(depth);
     return this;
+  }
+  setDepth(d: number) {
+    this.track.setDepth(d);
+    this.fill.setDepth(d);
+    return this;
+  }
+  destroy() {
+    this.track.destroy();
+    this.fill.destroy();
   }
   setPosition(x: number, y: number) {
     this.track.setPosition(x, y);

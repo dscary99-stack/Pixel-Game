@@ -17,6 +17,8 @@ const lootName = (id: string) => (CONTENT.items.get(id) ?? CONTENT.equipment.get
 
 const expText = (exp: number | undefined) => (exp ? ` · EXP +${exp}` : "");
 
+const OUTCOME_TH: Record<PublicBattleState["status"], string> = { active: "กำลังสู้", victory: "ชนะ!", defeat: "แพ้", fled: "หนีสำเร็จ" };
+
 const W = 960;
 const H = 540;
 
@@ -73,6 +75,9 @@ export class BattleScene extends Phaser.Scene {
   private cursor = 0;
   private watchUi: { destroy(): void }[] = [];
   private exitButton: UiButton | null = null;
+  /** The end-of-fight summary (GUI draft "Result"): built once, hidden with "ดูสนาม". */
+  private resultUi: { destroy(): void; setVisible(v: boolean): unknown }[] | null = null;
+  private abandoned = false;
 
   /**
    * `onExit` is set when the fight came from the world: once the fight is over a button takes the
@@ -86,6 +91,8 @@ export class BattleScene extends Phaser.Scene {
     this.cursor = 0;
     this.watchUi = [];
     this.exitButton = null;
+    this.resultUi = null;
+    this.abandoned = false;
     this.views = new Map();
     this.selectedTarget = null;
     this.log = [];
@@ -587,7 +594,8 @@ export class BattleScene extends Phaser.Scene {
       case "TurnSkipped":
         return this.pushLog(`${this.name(e.unitId)} ${STATUS_DEFINITIONS[e.statusId].th} ข้ามเทิร์น`);
       case "BattleEnded":
-        return this.pushLog(e.abandoned === true ? `จบไฟต์: ไม่มีใครสั่งนานเกินไป นับเป็น ${e.outcome}` : `จบไฟต์: ${e.outcome}`);
+        if (e.abandoned === true) this.abandoned = true;
+        return this.pushLog(e.abandoned === true ? `จบไฟต์: ไม่มีใครสั่งนานเกินไป นับเป็น${OUTCOME_TH[e.outcome]}` : `จบไฟต์: ${OUTCOME_TH[e.outcome]}`);
       default:
         return;
     }
@@ -698,13 +706,103 @@ export class BattleScene extends Phaser.Scene {
     const party = state.partyBonus ? `ปาร์ตี้ ${state.partyBonus.partners} คน: EXP +${state.partyBonus.expPercent}% วัสดุ +${state.partyBonus.materialDropPercent}%` : "";
     const waiting = state.members !== undefined && !this.myTurn() ? " (เพื่อน · รอเขาสั่ง)" : "";
     this.turnText.setText(
-      state.status === "active" ? `รอบ ${state.round} · ตาของ ${actor?.name ?? "-"}${waiting} · แตะศัตรูเพื่อเลือกเป้า` : `จบไฟต์: ${state.status}`,
+      state.status === "active" ? `รอบ ${state.round} · ตาของ ${actor?.name ?? "-"}${waiting} · แตะศัตรูเพื่อเลือกเป้า` : `จบไฟต์: ${OUTCOME_TH[state.status]}`,
     );
     this.infoText.setText(`${party}${tower}${bossLine}`.replace(/^\n/, ""));
-    if (state.status !== "active" && this.onExit !== null && this.exitButton === null && !this.watching) {
-      const exit = this.onExit;
-      this.exitButton = new UiButton(this, W - 200, 20, 184, "กลับไปเดินต่อ", () => exit(), { kind: "primary", depth: 30 });
+    if (state.status !== "active" && this.resultUi === null && !this.watching) this.showResult(state);
+  }
+
+  /**
+   * The summary once the fight is over, read from the fight's own entitlements (what the server owes
+   * this player): outcome, character and companion EXP, Bond, loot and captures. "ดูสนาม" hides it and
+   * a corner button brings it back; "กลับไปเดินต่อ" returns to the map when the fight came from there.
+   */
+  private showResult(state: PublicBattleState) {
+    const me = this.snap.you ?? state.ownerAccountId;
+    const mine = state.entitlements.filter((e) => (e.recipientId ?? state.ownerAccountId) === me);
+    let exp = 0;
+    const loot = new Map<string, number>();
+    const companions = new Map<string, { exp: number; bond: number; mastery: number }>();
+    const companion = (id: string) => companions.get(id) ?? companions.set(id, { exp: 0, bond: 0, mastery: 0 }).get(id)!;
+    const captures: string[] = [];
+    for (const e of mine) {
+      if (e.kind === "fight_result") {
+        for (const [id, g] of Object.entries(e.companions)) Object.assign(companion(id), { bond: g.bond, mastery: g.mastery });
+        continue;
+      }
+      exp += e.exp ?? 0;
+      for (const [id, x] of Object.entries(e.companionExp ?? {})) companion(id).exp += x;
+      if (e.kind === "kill") for (const l of e.items) loot.set(l.itemId, (loot.get(l.itemId) ?? 0) + l.quantity);
+      else captures.push(`${CONTENT.species.get(e.speciesId)?.name.th ?? e.speciesId} Lv${e.level}`);
     }
+
+    const px = 170;
+    const py = 70;
+    const pw = 620;
+    const ph = 400;
+    const ui: { destroy(): void; setVisible(v: boolean): unknown }[] = [];
+    const text = (x: number, y: number, t: string, size: number, color = "#f4f2fb", wrap?: number) => {
+      const o = this.add.text(x, y, t, { fontFamily: "sans-serif", fontSize: `${size}px`, color, wordWrap: wrap === undefined ? undefined : { width: wrap } }).setDepth(41);
+      ui.push(o);
+      return o;
+    };
+    // The dim layer swallows taps so nothing behind the summary can be pressed.
+    ui.push(this.add.rectangle(W / 2, H / 2, W, H, 0x0c0a12, 0.73).setDepth(40).setInteractive());
+    ui.push(uiPanel(this, px, py, pw, ph).setDepth(40));
+    const title = OUTCOME_TH[state.status];
+    text(px + pw / 2, py + 18, title, 28, state.status === "victory" ? "#f2c94c" : state.status === "defeat" ? "#ff8a80" : "#b8b2d6").setOrigin(0.5, 0);
+    const note =
+      state.practice === true ? "ลานทดสอบ: ไม่ได้และไม่เสียอะไร" : this.abandoned ? "ไม่มีใครสั่งนานเกินไป ไฟต์ปิดเองและนับเป็นแพ้" : state.status === "fled" ? "ออกจากไฟต์แล้ว" : "";
+    if (note !== "") text(px + pw / 2, py + 58, note, 12, "#b8b2d6").setOrigin(0.5, 0);
+
+    // Character and companions side by side.
+    const top = py + 82;
+    ui.push(uiPanel(this, px + 20, top, 280, 96, "background").setDepth(40));
+    const player = state.units.find((u) => u.kind === "player" && (u.controllerId ?? state.ownerAccountId) === me);
+    text(px + 32, top + 12, `${player?.name ?? "ตัวละคร"}  EXP +${exp.toLocaleString()}`, 14);
+    if (player !== undefined) {
+      text(px + 32, top + 40, `HP ${player.hp}/${player.stats.maxHp}`, 11, "#b8b2d6");
+      ui.push(new UiBar(this, px + 32, top + 64, 256, "hp_ally", 6).set(player.hp, player.stats.maxHp).setDepth(41));
+    }
+    ui.push(uiPanel(this, px + 320, top, 280, 96, "background").setDepth(40));
+    text(px + 332, top + 10, "คู่ใจ", 13);
+    const lines = [...companions].map(([id, g]) => {
+      const u = this.unit(`ally:${id}`);
+      const bond = g.bond === 0 ? "" : ` · Bond ${g.bond > 0 ? "+" : ""}${g.bond}`;
+      return `${u?.name ?? id}${u?.ko ? " (ล้ม)" : ""} EXP +${g.exp}${bond}${g.mastery > 0 ? ` · ชำนาญ +${g.mastery}` : ""}`;
+    });
+    text(px + 332, top + 30, lines.slice(0, 4).join("\n") || "-", 11, "#d8d4ea", 256);
+
+    // Loot as kit slots. A drop's rarity is rolled when it is granted, so the summary uses the plain rim.
+    text(px + 20, top + 110, loot.size === 0 ? "ของที่ได้: ไม่มี" : "ของที่ได้", 13);
+    [...loot].slice(0, 9).forEach(([id, n], i) => {
+      const x = px + 20 + i * 66;
+      const y = top + 134;
+      ui.push(this.add.image(x, y, uiKey.slot(48, "common")).setOrigin(0, 0).setDepth(40));
+      text(x + 24, y + 24, `×${n}`, 12, "#ffffff").setOrigin(0.5);
+      text(x + 24, y + 52, lootName(id), 10, "#d8d4ea", 62).setOrigin(0.5, 0).setAlign("center");
+    });
+    if (loot.size > 9) text(px + pw - 20, top + 150, `+${loot.size - 9} ชนิด`, 11, "#b8b2d6").setOrigin(1, 0);
+    if (captures.length > 0) {
+      text(px + 20, top + 216, `จับได้: ${captures.join(", ")} · เข้าคลังคู่ใจ`, 12, "#f2c94c", pw - 40);
+    }
+
+    const by = py + ph - 64;
+    const close = new UiButton(this, px + pw / 2 - (this.onExit === null ? 70 : 150), by, 140, "ดูสนาม", () => this.setResultVisible(false), { depth: 41 });
+    ui.push(close);
+    if (this.onExit !== null) {
+      const exit = this.onExit;
+      ui.push(new UiButton(this, px + pw / 2 + 10, by, 140, "กลับไปเดินต่อ", () => exit(), { kind: "primary", depth: 41 }));
+    }
+    this.resultUi = ui;
+    // While the summary is hidden, the corner keeps a way back to it and to the map.
+    this.exitButton = new UiButton(this, W - 160, 20, 144, "สรุปผลไฟต์", () => this.setResultVisible(true), { kind: "primary", depth: 30 });
+    this.exitButton.setVisible(false);
+  }
+
+  private setResultVisible(v: boolean) {
+    for (const o of this.resultUi ?? []) o.setVisible(v);
+    this.exitButton?.setVisible(!v);
   }
 
   /**
