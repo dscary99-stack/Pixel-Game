@@ -527,3 +527,10 @@ O02–O04 นัทให้ Claude คิดเอง (3 ต.ค. 2026) ย้�
 4. ตัดสิน O15 ส่วนที่เหลือ (สกิลหลายผล) และ O11 (นโยบายหลุดกลางไฟต์) แล้วเพิ่ม status effects และทางปิดไฟต์ที่ถูกทิ้ง
 5. Art proof หนึ่งตัวละคร 4 ทิศ + gear 12 layers + tileset หนึ่งชุด (บท10, ค้างจาก Phase A)
 6. ลงทะเบียนแอป Google/Facebook แล้วตั้งค่า เพื่อทดสอบปุ่มเข้าสู่ระบบกับบัญชีจริง
+
+
+## UI asset proof — Codex, 27 ต.ค. 2026
+
+สาขา codex/ui-kit จาก claude/project-thread-ektp0t (115cc24): เพิ่ม51 PNG UI native พร้อม per-asset metadata/index, กรอบ9-slice16px, ปุ่ม48px5แบบ, ช่อง48/64ครบ5rarity+ล็อก, แถบค่า5ชนิดสูง4/6/8, คำสั่ง24px9อัน และกลุ่มเมนู24px5อัน ดู art/ui/PROOF.md และ qa-report.json; ไม่มีการแก้ source ใน apps/ หรือ packages/.
+
+ตรวจขนาด/alpha/hash/manifest/9-slice continuity และมุมจากภาพประกอบ960×540ผ่าน; เปิดดู sheet/contrast proof แล้ว npm run check ผ่าน (typecheck/tests/client build/server dry-run) ไม่ deploy. status grid_ready ยังไม่ production-approved; Phaser integration, mobile FIT และการเทียบ Claude artifact โดยตรงยังไม่ตรวจ (ลิงก์ artifact เปิดไม่ได้). รอบถัดไป status/element/class/race/item/damage/target/title/21 menu ยังไม่ทำ.

@@ -1,0 +1,2718 @@
+{
+  "version": 1,
+  "status": "proof",
+  "canvas": [
+    960,
+    540
+  ],
+  "background": "#14121c",
+  "count": 51,
+  "assets": [
+    {
+      "assetId": "ui:window:frame",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_window_frame_v001.png",
+      "frameWidth": 48,
+      "frameHeight": 48,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "nine_slice",
+      "nineSlice": {
+        "left": 16,
+        "right": 16,
+        "top": 16,
+        "bottom": 16,
+        "minWidth": 33,
+        "minHeight": 33
+      },
+      "paletteVariants": [],
+      "nativeSize": [
+        48,
+        48
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          48,
+          48
+        ]
+      ],
+      "productionApproved": false,
+      "sha256": "892b51812dcf561d7ac521161aae5975229c75b6107e39184d465c2f22b0c205"
+    },
+    {
+      "assetId": "ui:window:background",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_window_background_v001.png",
+      "frameWidth": 48,
+      "frameHeight": 48,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "fill",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        48,
+        48
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          48,
+          48
+        ]
+      ],
+      "productionApproved": false,
+      "resize": "nearest-stretch",
+      "sha256": "1e3c9837365747aa87210601026162ae928fc4711fead058c49e0135fa7ab9dd"
+    },
+    {
+      "assetId": "ui:window:title",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_window_title_v001.png",
+      "frameWidth": 48,
+      "frameHeight": 48,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "nine_slice",
+      "nineSlice": {
+        "left": 16,
+        "right": 16,
+        "top": 16,
+        "bottom": 16,
+        "minWidth": 33,
+        "minHeight": 33
+      },
+      "paletteVariants": [],
+      "nativeSize": [
+        48,
+        48
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          48,
+          48
+        ]
+      ],
+      "productionApproved": false,
+      "contentInsets": [
+        16,
+        12,
+        16,
+        12
+      ],
+      "sha256": "e888a045660f4d3295fa027d8d21e1fd186b8ecaaa0c50f8e39d2459645e8245"
+    },
+    {
+      "assetId": "ui:button:normal",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_button_normal_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 48,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "nine_slice",
+      "nineSlice": {
+        "left": 16,
+        "right": 16,
+        "top": 16,
+        "bottom": 16,
+        "minWidth": 33,
+        "minHeight": 48
+      },
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        48
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          48
+        ]
+      ],
+      "productionApproved": false,
+      "recommendedHeight": 48,
+      "minimumTouchHeight": 48,
+      "contentInsets": [
+        16,
+        10,
+        16,
+        10
+      ],
+      "textOffset": [
+        0,
+        0
+      ],
+      "sha256": "376fb3dadb7cdaddcb619548c3dc778528981794583f69c3d2b545fad185623d"
+    },
+    {
+      "assetId": "ui:button:selected",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_button_selected_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 48,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "nine_slice",
+      "nineSlice": {
+        "left": 16,
+        "right": 16,
+        "top": 16,
+        "bottom": 16,
+        "minWidth": 33,
+        "minHeight": 48
+      },
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        48
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          48
+        ]
+      ],
+      "productionApproved": false,
+      "recommendedHeight": 48,
+      "minimumTouchHeight": 48,
+      "contentInsets": [
+        16,
+        10,
+        16,
+        10
+      ],
+      "textOffset": [
+        0,
+        1
+      ],
+      "sha256": "21dd3d1f2ea95e905f6f140701c0665c96c753bc49c587e56a2e4d747a668133"
+    },
+    {
+      "assetId": "ui:button:primary",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_button_primary_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 48,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "nine_slice",
+      "nineSlice": {
+        "left": 16,
+        "right": 16,
+        "top": 16,
+        "bottom": 16,
+        "minWidth": 33,
+        "minHeight": 48
+      },
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        48
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          48
+        ]
+      ],
+      "productionApproved": false,
+      "recommendedHeight": 48,
+      "minimumTouchHeight": 48,
+      "contentInsets": [
+        16,
+        10,
+        16,
+        10
+      ],
+      "textOffset": [
+        0,
+        0
+      ],
+      "sha256": "7f09cd6212f9639e39e94e48a0f20c858417e50dbcbf9a8572008943e5b3bb82"
+    },
+    {
+      "assetId": "ui:button:disabled",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_button_disabled_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 48,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "nine_slice",
+      "nineSlice": {
+        "left": 16,
+        "right": 16,
+        "top": 16,
+        "bottom": 16,
+        "minWidth": 33,
+        "minHeight": 48
+      },
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        48
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          48
+        ]
+      ],
+      "productionApproved": false,
+      "recommendedHeight": 48,
+      "minimumTouchHeight": 48,
+      "contentInsets": [
+        16,
+        10,
+        16,
+        10
+      ],
+      "textOffset": [
+        0,
+        0
+      ],
+      "sha256": "e62d58b242a7e02edb58d50e073edd5c999a2ea7401930f6e106dd7ec55950f6"
+    },
+    {
+      "assetId": "ui:button:danger",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_button_danger_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 48,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "nine_slice",
+      "nineSlice": {
+        "left": 16,
+        "right": 16,
+        "top": 16,
+        "bottom": 16,
+        "minWidth": 33,
+        "minHeight": 48
+      },
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        48
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          48
+        ]
+      ],
+      "productionApproved": false,
+      "recommendedHeight": 48,
+      "minimumTouchHeight": 48,
+      "contentInsets": [
+        16,
+        10,
+        16,
+        10
+      ],
+      "textOffset": [
+        0,
+        0
+      ],
+      "sha256": "f9ce83fcf032145b48cc5d04e7f21b7be960ed3452eac841bc1e5384cfde5a2c"
+    },
+    {
+      "assetId": "ui:slot:48_common",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_slot_48_common_v001.png",
+      "frameWidth": 48,
+      "frameHeight": 48,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "slot",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        48,
+        48
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          48,
+          48
+        ]
+      ],
+      "productionApproved": false,
+      "rarity": "COMMON",
+      "contentRect": [
+        8,
+        8,
+        32,
+        32
+      ],
+      "lockOffset": [
+        30,
+        30
+      ],
+      "quantityText": "runtime-bottom-right; move when locked",
+      "sha256": "a9556f900320d6fa254a38cf7f4d5722312c7706dc2e69f01daebb4642158f5e"
+    },
+    {
+      "assetId": "ui:slot:48_uncommon",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_slot_48_uncommon_v001.png",
+      "frameWidth": 48,
+      "frameHeight": 48,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "slot",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        48,
+        48
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          48,
+          48
+        ]
+      ],
+      "productionApproved": false,
+      "rarity": "UNCOMMON",
+      "contentRect": [
+        8,
+        8,
+        32,
+        32
+      ],
+      "lockOffset": [
+        30,
+        30
+      ],
+      "quantityText": "runtime-bottom-right; move when locked",
+      "sha256": "23298ff78da8fe4da5340f32dd04c474134f937db5586ebdd0e2ab685fc9b0cb"
+    },
+    {
+      "assetId": "ui:slot:48_rare",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_slot_48_rare_v001.png",
+      "frameWidth": 48,
+      "frameHeight": 48,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "slot",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        48,
+        48
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          48,
+          48
+        ]
+      ],
+      "productionApproved": false,
+      "rarity": "RARE",
+      "contentRect": [
+        8,
+        8,
+        32,
+        32
+      ],
+      "lockOffset": [
+        30,
+        30
+      ],
+      "quantityText": "runtime-bottom-right; move when locked",
+      "sha256": "d07ea8111c4fa41fb812fa440c80e35c8640eeff963af71fa8e5483144726498"
+    },
+    {
+      "assetId": "ui:slot:48_epic",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_slot_48_epic_v001.png",
+      "frameWidth": 48,
+      "frameHeight": 48,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "slot",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        48,
+        48
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          48,
+          48
+        ]
+      ],
+      "productionApproved": false,
+      "rarity": "EPIC",
+      "contentRect": [
+        8,
+        8,
+        32,
+        32
+      ],
+      "lockOffset": [
+        30,
+        30
+      ],
+      "quantityText": "runtime-bottom-right; move when locked",
+      "sha256": "21ebadfb776e2debced7b0c55830512b6b966f969b9ba6ffd3c05ee9094e922e"
+    },
+    {
+      "assetId": "ui:slot:48_legendary",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_slot_48_legendary_v001.png",
+      "frameWidth": 48,
+      "frameHeight": 48,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "slot",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        48,
+        48
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          48,
+          48
+        ]
+      ],
+      "productionApproved": false,
+      "rarity": "LEGENDARY",
+      "contentRect": [
+        8,
+        8,
+        32,
+        32
+      ],
+      "lockOffset": [
+        30,
+        30
+      ],
+      "quantityText": "runtime-bottom-right; move when locked",
+      "sha256": "1920fd2aaaf730cf69eb209440034ed23a394d6bc5cb207239937aaac9a16fe0"
+    },
+    {
+      "assetId": "ui:slot:64_common",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_slot_64_common_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "slot",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        64
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          64
+        ]
+      ],
+      "productionApproved": false,
+      "rarity": "COMMON",
+      "contentRect": [
+        8,
+        8,
+        48,
+        48
+      ],
+      "lockOffset": [
+        46,
+        46
+      ],
+      "quantityText": "runtime-bottom-right; move when locked",
+      "sha256": "7c6cb32ac5be05625503febc25193f999a39efbbc7807ed08050b20b1070f735"
+    },
+    {
+      "assetId": "ui:slot:64_uncommon",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_slot_64_uncommon_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "slot",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        64
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          64
+        ]
+      ],
+      "productionApproved": false,
+      "rarity": "UNCOMMON",
+      "contentRect": [
+        8,
+        8,
+        48,
+        48
+      ],
+      "lockOffset": [
+        46,
+        46
+      ],
+      "quantityText": "runtime-bottom-right; move when locked",
+      "sha256": "93a6cb67f568e6fbc884542d06b4bc32e1666c0f276beb3f132acdca5391570e"
+    },
+    {
+      "assetId": "ui:slot:64_rare",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_slot_64_rare_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "slot",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        64
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          64
+        ]
+      ],
+      "productionApproved": false,
+      "rarity": "RARE",
+      "contentRect": [
+        8,
+        8,
+        48,
+        48
+      ],
+      "lockOffset": [
+        46,
+        46
+      ],
+      "quantityText": "runtime-bottom-right; move when locked",
+      "sha256": "5b7f20280536e1b7c6f8c0266e380ab53e442c01ce234c5a6f07463efda09f5e"
+    },
+    {
+      "assetId": "ui:slot:64_epic",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_slot_64_epic_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "slot",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        64
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          64
+        ]
+      ],
+      "productionApproved": false,
+      "rarity": "EPIC",
+      "contentRect": [
+        8,
+        8,
+        48,
+        48
+      ],
+      "lockOffset": [
+        46,
+        46
+      ],
+      "quantityText": "runtime-bottom-right; move when locked",
+      "sha256": "020ce864103f55cd29f17fb783a3241936c7f402c433f0a91d2798135909ff0f"
+    },
+    {
+      "assetId": "ui:slot:64_legendary",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_slot_64_legendary_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "slot",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        64
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          64
+        ]
+      ],
+      "productionApproved": false,
+      "rarity": "LEGENDARY",
+      "contentRect": [
+        8,
+        8,
+        48,
+        48
+      ],
+      "lockOffset": [
+        46,
+        46
+      ],
+      "quantityText": "runtime-bottom-right; move when locked",
+      "sha256": "4ba52017af71c8f11732d7e07c30fd1aeef65e7355ee96c8f1c86332d983fcbd"
+    },
+    {
+      "assetId": "ui:badge:lock",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_badge_lock_v001.png",
+      "frameWidth": 16,
+      "frameHeight": 16,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "overlay",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        16,
+        16
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          16,
+          16
+        ]
+      ],
+      "productionApproved": false,
+      "attachment": "slot lower-right inset 2px",
+      "sha256": "edd869bd47a3b5458f90604e4a2490c8f81312c3e1ed8c70aed3b8c66b20a1b8"
+    },
+    {
+      "assetId": "ui:bar:track_h4",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_bar_track_h4_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 4,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "bar_track",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        4
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          4
+        ]
+      ],
+      "productionApproved": false,
+      "resize": "horizontal-nearest-stretch",
+      "contentInsets": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "sha256": "bd3cadc0a03f670b4c1d423d7bb1f2031557cfcfd82a14dc17a93d7a0b28cad5"
+    },
+    {
+      "assetId": "ui:bar:hp_ally_h4",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_bar_hp_ally_h4_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 4,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "bar_fill",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        4
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          4
+        ]
+      ],
+      "productionApproved": false,
+      "track": "ui:bar:track_h4",
+      "fillRule": "Stretch full image to track dimensions first; clip x from 1 to 1+floor((width-2)*clamp(value/max,0,1)). Hide fill at zero. Keep height fixed.",
+      "contentInsets": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "sha256": "639889c4d1e027e7121975c5de5e2482ebcb20793fca5ff403be854a66d27553"
+    },
+    {
+      "assetId": "ui:bar:mp_h4",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_bar_mp_h4_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 4,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "bar_fill",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        4
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          4
+        ]
+      ],
+      "productionApproved": false,
+      "track": "ui:bar:track_h4",
+      "fillRule": "Stretch full image to track dimensions first; clip x from 1 to 1+floor((width-2)*clamp(value/max,0,1)). Hide fill at zero. Keep height fixed.",
+      "contentInsets": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "sha256": "352d727a32089c26f6163b2fa069849a7c3383c9b07a7c15eff45b9984eb3fbe"
+    },
+    {
+      "assetId": "ui:bar:exp_h4",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_bar_exp_h4_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 4,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "bar_fill",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        4
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          4
+        ]
+      ],
+      "productionApproved": false,
+      "track": "ui:bar:track_h4",
+      "fillRule": "Stretch full image to track dimensions first; clip x from 1 to 1+floor((width-2)*clamp(value/max,0,1)). Hide fill at zero. Keep height fixed.",
+      "contentInsets": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "sha256": "af2d90a2287e72e7a41fc7829bc69cb83056c5dd5f2bd91b555b4ad29e785f4d"
+    },
+    {
+      "assetId": "ui:bar:hp_enemy_h4",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_bar_hp_enemy_h4_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 4,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "bar_fill",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        4
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          4
+        ]
+      ],
+      "productionApproved": false,
+      "track": "ui:bar:track_h4",
+      "fillRule": "Stretch full image to track dimensions first; clip x from 1 to 1+floor((width-2)*clamp(value/max,0,1)). Hide fill at zero. Keep height fixed.",
+      "contentInsets": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "sha256": "f570696615a3a1cf9508a91f9f85b907d1d281f6184fec94271a730016ca6ec7"
+    },
+    {
+      "assetId": "ui:bar:ascend_h4",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_bar_ascend_h4_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 4,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "bar_fill",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        4
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          4
+        ]
+      ],
+      "productionApproved": false,
+      "track": "ui:bar:track_h4",
+      "fillRule": "Stretch full image to track dimensions first; clip x from 1 to 1+floor((width-2)*clamp(value/max,0,1)). Hide fill at zero. Keep height fixed.",
+      "contentInsets": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "sha256": "62734f1e0dd9ddeb5e9a91e165bd8c29d3d09ff0264ac2a7ebfcc1272a0b9189"
+    },
+    {
+      "assetId": "ui:bar:track_h6",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_bar_track_h6_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 6,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "bar_track",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        6
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          6
+        ]
+      ],
+      "productionApproved": false,
+      "resize": "horizontal-nearest-stretch",
+      "contentInsets": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "sha256": "8020957b2c528a6acc88157e473b4deed11375eb7c3580f815658e022fa59e66"
+    },
+    {
+      "assetId": "ui:bar:hp_ally_h6",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_bar_hp_ally_h6_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 6,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "bar_fill",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        6
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          6
+        ]
+      ],
+      "productionApproved": false,
+      "track": "ui:bar:track_h6",
+      "fillRule": "Stretch full image to track dimensions first; clip x from 1 to 1+floor((width-2)*clamp(value/max,0,1)). Hide fill at zero. Keep height fixed.",
+      "contentInsets": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "sha256": "bee6ee994f9521a7899754521f939e6b6b58043c8c3e798c685ae7cf0e5552e8"
+    },
+    {
+      "assetId": "ui:bar:mp_h6",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_bar_mp_h6_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 6,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "bar_fill",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        6
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          6
+        ]
+      ],
+      "productionApproved": false,
+      "track": "ui:bar:track_h6",
+      "fillRule": "Stretch full image to track dimensions first; clip x from 1 to 1+floor((width-2)*clamp(value/max,0,1)). Hide fill at zero. Keep height fixed.",
+      "contentInsets": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "sha256": "f1222c9aeb6c50bf00dd2918c5f333692c4aaa2b59beca836cadf17a3841a514"
+    },
+    {
+      "assetId": "ui:bar:exp_h6",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_bar_exp_h6_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 6,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "bar_fill",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        6
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          6
+        ]
+      ],
+      "productionApproved": false,
+      "track": "ui:bar:track_h6",
+      "fillRule": "Stretch full image to track dimensions first; clip x from 1 to 1+floor((width-2)*clamp(value/max,0,1)). Hide fill at zero. Keep height fixed.",
+      "contentInsets": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "sha256": "712f8f5e24998f5fa94ae4745edd330a509e5c7d3f3fec421ef588b632aab17a"
+    },
+    {
+      "assetId": "ui:bar:hp_enemy_h6",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_bar_hp_enemy_h6_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 6,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "bar_fill",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        6
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          6
+        ]
+      ],
+      "productionApproved": false,
+      "track": "ui:bar:track_h6",
+      "fillRule": "Stretch full image to track dimensions first; clip x from 1 to 1+floor((width-2)*clamp(value/max,0,1)). Hide fill at zero. Keep height fixed.",
+      "contentInsets": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "sha256": "d25a4bc1e7d553ba8080436a55ce9ee9a1b9d48a295916079b46ed0030cfe182"
+    },
+    {
+      "assetId": "ui:bar:ascend_h6",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_bar_ascend_h6_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 6,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "bar_fill",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        6
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          6
+        ]
+      ],
+      "productionApproved": false,
+      "track": "ui:bar:track_h6",
+      "fillRule": "Stretch full image to track dimensions first; clip x from 1 to 1+floor((width-2)*clamp(value/max,0,1)). Hide fill at zero. Keep height fixed.",
+      "contentInsets": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "sha256": "a31560bcb50ddf831735123e3a94f5efd40920140bd8e1204bd43921152cd235"
+    },
+    {
+      "assetId": "ui:bar:track_h8",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_bar_track_h8_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 8,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "bar_track",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        8
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          8
+        ]
+      ],
+      "productionApproved": false,
+      "resize": "horizontal-nearest-stretch",
+      "contentInsets": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "sha256": "542314f8e886fb9cf779c232697bd189146c74d009a46fee0ce6c466555bda10"
+    },
+    {
+      "assetId": "ui:bar:hp_ally_h8",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_bar_hp_ally_h8_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 8,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "bar_fill",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        8
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          8
+        ]
+      ],
+      "productionApproved": false,
+      "track": "ui:bar:track_h8",
+      "fillRule": "Stretch full image to track dimensions first; clip x from 1 to 1+floor((width-2)*clamp(value/max,0,1)). Hide fill at zero. Keep height fixed.",
+      "contentInsets": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "sha256": "9e2c4795c97c0f5058b3f5ff2090bcbb7b9ab176192380ca7fab5130e8a1aa97"
+    },
+    {
+      "assetId": "ui:bar:mp_h8",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_bar_mp_h8_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 8,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "bar_fill",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        8
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          8
+        ]
+      ],
+      "productionApproved": false,
+      "track": "ui:bar:track_h8",
+      "fillRule": "Stretch full image to track dimensions first; clip x from 1 to 1+floor((width-2)*clamp(value/max,0,1)). Hide fill at zero. Keep height fixed.",
+      "contentInsets": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "sha256": "7c0d6e5d779eca8e470058d8dac807d7d75b11c9a2be95a4a85278cce80472d4"
+    },
+    {
+      "assetId": "ui:bar:exp_h8",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_bar_exp_h8_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 8,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "bar_fill",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        8
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          8
+        ]
+      ],
+      "productionApproved": false,
+      "track": "ui:bar:track_h8",
+      "fillRule": "Stretch full image to track dimensions first; clip x from 1 to 1+floor((width-2)*clamp(value/max,0,1)). Hide fill at zero. Keep height fixed.",
+      "contentInsets": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "sha256": "0afa40adac9dde301b18a351d1820db568d2ff556e8b03eaafa3719414d0714c"
+    },
+    {
+      "assetId": "ui:bar:hp_enemy_h8",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_bar_hp_enemy_h8_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 8,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "bar_fill",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        8
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          8
+        ]
+      ],
+      "productionApproved": false,
+      "track": "ui:bar:track_h8",
+      "fillRule": "Stretch full image to track dimensions first; clip x from 1 to 1+floor((width-2)*clamp(value/max,0,1)). Hide fill at zero. Keep height fixed.",
+      "contentInsets": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "sha256": "5c0571d9bb3b86e379e83bcd9a14fa8b99b5c2f9168b14beccad134848a228dd"
+    },
+    {
+      "assetId": "ui:bar:ascend_h8",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_bar_ascend_h8_v001.png",
+      "frameWidth": 64,
+      "frameHeight": 8,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "bar_fill",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        64,
+        8
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          64,
+          8
+        ]
+      ],
+      "productionApproved": false,
+      "track": "ui:bar:track_h8",
+      "fillRule": "Stretch full image to track dimensions first; clip x from 1 to 1+floor((width-2)*clamp(value/max,0,1)). Hide fill at zero. Keep height fixed.",
+      "contentInsets": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "sha256": "905476666bcc34c9f7bea65de2e7b6487ea4de3be1cccd86a36a90fa58c5d717"
+    },
+    {
+      "assetId": "ui:command:attack",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_command_attack_v001.png",
+      "frameWidth": 24,
+      "frameHeight": 24,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "icon",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        24,
+        24
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          24,
+          24
+        ]
+      ],
+      "productionApproved": false,
+      "semantic": "attack",
+      "hitArea": [
+        48,
+        48
+      ],
+      "text": "runtime",
+      "sha256": "68e39b3f0807395b96fe522f972b37d0e5fe09730d9445fa0e68512eded0fb39"
+    },
+    {
+      "assetId": "ui:command:skill",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_command_skill_v001.png",
+      "frameWidth": 24,
+      "frameHeight": 24,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "icon",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        24,
+        24
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          24,
+          24
+        ]
+      ],
+      "productionApproved": false,
+      "semantic": "skill",
+      "hitArea": [
+        48,
+        48
+      ],
+      "text": "runtime",
+      "sha256": "bbe7b2269590e48161985cf83349e7bfbb5fcfb5d4e76799e9e1ad68e40c25d7"
+    },
+    {
+      "assetId": "ui:command:guard",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_command_guard_v001.png",
+      "frameWidth": 24,
+      "frameHeight": 24,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "icon",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        24,
+        24
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          24,
+          24
+        ]
+      ],
+      "productionApproved": false,
+      "semantic": "guard",
+      "hitArea": [
+        48,
+        48
+      ],
+      "text": "runtime",
+      "sha256": "d208b8f1f2567c75d0b4477ffc127bb0ac2f6ba3810c0d8f7a6f32d297cc3c0e"
+    },
+    {
+      "assetId": "ui:command:potion",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_command_potion_v001.png",
+      "frameWidth": 24,
+      "frameHeight": 24,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "icon",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        24,
+        24
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          24,
+          24
+        ]
+      ],
+      "productionApproved": false,
+      "semantic": "potion",
+      "hitArea": [
+        48,
+        48
+      ],
+      "text": "runtime",
+      "sha256": "dc92d412ab46b88b1d341dff7d75d2e6b90c3cfe6d4d6dc43286e379d2286588"
+    },
+    {
+      "assetId": "ui:command:revive",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_command_revive_v001.png",
+      "frameWidth": 24,
+      "frameHeight": 24,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "icon",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        24,
+        24
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          24,
+          24
+        ]
+      ],
+      "productionApproved": false,
+      "semantic": "revive",
+      "hitArea": [
+        48,
+        48
+      ],
+      "text": "runtime",
+      "sha256": "0cbc6854b504815d9623d2f76f9e78f223e46d029b5f9fc37ce1b5d73095ee70"
+    },
+    {
+      "assetId": "ui:command:capture",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_command_capture_v001.png",
+      "frameWidth": 24,
+      "frameHeight": 24,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "icon",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        24,
+        24
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          24,
+          24
+        ]
+      ],
+      "productionApproved": false,
+      "semantic": "capture",
+      "hitArea": [
+        48,
+        48
+      ],
+      "text": "runtime",
+      "sha256": "a79eabd81acc37eb80576919e8ac384a6127555885601ccf368fb58e233a066c"
+    },
+    {
+      "assetId": "ui:command:flee",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_command_flee_v001.png",
+      "frameWidth": 24,
+      "frameHeight": 24,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "icon",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        24,
+        24
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          24,
+          24
+        ]
+      ],
+      "productionApproved": false,
+      "semantic": "flee",
+      "hitArea": [
+        48,
+        48
+      ],
+      "text": "runtime",
+      "sha256": "f07b95fe1bab56ed2d406b9a2dc8ae2cf302653d72520a4ef851181acd6f9ec5"
+    },
+    {
+      "assetId": "ui:command:ascend",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_command_ascend_v001.png",
+      "frameWidth": 24,
+      "frameHeight": 24,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "icon",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        24,
+        24
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          24,
+          24
+        ]
+      ],
+      "productionApproved": false,
+      "semantic": "ascend",
+      "hitArea": [
+        48,
+        48
+      ],
+      "text": "runtime",
+      "sha256": "120d390b80a952168223c735a339dba10dfd931a088b3a3479af72e191b1c55f"
+    },
+    {
+      "assetId": "ui:command:auto",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_command_auto_v001.png",
+      "frameWidth": 24,
+      "frameHeight": 24,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "icon",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        24,
+        24
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          24,
+          24
+        ]
+      ],
+      "productionApproved": false,
+      "semantic": "auto",
+      "hitArea": [
+        48,
+        48
+      ],
+      "text": "runtime",
+      "sha256": "8c1db8356013bf881963c9fa4211a569e2a4c47115e8a10bd07d8a9f0db5e052"
+    },
+    {
+      "assetId": "ui:menu:character",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_menu_character_v001.png",
+      "frameWidth": 24,
+      "frameHeight": 24,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "icon",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        24,
+        24
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          24,
+          24
+        ]
+      ],
+      "productionApproved": false,
+      "semantic": "character",
+      "hitArea": [
+        48,
+        48
+      ],
+      "text": "runtime",
+      "sha256": "99de2b720991ab01c5574c4fe8f5953a849f68175b989ac1d43fc33ec7835923"
+    },
+    {
+      "assetId": "ui:menu:companion",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_menu_companion_v001.png",
+      "frameWidth": 24,
+      "frameHeight": 24,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "icon",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        24,
+        24
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          24,
+          24
+        ]
+      ],
+      "productionApproved": false,
+      "semantic": "companion",
+      "hitArea": [
+        48,
+        48
+      ],
+      "text": "runtime",
+      "sha256": "7b1a45c277af47e8219685e7b90d1fa6e72fb9c1611a02ea85df55fa8330c004"
+    },
+    {
+      "assetId": "ui:menu:inventory",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_menu_inventory_v001.png",
+      "frameWidth": 24,
+      "frameHeight": 24,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "icon",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        24,
+        24
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          24,
+          24
+        ]
+      ],
+      "productionApproved": false,
+      "semantic": "inventory",
+      "hitArea": [
+        48,
+        48
+      ],
+      "text": "runtime",
+      "sha256": "67ded0d7b7d47bdba2813bc033c8214a646ded652a37d6348399e65b61e3b91c"
+    },
+    {
+      "assetId": "ui:menu:activities",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_menu_activities_v001.png",
+      "frameWidth": 24,
+      "frameHeight": 24,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "icon",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        24,
+        24
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          24,
+          24
+        ]
+      ],
+      "productionApproved": false,
+      "semantic": "activities",
+      "hitArea": [
+        48,
+        48
+      ],
+      "text": "runtime",
+      "sha256": "904a397db3f51c8af505bcb232f88315be5dd3b6328d138a96c16253f8793188"
+    },
+    {
+      "assetId": "ui:menu:social",
+      "version": 1,
+      "status": "grid_ready",
+      "file": "/assets/sprites/ui/ui_menu_social_v001.png",
+      "frameWidth": 24,
+      "frameHeight": 24,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "padding": 0,
+      "spacing": 0,
+      "origin": [
+        0,
+        0
+      ],
+      "groundOffset": 0,
+      "directions": [],
+      "layers": [
+        "ui"
+      ],
+      "shadowAsset": null,
+      "animations": [],
+      "allowedFlip": {
+        "x": false,
+        "y": false
+      },
+      "kind": "icon",
+      "nineSlice": null,
+      "paletteVariants": [],
+      "nativeSize": [
+        24,
+        24
+      ],
+      "verifiedDisplaySizes": [],
+      "proofDisplaySizes": [
+        [
+          24,
+          24
+        ]
+      ],
+      "productionApproved": false,
+      "semantic": "social",
+      "hitArea": [
+        48,
+        48
+      ],
+      "text": "runtime",
+      "sha256": "e8c5fd4a6dd8b7cdbec1bd33054054fe7b2fb5173f357107b11d3212469ba9b7"
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "assetId": "ui:button:primary",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_button_primary_v001.png",
+  "frameWidth": 64,
+  "frameHeight": 48,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "nine_slice",
+  "nineSlice": {
+    "left": 16,
+    "right": 16,
+    "top": 16,
+    "bottom": 16,
+    "minWidth": 33,
+    "minHeight": 48
+  },
+  "paletteVariants": [],
+  "nativeSize": [
+    64,
+    48
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      64,
+      48
+    ]
+  ],
+  "productionApproved": false,
+  "recommendedHeight": 48,
+  "minimumTouchHeight": 48,
+  "contentInsets": [
+    16,
+    10,
+    16,
+    10
+  ],
+  "textOffset": [
+    0,
+    0
+  ],
+  "sha256": "7f09cd6212f9639e39e94e48a0f20c858417e50dbcbf9a8572008943e5b3bb82"
+}

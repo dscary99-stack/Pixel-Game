@@ -1,0 +1,51 @@
+{
+  "assetId": "ui:bar:track_h6",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_bar_track_h6_v001.png",
+  "frameWidth": 64,
+  "frameHeight": 6,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "bar_track",
+  "nineSlice": null,
+  "paletteVariants": [],
+  "nativeSize": [
+    64,
+    6
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      64,
+      6
+    ]
+  ],
+  "productionApproved": false,
+  "resize": "horizontal-nearest-stretch",
+  "contentInsets": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "sha256": "8020957b2c528a6acc88157e473b4deed11375eb7c3580f815658e022fa59e66"
+}
