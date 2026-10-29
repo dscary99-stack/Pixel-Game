@@ -1,0 +1,2805 @@
+{
+  "statuses": [
+    {
+      "maxStacks": 1,
+      "id": "stun",
+      "th": "มึน",
+      "harmful": true,
+      "category": "control",
+      "resistStat": "VIT",
+      "hardControl": true,
+      "skipsTurn": "always"
+    },
+    {
+      "maxStacks": 1,
+      "id": "sleep",
+      "th": "หลับ",
+      "harmful": true,
+      "category": "control",
+      "resistStat": "INT",
+      "hardControl": true,
+      "skipsTurn": "always",
+      "endsOnDamage": true
+    },
+    {
+      "maxStacks": 1,
+      "id": "freeze",
+      "th": "แช่แข็ง",
+      "harmful": true,
+      "category": "control",
+      "resistStat": "VIT",
+      "hardControl": true,
+      "skipsTurn": "always",
+      "endsOnElement": "FIRE"
+    },
+    {
+      "maxStacks": 1,
+      "id": "petrify",
+      "th": "กลายเป็นหิน",
+      "harmful": true,
+      "category": "control",
+      "resistStat": "VIT",
+      "hardControl": true,
+      "skipsTurn": "always",
+      "scaled": {
+        "pdef": 1.5,
+        "mdef": 1.5
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "paralyze",
+      "th": "ชา",
+      "harmful": true,
+      "category": "control",
+      "resistStat": "AGI",
+      "skipsTurn": "paralyzeSkipChancePct",
+      "zeroes": [
+        "spd"
+      ]
+    },
+    {
+      "maxStacks": 1,
+      "id": "fear",
+      "th": "กลัว",
+      "harmful": true,
+      "category": "control",
+      "resistStat": "SPI",
+      "skipsTurn": "fearSkipChancePct",
+      "scaled": {
+        "patk": -0.5,
+        "matk": -0.5
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "silence",
+      "th": "ใบ้",
+      "harmful": true,
+      "category": "control",
+      "resistStat": "INT",
+      "blocks": [
+        "mp_skills"
+      ]
+    },
+    {
+      "maxStacks": 1,
+      "id": "disarm",
+      "th": "ปลดอาวุธ",
+      "harmful": true,
+      "category": "control",
+      "resistStat": "STR",
+      "blocks": [
+        "attack"
+      ]
+    },
+    {
+      "maxStacks": 1,
+      "id": "root",
+      "th": "ตรึง",
+      "harmful": true,
+      "category": "control",
+      "resistStat": "AGI",
+      "blocks": [
+        "move",
+        "flee"
+      ]
+    },
+    {
+      "maxStacks": 1,
+      "id": "confuse",
+      "th": "สับสน",
+      "harmful": true,
+      "category": "control",
+      "resistStat": "INT"
+    },
+    {
+      "maxStacks": 1,
+      "id": "charm",
+      "th": "เสน่ห์",
+      "harmful": true,
+      "category": "control",
+      "resistStat": "SPI",
+      "hardControl": true
+    },
+    {
+      "maxStacks": 1,
+      "id": "berserk",
+      "th": "คลั่ง",
+      "harmful": true,
+      "category": "control",
+      "resistStat": "SPI",
+      "blocks": [
+        "skills",
+        "items"
+      ],
+      "scaled": {
+        "patk": 1,
+        "pdef": -1
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "taunt",
+      "th": "ยั่วยุ",
+      "harmful": true,
+      "category": "control",
+      "resistStat": "SPI"
+    },
+    {
+      "maxStacks": 1,
+      "id": "mini",
+      "th": "ตัวจิ๋ว",
+      "harmful": true,
+      "category": "control",
+      "resistStat": "SPI",
+      "hardControl": true,
+      "blocks": [
+        "skills"
+      ],
+      "scaled": {
+        "patk": -2.5,
+        "matk": -2.5
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "doom",
+      "th": "สาปมรณะ",
+      "harmful": true,
+      "category": "control",
+      "resistStat": "SPI",
+      "hardControl": true
+    },
+    {
+      "maxStacks": 1,
+      "id": "poison",
+      "th": "พิษ",
+      "harmful": true,
+      "category": "dot",
+      "resistStat": "VIT",
+      "overTime": {
+        "resource": "hp",
+        "key": "poisonPctMaxHp"
+      }
+    },
+    {
+      "maxStacks": 4,
+      "id": "toxic",
+      "th": "พิษร้าย",
+      "harmful": true,
+      "category": "dot",
+      "resistStat": "VIT",
+      "overTime": {
+        "resource": "hp",
+        "key": "toxicPctMaxHpPerStack",
+        "perStack": true
+      },
+      "growsEachTick": true
+    },
+    {
+      "maxStacks": 1,
+      "id": "burn",
+      "th": "เผาไหม้",
+      "harmful": true,
+      "category": "dot",
+      "resistStat": "VIT",
+      "overTime": {
+        "resource": "hp",
+        "key": "burnPctMaxHp"
+      },
+      "scaled": {
+        "patk": -0.5,
+        "matk": -0.5
+      }
+    },
+    {
+      "maxStacks": 3,
+      "id": "bleed",
+      "th": "เลือดออก",
+      "harmful": true,
+      "category": "dot",
+      "resistStat": "VIT",
+      "overTime": {
+        "resource": "hp",
+        "key": "bleedPctMaxHpPerStack",
+        "perStack": true
+      },
+      "scaled": {
+        "pdef": -0.5
+      }
+    },
+    {
+      "maxStacks": 3,
+      "id": "frostbite",
+      "th": "หนาวกัด",
+      "harmful": true,
+      "category": "dot",
+      "resistStat": "VIT",
+      "overTime": {
+        "resource": "hp",
+        "key": "frostbitePctMaxHp"
+      },
+      "scaled": {
+        "spd": -0.5
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "shock",
+      "th": "ไฟช็อต",
+      "harmful": true,
+      "category": "dot",
+      "resistStat": "VIT"
+    },
+    {
+      "maxStacks": 5,
+      "id": "corrode",
+      "th": "กัดกร่อน",
+      "harmful": true,
+      "category": "dot",
+      "resistStat": "VIT",
+      "overTime": {
+        "resource": "hp",
+        "key": "corrodePctMaxHp"
+      },
+      "growsEachTick": true,
+      "scaled": {
+        "pdef": -0.5
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "leech",
+      "th": "ดูดพลัง",
+      "harmful": true,
+      "category": "dot",
+      "resistStat": "VIT",
+      "overTime": {
+        "resource": "hp",
+        "key": "leechPctMaxHp"
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "mana_burn",
+      "th": "เผามานา",
+      "harmful": true,
+      "category": "dot",
+      "resistStat": "SPI",
+      "overTime": {
+        "resource": "mp",
+        "key": "manaBurnPctMaxMp"
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "blind",
+      "th": "ตาบอด",
+      "harmful": true,
+      "category": "stat",
+      "resistStat": "DEX",
+      "points": {
+        "accuracyPct": [
+          -1,
+          "blindAccuracyPct"
+        ]
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "atk_down",
+      "th": "ATK ลด",
+      "harmful": true,
+      "category": "stat",
+      "resistStat": null,
+      "scaled": {
+        "patk": -1
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "matk_down",
+      "th": "MATK ลด",
+      "harmful": true,
+      "category": "stat",
+      "resistStat": null,
+      "scaled": {
+        "matk": -1
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "def_down",
+      "th": "DEF ลด",
+      "harmful": true,
+      "category": "stat",
+      "resistStat": null,
+      "scaled": {
+        "pdef": -1
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "mdef_down",
+      "th": "MDEF ลด",
+      "harmful": true,
+      "category": "stat",
+      "resistStat": null,
+      "scaled": {
+        "mdef": -1
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "spd_down",
+      "th": "ช้า",
+      "harmful": true,
+      "category": "stat",
+      "resistStat": "AGI",
+      "scaled": {
+        "spd": -1
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "evasion_down",
+      "th": "หลบลด",
+      "harmful": true,
+      "category": "stat",
+      "resistStat": null,
+      "points": {
+        "evasionPct": [
+          -1,
+          "evasionShiftPct"
+        ]
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "crit_down",
+      "th": "คริลด",
+      "harmful": true,
+      "category": "stat",
+      "resistStat": null,
+      "points": {
+        "critPct": [
+          -1,
+          "critShiftPct"
+        ]
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "res_down",
+      "th": "ต้านสถานะลด",
+      "harmful": true,
+      "category": "stat",
+      "resistStat": "SPI",
+      "points": {
+        "effectResPct": [
+          -1,
+          "resShiftPct"
+        ]
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "vulnerable",
+      "th": "เปราะบาง",
+      "harmful": true,
+      "category": "stat",
+      "resistStat": null
+    },
+    {
+      "maxStacks": 1,
+      "id": "mark",
+      "th": "ถูกหมายหัว",
+      "harmful": true,
+      "category": "stat",
+      "resistStat": null
+    },
+    {
+      "maxStacks": 1,
+      "id": "anti_heal",
+      "th": "ฮีลไม่เข้า",
+      "harmful": true,
+      "category": "stat",
+      "resistStat": "SPI"
+    },
+    {
+      "maxStacks": 1,
+      "id": "unbuffable",
+      "th": "ห้ามบัฟ",
+      "harmful": true,
+      "category": "stat",
+      "resistStat": "SPI",
+      "blocks": [
+        "helpful_statuses"
+      ]
+    },
+    {
+      "maxStacks": 1,
+      "id": "seal",
+      "th": "ผนึก",
+      "harmful": true,
+      "category": "stat",
+      "resistStat": "SPI",
+      "blocks": [
+        "passives"
+      ]
+    },
+    {
+      "maxStacks": 1,
+      "id": "skill_lock",
+      "th": "สกิลล็อก",
+      "harmful": true,
+      "category": "stat",
+      "resistStat": "INT"
+    },
+    {
+      "maxStacks": 1,
+      "id": "mp_cost_up",
+      "th": "MP แพง",
+      "harmful": true,
+      "category": "stat",
+      "resistStat": "INT"
+    },
+    {
+      "maxStacks": 1,
+      "id": "link",
+      "th": "ลิงก์",
+      "harmful": true,
+      "category": "stat",
+      "resistStat": "SPI"
+    },
+    {
+      "maxStacks": 1,
+      "id": "zombie",
+      "th": "ซอมบี้",
+      "harmful": true,
+      "category": "stat",
+      "resistStat": "SPI"
+    },
+    {
+      "maxStacks": 1,
+      "id": "wet",
+      "th": "เปียก",
+      "harmful": true,
+      "category": "stat",
+      "resistStat": null
+    },
+    {
+      "maxStacks": 1,
+      "id": "oil",
+      "th": "น้ำมัน",
+      "harmful": true,
+      "category": "stat",
+      "resistStat": null
+    },
+    {
+      "maxStacks": 1,
+      "id": "atk_up",
+      "th": "ATK เพิ่ม",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null,
+      "scaled": {
+        "patk": 1
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "matk_up",
+      "th": "MATK เพิ่ม",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null,
+      "scaled": {
+        "matk": 1
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "def_up",
+      "th": "DEF เพิ่ม",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null,
+      "scaled": {
+        "pdef": 1
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "mdef_up",
+      "th": "MDEF เพิ่ม",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null,
+      "scaled": {
+        "mdef": 1
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "spd_up",
+      "th": "เร่ง",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null,
+      "scaled": {
+        "spd": 1
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "evasion_up",
+      "th": "หลบเพิ่ม",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null,
+      "points": {
+        "evasionPct": [
+          1,
+          "evasionShiftPct"
+        ]
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "accuracy_up",
+      "th": "แม่นเพิ่ม",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null,
+      "points": {
+        "accuracyPct": [
+          1,
+          "accuracyShiftPct"
+        ]
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "crit_up",
+      "th": "คริเพิ่ม",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null,
+      "points": {
+        "critPct": [
+          1,
+          "critShiftPct"
+        ]
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "res_up",
+      "th": "ต้านสถานะเพิ่ม",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null,
+      "points": {
+        "effectResPct": [
+          1,
+          "resShiftPct"
+        ]
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "regen",
+      "th": "ฟื้นต่อเนื่อง",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null,
+      "overTime": {
+        "resource": "hp",
+        "key": "regenPctMaxHp"
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "mp_regen",
+      "th": "ฟื้น MP ต่อเนื่อง",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null,
+      "overTime": {
+        "resource": "mp",
+        "key": "mpRegenPctMaxMp"
+      }
+    },
+    {
+      "maxStacks": 1,
+      "id": "dmg_reduction",
+      "th": "ลดดาเมจ",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null
+    },
+    {
+      "maxStacks": 1,
+      "id": "reflect",
+      "th": "สะท้อนเวท",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null
+    },
+    {
+      "maxStacks": 1,
+      "id": "thorns",
+      "th": "หนาม",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null
+    },
+    {
+      "maxStacks": 1,
+      "id": "immunity",
+      "th": "ภูมิคุ้มกัน",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null
+    },
+    {
+      "maxStacks": 1,
+      "id": "endure",
+      "th": "อึด",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null
+    },
+    {
+      "maxStacks": 1,
+      "id": "invincible",
+      "th": "คงกระพัน",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null
+    },
+    {
+      "maxStacks": 1,
+      "id": "stealth",
+      "th": "ล่องหน",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null
+    },
+    {
+      "maxStacks": 1,
+      "id": "counter",
+      "th": "ท่าสวน",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null
+    },
+    {
+      "maxStacks": 1,
+      "id": "protect",
+      "th": "ถูกปกป้อง",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null
+    },
+    {
+      "maxStacks": 1,
+      "id": "shield",
+      "th": "โล่",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null,
+      "needsAmount": true
+    },
+    {
+      "maxStacks": 1,
+      "id": "focus",
+      "th": "ชาร์จพลัง",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null
+    },
+    {
+      "maxStacks": 1,
+      "id": "imbue",
+      "th": "อาวุธธาตุ",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null,
+      "needsElement": true
+    },
+    {
+      "maxStacks": 1,
+      "id": "element_ward",
+      "th": "ต้านธาตุ",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null,
+      "needsElement": true
+    },
+    {
+      "maxStacks": 1,
+      "id": "lifesteal_up",
+      "th": "ดูดเลือดเพิ่ม",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null
+    },
+    {
+      "maxStacks": 5,
+      "id": "rage",
+      "th": "เดือดดาล",
+      "harmful": false,
+      "category": "buff",
+      "resistStat": null,
+      "scaled": {
+        "patk": 0.5
+      }
+    }
+  ],
+  "items": [
+    {
+      "id": "item:small_potion",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ยาเล็ก",
+        "en": "Small Potion"
+      },
+      "kind": "heal",
+      "healHp": 150,
+      "vendorPrice": 10
+    },
+    {
+      "id": "item:phoenix_feather",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ขนนกชุบ"
+      },
+      "kind": "revive",
+      "reviveHpPct": 30,
+      "vendorPrice": 200
+    },
+    {
+      "id": "item:mana_potion",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ยาฟื้นมานา",
+        "en": "Mana Potion"
+      },
+      "kind": "mana",
+      "restoreMp": 40,
+      "vendorPrice": 15
+    },
+    {
+      "id": "item:cleansing_herb",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "สมุนไพรล้างพิษ"
+      },
+      "kind": "support",
+      "statuses": [
+        {
+          "statusId": "cleanse",
+          "chancePct": 100,
+          "turns": 1
+        }
+      ],
+      "vendorPrice": 15
+    },
+    {
+      "id": "item:stat_reset_scroll",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "คัมภีร์ล้างสเตตัส",
+        "en": "Stat Reset Scroll"
+      },
+      "kind": "reset",
+      "resets": "stats",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:skill_reset_scroll",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "คัมภีร์ล้างสกิล",
+        "en": "Skill Reset Scroll"
+      },
+      "kind": "reset",
+      "resets": "skills",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:power_tonic",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ยาเพิ่มพลัง"
+      },
+      "kind": "support",
+      "statuses": [
+        {
+          "statusId": "atk_up",
+          "chancePct": 100,
+          "turns": 3
+        }
+      ],
+      "vendorPrice": 25
+    },
+    {
+      "id": "item:war_drum_tonic",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ยากลองศึก"
+      },
+      "kind": "support",
+      "area": true,
+      "statuses": [
+        {
+          "statusId": "atk_up",
+          "chancePct": 100,
+          "turns": 3
+        }
+      ],
+      "vendorPrice": 60
+    },
+    {
+      "id": "item:fire_flask",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ขวดไฟ"
+      },
+      "kind": "attack",
+      "damage": {
+        "damageType": "magic",
+        "flat": 120,
+        "element": "FIRE"
+      },
+      "vendorPrice": 20
+    },
+    {
+      "id": "item:thunder_bomb",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ระเบิดฟ้าร้อง"
+      },
+      "kind": "attack",
+      "area": true,
+      "damage": {
+        "damageType": "magic",
+        "flat": 60,
+        "element": "WIND"
+      },
+      "vendorPrice": 45
+    },
+    {
+      "id": "item:armor_crab_capture",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "เครื่องจับปูเกราะ"
+      },
+      "kind": "capture",
+      "captureSpeciesId": "species:armor_crab",
+      "captureQuality": 1,
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:ember_fox_capture",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "เครื่องจับจิ้งจอกสะเก็ด"
+      },
+      "kind": "capture",
+      "captureSpeciesId": "species:ember_fox",
+      "captureQuality": 1,
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:lantern_snail_capture",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "เครื่องจับหอยตะเกียง"
+      },
+      "kind": "capture",
+      "captureSpeciesId": "species:lantern_snail",
+      "captureQuality": 1,
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:supply_mole_capture",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "เครื่องจับตุ่นเสบียง"
+      },
+      "kind": "capture",
+      "captureSpeciesId": "species:supply_mole",
+      "captureQuality": 1,
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:bell_bird_capture",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "เครื่องจับนกกระดิ่ง"
+      },
+      "kind": "capture",
+      "captureSpeciesId": "species:bell_bird",
+      "captureQuality": 1,
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:crystal_crab_lord_capture",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "เครื่องจับเจ้ากระดองผลึก"
+      },
+      "kind": "capture",
+      "captureSpeciesId": "species:crystal_crab_lord",
+      "captureQuality": 1,
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:armor_crab_sigil",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราปูเกราะ"
+      },
+      "kind": "sigil",
+      "sigilId": "sigil:armor_crab",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:ember_fox_sigil",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราจิ้งจอกสะเก็ด"
+      },
+      "kind": "sigil",
+      "sigilId": "sigil:ember_fox",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:lantern_snail_sigil",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราหอยตะเกียง"
+      },
+      "kind": "sigil",
+      "sigilId": "sigil:lantern_snail",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:supply_mole_sigil",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราตุ่นเสบียง"
+      },
+      "kind": "sigil",
+      "sigilId": "sigil:supply_mole",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:crystal_crab_lord_sigil",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราเจ้ากระดองผลึก"
+      },
+      "kind": "sigil",
+      "sigilId": "sigil:crystal_crab_lord",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:bell_bird_sigil",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตรานกกระดิ่ง"
+      },
+      "kind": "sigil",
+      "sigilId": "sigil:bell_bird",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:crab_shell",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "กระดองปู"
+      },
+      "kind": "material",
+      "vendorPrice": 5
+    },
+    {
+      "id": "item:fox_tail_ash",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "เถ้าหางจิ้งจอก"
+      },
+      "kind": "material",
+      "vendorPrice": 6
+    },
+    {
+      "id": "item:snail_glow_slime",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "เมือกเรืองแสง"
+      },
+      "kind": "material",
+      "vendorPrice": 4
+    },
+    {
+      "id": "item:mole_fur",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ขนตุ่น"
+      },
+      "kind": "material",
+      "vendorPrice": 2
+    },
+    {
+      "id": "item:bell_feather",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ขนนกกระดิ่ง"
+      },
+      "kind": "material",
+      "vendorPrice": 3
+    },
+    {
+      "id": "item:crystal_shard",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "เศษกระดองผลึก"
+      },
+      "kind": "material",
+      "vendorPrice": 15
+    },
+    {
+      "id": "item:river_pebble",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "กรวดริมน้ำ"
+      },
+      "kind": "material",
+      "vendorPrice": 1
+    },
+    {
+      "id": "item:rift_core",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "แกนรอยแยก"
+      },
+      "kind": "material",
+      "vendorPrice": 120
+    },
+    {
+      "id": "item:refine_stone_t1",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "หินตีบวกพื้นฐาน"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_stone_t2",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "หินตีบวกหลอม"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_stone_t3",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "หินตีบวกหนาแน่น"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_stone_t4",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "หินตีบวกดารา"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_ward_t1_p6",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราคุ้มครองการหลอม +6 (Lv1–49)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_ward_t1_p7",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราคุ้มครองการหลอม +7 (Lv1–49)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_ward_t1_p8",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราคุ้มครองการหลอม +8 (Lv1–49)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_ward_t1_p9",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราคุ้มครองการหลอม +9 (Lv1–49)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_ward_t1_p10",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราคุ้มครองการหลอม +10 (Lv1–49)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_ward_t2_p6",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราคุ้มครองการหลอม +6 (Lv50–99)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_ward_t2_p7",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราคุ้มครองการหลอม +7 (Lv50–99)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_ward_t2_p8",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราคุ้มครองการหลอม +8 (Lv50–99)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_ward_t2_p9",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราคุ้มครองการหลอม +9 (Lv50–99)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_ward_t2_p10",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราคุ้มครองการหลอม +10 (Lv50–99)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_ward_t3_p6",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราคุ้มครองการหลอม +6 (Lv100–149)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_ward_t3_p7",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราคุ้มครองการหลอม +7 (Lv100–149)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_ward_t3_p8",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราคุ้มครองการหลอม +8 (Lv100–149)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_ward_t3_p9",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราคุ้มครองการหลอม +9 (Lv100–149)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_ward_t3_p10",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราคุ้มครองการหลอม +10 (Lv100–149)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_ward_t4_p6",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราคุ้มครองการหลอม +6 (Lv150–200)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_ward_t4_p7",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราคุ้มครองการหลอม +7 (Lv150–200)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_ward_t4_p8",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราคุ้มครองการหลอม +8 (Lv150–200)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_ward_t4_p9",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราคุ้มครองการหลอม +9 (Lv150–200)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:refine_ward_t4_p10",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราคุ้มครองการหลอม +10 (Lv150–200)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:elite_core_t1",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "แก่น Elite (Lv1–49)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:elite_core_t2",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "แก่น Elite (Lv50–99)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:elite_core_t3",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "แก่น Elite (Lv100–149)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:elite_core_t4",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "แก่น Elite (Lv150–200)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:wild_hide_t2",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "หนังอสูร (Lv50–99)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:wild_gem_t2",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "อัญมณีอสูร (Lv50–99)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:wild_hide_t3",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "หนังอสูร (Lv100–149)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:wild_gem_t3",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "อัญมณีอสูร (Lv100–149)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:wild_hide_t4",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "หนังอสูร (Lv150–200)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    },
+    {
+      "id": "item:wild_gem_t4",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "อัญมณีอสูร (Lv150–200)"
+      },
+      "kind": "material",
+      "vendorPrice": 0
+    }
+  ],
+  "equipment": [
+    {
+      "id": "equip:wooden_sword",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ดาบไม้"
+      },
+      "category": "WEAPON",
+      "requiredLevel": 1,
+      "baseStats": {
+        "PATK": 6
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:weapon_physical",
+      "visualSetId": "visual:wooden_sword",
+      "upgradeCostLevel": 1,
+      "refinableStats": [
+        "PATK"
+      ],
+      "weaponKind": "physical_melee",
+      "handedness": "one_hand"
+    },
+    {
+      "id": "equip:training_bow",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ธนูฝึก"
+      },
+      "category": "WEAPON",
+      "requiredLevel": 1,
+      "baseStats": {
+        "PATK": 10,
+        "ACCURACY_PCT": 3
+      },
+      "maxSigilSlots": 2,
+      "affixPoolId": "affix:weapon_physical",
+      "visualSetId": "visual:training_bow",
+      "upgradeCostLevel": 1,
+      "refinableStats": [
+        "PATK"
+      ],
+      "weaponKind": "physical_ranged",
+      "handedness": "two_hand"
+    },
+    {
+      "id": "equip:apprentice_staff",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ไม้เท้าฝึกหัด"
+      },
+      "category": "WEAPON",
+      "requiredLevel": 1,
+      "baseStats": {
+        "MATK": 12,
+        "MP": 10
+      },
+      "maxSigilSlots": 2,
+      "affixPoolId": "affix:weapon_magic",
+      "visualSetId": "visual:apprentice_staff",
+      "upgradeCostLevel": 1,
+      "refinableStats": [
+        "MATK"
+      ],
+      "weaponKind": "magic",
+      "handedness": "two_hand"
+    },
+    {
+      "id": "equip:cloth_tunic",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "เสื้อผ้าฝ้าย"
+      },
+      "category": "ARMOR",
+      "requiredLevel": 1,
+      "baseStats": {
+        "PDEF": 4,
+        "HP": 30
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:defense",
+      "visualSetId": "visual:cloth_tunic",
+      "upgradeCostLevel": 1,
+      "refinableStats": [
+        "PDEF",
+        "HP"
+      ]
+    },
+    {
+      "id": "equip:mole_sandals",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "รองเท้าขนตุ่น"
+      },
+      "category": "FEET",
+      "requiredLevel": 1,
+      "baseStats": {
+        "PDEF": 2,
+        "SPD": 2
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:light",
+      "visualSetId": "visual:mole_sandals",
+      "upgradeCostLevel": 1,
+      "refinableStats": [
+        "PDEF"
+      ]
+    },
+    {
+      "id": "equip:bell_feather_cap",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "หมวกขนนกกระดิ่ง"
+      },
+      "category": "HEAD_TOP",
+      "requiredLevel": 2,
+      "baseStats": {
+        "MDEF": 3,
+        "EVASION_PCT": 1
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:defense",
+      "visualSetId": "visual:bell_feather_cap",
+      "upgradeCostLevel": 2,
+      "refinableStats": [
+        "MDEF"
+      ]
+    },
+    {
+      "id": "equip:crab_buckler",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "โล่กระดองปู"
+      },
+      "category": "OFFHAND",
+      "requiredLevel": 4,
+      "baseStats": {
+        "PDEF": 6,
+        "HP": 40
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:defense",
+      "visualSetId": "visual:crab_buckler",
+      "upgradeCostLevel": 4,
+      "refinableStats": [
+        "PDEF",
+        "HP"
+      ],
+      "offhandKind": "shield"
+    },
+    {
+      "id": "equip:glow_charm",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "เครื่องรางเรืองแสง"
+      },
+      "category": "ACCESSORY",
+      "requiredLevel": 3,
+      "baseStats": {
+        "SUPPORT": 5,
+        "MP": 15
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:trinket",
+      "visualSetId": "visual:glow_charm",
+      "upgradeCostLevel": 3,
+      "refinableStats": [
+        "SUPPORT"
+      ]
+    },
+    {
+      "id": "equip:crystal_shell_plate",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "เกราะกระดองผลึก"
+      },
+      "category": "ARMOR",
+      "requiredLevel": 6,
+      "baseStats": {
+        "PDEF": 10,
+        "HP": 60
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:defense",
+      "visualSetId": "visual:crystal_shell_plate",
+      "upgradeCostLevel": 6,
+      "refinableStats": [
+        "PDEF",
+        "HP"
+      ]
+    },
+    {
+      "id": "equip:ember_fang_dagger",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "มีดเขี้ยวสะเก็ด"
+      },
+      "category": "WEAPON",
+      "requiredLevel": 5,
+      "baseStats": {
+        "PATK": 14,
+        "CRIT_PCT": 3
+      },
+      "maxSigilSlots": 2,
+      "affixPoolId": "affix:weapon_physical",
+      "visualSetId": "visual:ember_fang_dagger",
+      "upgradeCostLevel": 5,
+      "refinableStats": [
+        "PATK"
+      ],
+      "weaponKind": "physical_melee",
+      "handedness": "one_hand"
+    },
+    {
+      "id": "equip:shop_wand_1",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "คทาฝึกหัด"
+      },
+      "category": "WEAPON",
+      "requiredLevel": 1,
+      "baseStats": {
+        "SUPPORT": 6,
+        "MP": 6
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:weapon_support",
+      "visualSetId": "visual:shop_wand_1",
+      "upgradeCostLevel": 1,
+      "refinableStats": [
+        "SUPPORT"
+      ],
+      "weaponKind": "support",
+      "handedness": "one_hand"
+    },
+    {
+      "id": "equip:shop_cap_1",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "หมวกผ้า"
+      },
+      "category": "HEAD_TOP",
+      "requiredLevel": 1,
+      "baseStats": {
+        "MDEF": 2
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:defense",
+      "visualSetId": "visual:shop_cap_1",
+      "upgradeCostLevel": 1,
+      "refinableStats": [
+        "MDEF"
+      ]
+    },
+    {
+      "id": "equip:shop_boots_1",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "รองเท้าผ้า"
+      },
+      "category": "FEET",
+      "requiredLevel": 1,
+      "baseStats": {
+        "PDEF": 2,
+        "SPD": 1
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:light",
+      "visualSetId": "visual:shop_boots_1",
+      "upgradeCostLevel": 1,
+      "refinableStats": [
+        "PDEF"
+      ]
+    },
+    {
+      "id": "equip:shop_shield_1",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "โล่ไม้"
+      },
+      "category": "OFFHAND",
+      "requiredLevel": 1,
+      "baseStats": {
+        "PDEF": 4,
+        "HP": 24
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:defense",
+      "visualSetId": "visual:shop_shield_1",
+      "upgradeCostLevel": 1,
+      "refinableStats": [
+        "PDEF",
+        "HP"
+      ],
+      "offhandKind": "shield"
+    },
+    {
+      "id": "equip:shop_sword_10",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ดาบสำริด"
+      },
+      "category": "WEAPON",
+      "requiredLevel": 10,
+      "baseStats": {
+        "PATK": 16
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:weapon_physical",
+      "visualSetId": "visual:shop_sword_10",
+      "upgradeCostLevel": 10,
+      "refinableStats": [
+        "PATK"
+      ],
+      "weaponKind": "physical_melee",
+      "handedness": "one_hand"
+    },
+    {
+      "id": "equip:shop_bow_10",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ธนูสำริด"
+      },
+      "category": "WEAPON",
+      "requiredLevel": 10,
+      "baseStats": {
+        "PATK": 25,
+        "ACCURACY_PCT": 3
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:weapon_physical",
+      "visualSetId": "visual:shop_bow_10",
+      "upgradeCostLevel": 10,
+      "refinableStats": [
+        "PATK"
+      ],
+      "weaponKind": "physical_ranged",
+      "handedness": "two_hand"
+    },
+    {
+      "id": "equip:shop_staff_10",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ไม้เท้าสำริด"
+      },
+      "category": "WEAPON",
+      "requiredLevel": 10,
+      "baseStats": {
+        "MATK": 27,
+        "MP": 20
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:weapon_magic",
+      "visualSetId": "visual:shop_staff_10",
+      "upgradeCostLevel": 10,
+      "refinableStats": [
+        "MATK"
+      ],
+      "weaponKind": "magic",
+      "handedness": "two_hand"
+    },
+    {
+      "id": "equip:shop_armor_10",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "เสื้อเกราะสำริด"
+      },
+      "category": "ARMOR",
+      "requiredLevel": 10,
+      "baseStats": {
+        "PDEF": 12,
+        "HP": 90
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:defense",
+      "visualSetId": "visual:shop_armor_10",
+      "upgradeCostLevel": 10,
+      "refinableStats": [
+        "PDEF",
+        "HP"
+      ]
+    },
+    {
+      "id": "equip:shop_wand_10",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "คทาสำริด"
+      },
+      "category": "WEAPON",
+      "requiredLevel": 10,
+      "baseStats": {
+        "SUPPORT": 15,
+        "MP": 15
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:weapon_support",
+      "visualSetId": "visual:shop_wand_10",
+      "upgradeCostLevel": 10,
+      "refinableStats": [
+        "SUPPORT"
+      ],
+      "weaponKind": "support",
+      "handedness": "one_hand"
+    },
+    {
+      "id": "equip:shop_cap_10",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "หมวกสำริด"
+      },
+      "category": "HEAD_TOP",
+      "requiredLevel": 10,
+      "baseStats": {
+        "MDEF": 7
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:defense",
+      "visualSetId": "visual:shop_cap_10",
+      "upgradeCostLevel": 10,
+      "refinableStats": [
+        "MDEF"
+      ]
+    },
+    {
+      "id": "equip:shop_boots_10",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "รองเท้าสำริด"
+      },
+      "category": "FEET",
+      "requiredLevel": 10,
+      "baseStats": {
+        "PDEF": 5,
+        "SPD": 1
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:light",
+      "visualSetId": "visual:shop_boots_10",
+      "upgradeCostLevel": 10,
+      "refinableStats": [
+        "PDEF"
+      ]
+    },
+    {
+      "id": "equip:shop_shield_10",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "โล่สำริด"
+      },
+      "category": "OFFHAND",
+      "requiredLevel": 10,
+      "baseStats": {
+        "PDEF": 10,
+        "HP": 60
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:defense",
+      "visualSetId": "visual:shop_shield_10",
+      "upgradeCostLevel": 10,
+      "refinableStats": [
+        "PDEF",
+        "HP"
+      ],
+      "offhandKind": "shield"
+    },
+    {
+      "id": "equip:shop_sword_20",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ดาบเหล็ก"
+      },
+      "category": "WEAPON",
+      "requiredLevel": 20,
+      "baseStats": {
+        "PATK": 26
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:weapon_physical",
+      "visualSetId": "visual:shop_sword_20",
+      "upgradeCostLevel": 20,
+      "refinableStats": [
+        "PATK"
+      ],
+      "weaponKind": "physical_melee",
+      "handedness": "one_hand"
+    },
+    {
+      "id": "equip:shop_bow_20",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ธนูเหล็ก"
+      },
+      "category": "WEAPON",
+      "requiredLevel": 20,
+      "baseStats": {
+        "PATK": 40,
+        "ACCURACY_PCT": 3
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:weapon_physical",
+      "visualSetId": "visual:shop_bow_20",
+      "upgradeCostLevel": 20,
+      "refinableStats": [
+        "PATK"
+      ],
+      "weaponKind": "physical_ranged",
+      "handedness": "two_hand"
+    },
+    {
+      "id": "equip:shop_staff_20",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ไม้เท้าเหล็ก"
+      },
+      "category": "WEAPON",
+      "requiredLevel": 20,
+      "baseStats": {
+        "MATK": 42,
+        "MP": 30
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:weapon_magic",
+      "visualSetId": "visual:shop_staff_20",
+      "upgradeCostLevel": 20,
+      "refinableStats": [
+        "MATK"
+      ],
+      "weaponKind": "magic",
+      "handedness": "two_hand"
+    },
+    {
+      "id": "equip:shop_armor_20",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "เสื้อเกราะเหล็ก"
+      },
+      "category": "ARMOR",
+      "requiredLevel": 20,
+      "baseStats": {
+        "PDEF": 20,
+        "HP": 150
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:defense",
+      "visualSetId": "visual:shop_armor_20",
+      "upgradeCostLevel": 20,
+      "refinableStats": [
+        "PDEF",
+        "HP"
+      ]
+    },
+    {
+      "id": "equip:shop_wand_20",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "คทาเหล็ก"
+      },
+      "category": "WEAPON",
+      "requiredLevel": 20,
+      "baseStats": {
+        "SUPPORT": 25,
+        "MP": 25
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:weapon_support",
+      "visualSetId": "visual:shop_wand_20",
+      "upgradeCostLevel": 20,
+      "refinableStats": [
+        "SUPPORT"
+      ],
+      "weaponKind": "support",
+      "handedness": "one_hand"
+    },
+    {
+      "id": "equip:shop_cap_20",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "หมวกเหล็ก"
+      },
+      "category": "HEAD_TOP",
+      "requiredLevel": 20,
+      "baseStats": {
+        "MDEF": 12
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:defense",
+      "visualSetId": "visual:shop_cap_20",
+      "upgradeCostLevel": 20,
+      "refinableStats": [
+        "MDEF"
+      ]
+    },
+    {
+      "id": "equip:shop_boots_20",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "รองเท้าเหล็ก"
+      },
+      "category": "FEET",
+      "requiredLevel": 20,
+      "baseStats": {
+        "PDEF": 8,
+        "SPD": 2
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:light",
+      "visualSetId": "visual:shop_boots_20",
+      "upgradeCostLevel": 20,
+      "refinableStats": [
+        "PDEF"
+      ]
+    },
+    {
+      "id": "equip:shop_shield_20",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "โล่เหล็ก"
+      },
+      "category": "OFFHAND",
+      "requiredLevel": 20,
+      "baseStats": {
+        "PDEF": 16,
+        "HP": 100
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:defense",
+      "visualSetId": "visual:shop_shield_20",
+      "upgradeCostLevel": 20,
+      "refinableStats": [
+        "PDEF",
+        "HP"
+      ],
+      "offhandKind": "shield"
+    },
+    {
+      "id": "equip:shop_sword_30",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ดาบเหล็กกล้า"
+      },
+      "category": "WEAPON",
+      "requiredLevel": 30,
+      "baseStats": {
+        "PATK": 36
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:weapon_physical",
+      "visualSetId": "visual:shop_sword_30",
+      "upgradeCostLevel": 30,
+      "refinableStats": [
+        "PATK"
+      ],
+      "weaponKind": "physical_melee",
+      "handedness": "one_hand"
+    },
+    {
+      "id": "equip:shop_bow_30",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ธนูเหล็กกล้า"
+      },
+      "category": "WEAPON",
+      "requiredLevel": 30,
+      "baseStats": {
+        "PATK": 55,
+        "ACCURACY_PCT": 3
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:weapon_physical",
+      "visualSetId": "visual:shop_bow_30",
+      "upgradeCostLevel": 30,
+      "refinableStats": [
+        "PATK"
+      ],
+      "weaponKind": "physical_ranged",
+      "handedness": "two_hand"
+    },
+    {
+      "id": "equip:shop_staff_30",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ไม้เท้าเหล็กกล้า"
+      },
+      "category": "WEAPON",
+      "requiredLevel": 30,
+      "baseStats": {
+        "MATK": 57,
+        "MP": 40
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:weapon_magic",
+      "visualSetId": "visual:shop_staff_30",
+      "upgradeCostLevel": 30,
+      "refinableStats": [
+        "MATK"
+      ],
+      "weaponKind": "magic",
+      "handedness": "two_hand"
+    },
+    {
+      "id": "equip:shop_armor_30",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "เสื้อเกราะเหล็กกล้า"
+      },
+      "category": "ARMOR",
+      "requiredLevel": 30,
+      "baseStats": {
+        "PDEF": 28,
+        "HP": 210
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:defense",
+      "visualSetId": "visual:shop_armor_30",
+      "upgradeCostLevel": 30,
+      "refinableStats": [
+        "PDEF",
+        "HP"
+      ]
+    },
+    {
+      "id": "equip:shop_wand_30",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "คทาเหล็กกล้า"
+      },
+      "category": "WEAPON",
+      "requiredLevel": 30,
+      "baseStats": {
+        "SUPPORT": 35,
+        "MP": 35
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:weapon_support",
+      "visualSetId": "visual:shop_wand_30",
+      "upgradeCostLevel": 30,
+      "refinableStats": [
+        "SUPPORT"
+      ],
+      "weaponKind": "support",
+      "handedness": "one_hand"
+    },
+    {
+      "id": "equip:shop_cap_30",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "หมวกเหล็กกล้า"
+      },
+      "category": "HEAD_TOP",
+      "requiredLevel": 30,
+      "baseStats": {
+        "MDEF": 17
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:defense",
+      "visualSetId": "visual:shop_cap_30",
+      "upgradeCostLevel": 30,
+      "refinableStats": [
+        "MDEF"
+      ]
+    },
+    {
+      "id": "equip:shop_boots_30",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "รองเท้าเหล็กกล้า"
+      },
+      "category": "FEET",
+      "requiredLevel": 30,
+      "baseStats": {
+        "PDEF": 11,
+        "SPD": 2
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:light",
+      "visualSetId": "visual:shop_boots_30",
+      "upgradeCostLevel": 30,
+      "refinableStats": [
+        "PDEF"
+      ]
+    },
+    {
+      "id": "equip:shop_shield_30",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "โล่เหล็กกล้า"
+      },
+      "category": "OFFHAND",
+      "requiredLevel": 30,
+      "baseStats": {
+        "PDEF": 22,
+        "HP": 140
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:defense",
+      "visualSetId": "visual:shop_shield_30",
+      "upgradeCostLevel": 30,
+      "refinableStats": [
+        "PDEF",
+        "HP"
+      ],
+      "offhandKind": "shield"
+    },
+    {
+      "id": "equip:shop_sword_40",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ดาบเงินยวง"
+      },
+      "category": "WEAPON",
+      "requiredLevel": 40,
+      "baseStats": {
+        "PATK": 46
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:weapon_physical",
+      "visualSetId": "visual:shop_sword_40",
+      "upgradeCostLevel": 40,
+      "refinableStats": [
+        "PATK"
+      ],
+      "weaponKind": "physical_melee",
+      "handedness": "one_hand"
+    },
+    {
+      "id": "equip:shop_bow_40",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ธนูเงินยวง"
+      },
+      "category": "WEAPON",
+      "requiredLevel": 40,
+      "baseStats": {
+        "PATK": 70,
+        "ACCURACY_PCT": 3
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:weapon_physical",
+      "visualSetId": "visual:shop_bow_40",
+      "upgradeCostLevel": 40,
+      "refinableStats": [
+        "PATK"
+      ],
+      "weaponKind": "physical_ranged",
+      "handedness": "two_hand"
+    },
+    {
+      "id": "equip:shop_staff_40",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ไม้เท้าเงินยวง"
+      },
+      "category": "WEAPON",
+      "requiredLevel": 40,
+      "baseStats": {
+        "MATK": 72,
+        "MP": 50
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:weapon_magic",
+      "visualSetId": "visual:shop_staff_40",
+      "upgradeCostLevel": 40,
+      "refinableStats": [
+        "MATK"
+      ],
+      "weaponKind": "magic",
+      "handedness": "two_hand"
+    },
+    {
+      "id": "equip:shop_armor_40",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "เสื้อเกราะเงินยวง"
+      },
+      "category": "ARMOR",
+      "requiredLevel": 40,
+      "baseStats": {
+        "PDEF": 36,
+        "HP": 270
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:defense",
+      "visualSetId": "visual:shop_armor_40",
+      "upgradeCostLevel": 40,
+      "refinableStats": [
+        "PDEF",
+        "HP"
+      ]
+    },
+    {
+      "id": "equip:shop_wand_40",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "คทาเงินยวง"
+      },
+      "category": "WEAPON",
+      "requiredLevel": 40,
+      "baseStats": {
+        "SUPPORT": 45,
+        "MP": 45
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:weapon_support",
+      "visualSetId": "visual:shop_wand_40",
+      "upgradeCostLevel": 40,
+      "refinableStats": [
+        "SUPPORT"
+      ],
+      "weaponKind": "support",
+      "handedness": "one_hand"
+    },
+    {
+      "id": "equip:shop_cap_40",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "หมวกเงินยวง"
+      },
+      "category": "HEAD_TOP",
+      "requiredLevel": 40,
+      "baseStats": {
+        "MDEF": 22
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:defense",
+      "visualSetId": "visual:shop_cap_40",
+      "upgradeCostLevel": 40,
+      "refinableStats": [
+        "MDEF"
+      ]
+    },
+    {
+      "id": "equip:shop_boots_40",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "รองเท้าเงินยวง"
+      },
+      "category": "FEET",
+      "requiredLevel": 40,
+      "baseStats": {
+        "PDEF": 14,
+        "SPD": 3
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:light",
+      "visualSetId": "visual:shop_boots_40",
+      "upgradeCostLevel": 40,
+      "refinableStats": [
+        "PDEF"
+      ]
+    },
+    {
+      "id": "equip:shop_shield_40",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "โล่เงินยวง"
+      },
+      "category": "OFFHAND",
+      "requiredLevel": 40,
+      "baseStats": {
+        "PDEF": 28,
+        "HP": 180
+      },
+      "maxSigilSlots": 1,
+      "affixPoolId": "affix:defense",
+      "visualSetId": "visual:shop_shield_40",
+      "upgradeCostLevel": 40,
+      "refinableStats": [
+        "PDEF",
+        "HP"
+      ],
+      "offhandKind": "shield"
+    }
+  ],
+  "sigils": [
+    {
+      "prefix": {
+        "th": "กระดอง"
+      },
+      "effect": {
+        "triggers": [],
+        "modifiers": [
+          {
+            "kind": "guard_reduction",
+            "reductionPct": 10
+          }
+        ]
+      },
+      "id": "sigil:armor_crab",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราปูเกราะ"
+      },
+      "sourceSpeciesId": "species:armor_crab",
+      "equipGroups": [
+        "SHIELD"
+      ],
+      "effectIds": [
+        "effect:armor_crab"
+      ],
+      "stackingGroup": "sigil:armor_crab",
+      "scope": "global",
+      "baseDropProbability": 0.0005
+    },
+    {
+      "prefix": {
+        "th": "เพลิงจิ้งจอก"
+      },
+      "effect": {
+        "triggers": [],
+        "modifiers": [
+          {
+            "kind": "damage_vs_status",
+            "statusId": "burn",
+            "bonusPct": 10
+          }
+        ]
+      },
+      "id": "sigil:ember_fox",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราจิ้งจอกสะเก็ด"
+      },
+      "sourceSpeciesId": "species:ember_fox",
+      "equipGroups": [
+        "WEAPON_PHYSICAL"
+      ],
+      "effectIds": [
+        "effect:ember_fox"
+      ],
+      "stackingGroup": "sigil:ember_fox",
+      "scope": "weapon_local",
+      "baseDropProbability": 0.0002
+    },
+    {
+      "prefix": {
+        "th": "แสงตะเกียง"
+      },
+      "effect": {
+        "triggers": [],
+        "modifiers": [
+          {
+            "kind": "heal_low_hp",
+            "belowHpPct": 40,
+            "bonusPct": 15
+          }
+        ]
+      },
+      "id": "sigil:lantern_snail",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราหอยตะเกียง"
+      },
+      "sourceSpeciesId": "species:lantern_snail",
+      "equipGroups": [
+        "WEAPON_SUPPORT"
+      ],
+      "effectIds": [
+        "effect:lantern_snail"
+      ],
+      "stackingGroup": "sigil:lantern_snail",
+      "scope": "weapon_local",
+      "baseDropProbability": 0.0001
+    },
+    {
+      "prefix": {
+        "th": "เสบียง"
+      },
+      "effect": {
+        "triggers": [
+          {
+            "on": "dealt_damage",
+            "action": "attack",
+            "chancePct": 100,
+            "oncePerBattle": false,
+            "then": [
+              {
+                "kind": "restore_mp",
+                "target": "self",
+                "amount": 1
+              }
+            ]
+          }
+        ],
+        "modifiers": []
+      },
+      "id": "sigil:supply_mole",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราตุ่นเสบียง"
+      },
+      "sourceSpeciesId": "species:supply_mole",
+      "equipGroups": [
+        "ACCESSORY"
+      ],
+      "effectIds": [
+        "effect:supply_mole"
+      ],
+      "stackingGroup": "sigil:supply_mole",
+      "scope": "global",
+      "baseDropProbability": 0.0005
+    },
+    {
+      "prefix": {
+        "th": "ผลึก"
+      },
+      "effect": {
+        "triggers": [],
+        "modifiers": [
+          {
+            "kind": "guard_reduction",
+            "reductionPct": 15
+          }
+        ]
+      },
+      "id": "sigil:crystal_crab_lord",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตราเจ้ากระดองผลึก"
+      },
+      "sourceSpeciesId": "species:crystal_crab_lord",
+      "equipGroups": [
+        "SHIELD"
+      ],
+      "effectIds": [
+        "effect:crystal_crab_lord"
+      ],
+      "stackingGroup": "sigil:crystal_crab_lord",
+      "scope": "global",
+      "baseDropProbability": 0.0005
+    },
+    {
+      "prefix": {
+        "th": "กระดิ่งลม"
+      },
+      "effect": {
+        "triggers": [
+          {
+            "on": "battle_start",
+            "chancePct": 100,
+            "oncePerBattle": false,
+            "then": [
+              {
+                "kind": "status",
+                "target": "self",
+                "statuses": [
+                  {
+                    "statusId": "spd_up",
+                    "chancePct": 100,
+                    "turns": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "modifiers": []
+      },
+      "id": "sigil:bell_bird",
+      "version": 1,
+      "status": "draft",
+      "example": true,
+      "name": {
+        "th": "ตรานกกระดิ่ง"
+      },
+      "sourceSpeciesId": "species:bell_bird",
+      "equipGroups": [
+        "BACK"
+      ],
+      "effectIds": [
+        "effect:bell_bird"
+      ],
+      "stackingGroup": "sigil:bell_bird",
+      "scope": "global",
+      "baseDropProbability": 0.0005
+    }
+  ]
+}

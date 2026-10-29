@@ -1,0 +1,48 @@
+{
+  "assetId": "item_shop_boots_10",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/items/item_shop_boots_10_v001.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "item",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "77a1271d48b952431ed6b3fbbc5a5e9d81ed48bdccb8cdf4d65b74d421f30f4f",
+  "contentId": "equip:shop_boots_10",
+  "contentGroup": "equipment",
+  "motif": "boot"
+}

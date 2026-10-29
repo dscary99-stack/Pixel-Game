@@ -1,0 +1,4775 @@
+{
+  "round": 2,
+  "baseCommit": "2e8a8b8",
+  "assetCount": 313,
+  "animated": 151,
+  "sourceFrames": 859,
+  "families": {
+    "popup": 51,
+    "element": 14,
+    "hit": 7,
+    "heal": 1,
+    "target": 7,
+    "status": 70,
+    "overlay": 5,
+    "menu": 23,
+    "class": 9,
+    "race": 8,
+    "item": 116,
+    "title": 2
+  },
+  "checks": {
+    "nativeGrid": "pass",
+    "rgba": "pass",
+    "binaryAlpha": "pass",
+    "v001Palette": "pass",
+    "metadataAndIndex": "pass",
+    "sourceCoverage": "pass",
+    "v001Unchanged": "pass",
+    "firstFrameNonempty": "pass",
+    "animationStrips": "pass"
+  },
+  "sharedFirstFrames": [
+    [
+      "item_armor_crab_sigil",
+      "item_armor_crab"
+    ],
+    [
+      "item_ember_fox_sigil",
+      "item_ember_fox"
+    ],
+    [
+      "item_lantern_snail_sigil",
+      "item_lantern_snail"
+    ],
+    [
+      "item_supply_mole_sigil",
+      "item_supply_mole"
+    ],
+    [
+      "item_crystal_crab_lord_sigil",
+      "item_crystal_crab_lord"
+    ],
+    [
+      "item_bell_bird_sigil",
+      "item_bell_bird"
+    ]
+  ],
+  "records": [
+    {
+      "asset": "ui_number_damage_0",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_damage_1",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        4,
+        5,
+        12,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_damage_2",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_damage_3",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_damage_4",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_damage_5",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_damage_6",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_damage_7",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_damage_8",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_damage_9",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_damage_plus",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        7,
+        14,
+        19
+      ]
+    },
+    {
+      "asset": "ui_number_damage_minus",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        11,
+        14,
+        15
+      ]
+    },
+    {
+      "asset": "ui_number_crit_0",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_crit_1",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        4,
+        5,
+        12,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_crit_2",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_crit_3",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_crit_4",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_crit_5",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_crit_6",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_crit_7",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_crit_8",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_crit_9",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_crit_plus",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        7,
+        14,
+        19
+      ]
+    },
+    {
+      "asset": "ui_number_crit_minus",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        11,
+        14,
+        15
+      ]
+    },
+    {
+      "asset": "ui_number_heal_0",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_heal_1",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        4,
+        5,
+        12,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_heal_2",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_heal_3",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_heal_4",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_heal_5",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_heal_6",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_heal_7",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_heal_8",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_heal_9",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_heal_plus",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        7,
+        14,
+        19
+      ]
+    },
+    {
+      "asset": "ui_number_heal_minus",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        11,
+        14,
+        15
+      ]
+    },
+    {
+      "asset": "ui_number_shield_0",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_shield_1",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        4,
+        5,
+        12,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_shield_2",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_shield_3",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_shield_4",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_shield_5",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_shield_6",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_shield_7",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_shield_8",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_shield_9",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        5,
+        14,
+        21
+      ]
+    },
+    {
+      "asset": "ui_number_shield_plus",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        7,
+        14,
+        19
+      ]
+    },
+    {
+      "asset": "ui_number_shield_minus",
+      "size": [
+        16,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        11,
+        14,
+        15
+      ]
+    },
+    {
+      "asset": "ui_popup_dodge",
+      "size": [
+        39,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        3,
+        6,
+        32,
+        16
+      ]
+    },
+    {
+      "asset": "ui_popup_miss",
+      "size": [
+        44,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        3,
+        6,
+        38,
+        19
+      ]
+    },
+    {
+      "asset": "ui_popup_critical",
+      "size": [
+        30,
+        24
+      ],
+      "frames": 5,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        4,
+        6,
+        22,
+        20
+      ]
+    },
+    {
+      "asset": "ui_element_fire",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        1,
+        15,
+        15
+      ]
+    },
+    {
+      "asset": "ui_element_fire_loop",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        1,
+        15,
+        15
+      ]
+    },
+    {
+      "asset": "ui_hit_fire",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 6,
+      "uniqueCels": 6,
+      "firstFrameBBox": [
+        6,
+        6,
+        26,
+        27
+      ]
+    },
+    {
+      "asset": "ui_element_water",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        1,
+        14,
+        15
+      ]
+    },
+    {
+      "asset": "ui_element_water_loop",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        1,
+        14,
+        15
+      ]
+    },
+    {
+      "asset": "ui_hit_water",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 6,
+      "uniqueCels": 6,
+      "firstFrameBBox": [
+        11,
+        12,
+        22,
+        24
+      ]
+    },
+    {
+      "asset": "ui_element_earth",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        1,
+        2,
+        15,
+        15
+      ]
+    },
+    {
+      "asset": "ui_element_earth_loop",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        2,
+        15,
+        15
+      ]
+    },
+    {
+      "asset": "ui_hit_earth",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 6,
+      "uniqueCels": 6,
+      "firstFrameBBox": [
+        8,
+        12,
+        28,
+        23
+      ]
+    },
+    {
+      "asset": "ui_element_wind",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        1,
+        0,
+        15,
+        15
+      ]
+    },
+    {
+      "asset": "ui_element_wind_loop",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        0,
+        15,
+        15
+      ]
+    },
+    {
+      "asset": "ui_hit_wind",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 6,
+      "uniqueCels": 6,
+      "firstFrameBBox": [
+        11,
+        9,
+        24,
+        22
+      ]
+    },
+    {
+      "asset": "ui_element_light",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        1,
+        1,
+        15,
+        15
+      ]
+    },
+    {
+      "asset": "ui_element_light_loop",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        15,
+        15
+      ]
+    },
+    {
+      "asset": "ui_hit_light",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 6,
+      "uniqueCels": 6,
+      "firstFrameBBox": [
+        11,
+        11,
+        22,
+        22
+      ]
+    },
+    {
+      "asset": "ui_element_shadow",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        1,
+        15,
+        15
+      ]
+    },
+    {
+      "asset": "ui_element_shadow_loop",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        1,
+        15,
+        15
+      ]
+    },
+    {
+      "asset": "ui_hit_shadow",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 6,
+      "uniqueCels": 6,
+      "firstFrameBBox": [
+        4,
+        3,
+        29,
+        30
+      ]
+    },
+    {
+      "asset": "ui_element_neutral",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        1,
+        15,
+        15
+      ]
+    },
+    {
+      "asset": "ui_element_neutral_loop",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        1,
+        15,
+        15
+      ]
+    },
+    {
+      "asset": "ui_hit_neutral",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 6,
+      "uniqueCels": 6,
+      "firstFrameBBox": [
+        6,
+        5,
+        27,
+        25
+      ]
+    },
+    {
+      "asset": "ui_heal_burst",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 6,
+      "uniqueCels": 6,
+      "firstFrameBBox": [
+        5,
+        20,
+        28,
+        30
+      ]
+    },
+    {
+      "asset": "ui_target_selected_back",
+      "size": [
+        60,
+        16
+      ],
+      "frames": 6,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        3,
+        58,
+        14
+      ]
+    },
+    {
+      "asset": "ui_target_selected_front",
+      "size": [
+        60,
+        16
+      ],
+      "frames": 6,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        2,
+        58,
+        13
+      ]
+    },
+    {
+      "asset": "ui_target_turn_ally_back",
+      "size": [
+        60,
+        16
+      ],
+      "frames": 6,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        3,
+        58,
+        14
+      ]
+    },
+    {
+      "asset": "ui_target_turn_ally_front",
+      "size": [
+        60,
+        16
+      ],
+      "frames": 6,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        2,
+        58,
+        13
+      ]
+    },
+    {
+      "asset": "ui_target_turn_enemy_back",
+      "size": [
+        60,
+        16
+      ],
+      "frames": 6,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        3,
+        58,
+        14
+      ]
+    },
+    {
+      "asset": "ui_target_turn_enemy_front",
+      "size": [
+        60,
+        16
+      ],
+      "frames": 6,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        2,
+        2,
+        58,
+        13
+      ]
+    },
+    {
+      "asset": "ui_target_arrow",
+      "size": [
+        60,
+        20
+      ],
+      "frames": 6,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        24,
+        6,
+        36,
+        17
+      ]
+    },
+    {
+      "asset": "ui_status_stun",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_sleep",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_freeze",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_petrify",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_paralyze",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_fear",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_silence",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_disarm",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_root",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_confuse",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        0,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_charm",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_berserk",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        0,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_taunt",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_mini",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_doom",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        0,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_poison",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_toxic",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        0,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_burn",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_bleed",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_frostbite",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_shock",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_corrode",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_leech",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_mana_burn",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_blind",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_atk_down",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_matk_down",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        0,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_def_down",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_mdef_down",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_spd_down",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_evasion_down",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_crit_down",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_res_down",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_vulnerable",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_mark",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        0,
+        0,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_anti_heal",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_unbuffable",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_seal",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_skill_lock",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        0,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_mp_cost_up",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_link",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_zombie",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_wet",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_oil",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_atk_up",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_matk_up",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        0,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_def_up",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_mdef_up",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_spd_up",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_evasion_up",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_accuracy_up",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        0,
+        0,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_crit_up",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_res_up",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_regen",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_mp_regen",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_dmg_reduction",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_reflect",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_thorns",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_immunity",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_endure",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_invincible",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_stealth",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_counter",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_protect",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_shield",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_focus",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_imbue",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_element_ward",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_lifesteal_up",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        1,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_status_rage",
+      "size": [
+        16,
+        16
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        1,
+        0,
+        16,
+        16
+      ]
+    },
+    {
+      "asset": "ui_bar_ascend_full_h4",
+      "size": [
+        64,
+        4
+      ],
+      "frames": 6,
+      "uniqueCels": 6,
+      "firstFrameBBox": [
+        5,
+        1,
+        50,
+        4
+      ]
+    },
+    {
+      "asset": "ui_bar_ascend_full_h6",
+      "size": [
+        64,
+        6
+      ],
+      "frames": 6,
+      "uniqueCels": 6,
+      "firstFrameBBox": [
+        5,
+        2,
+        50,
+        5
+      ]
+    },
+    {
+      "asset": "ui_bar_ascend_full_h8",
+      "size": [
+        64,
+        8
+      ],
+      "frames": 6,
+      "uniqueCels": 6,
+      "firstFrameBBox": [
+        5,
+        3,
+        50,
+        6
+      ]
+    },
+    {
+      "asset": "ui_ready_ascend",
+      "size": [
+        56,
+        48
+      ],
+      "frames": 6,
+      "uniqueCels": 3,
+      "firstFrameBBox": [
+        1,
+        0,
+        55,
+        48
+      ]
+    },
+    {
+      "asset": "ui_ready_skill",
+      "size": [
+        56,
+        48
+      ],
+      "frames": 6,
+      "uniqueCels": 3,
+      "firstFrameBBox": [
+        1,
+        0,
+        55,
+        48
+      ]
+    },
+    {
+      "asset": "ui_menu_stats",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        6,
+        5,
+        18,
+        19
+      ]
+    },
+    {
+      "asset": "ui_menu_equipment",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        4,
+        6,
+        20,
+        19
+      ]
+    },
+    {
+      "asset": "ui_menu_skill_tree",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        5,
+        4,
+        19,
+        19
+      ]
+    },
+    {
+      "asset": "ui_menu_class",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        6,
+        6,
+        18,
+        18
+      ]
+    },
+    {
+      "asset": "ui_menu_team",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        5,
+        5,
+        19,
+        19
+      ]
+    },
+    {
+      "asset": "ui_menu_companion_skills",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        5,
+        5,
+        19,
+        19
+      ]
+    },
+    {
+      "asset": "ui_menu_rebirth",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        6,
+        5,
+        19,
+        19
+      ]
+    },
+    {
+      "asset": "ui_menu_shop",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        6,
+        5,
+        18,
+        19
+      ]
+    },
+    {
+      "asset": "ui_menu_armory",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        6,
+        5,
+        18,
+        19
+      ]
+    },
+    {
+      "asset": "ui_menu_craft",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        7,
+        4,
+        19,
+        20
+      ]
+    },
+    {
+      "asset": "ui_menu_vault",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        5,
+        7,
+        19,
+        19
+      ]
+    },
+    {
+      "asset": "ui_menu_mail",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        5,
+        8,
+        19,
+        18
+      ]
+    },
+    {
+      "asset": "ui_menu_mail_new",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        5,
+        1,
+        23,
+        18
+      ]
+    },
+    {
+      "asset": "ui_menu_market",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        5,
+        23,
+        24
+      ]
+    },
+    {
+      "asset": "ui_menu_quests",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        5,
+        5,
+        19,
+        20
+      ]
+    },
+    {
+      "asset": "ui_menu_quests_new",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 4,
+      "uniqueCels": 4,
+      "firstFrameBBox": [
+        5,
+        1,
+        23,
+        20
+      ]
+    },
+    {
+      "asset": "ui_menu_orders",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        5,
+        3,
+        23,
+        20
+      ]
+    },
+    {
+      "asset": "ui_menu_secret_quests",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        6,
+        5,
+        18,
+        19
+      ]
+    },
+    {
+      "asset": "ui_menu_tower",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        6,
+        5,
+        19,
+        19
+      ]
+    },
+    {
+      "asset": "ui_menu_practice",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        4,
+        4,
+        18,
+        18
+      ]
+    },
+    {
+      "asset": "ui_menu_auto_hunt",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        6,
+        6,
+        18,
+        19
+      ]
+    },
+    {
+      "asset": "ui_menu_party",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        5,
+        18,
+        21
+      ]
+    },
+    {
+      "asset": "ui_menu_journal",
+      "size": [
+        24,
+        24
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        5,
+        6,
+        19,
+        20
+      ]
+    },
+    {
+      "asset": "ui_class_guardian",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "ui_class_striker",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "ui_class_ranger",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "ui_class_arcanist",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "ui_class_warden",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "ui_class_binder",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "ui_class_rogue",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "ui_class_alchemist",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "ui_class_bard",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "ui_race_human",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "ui_race_sylvan",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "ui_race_stonekin",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "ui_race_wildkin",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "ui_race_runeborn",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "ui_race_tideborn",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "ui_race_skyborn",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "ui_race_veilborn",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_small_potion",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_phoenix_feather",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_mana_potion",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_cleansing_herb",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_stat_reset_scroll",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_skill_reset_scroll",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_power_tonic",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_war_drum_tonic",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_fire_flask",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_thunder_bomb",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_armor_crab_capture",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_ember_fox_capture",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_lantern_snail_capture",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_supply_mole_capture",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_bell_bird_capture",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_crystal_crab_lord_capture",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_armor_crab_sigil",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        0,
+        0,
+        32,
+        32
+      ]
+    },
+    {
+      "asset": "item_ember_fox_sigil",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        0,
+        0,
+        32,
+        32
+      ]
+    },
+    {
+      "asset": "item_lantern_snail_sigil",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        0,
+        0,
+        32,
+        32
+      ]
+    },
+    {
+      "asset": "item_supply_mole_sigil",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        0,
+        0,
+        32,
+        32
+      ]
+    },
+    {
+      "asset": "item_crystal_crab_lord_sigil",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        0,
+        0,
+        32,
+        32
+      ]
+    },
+    {
+      "asset": "item_bell_bird_sigil",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        0,
+        0,
+        32,
+        32
+      ]
+    },
+    {
+      "asset": "item_crab_shell",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_fox_tail_ash",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_snail_glow_slime",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_mole_fur",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_bell_feather",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_crystal_shard",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_river_pebble",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_rift_core",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_stone_t1",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_stone_t2",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_stone_t3",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_stone_t4",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_ward_t1_p6",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_ward_t1_p7",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_ward_t1_p8",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_ward_t1_p9",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_ward_t1_p10",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_ward_t2_p6",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_ward_t2_p7",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_ward_t2_p8",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_ward_t2_p9",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_ward_t2_p10",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_ward_t3_p6",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_ward_t3_p7",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_ward_t3_p8",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_ward_t3_p9",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_ward_t3_p10",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_ward_t4_p6",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_ward_t4_p7",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_ward_t4_p8",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_ward_t4_p9",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_refine_ward_t4_p10",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_elite_core_t1",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_elite_core_t2",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_elite_core_t3",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_elite_core_t4",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_wild_hide_t2",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_wild_gem_t2",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_wild_hide_t3",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_wild_gem_t3",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_wild_hide_t4",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_wild_gem_t4",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_wooden_sword",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_training_bow",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_apprentice_staff",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_cloth_tunic",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_mole_sandals",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_bell_feather_cap",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_crab_buckler",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_glow_charm",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_crystal_shell_plate",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_ember_fang_dagger",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_wand_1",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_cap_1",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_boots_1",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_shield_1",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_sword_10",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_bow_10",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_staff_10",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_armor_10",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_wand_10",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_cap_10",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_boots_10",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_shield_10",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_sword_20",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_bow_20",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_staff_20",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_armor_20",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_wand_20",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_cap_20",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_boots_20",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_shield_20",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_sword_30",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_bow_30",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_staff_30",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_armor_30",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_wand_30",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_cap_30",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_boots_30",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_shield_30",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_sword_40",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_bow_40",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_staff_40",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_armor_40",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_wand_40",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_cap_40",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_boots_40",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_shop_shield_40",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        2,
+        2,
+        30,
+        30
+      ]
+    },
+    {
+      "asset": "item_armor_crab",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        0,
+        0,
+        32,
+        32
+      ]
+    },
+    {
+      "asset": "item_ember_fox",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        0,
+        0,
+        32,
+        32
+      ]
+    },
+    {
+      "asset": "item_lantern_snail",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        0,
+        0,
+        32,
+        32
+      ]
+    },
+    {
+      "asset": "item_supply_mole",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        0,
+        0,
+        32,
+        32
+      ]
+    },
+    {
+      "asset": "item_crystal_crab_lord",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        0,
+        0,
+        32,
+        32
+      ]
+    },
+    {
+      "asset": "item_bell_bird",
+      "size": [
+        32,
+        32
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        0,
+        0,
+        32,
+        32
+      ]
+    },
+    {
+      "asset": "ui_title_scene",
+      "size": [
+        580,
+        540
+      ],
+      "frames": 1,
+      "uniqueCels": 1,
+      "firstFrameBBox": [
+        45,
+        40,
+        535,
+        521
+      ]
+    },
+    {
+      "asset": "ui_title_sparkles",
+      "size": [
+        580,
+        540
+      ],
+      "frames": 6,
+      "uniqueCels": 6,
+      "firstFrameBBox": [
+        71,
+        105,
+        480,
+        330
+      ]
+    }
+  ],
+  "visualReview": "Reviewed native/3x overview pages 01-07, animation walls 01-07, Thai popup words and native title. Fixed clipped preview cells, loop glint paths and unintended duplicate inventory glyphs. Remaining duplicate Sigil item/definition art is intentional.",
+  "gameIntegration": "pending Claude; runtime source untouched",
+  "npmCheck": {
+    "command": "npm run check",
+    "result": "pass",
+    "testFiles": 87,
+    "tests": 795,
+    "typecheck": "pass",
+    "clientBuild": "pass",
+    "serverDryRun": "pass"
+  },
+  "date": "2026-10-29",
+  "browserPreview": "Loaded 313 labeled canvas entries in IAB at localhost:8875; screenshot showed correctly rendered sprites; console error list empty. This is not Phaser integration or a mobile test.",
+  "limitations": [
+    "grid_ready only; Claude must integrate and test runtime",
+    "status/element loops intentionally subtle glints",
+    "optional item rarity sparkle variants not authored",
+    "working PIXEL GAME logo",
+    "Windows Tahoma needed to regenerate permitted Thai popup words"
+  ]
+}

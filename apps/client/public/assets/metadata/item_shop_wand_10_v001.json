@@ -1,0 +1,48 @@
+{
+  "assetId": "item_shop_wand_10",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/items/item_shop_wand_10_v001.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "item",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "ce011d74850a930fdbe6f98ab7c40c2126c794c529863688ec56c735cc7e3757",
+  "contentId": "equip:shop_wand_10",
+  "contentGroup": "equipment",
+  "motif": "staff"
+}

@@ -1,0 +1,21 @@
+{
+  "assetCount": 51,
+  "families": {
+    "nine_slice": 7,
+    "fill": 1,
+    "slot": 10,
+    "overlay": 1,
+    "bar_track": 3,
+    "bar_fill": 15,
+    "icon": 14
+  },
+  "rgba": true,
+  "binaryAlpha": true,
+  "manifestAndHashes": "pass",
+  "nativeDimensions": "pass",
+  "nineSliceAxisContinuity": "pass",
+  "actualProofCorners": "pass",
+  "visualReview": "native sheet, 960x540 placement and light/dark icon sheet inspected",
+  "gameIntegration": "not performed; Claude owns renderer",
+  "mobileFIT": "pending"
+}

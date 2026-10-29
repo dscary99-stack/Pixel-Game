@@ -1,5 +1,25 @@
 # UI kit proof v001 — 27 ต.ค. 2026
 
+## UI รอบสอง — 29 ต.ค. 2026
+
+ส่งงานบน `codex/ui-kit-r2` จาก Claude `2e8a8b8`: **313 PNG, 151 animated clips, 859 source frames**. ชุด v001 ด้านล่างยังคงเดิมทั้ง51ไฟล์.
+
+ครบ: ตัวเลข48+คำ3, hit7ธาตุ+heal1, วงเป้า6ส่วน+arrow1, status70, element7นิ่ง+7วน, ascend overlay3+ready2, menu21+notification2, class9+race8, item64+equipment46+Sigil6, title scene+sparkles2. ไม่มี id ที่ต้องเลื่อนไปรอบถัดไป. ประกายไอเทม EPIC/LEGENDARY เป็นทางเลือกและยังไม่ทำ; ภาพนิ่งของทุก id ครบ.
+
+รายละเอียดสัญญาโหลด ขนาด จำนวนเฟรม ตำแหน่ง split-ring และคำสั่งสร้างซ้ำอยู่ **[R2_HANDOFF.md](R2_HANDOFF.md)**. Manifest รวม: `ui-kit-r2-manifest.json`; QA รวม: `qa-report.json`, รายละเอียดรอบสอง: `qa-report-r2.json`; ข้อมูล content จริง: `r2-content.json`.
+
+พรีวิว: `r2/overview-01.png` ถึง `overview-07.png`, `r2/animation-wall-01.png` ถึง `animation-wall-07.png`, strip ครบทุก151คลิป, `r2/vfx-playback.gif`, `r2/title-loop.gif`, และ `r2/preview.html` (เสิร์ฟจาก repository root). ภาพตัวอย่างใช้พื้น #14121c; ชิ้นเกมเป็น RGBA alpha0/255 และสีจาก v001 เท่านั้น. ตรวจ native และ integer zoom แล้ว. พรีวิว HTML โหลดได้ใน browser โดยไม่มี console error; ยังไม่ได้ต่อ Phaser หรือทดสอบมือถือจริง.
+
+`npm run check` ผ่าน: typecheck,87 test files/795 tests,client build,server dry-run. Warnings เดิม: Rollup annotation ใน zod, bundle>2MB และ Wrangler ไม่ระบุ environment; ไม่มี deploy. Structural QA ผ่านทุก313ไฟล์ รวม metadata/index/hash/palette/coverage/frame0 และการคง v001. ไม่มีโค้ด apps/*/src หรือ packages เปลี่ยน.
+
+ข้อพิจารณาทางภาพ: status ใช้การกระพริบจุดเล็กเพื่อไม่แย่งสายตา; ธาตุใช้ glint loop; hit มี contact→แตกตัว→ดับและเล่นครั้งเดียว. คู่ `item:*_sigil`/`sigil:*` ใช้ภาพเดียวกันโดยตั้งใจเพราะเป็นสิ่งเดียวกันคนละ schema; มี metadata แยกครบ. ไอคอนใช้ motif ร่วมในตระกูลและมีรายละเอียด tier/strength เพิ่ม ไม่ใช่ illustration ของอุปกรณ์สวมบนตัว.
+
+ภาพหน้าเกม: `reference/title-concept-r2.png` สร้างด้วย built-in imagegen เป็น conceptเท่านั้น. ไฟล์ native580×540 วาดใหม่จาก integer coordinates โดย `r2_title.py` เพื่อไม่ย่อ bitmap และคง palette; แยก twinkle overlay6เฟรม. โลโก้ PIXEL GAME เป็นชื่อโครงการชั่วคราว. Prompt และที่มาที่ `reference/title-concept-r2.md`.
+
+สถานะส่งต่อ: **grid_ready / productionApproved=false**. Claude ต้องเปลี่ยนวิธีโหลดจาก image เป็น spritesheet สำหรับชิ้น animated, map contentId และจัดการ completion/reduced-motion ก่อนเข้าเกม. ไม่มีการ merge อัตโนมัติ.
+
+---
+
 ฐานงาน: `claude/project-thread-ektp0t` commit `115cc2414b583b3810b733916db7178bf5a0b92e` → `codex/ui-kit`.
 อ่าน AGENTS.md, GAME_DESIGN_MASTER บท00, STATUS, ART_HANDOFF §1/6/7/9/11, GUI_SCREENS ทั้งไฟล์ และ ART_STYLE_AND_ANIMATION จาก `codex/art-style-animation-handoff`.
 

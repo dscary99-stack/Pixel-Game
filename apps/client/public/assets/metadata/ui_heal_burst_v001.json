@@ -1,0 +1,63 @@
+{
+  "assetId": "ui_heal_burst",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_heal_burst_v001.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 6,
+  "rows": 1,
+  "frameCount": 6,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "play",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fps": 10,
+      "loop": false
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "heal",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hide",
+  "sha256": "239157ce7b326ab0181d5fe12ddf5edec9eed72ca1c35c559de5c4531c8f8ab5",
+  "attachment": [
+    16,
+    24
+  ]
+}

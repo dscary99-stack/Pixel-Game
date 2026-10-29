@@ -2,6 +2,13 @@
 
 อัปเดต: 7 ตุลาคม 2026 · ผู้ทำล่าสุด: Claude · ระยะ: **D แรก — ตัวละคร ทีม อุปกรณ์ 12 ช่อง, Sigil, เหรียญ และ EXP/เลเวล/แต้มสเตตัสที่บันทึกจริง** (บท02, บท03 §3–§4, บท05, บท06, บท13 §1 D) ต่อจาก C แรก
 
+## UI asset รอบสอง — Codex
+
+29 ตุลาคม 2026 · `codex/ui-kit-r2` จาก `claude/project-thread-ektp0t` commit `2e8a8b8`.
+เพิ่ม313 PNG / 151 ชุดแอนิเมชัน / 859 source frames พร้อม metadata และ index; ครบรายการรอบสองทั้ง9กลุ่ม รวมสถานะ70, เมนู21+notification2, ไอเทม64+อุปกรณ์46+Sigil6 และภาพหน้าเกม580×540แยกชั้นประกาย6เฟรม. ไม่มี source เกมใน apps/*/src หรือ packages ถูกแก้.
+ทุกไฟล์เป็น `grid_ready`, origin [0,0], frame0 ใช้นิ่งได้; คง v001 ทั้ง51ไฟล์เดิม. ภาพรวมและ strip ทุกคลิปอยู่ art/ui/r2/, สัญญาส่งต่อและรายการครบใน art/ui/PROOF.md. npm run check ผ่าน:87 test files /795 tests, typecheck, client build และ server dry-run.
+ยังไม่ใช่การต่อเข้าเกม: ui-kit.ts โหลด v001 เป็น image แบบ hardcode; Claude ต้องโหลด spritesheet, map contentId, เล่น once/loop และ reduced-motion. ต้องตรวจบนมือถือ/Phaserจริงก่อนอนุมัติ production. ประกาย EPIC/LEGENDARY ไอเทมเป็นทางเลือกยังไม่ได้ทำ; ไอเทมทุก id มีภาพนิ่งครบ. โลโก้ PIXEL GAME ใช้ชื่อชั่วคราว.
+
 ไฟล์นี้คือสถานะที่ใช้ส่งต่อระหว่าง Claude และ Codex ทุกงานที่จบให้แก้ไฟล์นี้ก่อน commit
 
 Repo: https://github.com/dscary99-stack/Pixel-Game · Phase A merge แล้ว (PR #1) · งานล่าสุดอยู่บน branch `claude/project-thread-ektp0t`

@@ -1,0 +1,46 @@
+{
+  "assetId": "ui_class_binder",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_class_binder_v001.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "class",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "f205e812a56f2a21a443367d2ba4c45574530d096a115b796b7b92b313ebd527",
+  "contentId": "binder"
+}

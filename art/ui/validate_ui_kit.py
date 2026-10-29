@@ -8,7 +8,7 @@ manifest=json.loads((ROOT/'art/ui/ui-kit-manifest.json').read_text())
 assert len(manifest['assets'])==51
 indexed=json.loads((meta/'index.json').read_text())
 pngs=list((ROOT/'apps/client/public/assets/sprites/ui').glob('*.png'))
-assert len(pngs)==51
+assert len(pngs)>=51  # Round 2 adds assets; v001's owned set stays exactly 51.
 families={}
 for a in manifest['assets']:
  path=ROOT/'apps/client/public'/a['file'].lstrip('/')
@@ -41,10 +41,10 @@ bg=(20,18,28,255)
 for sx,sy,dx,dy in [(0,0,24,24),(32,0,920,24),(0,32,24,500),(32,32,920,500)]:
  expected=Image.new('RGBA',(16,16),bg);expected.alpha_composite(source.crop((sx,sy,sx+16,sy+16)))
  assert expected.tobytes()==proof.crop((dx,dy,dx+16,dy+16)).tobytes()
-result={'assetCount':len(pngs),'families':families,'rgba':True,'binaryAlpha':True,
+result={'assetCount':len(manifest['assets']),'families':families,'rgba':True,'binaryAlpha':True,
  'manifestAndHashes':'pass','nativeDimensions':'pass','nineSliceAxisContinuity':'pass',
  'actualProofCorners':'pass','visualReview':'native sheet, 960x540 placement and light/dark icon sheet inspected',
  'gameIntegration':'not performed; Claude owns renderer','mobileFIT':'pending'}
-(ROOT/'art/ui/qa-report.json').write_text(json.dumps(result,indent=2)+'\n')
+(ROOT/'art/ui/qa-report-v001.json').write_text(json.dumps(result,indent=2)+'\n')
 print(json.dumps(result,indent=2))
 
