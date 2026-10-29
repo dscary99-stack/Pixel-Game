@@ -4,13 +4,25 @@
  * it never computes damage, loot, capture or ownership itself (chapter 11 §1).
  */
 import Phaser from "phaser";
-import type { BattleCommand, BattleEvent, BattleUnit, Element, PublicBattleState } from "@pmrpg/shared";
+import { DEV_FIXTURE_RULES, ascensionPath, expProgress, totalStatPointsAtLevel, raceTrialGoal, ELITE_MODIFIER_TH, combatBagOf, EXAMPLE_FRONTIER, FRONTIER_MODIFIER_TH, STATUS_DEFINITIONS, exampleContentMaps, type BattleCommand, type BattleEvent, type BattleUnit, type Element, type PublicBattleState } from "@pmrpg/shared";
 import type { BattleTransport, Snapshot } from "./transport";
+import { savedAutoPolicy } from "./character-ui";
+import { capturePreview, pct2 } from "./capture-ui";
+import { fleePreview, refusalTh, reviveRefusal, skillButtonLine } from "./command-ui";
+import { UiBar, UiButton, assetMeta, loadUiKit, reducedMotion, uiKey, uiPanel, uiSprite, type CommandIcon } from "./ui-kit";
+
+const CONTENT = exampleContentMaps();
+/** Display name for a loot line: item or equipment, falling back to the id. */
+const lootName = (id: string) => (CONTENT.items.get(id) ?? CONTENT.equipment.get(id))?.name.th ?? id;
+
+const expText = (exp: number | undefined) => (exp ? ` · EXP +${exp}` : "");
+
+const OUTCOME_TH: Record<PublicBattleState["status"], string> = { active: "กำลังสู้", victory: "ชนะ!", defeat: "แพ้", fled: "หนีสำเร็จ" };
 
 const W = 960;
 const H = 540;
 
-const ELEMENT_COLOR: Record<Element, number> = {
+export const ELEMENT_COLOR: Record<Element, number> = {
   FIRE: 0xf26b3a,
   WATER: 0x3a8ef2,
   EARTH: 0xb08a4a,
@@ -22,10 +34,28 @@ const ELEMENT_COLOR: Record<Element, number> = {
 
 interface UnitView {
   body: Phaser.GameObjects.Rectangle;
-  hpBar: Phaser.GameObjects.Rectangle;
+  hpBar: UiBar;
   label: Phaser.GameObjects.Text;
-  ring: Phaser.GameObjects.Rectangle;
+  /**
+   * Allies: under the HP bar. Enemies: beside the body (statuses, elite modifiers, reinforcement),
+   * so ten enemies in two columns never stack text into the next cell.
+   */
+  sub: Phaser.GameObjects.Text;
+  /** Codex target brackets (R2_HANDOFF §6): back under the body, front over it, arrow above the name. */
+  ringBack: Phaser.GameObjects.Sprite;
+  ringFront: Phaser.GameObjects.Sprite;
+  arrow: Phaser.GameObjects.Sprite;
+  ringKind: string | null;
+  element: Phaser.GameObjects.Image;
+  /** One 16px icon per active status under the HP bar, rebuilt when the set changes. */
+  statusIcons: Phaser.GameObjects.GameObject[];
+  statusKey: string;
+  ascBar: UiBar | null;
+  ascFull: Phaser.GameObjects.Sprite | null;
 }
+
+/** P36 warning window: shown this long before an untouched fight closes. */
+const IDLE_WARN_MS = 120_000;
 
 export class BattleScene extends Phaser.Scene {
   private transport!: BattleTransport;
@@ -35,16 +65,58 @@ export class BattleScene extends Phaser.Scene {
   private log: string[] = [];
   private logText!: Phaser.GameObjects.Text;
   private turnText!: Phaser.GameObjects.Text;
+  /** Party bonus, tower floor and boss phase: inside the field's top-left, wrapped clear of the enemy columns. */
+  private infoText!: Phaser.GameObjects.Text;
+  /** P36: warns before a fight nobody acts in closes as lost. */
+  private idleText!: Phaser.GameObjects.Text;
+  private idleDeadline: number | null = null;
   private autoOn = false;
   private busy = false;
-  private autoButton!: Phaser.GameObjects.Text;
+  private autoButton!: UiButton;
+  private ascendReady!: Phaser.GameObjects.Sprite;
 
   constructor() {
     super("battle");
   }
 
-  init(data: { transport: BattleTransport }) {
+  private onExit: (() => void) | null = null;
+  /** Auto Hunt: the server plays this fight; the scene only shows it until the player takes over. */
+  private watching = false;
+  private onStopAuto: (() => void) | null = null;
+  private cursor = 0;
+  private watchUi: { destroy(): void }[] = [];
+  private exitButton: UiButton | null = null;
+  /** The end-of-fight summary (GUI draft "Result"): built once, hidden with "ดูสนาม". */
+  private resultUi: { destroy(): void; setVisible(v: boolean): unknown }[] | null = null;
+  private abandoned = false;
+  /** EXP the character and each companion had when the fight opened, so the summary can show level-ups. */
+  private progress: { xp: number; companions: Record<string, number> } | null = null;
+
+  /**
+   * `onExit` is set when the fight came from the world: once the fight is over a button takes the
+   * player back to where they stood. Phaser reuses this scene object, so every field resets here.
+   */
+  init(data: { transport: BattleTransport; onExit?: () => void; watch?: boolean; onStopAuto?: () => void; progress?: { xp: number; companions: Record<string, number> } }) {
     this.transport = data.transport;
+    this.progress = data.progress ?? null;
+    this.onExit = data.onExit ?? null;
+    this.watching = data.watch ?? false;
+    this.onStopAuto = data.onStopAuto ?? null;
+    this.cursor = 0;
+    this.watchUi = [];
+    this.exitButton = null;
+    this.resultUi = null;
+    this.abandoned = false;
+    this.views = new Map();
+    this.selectedTarget = null;
+    this.log = [];
+    this.autoOn = false;
+    this.busy = false;
+    this.idleDeadline = null;
+  }
+
+  preload() {
+    loadUiKit(this);
   }
 
   async create() {
@@ -52,78 +124,319 @@ export class BattleScene extends Phaser.Scene {
     this.add.rectangle(W / 2, 250, W, 400, 0x2a2540).setStrokeStyle(2, 0x0b0a12);
     this.add.text(12, 8, this.transport.label, { fontFamily: "sans-serif", fontSize: "13px", color: "#f2c94c" });
     this.turnText = this.add.text(12, 28, "", { fontFamily: "sans-serif", fontSize: "15px", color: "#ffffff" });
-    this.logText = this.add.text(560, 456, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#d8d4ea", wordWrap: { width: 390 } });
+    this.infoText = this.add.text(12, 56, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#f2c94c", wordWrap: { width: 520 } });
+    this.idleText = this.add.text(W - 12, 8, "", { fontFamily: "sans-serif", fontSize: "13px", color: "#ff8a80", align: "right" }).setOrigin(1, 0);
+    this.time.addEvent({ delay: 1000, loop: true, callback: () => this.idleTick() });
+    uiPanel(this, 568, 446, 384, 88);
+    this.logText = this.add.text(580, 456, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#d8d4ea", wordWrap: { width: 362 } });
 
-    const buttons: [string, () => void][] = [
-      ["โจมตี", () => this.act("attack")],
-      ["สกิล", () => this.act("skill")],
-      ["ป้องกัน", () => this.act("guard")],
-      ["ยา", () => this.act("item")],
-      ["จับ", () => this.act("capture")],
+    const buttons: [string, CommandIcon, () => void][] = [
+      ["โจมตี", "attack", () => this.act("attack")],
+      ["สกิล", "skill", () => this.act("skill")],
+      ["ป้องกัน", "guard", () => this.act("guard")],
+      ["ยา", "potion", () => this.act("item")],
+      ["ชุบ", "revive", () => this.act("revive")],
+      ["จับ", "capture", () => this.act("capture")],
+      ["หนี", "flee", () => this.act("flee")],
+      ["จุติ", "ascend", () => this.act("awaken")],
     ];
-    buttons.forEach(([label, fn], i) => this.button(16 + i * 92, 470, label, fn));
-    this.autoButton = this.button(16 + 5 * 92, 470, "Auto: ปิด", () => this.toggleAuto());
+    // Eight kit buttons (icon + label) and Auto left of the log: 56px wide, 48px tall (P10 touch target height).
+    buttons.forEach(([label, icon, fn], i) => new UiButton(this, 16 + i * 60, 470, 56, label, fn, { icon: uiKey.command(icon) }));
+    // Glows round จุติ while the acting unit's gauge is full (R2 ready frame, on the 56×48 button bounds).
+    this.ascendReady = uiSprite(this, 16 + 7 * 60, 470, uiKey.ready("ascend")).setVisible(false).setDepth(5);
+    this.autoButton = new UiButton(this, 16 + buttons.length * 60, 470, 72, "Auto: ปิด", () => this.toggleAuto(), { icon: uiKey.command("auto") });
 
     // Auto only runs while this page is open and visible (C14: no offline farming).
-    this.time.addEvent({ delay: 650, loop: true, callback: () => void this.autoTick() });
-    document.addEventListener("visibilitychange", () => {
+    // The server holds Auto to one action per autoBattleActionMs, the same as Auto Hunt.
+    this.time.addEvent({ delay: DEV_FIXTURE_RULES.provisional.autoBattleActionMs.value, loop: true, callback: () => void this.autoTick() });
+    const onHide = () => {
       if (document.visibilityState !== "visible" && this.autoOn) this.toggleAuto();
-    });
+    };
+    document.addEventListener("visibilitychange", onHide);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => document.removeEventListener("visibilitychange", onHide));
+
+    // While watching, read what the server did; the server paces the actions (Auto Hunt).
+    this.time.addEvent({ delay: 400, loop: true, callback: () => void this.watchTick() });
+    // Party boss fights: follow teammates' turns, and have Auto stand in for one who left it waiting.
+    this.time.addEvent({ delay: 1000, loop: true, callback: () => void this.partyTick() });
+    if (this.watching) this.showWatchUi();
 
     const { snapshot, events } = await this.transport.start();
     this.apply(snapshot, events);
   }
 
-  private button(x: number, y: number, label: string, fn: () => void) {
-    // 84x48 touch target for mobile landscape (P10).
-    const t = this.add
-      .text(x, y, label, { fontFamily: "sans-serif", fontSize: "16px", color: "#ffffff", backgroundColor: "#463f6b", padding: { x: 12, y: 14 }, fixedWidth: 84, align: "center" })
-      .setInteractive({ useHandCursor: true });
-    t.on("pointerdown", fn);
-    return t;
+  /** Auto Hunt turned off (by the player or a stop reason): the player now controls this fight. */
+  setWatch(on: boolean) {
+    if (this.watching === on) return;
+    this.watching = on;
+    if (on) this.showWatchUi();
+    else {
+      this.watchUi.forEach((o) => o.destroy());
+      this.watchUi = [];
+      if (this.snap?.state.status === "active") this.pushLog("หยุดล่าอัตโนมัติแล้ว คุมเองต่อได้");
+      if (this.snap !== undefined) this.render(this.snap.state);
+    }
+  }
+
+  private showWatchUi() {
+    const banner = this.add
+      .text(W / 2, 430, "ล่าอัตโนมัติ: server กำลังสู้ให้", { fontFamily: "sans-serif", fontSize: "15px", color: "#0b0a12", backgroundColor: "#f2c94c", padding: { x: 10, y: 4 } })
+      .setOrigin(0.5);
+    const stop = new UiButton(this, W - 200, 20, 184, "หยุดล่า (คุมเอง)", () => this.onStopAuto?.(), { kind: "danger", depth: 30 });
+    this.watchUi = [banner, stop];
+  }
+
+  private async watchTick() {
+    if (!this.watching || this.busy || this.snap === undefined) return;
+    this.busy = true;
+    try {
+      const { snapshot, events } = await this.transport.poll(this.cursor);
+      this.apply(snapshot, events);
+    } catch {
+      // The next tick tries again.
+    } finally {
+      this.busy = false;
+    }
   }
 
   private toggleAuto() {
+    if (this.watching) return;
     this.autoOn = !this.autoOn;
-    this.autoButton.setText(this.autoOn ? "Auto: เปิด" : "Auto: ปิด");
+    this.autoButton.setLabel(this.autoOn ? "Auto: เปิด" : "Auto: ปิด").setKind(this.autoOn ? "selected" : "normal");
+  }
+
+  /** P36: the last two minutes before an untouched fight closes as lost show a countdown. */
+  private idleTick() {
+    if (this.idleText === undefined) return;
+    const left = this.idleDeadline === null || this.snap?.state.status !== "active" ? null : this.idleDeadline - Date.now();
+    if (left === null || left > IDLE_WARN_MS) return void this.idleText?.setText("");
+    const sec = Math.max(0, Math.ceil(left / 1000));
+    this.idleText.setText(`ไม่มีใครสั่ง: ไฟต์จะปิดและนับเป็นแพ้ใน ${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`);
+  }
+
+  /** Party boss fight (Nut 2026-10-07): is the unit whose turn it is one of ours? Solo fights: always. */
+  private myTurn(): boolean {
+    const s = this.snap?.state;
+    if (s?.members === undefined || this.snap.actor === null) return true;
+    const a = this.unit(this.snap.actor);
+    return a !== undefined && (a.controllerId ?? s.ownerAccountId) === this.snap.you;
+  }
+
+  private async partyTick() {
+    const s = this.snap?.state;
+    if (s?.members === undefined || s.status !== "active" || this.busy || this.myTurn()) return;
+    this.busy = true;
+    try {
+      // A teammate who left their turn waiting past P22's time: Auto plays it (the server checks the time).
+      if (this.snap.standInAt != null && Date.now() >= this.snap.standInAt) {
+        const { response, snapshot } = await this.transport.autoStep();
+        if (response.status === "accepted") {
+          this.pushLog(`${this.name(this.snap.actor ?? "")} ไม่ได้สั่ง: Auto เล่นแทน`);
+          return this.apply(snapshot, response.events);
+        }
+      }
+      const { snapshot, events } = await this.transport.poll(this.cursor);
+      this.apply(snapshot, events);
+    } catch {
+      // The next tick tries again.
+    } finally {
+      this.busy = false;
+    }
   }
 
   private async autoTick() {
-    if (!this.autoOn || this.busy || this.snap?.state.status !== "active") return;
+    if (!this.autoOn || this.busy || this.snap?.state.status !== "active" || !this.myTurn()) return;
     this.busy = true;
     try {
-      const { response, snapshot } = await this.transport.autoStep();
+      const { response, snapshot } = await this.transport.autoStep(savedAutoPolicy());
+      // Early by a little: the next tick asks again.
+      if (response.status === "rejected" && response.reasonCode === "TOO_FAST") return;
       this.apply(snapshot, response.status === "accepted" ? response.events : [], response);
     } finally {
       this.busy = false;
     }
   }
 
-  private async act(kind: "attack" | "skill" | "guard" | "item" | "capture") {
+  /** The skill menu: one button per skill of the unit whose turn it is (name and MP). */
+  private skillMenu: UiButton[] = [];
+  private closeSkillMenu() {
+    for (const b of this.skillMenu) b.destroy();
+    this.skillMenu = [];
+  }
+  private openSkillMenu(actor: BattleUnit) {
+    this.closeSkillMenu();
+    if (actor.skillIds.length === 0) return this.pushLog("ตัวนี้ยังไม่มีสกิลที่ใช้ได้");
+    actor.skillIds.forEach((id, i) => {
+      const sk = CONTENT.skills.get(id);
+      const area = sk && ["all_enemies", "enemy_row", "all_allies"].includes(sk.targetRule) ? " (หมู่)" : "";
+      // Cooldowns count the unit's own turns (O15): "ทุก N ตา", or how long until it is ready.
+      const left = actor.cooldowns[id] ?? 0;
+      const b = new UiButton(
+        this,
+        16 + i * 132,
+        410,
+        124,
+        `${sk?.name.th ?? id}${area}\n${skillButtonLine(sk, left)}`,
+        () => {
+          this.closeSkillMenu();
+          void this.useSkill(actor, id);
+        },
+        { kind: left > 0 ? "disabled" : "selected", fontSize: 12 },
+      );
+      this.skillMenu.push(b);
+    });
+  }
+  /**
+   * The item menu: heal, mana, support and attack items in this player's combat bag (revive has its own
+   * button). Ally items go on the selected living ally, else the character; attack items on the selected
+   * enemy, else the first one; group items reach the whole side.
+   */
+  private openItemMenu(actor: BattleUnit) {
+    this.closeSkillMenu();
+    const bag = combatBagOf(this.snap.state, actor).bag;
+    const usable = Object.entries(bag).filter(([id, n]) => n > 0 && ["heal", "mana", "support", "attack"].includes(CONTENT.items.get(id)?.kind ?? ""));
+    if (usable.length === 0) return this.pushLog("ไม่มียาที่ใช้ได้ในกระเป๋าต่อสู้");
+    usable.forEach(([id, n], i) => {
+      const def = CONTENT.items.get(id)!;
+      const all = def.area === true ? (def.kind === "attack" ? " (ศัตรูทั้งหมด)" : " (ทั้งทีม)") : "";
+      const what =
+        def.kind === "heal"
+          ? `HP +${def.healHp}`
+          : def.kind === "mana"
+            ? `MP +${def.restoreMp}`
+            : def.kind === "attack"
+              ? `โจมตี ${def.damage!.flat}${all}`
+              : `${(def.statuses ?? []).map((a) => STATUS_DEFINITIONS[a.statusId].th).join(", ")}${all}`;
+      const b = new UiButton(this, 16 + i * 132, 410, 124, `${def.name.th} ×${n}\n${what}`, () => {
+        this.closeSkillMenu();
+        const sel = this.selectedTarget === null ? undefined : this.unit(this.selectedTarget);
+        const target =
+          def.kind === "attack"
+            ? sel !== undefined && sel.side !== actor.side && !sel.ko
+              ? sel.unitId
+              : this.firstEnemy()
+            : sel !== undefined && sel.side === actor.side && !sel.ko
+              ? sel.unitId
+              : actor.unitId;
+        if (target === null) return;
+        void this.send({ type: "item", actorId: actor.unitId, itemId: id, targetId: target });
+      }, { kind: "selected", fontSize: 12 });
+      this.skillMenu.push(b);
+    });
+  }
+  /** Picks the target a skill needs: the selected enemy or ally if it fits, else a sensible default. */
+  private skillTarget(actor: BattleUnit, skillId: string): string | null {
+    const rule = CONTENT.skills.get(skillId)?.targetRule ?? "single_enemy";
+    const sel = this.selectedTarget === null ? undefined : this.unit(this.selectedTarget);
+    if (rule === "self") return actor.unitId;
+    // Revive skills (O15): the selected fallen ally, else the first one.
+    if (CONTENT.skills.get(skillId)?.effectSequence[0]?.kind === "revive") return sel !== undefined && sel.side === actor.side && sel.ko ? sel.unitId : this.firstFallen(actor.side);
+    if (rule === "single_ally" || rule === "all_allies") return sel !== undefined && sel.side === actor.side ? sel.unitId : actor.unitId;
+    return sel !== undefined && sel.side !== actor.side ? sel.unitId : this.firstEnemy();
+  }
+  private firstFallen(side: BattleUnit["side"]): string | null {
+    return this.snap.state.units.find((u) => u.side === side && u.ko && !u.retired)?.unitId ?? null;
+  }
+  private async useSkill(actor: BattleUnit, skillId: string) {
+    const target = this.skillTarget(actor, skillId);
+    if (target === null) return this.pushLog("ไม่มีเป้าหมายสำหรับสกิลนี้");
+    if (CONTENT.skills.get(skillId)?.effectSequence[0]?.kind === "revive") {
+      const why = reviveRefusal(DEV_FIXTURE_RULES, this.snap.state, actor.unitId, target);
+      if (why !== null) return this.pushLog(why);
+    }
+    await this.send({ type: "skill", actorId: actor.unitId, skillId, targetId: target });
+  }
+
+  /** The capture preview: the chance and how it was made, then confirm or cancel (O07 capture-v1). */
+  private capturePanel: { destroy(): void }[] = [];
+  private closeCapturePreview() {
+    for (const b of this.capturePanel) b.destroy();
+    this.capturePanel = [];
+  }
+  private openCapturePreview(actorId: string, targetId: string) {
+    // Capture is a manual command only (C15): Auto goes off before the player decides.
+    if (this.autoOn) {
+      this.toggleAuto();
+      this.pushLog("ปิด Auto แล้ว: การจับต้องสั่งเอง");
+    }
+    const pv = capturePreview(DEV_FIXTURE_RULES, this.snap.state, CONTENT, actorId, targetId);
+    const itemId = pv.itemId;
+    this.showConfirm(pv.lines, pv.ok && itemId !== null, "ยืนยันจับ", () => void this.send({ type: "capture", actorId, targetId, itemId: itemId! }));
+  }
+
+  /** A preview panel with confirm/cancel, shared by capture and flee. */
+  private showConfirm(lines: string[], ok: boolean, confirmLabel: string, onConfirm: () => void) {
+    this.closeCapturePreview();
+    this.closeSkillMenu();
+    const text = this.add
+      .text(16, 300, lines.join("\n"), { fontFamily: "sans-serif", fontSize: "12px", color: ok ? "#ffffff" : "#ffb3b3", backgroundColor: "#1d1a2e", padding: { x: 8, y: 6 }, lineSpacing: 5, wordWrap: { width: 520 } })
+      .setDepth(20);
+    this.capturePanel.push(text);
+    const btn = (x: number, label: string, kind: "primary" | "normal", fn: () => void) =>
+      this.capturePanel.push(new UiButton(this, x, 410, 120, label, fn, { kind, depth: 20 }));
+    if (ok)
+      btn(16, confirmLabel, "primary", () => {
+        this.closeCapturePreview();
+        onConfirm();
+      });
+    btn(ok ? 144 : 16, ok ? "ยกเลิก" : "ปิด", "normal", () => this.closeCapturePreview());
+  }
+
+  private async act(kind: "attack" | "skill" | "guard" | "item" | "capture" | "flee" | "revive" | "awaken") {
+    if (this.watching) return this.pushLog("กำลังล่าอัตโนมัติ: กด หยุดล่า ก่อนสั่งเอง");
     if (this.busy || this.snap.state.status !== "active" || this.snap.actor === null) return;
+    if (!this.myTurn()) return this.pushLog(`ยังไม่ถึงตาเรา: ตาของ ${this.name(this.snap.actor)}`);
     const actor = this.unit(this.snap.actor)!;
-    const target = this.selectedTarget ?? this.firstEnemy();
+    const sel = this.selectedTarget === null ? undefined : this.unit(this.selectedTarget);
+    const target = sel !== undefined && sel.side === "enemy" ? sel.unitId : this.firstEnemy();
     let cmd: BattleCommand | null = null;
+    if (kind !== "skill") this.closeSkillMenu();
+    if (kind !== "capture" && kind !== "flee") this.closeCapturePreview();
     switch (kind) {
       case "attack":
         if (target) cmd = { type: "attack", actorId: actor.unitId, targetId: target };
         break;
       case "skill":
-        if (target && actor.skillIds[0]) cmd = { type: "skill", actorId: actor.unitId, skillId: actor.skillIds[0], targetId: target };
-        break;
+        return this.openSkillMenu(actor);
       case "guard":
         cmd = { type: "guard", actorId: actor.unitId };
         break;
       case "item":
-        cmd = { type: "item", actorId: actor.unitId, itemId: "item:small_potion", targetId: actor.unitId };
+        return this.openItemMenu(actor);
+      case "capture":
+        if (target) return this.openCapturePreview(actor.unitId, target);
         break;
-      case "capture": {
-        const t = target ? this.unit(target) : undefined;
-        if (t?.speciesId) cmd = { type: "capture", actorId: actor.unitId, targetId: t.unitId, itemId: `item:${t.speciesId.slice("species:".length)}_capture` };
+      case "flee": {
+        // Flee chance from SPD and the monsters' flee values (O15); the server rolls.
+        const pv = fleePreview(DEV_FIXTURE_RULES, this.snap.state, CONTENT.species, actor.unitId, (id) => this.name(id));
+        return this.showConfirm(pv.lines, pv.ok, "ยืนยันหนี", () => void this.send({ type: "flee", actorId: actor.unitId }));
+      }
+      case "awaken": {
+        // Divine awakening (P31): a full gauge, once a fight; the server checks again.
+        const a = actor.awakening;
+        if (a === undefined) return this.pushLog("ยังไม่ได้จุติเทพ (Lv200 หลัง Class3)");
+        if (a.used) return this.pushLog("ตื่นไปแล้วในไฟต์นี้");
+        const max = DEV_FIXTURE_RULES.provisional.ascension.value.gaugeMax;
+        if (a.gauge < max) return this.pushLog(`เกจจุติยังไม่เต็ม ${a.gauge}/${max}`);
+        cmd = { type: "awaken", actorId: actor.unitId };
+        break;
+      }
+      case "revive": {
+        // Revive item on the selected fallen ally, else the first one (O15: from the round after it fell).
+        const t = sel !== undefined && sel.side === "ally" && sel.ko ? sel.unitId : this.firstFallen("ally");
+        if (t === null) return this.pushLog("ไม่มีพวกที่ล้มให้ชุบ");
+        const why = reviveRefusal(DEV_FIXTURE_RULES, this.snap.state, actor.unitId, t);
+        if (why !== null) return this.pushLog(why);
+        cmd = { type: "item", actorId: actor.unitId, itemId: "item:phoenix_feather", targetId: t };
         break;
       }
     }
     if (cmd === null) return this.pushLog("ไม่มีเป้าหมาย/สกิลสำหรับคำสั่งนี้");
+    await this.send(cmd);
+  }
+
+  private async send(cmd: BattleCommand) {
+    if (this.busy) return;
     this.busy = true;
     try {
       const { response, snapshot } = await this.transport.send(cmd);
@@ -135,8 +448,18 @@ export class BattleScene extends Phaser.Scene {
 
   private apply(snapshot: Snapshot, events: BattleEvent[], response?: { status: string; reasonCode?: string; message?: string }) {
     this.snap = snapshot;
-    if (response?.status === "rejected") this.pushLog(`ปฏิเสธ: ${response.reasonCode} ${response.message ?? ""}`);
-    for (const e of events) this.describe(e);
+    // The server sends time left, not a clock time, so a skewed device clock cannot move the warning.
+    if (snapshot.abandonInMs !== undefined) this.idleDeadline = snapshot.abandonInMs === null ? null : Date.now() + snapshot.abandonInMs;
+    this.idleTick();
+    // A preview made for an older state is out of date (HP, statuses, bag may have moved).
+    if (events.length > 0) this.closeCapturePreview();
+    if (response?.status === "rejected") this.pushLog(`ปฏิเสธ: ${refusalTh(response.reasonCode, response.message)}`);
+    for (const e of events) {
+      // Polls can overlap with command responses: show each event once.
+      if (e.seq <= this.cursor) continue;
+      this.cursor = e.seq;
+      this.describe(e);
+    }
     this.render(snapshot.state);
   }
 
@@ -144,64 +467,529 @@ export class BattleScene extends Phaser.Scene {
     switch (e.type) {
       case "RoundStarted":
         return this.pushLog(`— รอบ ${e.round} —`);
-      case "ActionResolved":
+      case "BossPhaseChanged": {
+        const ph = this.bossPhase(e.phase);
+        return this.pushLog(`${this.name(e.unitId)} เข้าช่วง ${e.phase + 1}${ph ? `: ${ph.name.th}` : ""}`);
+      }
+      case "BossTelegraph": {
+        const sk = CONTENT.skills.get(e.skillId)?.name.th ?? e.skillId;
+        if (e.change === "announced") {
+          this.popup(e.unitId, `เตรียม ${sk}!`, "#ff6b6b");
+          return this.pushLog(`⚠ ${this.name(e.unitId)} เตรียมใช้ ${sk} ในรอบ ${e.firesRound}`);
+        }
+        return this.pushLog(e.change === "fired" ? `${this.name(e.unitId)} ใช้ ${sk}!` : `${sk} ของ ${this.name(e.unitId)} ถูกยกเลิก`);
+      }
+      case "BossPartBroken": {
+        this.popup(e.unitId, "แตก!", "#ffe08a");
+        const lost = e.sealedSkillId === undefined ? "" : ` บอสใช้ ${CONTENT.skills.get(e.sealedSkillId)?.name.th ?? e.sealedSkillId} ไม่ได้อีก`;
+        return this.pushLog(`★ ${this.name(e.unitId)} แตกแล้ว!${lost}`);
+      }
+      case "BossSummoned":
+        for (const id of e.unitIds) this.popup(id, "มาเสริม!", "#ff9b6b");
+        return this.pushLog(`บอสเรียก ${e.unitIds.map((id) => this.name(id)).join(", ")} มาช่วย${e.left > 0 ? ` (เรียกได้อีก ${e.left})` : ""}`);
+      case "EliteTrait": {
+        const m = ELITE_MODIFIER_TH[e.modifier];
+        const who = this.name(e.unitId);
+        switch (e.change) {
+          case "active":
+            return this.pushLog(`★ ${who} ชั้นยอด: ${m.name} (${m.hint})`);
+          case "enraged":
+            this.popup(e.unitId, "คลั่ง!", "#ff6b6b");
+            return this.pushLog(`${who} คลั่ง! โจมตีและความเร็วเพิ่ม`);
+          case "broken":
+            return this.pushLog(`${who} ล้มแล้ว ลูกฝูงเสียขวัญ (บัฟหาย)`);
+          case "warned":
+            this.popup(e.unitId, "เตรียมสวนเวท!", "#ff6b6b");
+            return this.pushLog(`⚠ ${who} จะสวนเวทใส่ ${this.name(e.targetId ?? "")} ในตาถัดไป (ป้องกันหรือหยุดมันไว้)`);
+          case "fired":
+            return this.pushLog(`${who} สวนเวทใส่ ${this.name(e.targetId ?? "")}!`);
+          case "cancelled":
+            return this.pushLog(`การสวนเวทของ ${who} ถูกยกเลิก`);
+        }
+        return;
+      }
+      case "CaptureWindowOpened":
+        this.popup(e.unitId, "จับได้แล้ว!", "#7dff9b");
+        return this.pushLog(`${this.name(e.unitId)} อ่อนแรง: ใช้เครื่องจับได้แล้ว`);
+      case "TurnStarted":
+        // Bosses with several actions a round say which one this is (chapter 03 timeline).
+        if (e.action !== undefined) return this.pushLog(`${this.name(e.unitId)} ลงมือครั้งที่ ${e.action}/${e.actionsThisRound}`);
+        return;
+      case "ActionResolved": {
+        const via = e.skillId === null ? "" : ` [${CONTENT.skills.get(e.skillId)?.name.th ?? e.skillId}]`;
         if (e.damage !== null && e.targetId) {
-          this.popup(e.targetId, e.hit ? `${e.damage}${e.crit ? "!" : ""}` : "พลาด", e.crit ? "#ffd84a" : "#ffffff");
-          return this.pushLog(`${this.name(e.actorId)} → ${this.name(e.targetId)}: ${e.hit ? e.damage : "พลาด"}${e.crit ? " (คริ)" : ""}`);
+          if (e.hit) {
+            this.hitEffect(e.targetId, this.attackElement(e.actorId, e.skillId));
+            this.numberPopup(e.targetId, `${e.damage}`, e.crit ? "crit" : "damage", e.crit ? "critical" : undefined);
+          } else this.wordPopup(e.targetId, "miss");
+          return this.pushLog(`${this.name(e.actorId)}${via} → ${this.name(e.targetId)}: ${e.hit ? e.damage : "พลาด"}${e.crit ? " (คริ)" : ""}`);
         }
         if (e.heal !== null && e.targetId) {
-          this.popup(e.targetId, `+${e.heal}`, "#7dff9b");
-          return this.pushLog(`${this.name(e.actorId)} ฟื้น ${this.name(e.targetId)} +${e.heal}`);
+          this.hitEffect(e.targetId, null);
+          this.numberPopup(e.targetId, `+${e.heal}`, "heal");
+          return this.pushLog(`${this.name(e.actorId)}${via} ฟื้น ${this.name(e.targetId)} +${e.heal}`);
         }
         if (e.action === "guard") return this.pushLog(`${this.name(e.actorId)} ป้องกัน`);
+        if (e.action === "skill" && e.targetId) return this.pushLog(`${this.name(e.actorId)} ใช้${via} ใส่ ${this.name(e.targetId)}`);
         return;
+      }
       case "CaptureResolved":
-        return this.pushLog(`จับ ${this.name(e.targetId)}: ${e.success ? "สำเร็จ (ได้ Lv1)" : "ไม่สำเร็จ"} โอกาส ${(e.probability * 100).toFixed(0)}%`);
+        return this.pushLog(`จับ ${this.name(e.targetId)}: ${e.success ? "สำเร็จ (ได้ Lv1)" : "ไม่สำเร็จ (เครื่องจับถูกใช้ไป 1 ชิ้น)"} โอกาส ${pct2(e.probability)}`);
+      case "AwakeningChanged": {
+        const path = ascensionPath(e.pathId);
+        if (e.change === "awakened") {
+          this.popup(e.unitId, "จุติ!", "#ffe08a");
+          return this.pushLog(`✦ ${this.name(e.unitId)} ตื่นเป็นเทพ วิถี${path?.name.th ?? e.pathId} (${e.turnsLeft} ตา)`);
+        }
+        if (e.change === "ended") return this.pushLog(`${this.name(e.unitId)} หมดเวลาจุติ`);
+        return e.gauge >= DEV_FIXTURE_RULES.provisional.ascension.value.gaugeMax ? this.pushLog(`เกจจุติของ ${this.name(e.unitId)} เต็มแล้ว กด จุติ ได้`) : undefined;
+      }
+      case "FleeResolved":
+        return this.pushLog(`หนี: ${e.success ? "สำเร็จ" : "ไม่สำเร็จ (เสียตานี้)"} โอกาส ${pct2(e.chancePct / 100)}`);
+      case "UnitRevived": {
+        const via = CONTENT.skills.get(e.sourceId)?.name.th ?? CONTENT.items.get(e.sourceId)?.name.th ?? e.sourceId;
+        this.popup(e.unitId, "ฟื้น!", "#7dff9b");
+        return this.pushLog(`${this.name(e.byId)} ใช้${via} ชุบ ${this.name(e.unitId)} กลับมา HP ${e.hp} (ลงมือได้ตั้งแต่รอบหน้า)`);
+      }
       case "EnemyDefeated":
         return this.pushLog(`${this.name(e.unitId)} ถูกกำจัด`);
-      case "RewardEntitled":
-        return e.entitlement.kind === "kill"
-          ? this.pushLog(`สิทธิ์รางวัล: ${e.entitlement.items.map((i) => `${i.itemId}×${i.quantity}`).join(", ") || "ไม่มีของ"}`)
-          : this.pushLog(`สิทธิ์คู่ใจใหม่: ${e.entitlement.speciesId} Lv${e.entitlement.level}`);
+      case "ReinforcementArrived":
+        // Tower: a pre-rolled replacement takes the fallen enemy's cell (frontier.ts).
+        this.popup(e.unitId, "กำลังเสริม!", "#ffb36b");
+        return this.pushLog(`กำลังเสริม: ${CONTENT.species.get(e.speciesId)?.name.th ?? e.speciesId} เข้าแทน ${this.name(e.replaces)} (เหลือ ${e.left})`);
+      case "RewardEntitled": {
+        const r = e.entitlement;
+        if (r.kind === "kill") {
+          return this.pushLog(`สิทธิ์รางวัล: ${r.items.map((i) => `${lootName(i.itemId)}×${i.quantity}`).join(", ") || "ไม่มีของ"}${expText(r.exp)}`);
+        }
+        if (r.kind === "capture") {
+          return this.pushLog(`สิทธิ์คู่ใจใหม่: ${CONTENT.species.get(r.speciesId)?.name.th ?? r.speciesId} Lv${r.level}${expText(r.exp)}`);
+        }
+        const parts = Object.entries(r.companions).map(([id, g]) => {
+          const name = this.name(`ally:${id}`);
+          return `${name} Bond ${g.bond >= 0 ? "+" : ""}${g.bond}${g.mastery > 0 ? ` ความชำนาญ +${g.mastery}` : ""}`;
+        });
+        return this.pushLog(`คู่ใจ: ${parts.join(", ")}`);
+      }
+      case "StatusChanged": {
+        const th = STATUS_DEFINITIONS[e.statusId].th;
+        const chance = e.chancePct === null ? "" : ` (โอกาส ${Math.round(e.chancePct)}%)`;
+        const who = this.name(e.unitId);
+        if (e.change === "applied" && STATUS_DEFINITIONS[e.statusId].instant !== undefined) {
+          this.popup(e.unitId, th, "#ffd36b");
+          return this.pushLog(`${who} โดน${th}${chance}`);
+        }
+        if (e.change === "applied" || e.change === "refreshed") {
+          this.popup(e.unitId, th, STATUS_DEFINITIONS[e.statusId].harmful ? "#ff9b6b" : "#7dd3ff");
+          return this.pushLog(`${who} ติด${th} ${e.turnsLeft} เทิร์น${e.stacks > 1 ? ` ×${e.stacks}` : ""}${chance}`);
+        }
+        if (e.change === "resisted") return this.pushLog(`${who} ต้าน${th}ได้${chance}`);
+        if (e.change === "immune") return this.pushLog(`${who} ไม่ติด${th} (บอสกันการควบคุม)`);
+        if (e.change === "blocked") return this.pushLog(`${who} ไม่ติด${th} (ถูกกันไว้)`);
+        if (e.change === "expired") return this.pushLog(`${who} หมดผล${th}`);
+        return this.pushLog(`${who} หาย${th}`);
+      }
+      case "StatusTick":
+        this.numberPopup(e.unitId, e.hp < 0 ? `${-e.hp}` : `+${e.hp}`, e.hp < 0 ? "damage" : "heal");
+        return this.pushLog(`${this.name(e.unitId)} ${STATUS_DEFINITIONS[e.statusId].th} ${e.hp < 0 ? e.hp : `+${e.hp}`}`);
+      case "ActionRedirected":
+        return this.pushLog(`${this.name(e.actorId)} ${STATUS_DEFINITIONS[e.statusId].th} หันไปทำใส่ ${this.name(e.toId)} แทน ${this.name(e.fromId)}`);
+      case "ResourceChanged": {
+        const label = { lifesteal: "ดูดเลือด", recoil: "สะท้อนกลับตัวเอง", restore_mp: "ฟื้น MP", leech: "ถูกดูดพลัง", mana_burn: "เผามานา", mp_regen: "ฟื้น MP", passive: "ได้จากความสามารถติดตัว", boss_part: "ฟื้นจากชิ้นส่วน" }[e.source];
+        const parts = [e.hp !== 0 ? `HP ${e.hp > 0 ? "+" : ""}${e.hp}` : "", e.mp !== 0 ? `MP ${e.mp > 0 ? "+" : ""}${e.mp}` : ""].filter(Boolean).join(" ");
+        return parts === "" ? undefined : this.pushLog(`${this.name(e.unitId)} ${label} ${parts}`);
+      }
+      case "PassiveTriggered": {
+        const from = CONTENT.skills.get(e.sourceId)?.name.th ?? CONTENT.sigils.get(e.sourceId)?.name.th ?? e.sourceId;
+        this.popup(e.unitId, from, "#ffe08a");
+        return this.pushLog(`${this.name(e.unitId)} ${e.sourceId.startsWith("sigil:") ? "Sigil" : "ความสามารถติดตัว"} [${from}] ทำงาน`);
+      }
+      case "ShieldChanged":
+        if (e.change === "gained") {
+          this.numberPopup(e.unitId, `+${e.amount}`, "shield");
+          return this.pushLog(`${this.name(e.unitId)} ได้โล่ ${e.amount}`);
+        }
+        this.numberPopup(e.unitId, `-${e.amount}`, "shield");
+        return this.pushLog(`${this.name(e.unitId)} โล่รับ ${e.amount}${e.change === "broken" ? " (แตก)" : ` เหลือ ${e.shieldLeft}`}`);
+      case "TurnSkipped":
+        return this.pushLog(`${this.name(e.unitId)} ${STATUS_DEFINITIONS[e.statusId].th} ข้ามเทิร์น`);
       case "BattleEnded":
-        return this.pushLog(`จบไฟต์: ${e.outcome}`);
+        if (e.abandoned === true) this.abandoned = true;
+        return this.pushLog(e.abandoned === true ? `จบไฟต์: ไม่มีใครสั่งนานเกินไป นับเป็น${OUTCOME_TH[e.outcome]}` : `จบไฟต์: ${OUTCOME_TH[e.outcome]}`);
       default:
         return;
     }
+  }
+
+  private bossPhase(index: number) {
+    const b = this.snap.state.boss;
+    return b === undefined ? undefined : CONTENT.bosses.get(b.bossId)?.phases[index];
   }
 
   private render(state: PublicBattleState) {
     for (const u of state.units) {
       const { x, y } = this.position(u);
       let v = this.views.get(u.unitId);
+      // A tower enemy whose cell a reinforcement took: its body leaves the field.
+      if (u.replacedBy !== undefined) {
+        if (v !== undefined) {
+          for (const o of [v.body, v.hpBar, v.label, v.ringBack, v.ringFront, v.arrow, v.sub, v.element]) o.setVisible(false);
+          for (const o of v.statusIcons) o.destroy();
+          v.statusIcons = [];
+          v.ascBar?.setVisible(false);
+          v.ascFull?.setVisible(false);
+        }
+        continue;
+      }
+      // Enemies are drawn a little shorter so a full row of five (tower floors: ten) stays readable.
+      const enemy = u.side === "enemy";
+      // Party boss fights: ten allies in two rows of five, drawn like the enemy rows.
+      const partyFight = state.members !== undefined;
+      const compact = enemy || partyFight;
+      const bh = compact ? 36 : 56;
       if (!v) {
-        const body = this.add.rectangle(x, y, 48, 56, ELEMENT_COLOR[u.element]).setStrokeStyle(3, 0x0b0a12).setInteractive({ useHandCursor: true });
+        // Created before the body so it draws underneath it.
+        const ringBack = uiSprite(this, x - 30, y - bh / 2 - 6, uiKey.target("selected", "back")).setVisible(false);
+        const body = this.add.rectangle(x, y, 48, bh, ELEMENT_COLOR[u.element]).setStrokeStyle(3, 0x0b0a12).setInteractive({ useHandCursor: true });
         body.on("pointerdown", () => {
-          if (u.side === "enemy") this.selectedTarget = u.unitId;
+          // Enemies for attacks and enemy skills; allies for heals, buffs and shields.
+          // A fallen ally can be picked too, as the target of a revive (O15).
+          if ((!u.ko || u.side === "ally") && !u.retired) this.selectedTarget = u.unitId;
           this.render(this.snap.state);
         });
-        const ring = this.add.rectangle(x, y, 60, 68).setStrokeStyle(2, 0xffffff).setVisible(false);
-        this.add.rectangle(x, y + 36, 52, 6, 0x0b0a12);
-        const hpBar = this.add.rectangle(x - 25, y + 36, 50, 4, 0x6be36b).setOrigin(0, 0.5);
-        const label = this.add.text(x, y - 44, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#ffffff" }).setOrigin(0.5);
-        v = { body, hpBar, label, ring };
+        if (u.cosmetic !== undefined) this.drawCosmetic(body, u.cosmetic);
+        if (u.fashion !== undefined) this.drawFashion(body, u.fashion);
+        const ringFront = uiSprite(this, x - 30, y + bh / 2 - 10, uiKey.target("selected", "front")).setVisible(false);
+        const arrow = uiSprite(this, x - 30, y - bh / 2 - 40, uiKey.arrow).setVisible(false);
+        const element = this.add.image(0, 0, uiKey.element(u.element)).setOrigin(1, 1);
+        const hpBar = new UiBar(this, x - 26, y + bh / 2 + 8, 52, enemy ? "hp_enemy" : "hp_ally", 4);
+        // Bottom-anchored so a second line (statuses) grows upwards.
+        const label = this.add.text(x, y - bh / 2 - 9, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#ffffff", align: "center" }).setOrigin(0.5, 1);
+        const sub = enemy
+          ? this.add.text(x + 30, y, "", { fontFamily: "sans-serif", fontSize: "10px", color: "#ffd84a", wordWrap: { width: u.row === "front" ? 96 : 140 } }).setOrigin(0, 0.5)
+          : partyFight
+            ? this.add.text(x - 30, y, "", { fontFamily: "sans-serif", fontSize: "10px", color: "#ffd84a", align: "right", wordWrap: { width: 80 } }).setOrigin(1, 0.5)
+          : this.add.text(x, y + bh / 2 + 32, "", { fontFamily: "sans-serif", fontSize: "11px", color: "#ffd84a", align: "center" }).setOrigin(0.5, 0);
+        v = { body, hpBar, label, sub, ringBack, ringFront, arrow, ringKind: null, element, statusIcons: [], statusKey: "", ascBar: null, ascFull: null };
         this.views.set(u.unitId, v);
       }
       v.body.setPosition(x, y).setAlpha(u.ko || u.retired ? 0.25 : 1);
-      v.ring.setPosition(x, y).setVisible(u.unitId === this.snap.actor || u.unitId === this.selectedTarget);
-      v.ring.setStrokeStyle(2, u.unitId === this.snap.actor ? 0x7dff9b : 0xff6b6b);
-      v.hpBar.setPosition(x - 25, y + 36).setSize(Math.max(0, 50 * (u.hp / u.stats.maxHp)), 4);
-      v.label.setPosition(x, y - 44).setText(`${u.name} Lv${u.level}${u.retired ? " (จับแล้ว)" : ""}`);
+      v.hpBar.setPosition(x - 26, y + bh / 2 + 8).set(u.hp, u.stats.maxHp);
+      // Whose turn it is outranks the picked target; the arrow always marks the picked target.
+      const ring = state.status !== "active" ? null : u.unitId === this.snap.actor ? (enemy ? "turn_enemy" : "turn_ally") : u.unitId === this.selectedTarget ? "selected" : null;
+      this.setRing(v, ring as "selected" | "turn_ally" | "turn_enemy" | null, x, y, bh, state.status === "active" && u.unitId === this.selectedTarget);
+      // Divine awakening gauge under the HP bar, sparkling once full (P31).
+      let below = y + bh / 2 + 12;
+      if (u.awakening !== undefined && !u.ko) {
+        const max = DEV_FIXTURE_RULES.provisional.ascension.value.gaugeMax;
+        v.ascBar ??= new UiBar(this, x - 26, below + 2, 52, "ascend", 4);
+        v.ascBar.setPosition(x - 26, below + 2).set(u.awakening.gauge, max).setVisible(true);
+        const full = u.awakening.gauge >= max && !u.awakening.used;
+        if (full && v.ascFull === null) v.ascFull = uiSprite(this, x - 26, below, uiKey.ascendFull(4)).setCrop(0, 0, 52, 4);
+        v.ascFull?.setPosition(x - 26, below).setVisible(full);
+        below += 8;
+      } else {
+        v.ascBar?.setVisible(false);
+        v.ascFull?.setVisible(false);
+      }
+      this.drawStatuses(v, u, x, below);
+      const tags = "";
+      // An elite leader says so, with its modifiers (chapter 07 §3), readable without colour.
+      const elite = u.elite === undefined ? "" : `★ชั้นยอด\n${u.elite.modifiers.map((m) => ELITE_MODIFIER_TH[m].name).join(", ")}${u.elite.counterOn !== null ? " ⚠สวน!" : ""}`;
+      // A tower reinforcement says so (it took a fallen enemy's cell this fight).
+      const reinforcement = state.units.some((o) => o.replacedBy === u.unitId) ? "▲กำลังเสริม" : u.summoned === true ? "▲ถูกเรียกมา" : "";
+      // A boss part never acts; it says what standing does for the boss (chapter 07 §5, readable without colour).
+      const part = u.part === undefined ? "" : `◆ชิ้นส่วน: ${partEffectTh(u.part)}`;
+      const name = u.part !== undefined ? u.name : `${u.name} Lv${u.level}${u.retired ? " (จับแล้ว)" : ""}`;
+      if (enemy) {
+        // One name line above; statuses and tags beside the body, inside this cell's band.
+        v.sub.setPosition(x + 30, y).setText([tags, elite, reinforcement, part].filter(Boolean).join("\n"));
+        v.label.setPosition(x, y - bh / 2 - 9).setText(name);
+      } else if (partyFight) {
+        // Statuses beside the body; our own units' names in gold so they stand out from teammates'.
+        v.sub.setPosition(x - 30, y).setText([tags, elite].filter(Boolean).join("\n"));
+        v.label.setPosition(x, y - bh / 2 - 9).setText(name).setColor((u.controllerId ?? state.ownerAccountId) === this.snap.you ? "#f2c94c" : "#ffffff");
+      } else {
+        v.sub.setPosition(x, below + (v.statusIcons.length > 0 ? 18 : 2)).setText([elite, reinforcement].filter(Boolean).join("\n"));
+        v.label.setPosition(x, y - bh / 2 - 9).setText(`${name}${tags ? `\n${tags}` : ""}`);
+      }
+    }
+    for (const u of state.units) {
+      const v = this.views.get(u.unitId);
+      if (v === undefined || u.replacedBy !== undefined) continue;
+      // The element icon sits left of the name's last line; the arrow rides above the name.
+      const b = v.label.getBounds();
+      v.element.setPosition(b.left - 2, b.bottom - 1).setVisible(u.part === undefined).setAlpha(u.ko || u.retired ? 0.4 : 1);
+      v.arrow.setPosition(v.body.x - 30, b.top - 20);
     }
     const actor = this.snap.actor ? this.unit(this.snap.actor) : undefined;
+    // Boss fights: the phase, and a warned move with what answers it (chapter 07 §5, readable without colour).
+    let bossLine = "";
+    if (state.boss !== undefined && state.status === "active") {
+      const ph = this.bossPhase(state.boss.phase);
+      bossLine = `\nบอส ช่วง ${state.boss.phase + 1}${ph ? ` ${ph.name.th}` : ""}`;
+      if (state.boss.telegraph !== null) {
+        const sk = CONTENT.skills.get(state.boss.telegraph.skillId)?.name.th ?? state.boss.telegraph.skillId;
+        bossLine += ` · ⚠ ${sk} รอบ ${state.boss.telegraph.firesRound}${ph?.telegraph ? `: ${ph.telegraph.hint.th}` : ""}`;
+      }
+    }
+    // Weekly tower: the floor's name, gimmicks and reinforcements left, and a boss label on boss floors.
+    let tower = "";
+    if (state.frontier !== undefined) {
+      const fd = EXAMPLE_FRONTIER.floors[state.frontier.floor - 1];
+      const mods = (state.frontier.modifiers ?? []).map((m) => FRONTIER_MODIFIER_TH[m].name).join(", ");
+      const left = state.frontier.reinforcementsLeft ?? 0;
+      tower =
+        `\n${EXAMPLE_FRONTIER.name.th} ชั้น ${state.frontier.floor} ${fd?.name.th ?? ""}${state.boss !== undefined ? ` · ★ ชั้นบอส${fd?.guardianTitle ? ` ${fd.guardianTitle.th}` : ""}` : ""}` +
+        ` · ศัตรู ×${(state.frontier.statPct / 100).toFixed(2)}${mods ? ` · ลูกเล่น: ${mods}` : ""}${left > 0 ? ` · กำลังเสริมเหลือ ${left}` : ""}`;
+    }
+    if (state.practice === true) tower += "\nลานทดสอบ: ไม่ได้และไม่เสียอะไร · หนีออกได้ทุกเมื่อ";
+    // Divine awakening trial: the race goal so far (ascension.ts RACE_TRIAL_GOALS).
+    if (state.raceTrial !== undefined) {
+      const g = raceTrialGoal(state.raceTrial.raceId);
+      const n = state.raceTrial;
+      tower += `\nเป้าหมายเผ่า: ${g?.th ?? n.kind} ${n.count}/${n.need}${n.count >= n.need ? " ✓" : ""}`;
+    }
+    // Divine awakening: the gauge of each ascended character, or the turns it has left (P31).
+    const gaugeMax = DEV_FIXTURE_RULES.provisional.ascension.value.gaugeMax;
+    for (const u of state.units) {
+      const a = u.awakening;
+      if (a === undefined || u.ko) continue;
+      tower += `\nจุติ ${u.name}: ${a.turnsLeft > 0 ? `ตื่นอยู่ อีก ${a.turnsLeft} ตา` : a.used ? "ใช้แล้ว" : `เกจ ${a.gauge}/${gaugeMax}`}`;
+    }
+    const party = state.partyBonus ? `ปาร์ตี้ ${state.partyBonus.partners} คน: EXP +${state.partyBonus.expPercent}% วัสดุ +${state.partyBonus.materialDropPercent}%` : "";
+    const waiting = state.members !== undefined && !this.myTurn() ? " (เพื่อน · รอเขาสั่ง)" : "";
     this.turnText.setText(
-      state.status === "active" ? `รอบ ${state.round} · ตาของ ${actor?.name ?? "-"} · แตะศัตรูเพื่อเลือกเป้า` : `จบไฟต์: ${state.status}`,
+      state.status === "active" ? `รอบ ${state.round} · ตาของ ${actor?.name ?? "-"}${waiting} · แตะศัตรูเพื่อเลือกเป้า` : `จบไฟต์: ${OUTCOME_TH[state.status]}`,
     );
+    this.infoText.setText(`${party}${tower}${bossLine}`.replace(/^\n/, ""));
+    const aw = actor?.awakening;
+    this.ascendReady?.setVisible(state.status === "active" && aw !== undefined && !aw.used && aw.turnsLeft === 0 && aw.gauge >= DEV_FIXTURE_RULES.provisional.ascension.value.gaugeMax && this.myTurn());
+    if (state.status !== "active" && this.resultUi === null && !this.watching) this.showResult(state);
+  }
+
+  /**
+   * The summary once the fight is over, read from the fight's own entitlements (what the server owes
+   * this player): outcome, character and companion EXP, Bond, loot and captures. "ดูสนาม" hides it and
+   * a corner button brings it back; "กลับไปเดินต่อ" returns to the map when the fight came from there.
+   */
+  private showResult(state: PublicBattleState) {
+    const me = this.snap.you ?? state.ownerAccountId;
+    const mine = state.entitlements.filter((e) => (e.recipientId ?? state.ownerAccountId) === me);
+    let exp = 0;
+    const loot = new Map<string, number>();
+    const companions = new Map<string, { exp: number; bond: number; mastery: number }>();
+    const companion = (id: string) => companions.get(id) ?? companions.set(id, { exp: 0, bond: 0, mastery: 0 }).get(id)!;
+    const captures: string[] = [];
+    for (const e of mine) {
+      if (e.kind === "fight_result") {
+        for (const [id, g] of Object.entries(e.companions)) Object.assign(companion(id), { bond: g.bond, mastery: g.mastery });
+        continue;
+      }
+      exp += e.exp ?? 0;
+      for (const [id, x] of Object.entries(e.companionExp ?? {})) companion(id).exp += x;
+      if (e.kind === "kill") for (const l of e.items) loot.set(l.itemId, (loot.get(l.itemId) ?? 0) + l.quantity);
+      else captures.push(`${CONTENT.species.get(e.speciesId)?.name.th ?? e.speciesId} Lv${e.level}`);
+    }
+
+    const px = 170;
+    const py = 70;
+    const pw = 620;
+    const ph = 400;
+    const ui: { destroy(): void; setVisible(v: boolean): unknown }[] = [];
+    const text = (x: number, y: number, t: string, size: number, color = "#f4f2fb", wrap?: number) => {
+      const o = this.add.text(x, y, t, { fontFamily: "sans-serif", fontSize: `${size}px`, color, wordWrap: wrap === undefined ? undefined : { width: wrap } }).setDepth(41);
+      ui.push(o);
+      return o;
+    };
+    // The dim layer swallows taps so nothing behind the summary can be pressed.
+    ui.push(this.add.rectangle(W / 2, H / 2, W, H, 0x0c0a12, 0.73).setDepth(40).setInteractive());
+    ui.push(uiPanel(this, px, py, pw, ph).setDepth(40));
+    const title = OUTCOME_TH[state.status];
+    text(px + pw / 2, py + 18, title, 28, state.status === "victory" ? "#f2c94c" : state.status === "defeat" ? "#ff8a80" : "#b8b2d6").setOrigin(0.5, 0);
+    const note =
+      state.practice === true ? "ลานทดสอบ: ไม่ได้และไม่เสียอะไร" : this.abandoned ? "ไม่มีใครสั่งนานเกินไป ไฟต์ปิดเองและนับเป็นแพ้" : state.status === "fled" ? "ออกจากไฟต์แล้ว" : "";
+    if (note !== "") text(px + pw / 2, py + 58, note, 12, "#b8b2d6").setOrigin(0.5, 0);
+
+    // Character and companions side by side.
+    const top = py + 82;
+    ui.push(uiPanel(this, px + 20, top, 280, 96, "background").setDepth(40));
+    const player = state.units.find((u) => u.kind === "player" && (u.controllerId ?? state.ownerAccountId) === me);
+    text(px + 32, top + 12, `${player?.name ?? "ตัวละคร"}  EXP +${exp.toLocaleString()}`, 14);
+    // Level-ups are worked out here from the EXP the fight owes (display only: the server applies it on settlement).
+    const rules = DEV_FIXTURE_RULES;
+    if (this.progress !== null) {
+      const was = expProgress(rules, "player", this.progress.xp);
+      const now = expProgress(rules, "player", this.progress.xp + exp);
+      text(px + 32, top + 36, now.need === null ? `Lv${now.level} (สูงสุด)` : `Lv${now.level} · EXP ${now.into.toLocaleString()}/${now.need.toLocaleString()}`, 11, "#b8b2d6");
+      ui.push(new UiBar(this, px + 32, top + 58, 256, "exp", 6).set(now.need === null ? 1 : now.into, now.need ?? 1).setDepth(41));
+      if (now.level > was.level) {
+        const points = totalStatPointsAtLevel(rules, now.level) - totalStatPointsAtLevel(rules, was.level);
+        text(px + 32, top + 70, `เลเวลอัป! Lv${was.level} → Lv${now.level}${points > 0 ? ` · แต้มสเตตัส +${points}` : ""}`, 12, "#f2c94c");
+      }
+    } else if (player !== undefined) {
+      text(px + 32, top + 40, `HP ${player.hp}/${player.stats.maxHp}`, 11, "#b8b2d6");
+      ui.push(new UiBar(this, px + 32, top + 64, 256, "hp_ally", 6).set(player.hp, player.stats.maxHp).setDepth(41));
+    }
+    ui.push(uiPanel(this, px + 320, top, 280, 96, "background").setDepth(40));
+    text(px + 332, top + 10, "คู่ใจ", 13);
+    const lines = [...companions].map(([id, g]) => {
+      const u = this.unit(`ally:${id}`);
+      const bond = g.bond === 0 ? "" : ` · Bond ${g.bond > 0 ? "+" : ""}${g.bond}`;
+      const had = this.progress?.companions[id];
+      const up = had === undefined ? null : [expProgress(rules, "companion", had).level, expProgress(rules, "companion", had + g.exp).level];
+      const lv = up !== null && up[1]! > up[0]! ? ` · Lv${up[0]}→${up[1]}!` : "";
+      return `${u?.name ?? id}${u?.ko ? " (ล้ม)" : ""} EXP +${g.exp}${lv}${bond}${g.mastery > 0 ? ` · ชำนาญ +${g.mastery}` : ""}`;
+    });
+    text(px + 332, top + 30, lines.slice(0, 4).join("\n") || "-", 11, "#d8d4ea", 256);
+
+    // Loot as kit slots. A drop's rarity is rolled when it is granted, so the summary uses the plain rim.
+    text(px + 20, top + 110, loot.size === 0 ? "ของที่ได้: ไม่มี" : "ของที่ได้", 13);
+    [...loot].slice(0, 9).forEach(([id, n], i) => {
+      const x = px + 20 + i * 66;
+      const y = top + 134;
+      ui.push(this.add.image(x, y, uiKey.slot(48, "common")).setOrigin(0, 0).setDepth(40));
+      text(x + 24, y + 24, `×${n}`, 12, "#ffffff").setOrigin(0.5);
+      text(x + 24, y + 52, lootName(id), 10, "#d8d4ea", 62).setOrigin(0.5, 0).setAlign("center");
+    });
+    if (loot.size > 9) text(px + pw - 20, top + 150, `+${loot.size - 9} ชนิด`, 11, "#b8b2d6").setOrigin(1, 0);
+    if (captures.length > 0) {
+      text(px + 20, top + 216, `จับได้: ${captures.join(", ")} · เข้าคลังคู่ใจ`, 12, "#f2c94c", pw - 40);
+    }
+
+    const by = py + ph - 64;
+    const close = new UiButton(this, px + pw / 2 - (this.onExit === null ? 70 : 150), by, 140, "ดูสนาม", () => this.setResultVisible(false), { depth: 41 });
+    ui.push(close);
+    if (this.onExit !== null) {
+      const exit = this.onExit;
+      ui.push(new UiButton(this, px + pw / 2 + 10, by, 140, "กลับไปเดินต่อ", () => exit(), { kind: "primary", depth: 41 }));
+    }
+    this.resultUi = ui;
+    // While the summary is hidden, the corner keeps a way back to it and to the map.
+    this.exitButton = new UiButton(this, W - 160, 20, 144, "สรุปผลไฟต์", () => this.setResultVisible(true), { kind: "primary", depth: 30 });
+    this.exitButton.setVisible(false);
+  }
+
+  private setResultVisible(v: boolean) {
+    for (const o of this.resultUi ?? []) o.setVisible(v);
+    this.exitButton?.setVisible(!v);
+  }
+
+  /**
+   * Stage-3 Rebirth look (placeholder art until the pixel pass): a pulsing glow in the species' colour
+   * plus a small looping effect, drawn where the unit stands when the fight opens.
+   */
+  /**
+   * Worn fashion (fashion.ts), placeholder shapes until Codex's layers land (ART_HANDOFF §9): head a
+   * band on top, body the outline colour, back a panel behind, aura the same glow as a Rebirth look.
+   */
+  private drawFashion(body: Phaser.GameObjects.Rectangle, looks: { layer: string; effect: string; color: string }[]) {
+    for (const f of looks) {
+      const color = Number.parseInt(f.color.slice(1), 16);
+      if (f.layer === "aura") this.drawCosmetic(body, f);
+      else if (f.layer === "body") body.setStrokeStyle(3, color);
+      else if (f.layer === "head") this.add.rectangle(body.x, body.y - body.height / 2 + 4, 34, 8, color).setStrokeStyle(1, 0x0b0a12);
+      else if (f.layer === "back") {
+        const cape = this.add.rectangle(body.x - 16, body.y + 4, 24, body.height * 0.9, color, 0.9);
+        this.children.moveBelow(cape, body);
+      }
+    }
+  }
+
+  private drawCosmetic(body: Phaser.GameObjects.Rectangle, c: { effect: string; color: string }) {
+    const color = Number.parseInt(c.color.slice(1), 16);
+    // Same depth as the body but drawn just under it, so the field background stays behind both.
+    const glow = this.add.ellipse(body.x, body.y + 4, 78, 86, color, 1);
+    this.children.moveBelow(glow, body);
+    this.tweens.add({ targets: glow, alpha: { from: 0.25, to: 0.6 }, scale: { from: 0.95, to: 1.08 }, duration: 900, yoyo: true, repeat: -1 });
+    if (c.effect === "ripple" || c.effect === "aura") {
+      const ring = this.add.ellipse(body.x, body.y + 28, 44, 14).setStrokeStyle(3, color);
+      this.children.moveBelow(ring, body);
+      this.tweens.add({ targets: ring, scaleX: 2, scaleY: 2, alpha: { from: 0.9, to: 0 }, duration: 1200, repeat: -1 });
+    } else {
+      for (let i = 0; i < 4; i++) {
+        const dot = this.add.rectangle(body.x - 18 + i * 12, body.y + 20, 4, 4, color);
+        this.tweens.add({ targets: dot, y: body.y - 36, alpha: { from: 1, to: 0 }, duration: 1000 + i * 150, delay: i * 200, repeat: -1 });
+      }
+    }
   }
 
   private position(u: BattleUnit) {
-    if (u.side === "ally") return { x: u.row === "front" ? 330 : 210, y: 150 + u.slot * 100 };
-    return { x: u.row === "front" ? 620 : 760, y: 90 + u.slot * 76 };
+    // Party boss fights have 5 cells a row (P22): the same band, tighter.
+    if (u.side === "ally") return this.snap.state.members !== undefined ? { x: u.row === "front" ? 360 : 230, y: 118 + u.slot * 76 } : { x: u.row === "front" ? 330 : 210, y: 150 + u.slot * 100 };
+    // Five cells a row, spaced so ten enemies (tower floors) keep their names and bars apart.
+    return { x: u.row === "front" ? 600 : 760, y: 118 + u.slot * 76 };
+  }
+
+  /** Swaps a unit's target brackets (selected / whose turn) and keeps back and front on the same frame. */
+  private setRing(v: UnitView, kind: "selected" | "turn_ally" | "turn_enemy" | null, x: number, y: number, bh: number, picked: boolean) {
+    v.ringBack.setPosition(x - 30, y - bh / 2 - 6).setVisible(kind !== null);
+    v.ringFront.setPosition(x - 30, y + bh / 2 - 10).setVisible(kind !== null);
+    v.arrow.setVisible(picked);
+    if (picked && !reducedMotion && !v.arrow.anims.isPlaying && this.anims.exists(`${uiKey.arrow}#loop`)) v.arrow.play(`${uiKey.arrow}#loop`);
+    if (kind === null || kind === v.ringKind) return;
+    v.ringKind = kind;
+    for (const [o, part] of [[v.ringBack, "back"], [v.ringFront, "front"]] as const) {
+      const k = uiKey.target(kind, part);
+      o.setTexture(k, 0);
+      if (!reducedMotion && this.anims.exists(`${k}#loop`)) o.play(`${k}#loop`);
+    }
+  }
+
+  /** A row of status icons (16px, Codex R2) with turns left, four a row, under the HP bar. */
+  private drawStatuses(v: UnitView, u: BattleUnit, x: number, top: number) {
+    const list = (u.statuses ?? []).filter((st) => assetMeta(uiKey.status(st.statusId)) !== undefined);
+    const k = `${top}|${list.map((st) => `${st.statusId}${st.turnsLeft}`).join(",")}`;
+    if (k === v.statusKey) return;
+    v.statusKey = k;
+    for (const o of v.statusIcons) o.destroy();
+    v.statusIcons = [];
+    list.slice(0, 4).forEach((st, i) => {
+      const ix = x - 34 + i * 17;
+      v.statusIcons.push(uiSprite(this, ix, top, uiKey.status(st.statusId)));
+      if (st.turnsLeft > 0) v.statusIcons.push(this.add.text(ix + 17, top + 17, `${st.turnsLeft}`, { fontFamily: "sans-serif", fontSize: "9px", color: "#ffffff", stroke: "#000000", strokeThickness: 2 }).setOrigin(1, 1));
+    });
+    if (list.length > 4) v.statusIcons.push(this.add.text(x + 36, top + 8, `+${list.length - 4}`, { fontFamily: "sans-serif", fontSize: "10px", color: "#ffd84a" }).setOrigin(0, 0.5));
+  }
+
+  /** The element a hit lands with: its skill's damage element (or the user's own), else the attacker's. */
+  private attackElement(actorId: string, skillId: string | null): Element {
+    const actor = this.unit(actorId);
+    const dmg = skillId === null ? undefined : CONTENT.skills.get(skillId)?.effectSequence.find((f) => f.kind === "damage");
+    if (dmg !== undefined && dmg.kind === "damage" && dmg.ownElement !== true) return dmg.element;
+    return actor?.element ?? "NEUTRAL";
+  }
+
+  /** Codex's one-shot hit (per element) or heal burst over the body; gone when it ends. */
+  private hitEffect(unitId: string, element: Element | null) {
+    const v = this.views.get(unitId);
+    if (v === undefined || reducedMotion) return;
+    const s = uiSprite(this, v.body.x - 16, v.body.y - 16, element === null ? uiKey.heal : uiKey.hit(element)).setDepth(20);
+    s.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => s.destroy());
+    if (!s.anims.isPlaying) s.destroy();
+  }
+
+  /**
+   * Damage / crit / heal / shield numbers from Codex's glyph sheets: every glyph plays the same pop on
+   * the same clock (R2_HANDOFF §5), 12px apart, then the whole number floats up and fades.
+   */
+  private numberPopup(unitId: string, text: string, kind: "damage" | "crit" | "heal" | "shield", word?: "critical") {
+    const v = this.views.get(unitId);
+    if (v === undefined) return;
+    const glyphs = [...text].filter((c) => /[0-9+-]/.test(c));
+    const w = glyphs.length * 12 + 4;
+    const c = this.add.container(v.body.x - w / 2, v.body.y - 30).setDepth(21);
+    glyphs.forEach((g, i) => c.add(uiSprite(this, i * 12, 0, uiKey.number(kind, g))));
+    if (word !== undefined) c.add(uiSprite(this, w / 2 - 15, -22, uiKey.popup(word)));
+    this.tweens.add({ targets: c, y: c.y - 30, alpha: { from: 1, to: 0 }, delay: 350, duration: 650, onComplete: () => c.destroy(true) });
+  }
+
+  /** A missed hit or a dodge, as Codex's word sprite. */
+  private wordPopup(unitId: string, word: "miss" | "dodge") {
+    const v = this.views.get(unitId);
+    if (v === undefined) return;
+    const s = uiSprite(this, v.body.x - 22, v.body.y - 30, uiKey.popup(word)).setDepth(21);
+    this.tweens.add({ targets: s, y: s.y - 30, alpha: { from: 1, to: 0 }, delay: 350, duration: 650, onComplete: () => s.destroy() });
   }
 
   private popup(unitId: string, text: string, color: string) {
@@ -214,7 +1002,8 @@ export class BattleScene extends Phaser.Scene {
 
   private pushLog(line: string) {
     this.log.push(line);
-    this.log = this.log.slice(-5);
+    // Four lines fit the kit frame (one may wrap).
+    this.log = this.log.slice(-4);
     this.logText?.setText(this.log.join("\n"));
   }
 
@@ -230,3 +1019,17 @@ export class BattleScene extends Phaser.Scene {
 }
 
 export const GAME_SIZE = { width: W, height: H };
+
+/** What a boss part does while it stands, in Thai. */
+function partEffectTh(p: { effect: string; pct: number; skillId?: string }): string {
+  switch (p.effect) {
+    case "armor":
+      return `บอสรับดาเมจ −${p.pct}%`;
+    case "regen":
+      return `บอสฟื้น ${p.pct}%/รอบ`;
+    case "power":
+      return `บอสตีแรง +${p.pct}%`;
+    default:
+      return `ทุบแตกแล้วบอสใช้ ${CONTENT.skills.get(p.skillId ?? "")?.name.th ?? p.skillId} ไม่ได้`;
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "assetId": "ui_menu_quests",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_menu_quests_v001.png",
+  "frameWidth": 24,
+  "frameHeight": 24,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "menu",
+  "nineSlice": null,
+  "nativeSize": [
+    24,
+    24
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      24,
+      24
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "4c1eddcd0cfcfbf3a215e9f42efb497beaf89a6299e79cafe4bd5bffbab53f57",
+  "contentId": "quests"
+}

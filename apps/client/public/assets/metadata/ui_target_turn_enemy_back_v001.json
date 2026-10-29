@@ -1,0 +1,66 @@
+{
+  "assetId": "ui_target_turn_enemy_back",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_target_turn_enemy_back_v001.png",
+  "frameWidth": 60,
+  "frameHeight": 16,
+  "columns": 6,
+  "rows": 1,
+  "frameCount": 6,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "loop",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fps": 10,
+      "loop": true
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "target",
+  "nineSlice": null,
+  "nativeSize": [
+    60,
+    16
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      60,
+      16
+    ]
+  ],
+  "completion": "repeat",
+  "sha256": "7c9a9d54534de3a2d3512590fca7e536fc06e0ad75e3f498260fdc6df2d85e2e",
+  "assembly": "split_vertical",
+  "part": "back",
+  "attachment": "actor-top-6",
+  "pair": "ui_target_turn_enemy",
+  "phaseSync": true,
+  "layoutWidth": 60,
+  "noStretch": true
+}

@@ -1,0 +1,48 @@
+{
+  "assetId": "item_fire_flask",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/items/item_fire_flask_v001.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "item",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "957f01332b2cf207eae88cc58d5288bfde94c7a8e487bf86be990b52b2ac0dc7",
+  "contentId": "item:fire_flask",
+  "contentGroup": "items",
+  "motif": "bottle"
+}

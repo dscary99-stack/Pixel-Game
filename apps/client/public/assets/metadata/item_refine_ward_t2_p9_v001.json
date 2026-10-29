@@ -1,0 +1,48 @@
+{
+  "assetId": "item_refine_ward_t2_p9",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/items/item_refine_ward_t2_p9_v001.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "item",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "1f037eb754456eeaa87ee3f5f7413cf01c6a1f6a98145762aa335ed3bd686951",
+  "contentId": "item:refine_ward_t2_p9",
+  "contentGroup": "items",
+  "motif": "shield"
+}

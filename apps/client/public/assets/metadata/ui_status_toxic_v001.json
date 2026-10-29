@@ -1,0 +1,63 @@
+{
+  "assetId": "ui_status_toxic",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_status_toxic_v001.png",
+  "frameWidth": 16,
+  "frameHeight": 16,
+  "columns": 4,
+  "rows": 1,
+  "frameCount": 4,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "loop",
+      "frames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "fps": 8,
+      "loop": true
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "status",
+  "nineSlice": null,
+  "nativeSize": [
+    16,
+    16
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      16,
+      16
+    ]
+  ],
+  "completion": "repeat",
+  "sha256": "3e2d8a409066bdd32c1f07708e1e7bc36199b8a3ac7de7661a6f493f9569f726",
+  "contentId": "toxic",
+  "harmful": true,
+  "category": "dot",
+  "motif": "skull",
+  "polarityBadge": "minus",
+  "motion": "stable readable glyph; subtle 1px travelling glint"
+}

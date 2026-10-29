@@ -1,0 +1,56 @@
+{
+  "assetId": "ui:slot:64_rare",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_slot_64_rare_v001.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "slot",
+  "nineSlice": null,
+  "paletteVariants": [],
+  "nativeSize": [
+    64,
+    64
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      64,
+      64
+    ]
+  ],
+  "productionApproved": false,
+  "rarity": "RARE",
+  "contentRect": [
+    8,
+    8,
+    48,
+    48
+  ],
+  "lockOffset": [
+    46,
+    46
+  ],
+  "quantityText": "runtime-bottom-right; move when locked",
+  "sha256": "5b7f20280536e1b7c6f8c0266e380ab53e442c01ce234c5a6f07463efda09f5e"
+}

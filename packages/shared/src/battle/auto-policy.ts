@@ -1,0 +1,63 @@
+/**
+ * Auto Battle item rules (chapter 08 "allowed items / max spend", rule engine step 1).
+ * The player picks which items Auto may use, on whom, below which HP or MP, and how many per fight.
+ * Each kind has its own trigger: heal below the HP %, mana below the MP %, revive a fallen ally once it
+ * can be revived, support (buffs, cleanse) when the ally lacks the buff or carries a harmful status;
+ * a group support item when at least `minTargets` allies would gain from it; an attack item on the
+ * weakest enemy (an Elite or boss first), or for an area one when at least `minTargets` enemies stand,
+ * with `strongOnly` keeping it for fights with an Elite or boss.
+ * Rules run in the listed order before the basic attack; a rule that cannot apply is skipped.
+ * They never capture (C15) and never touch anything outside the reserved combat bag.
+ */
+import { z } from "zod";
+
+export const AutoItemRuleSchema = z
+  .object({
+    itemId: z.string().regex(/^item:[a-z0-9_]+$/),
+    /** "self": only the character; "ally": the living ally (character or companion) with the lowest HP%. */
+    target: z.enum(["self", "ally"]).default("ally"),
+    /** Heal items: use when the target's HP is below this percent of max. */
+    hpBelowPercent: z.number().int().min(1).max(95).default(40),
+    /** Mana items: use when the target's MP is below this percent of max. */
+    mpBelowPercent: z.number().int().min(1).max(95).default(30),
+    /** At most this many of this item in one fight. */
+    maxPerFight: z.number().int().min(1).max(20).default(3),
+    /** Area items: use only when at least this many allies would gain (support) or enemies stand (attack). */
+    minTargets: z.number().int().min(1).max(10).default(2),
+    /** Attack items: only while an Elite or boss stands. */
+    strongOnly: z.boolean().default(false),
+  })
+  .strict();
+export type AutoItemRule = z.infer<typeof AutoItemRuleSchema>;
+
+/**
+ * Auto skill use (chapter 08 rule engine steps 2–6): heal, cleanse, buff, debuff, then damage, each
+ * on the best target worth it, while MP stays at or above the reserve; otherwise a basic attack.
+ */
+export const AutoSkillRuleSchema = z
+  .object({
+    use: z.boolean().default(true),
+    /** Keep at least this percent of max MP; a skill that would go below it is skipped. */
+    mpReservePercent: z.number().int().min(0).max(90).default(30),
+    /** Heal skills wait until someone is below this percent of max HP. */
+    healBelowPercent: z.number().int().min(10).max(95).default(50),
+  })
+  .strict();
+export type AutoSkillRule = z.infer<typeof AutoSkillRuleSchema>;
+
+/**
+ * Divine awakening on Auto (chapter 02: Auto may use it by a condition, the same for everyone):
+ * "ready" as soon as the gauge is full, "strong" only while an Elite or boss stands, "low_hp" when the
+ * character is under half HP, "never".
+ */
+export const AutoAwakenSchema = z.enum(["ready", "strong", "low_hp", "never"]);
+export type AutoAwaken = z.infer<typeof AutoAwakenSchema>;
+
+export const AutoBattlePolicySchema = z
+  .object({ itemRules: z.array(AutoItemRuleSchema).max(5).default([]), skills: AutoSkillRuleSchema.prefault({}), awaken: AutoAwakenSchema.default("ready") })
+  .strict();
+export type AutoBattlePolicy = z.infer<typeof AutoBattlePolicySchema>;
+export type AutoBattlePolicyInput = z.input<typeof AutoBattlePolicySchema>;
+
+/** No items; skills on with the default reserve. */
+export const NO_AUTO_POLICY: AutoBattlePolicy = AutoBattlePolicySchema.parse({});

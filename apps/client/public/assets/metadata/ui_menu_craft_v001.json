@@ -1,0 +1,46 @@
+{
+  "assetId": "ui_menu_craft",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_menu_craft_v001.png",
+  "frameWidth": 24,
+  "frameHeight": 24,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "menu",
+  "nineSlice": null,
+  "nativeSize": [
+    24,
+    24
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      24,
+      24
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "e71cf7916ad601c51c0dec290a4fe1f619a99dbd6bc4bcd5176c925590cc6228",
+  "contentId": "craft"
+}

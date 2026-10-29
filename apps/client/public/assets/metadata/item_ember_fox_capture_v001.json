@@ -1,0 +1,48 @@
+{
+  "assetId": "item_ember_fox_capture",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/items/item_ember_fox_capture_v001.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "item",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "9a4c67485ad6a027bf67ca891ea3886e0524ddf7d52f5eaec9e2107fe621290a",
+  "contentId": "item:ember_fox_capture",
+  "contentGroup": "items",
+  "motif": "fox"
+}

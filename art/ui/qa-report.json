@@ -1,0 +1,30 @@
+{
+  "latestRound": 2,
+  "v001Report": "qa-report-v001.json",
+  "round2Report": "qa-report-r2.json",
+  "v001Preserved": true,
+  "totalPngCount": 364,
+  "round2Assets": 313,
+  "round2Animated": 151,
+  "checks": {
+    "nativeGrid": "pass",
+    "rgba": "pass",
+    "binaryAlpha": "pass",
+    "v001Palette": "pass",
+    "metadataAndIndex": "pass",
+    "sourceCoverage": "pass",
+    "v001Unchanged": "pass",
+    "firstFrameNonempty": "pass",
+    "animationStrips": "pass"
+  },
+  "npmCheck": {
+    "command": "npm run check",
+    "result": "pass",
+    "testFiles": 87,
+    "tests": 795,
+    "typecheck": "pass",
+    "clientBuild": "pass",
+    "serverDryRun": "pass"
+  },
+  "gameIntegration": "pending Claude; runtime source untouched"
+}

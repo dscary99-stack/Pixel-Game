@@ -1,0 +1,64 @@
+{
+  "assetId": "ui_number_crit_0",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_number_crit_0_v001.png",
+  "frameWidth": 16,
+  "frameHeight": 24,
+  "columns": 5,
+  "rows": 1,
+  "frameCount": 5,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "pop",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "fps": 10,
+      "loop": false
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "popup",
+  "nineSlice": null,
+  "nativeSize": [
+    16,
+    24
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      16,
+      24
+    ]
+  ],
+  "completion": "hold-until-owner-removes",
+  "sha256": "47e6c2000f24f3735863bd13de35dbbd66c599abea39f7db9d7a740789bfb02d",
+  "glyph": "0",
+  "style": "crit",
+  "advance": 12,
+  "inkHeight": 14,
+  "baseline": 20,
+  "motion": "readable -> rise 3px/flash -> settle; no scaling"
+}

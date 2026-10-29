@@ -1,0 +1,65 @@
+{
+  "assetId": "ui_hit_fire",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_hit_fire_v001.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 6,
+  "rows": 1,
+  "frameCount": 6,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "play",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fps": 10,
+      "loop": false
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "hit",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hide",
+  "sha256": "4d7cbbe0b9d06418689a48dd1b87718c2c42c1e943616df5c940bde2c9d645c9",
+  "element": "FIRE",
+  "contactFrame": 1,
+  "attachment": [
+    16,
+    16
+  ]
+}

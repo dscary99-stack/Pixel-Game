@@ -1,0 +1,45 @@
+{
+  "assetId": "ui:badge:lock",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_badge_lock_v001.png",
+  "frameWidth": 16,
+  "frameHeight": 16,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "overlay",
+  "nineSlice": null,
+  "paletteVariants": [],
+  "nativeSize": [
+    16,
+    16
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      16,
+      16
+    ]
+  ],
+  "productionApproved": false,
+  "attachment": "slot lower-right inset 2px",
+  "sha256": "edd869bd47a3b5458f90604e4a2490c8f81312c3e1ed8c70aed3b8c66b20a1b8"
+}
