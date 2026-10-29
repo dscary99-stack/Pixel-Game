@@ -1,8 +1,8 @@
 /**
- * The UI kit Codex drew for the GUI draft (ART_HANDOFF §11, art/ui/PROOF.md): 9-slice window and button
- * frames, rarity slots, value bars and 24px icons under /assets/sprites/ui/. Scenes call `loadUiKit` in
- * `preload` (Phaser keeps textures game-wide, so a second scene's load is a no-op) and build widgets with
- * the helpers below. Corner sizes come from the per-asset metadata in /assets/metadata/.
+ * The UI kit Codex drew for the GUI draft (ART_HANDOFF §11, art/ui/PROOF.md, art/ui/R2_HANDOFF.md):
+ * 9-slice frames, rarity slots, bars, icons, item art and animated effects. `loadAssetRegistry` reads the
+ * per-asset metadata once at start; scenes call `loadUiKit` in `preload` (Phaser keeps textures and
+ * animations game-wide, so a second scene's load is a no-op) and build widgets with the helpers below.
  */
 import Phaser from "phaser";
 
@@ -21,6 +21,46 @@ export type Rarity = (typeof RARITIES)[number];
 export type BarKind = Exclude<(typeof BARS)[number], "track">;
 export type BarHeight = (typeof BAR_HEIGHTS)[number];
 
+/** One asset's metadata (ART_HANDOFF §6–7, art/ui/R2_HANDOFF.md): what the loader and players need. */
+export interface AssetMeta {
+  assetId: string;
+  file: string;
+  frameWidth: number;
+  frameHeight: number;
+  frameCount: number;
+  animations: { name: string; frames: number[]; fps: number; loop: boolean }[];
+  staticFrame?: number;
+  contentId?: string | null;
+  contentGroup?: string | null;
+}
+
+/** Texture key = the file's stem without its version: `ui_status_stun`, `item_crab_shell`. */
+export const textureKeyOf = (file: string) => file.split("/").pop()!.replace(/_v\d+\.png$/, "");
+const registry = new Map<string, AssetMeta>();
+/** Items, equipment and Sigils by content id (`item:crab_shell`, `equip:…`, `sigil:…`). */
+const byContent = new Map<string, string>();
+
+/**
+ * Reads every manifest listed in /assets/metadata/index.json once, before any scene preloads, so the
+ * kit is driven by Codex's metadata instead of a hardcoded list (new assets need no code change).
+ */
+export async function loadAssetRegistry(base = "/assets/metadata/") {
+  if (registry.size > 0) return;
+  const names = (await (await fetch(`${base}index.json`)).json()) as string[];
+  const metas = await Promise.all(names.map(async (n) => (await (await fetch(base + n)).json()) as AssetMeta));
+  for (const m of metas) {
+    const k = textureKeyOf(m.file);
+    registry.set(k, m);
+    if (m.contentId && ["items", "equipment", "sigils"].includes(m.contentGroup ?? "")) byContent.set(m.contentId, k);
+  }
+}
+export const assetMeta = (k: string) => registry.get(k);
+/** Texture key of an item, piece of gear or Sigil's icon, if Codex drew one. */
+export const contentIconKey = (contentId: string) => byContent.get(contentId);
+
+/** Players who ask for less motion get each asset's static frame (R2_HANDOFF §4). */
+export const reducedMotion = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 const key = (name: string) => `ui_${name}`;
 /** Public URL of one kit image, for HTML windows that skin themselves with the same art. */
 export const uiAssetUrl = (name: string) => `/assets/sprites/ui/ui_${name}_${V}.png`;
@@ -28,24 +68,73 @@ export const uiAssetUrl = (name: string) => `/assets/sprites/ui/ui_${name}_${V}.
 export const uiKey = {
   button: (k: ButtonKind) => key(`button_${k}`),
   command: (k: CommandIcon) => key(`command_${k}`),
-  menu: (k: MenuIcon) => key(`menu_${k}`),
+  menu: (k: string) => key(`menu_${k}`),
   slot: (size: 48 | 64, r: Rarity) => key(`slot_${size}_${r}`),
   bar: (k: BarKind | "track", h: BarHeight) => key(`bar_${k}_h${h}`),
   window: (part: "background" | "frame" | "title") => key(`window_${part}`),
   lock: key("badge_lock"),
+  status: (id: string) => key(`status_${id}`),
+  element: (e: string, loop = false) => key(`element_${e.toLowerCase()}${loop ? "_loop" : ""}`),
+  hit: (e: string) => key(`hit_${e.toLowerCase()}`),
+  heal: key("heal_burst"),
+  number: (kind: "damage" | "crit" | "heal" | "shield", ch: string) => key(`number_${kind}_${ch === "+" ? "plus" : ch === "-" ? "minus" : ch}`),
+  popup: (k: "critical" | "dodge" | "miss") => key(`popup_${k}`),
+  target: (k: "selected" | "turn_ally" | "turn_enemy", part: "back" | "front") => key(`target_${k}_${part}`),
+  arrow: key("target_arrow"),
+  ready: (k: "ascend" | "skill") => key(`ready_${k}`),
+  ascendFull: (h: BarHeight) => key(`bar_ascend_full_h${h}`),
+  classIcon: (id: string) => key(`class_${id.replace(/^class:/, "")}`),
+  race: (id: string) => key(`race_${id.replace(/^race:/, "")}`),
+  title: (part: "scene" | "sparkles") => key(`title_${part}`),
 };
 
+/** Loads every registered asset: sheets with more than one frame as spritesheets, the rest as images. */
 export function loadUiKit(scene: Phaser.Scene) {
-  const add = (name: string) => {
-    if (!scene.textures.exists(key(name))) scene.load.image(key(name), uiAssetUrl(name));
-  };
-  for (const b of BUTTONS) add(`button_${b}`);
-  for (const c of COMMANDS) add(`command_${c}`);
-  for (const m of MENUS) add(`menu_${m}`);
-  for (const s of [48, 64]) for (const r of RARITIES) add(`slot_${s}_${r}`);
-  for (const b of BARS) for (const h of BAR_HEIGHTS) add(`bar_${b}_h${h}`);
-  for (const w of ["background", "frame", "title"]) add(`window_${w}`);
-  add("badge_lock");
+  for (const [k, m] of registry) {
+    if (scene.textures.exists(k)) continue;
+    if (m.frameCount > 1) scene.load.spritesheet(k, m.file, { frameWidth: m.frameWidth, frameHeight: m.frameHeight });
+    else scene.load.image(k, m.file);
+  }
+  scene.load.once(Phaser.Loader.Events.COMPLETE, () => {
+    for (const [k, m] of registry) {
+      for (const a of m.animations) {
+        const animKey = `${k}#${a.name}`;
+        if (scene.anims.exists(animKey) || !scene.textures.exists(k)) continue;
+        scene.anims.create({ key: animKey, frames: scene.anims.generateFrameNumbers(k, { frames: a.frames }), frameRate: a.fps, repeat: a.loop ? -1 : 0 });
+      }
+    }
+  });
+}
+
+/**
+ * A kit sprite at native size, top-left at x, y. Animated assets play their first (or named) clip;
+ * with reduced motion, or a static asset, it shows the static frame.
+ */
+export function uiSprite(scene: Phaser.Scene, x: number, y: number, k: string, anim?: string): Phaser.GameObjects.Sprite {
+  const m = registry.get(k);
+  const s = scene.add.sprite(x, y, k, m?.staticFrame ?? 0).setOrigin(0, 0);
+  const clip = anim === undefined ? m?.animations[0] : m?.animations.find((a) => a.name === anim);
+  if (clip !== undefined && !reducedMotion && scene.anims.exists(`${k}#${clip.name}`)) s.play(`${k}#${clip.name}`);
+  return s;
+}
+
+/**
+ * The same asset for an HTML window: a span the size of one frame. Animated sheets step through their
+ * frames with CSS (`pm-sprite` keyframes in character-ui), static ones show frame 0.
+ */
+export function htmlSprite(k: string, title?: string): HTMLSpanElement | null {
+  const m = registry.get(k);
+  if (m === undefined) return null;
+  const span = document.createElement("span");
+  span.className = "pm-sprite";
+  if (title !== undefined) span.title = title;
+  span.style.cssText = `width:${m.frameWidth}px;height:${m.frameHeight}px;background-image:url(${m.file})`;
+  const clip = m.animations[0];
+  if (clip !== undefined && !reducedMotion && m.frameCount > 1) {
+    span.style.setProperty("--pm-end", `-${m.frameCount * m.frameWidth}px`);
+    span.style.animation = `pm-sprite ${(m.frameCount / clip.fps).toFixed(3)}s steps(${m.frameCount}) ${clip.loop ? "infinite" : "1 forwards"}`;
+  }
+  return span;
 }
 
 /** Window frame, inner background or title strip (corners 16, metadata `nineSlice`); top-left at x, y. */
@@ -62,7 +151,7 @@ const TEXT_COLOR: Record<ButtonKind, string> = { normal: "#f4f2fb", selected: "#
 export class UiButton {
   readonly frame: Phaser.GameObjects.NineSlice;
   readonly text: Phaser.GameObjects.Text;
-  readonly icon: Phaser.GameObjects.Image | null;
+  readonly icon: Phaser.GameObjects.Sprite | null;
   private kind: ButtonKind;
 
   constructor(
@@ -85,7 +174,7 @@ export class UiButton {
       e.stopPropagation();
       onClick();
     });
-    this.icon = opts.icon === undefined ? null : scene.add.image(x + w / 2, y + Math.min(16, h / 2 - 6), opts.icon).setOrigin(0.5);
+    this.icon = opts.icon === undefined ? null : uiSprite(scene, x + w / 2, y + Math.min(16, h / 2 - 6), opts.icon).setOrigin(0.5);
     const withIcon = this.icon !== null;
     this.text = scene.add
       .text(x + w / 2, withIcon ? y + h - 4 : y + h / 2, label, {
@@ -107,6 +196,15 @@ export class UiButton {
     this.icon?.setAlpha(kind === "disabled" ? 0.45 : 1);
     return this;
   }
+  /** Swaps the icon (e.g. a menu icon for its animated "something new" version). */
+  setIcon(k: string) {
+    const icon = this.icon;
+    if (icon === null || icon.texture.key === k) return this;
+    icon.stop().setTexture(k, assetMeta(k)?.staticFrame ?? 0);
+    const clip = assetMeta(k)?.animations[0];
+    if (clip !== undefined && !reducedMotion && icon.scene.anims.exists(`${k}#${clip.name}`)) icon.play(`${k}#${clip.name}`);
+    return this;
+  }
   setLabel(label: string) {
     this.text.setText(label);
     return this;
@@ -122,7 +220,7 @@ export class UiButton {
   destroy() {
     for (const o of this.parts()) o.destroy();
   }
-  parts(): (Phaser.GameObjects.NineSlice | Phaser.GameObjects.Text | Phaser.GameObjects.Image)[] {
+  parts(): (Phaser.GameObjects.NineSlice | Phaser.GameObjects.Text | Phaser.GameObjects.Sprite)[] {
     return this.icon === null ? [this.frame, this.text] : [this.frame, this.icon, this.text];
   }
 }

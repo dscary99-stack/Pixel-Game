@@ -109,7 +109,7 @@ import {
   unspentPoints,
 } from "@pmrpg/shared";
 import { ApiError, type CharacterApi, type CharacterBundle } from "./character-api";
-import { uiAssetUrl } from "./ui-kit";
+import { contentIconKey, htmlSprite, uiAssetUrl, uiKey } from "./ui-kit";
 
 const maps = exampleMapRegistry();
 const { species, equipment: equipmentDefs, items: itemDefs, sigils: sigilDefs, skills: skillDefs, bosses: bossDefs, affixPools } = exampleContentMaps();
@@ -125,9 +125,6 @@ export const ELEMENT_TH: Record<Element, string> = {
   SHADOW: "เงา",
   NEUTRAL: "ไร้ธาตุ",
 };
-
-/** Element colours for the create form's swatches (same as ELEMENT_CSS below). */
-const ELEMENT_SWATCH: Record<string, string> = { FIRE: "#f26b3a", WATER: "#3a8ef2", EARTH: "#b08a4a", WIND: "#5fd18b", LIGHT: "#f2df6b", SHADOW: "#8a5fd1" };
 
 const CSS = `
 .pm-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
@@ -196,7 +193,6 @@ const CSS = `
   border-image: url(${uiAssetUrl("window_background")}) 16 fill / 16px; image-rendering: pixelated; }
 .pm-slot { display: flow-root; }
 .pm-panel button.pm-slot[aria-current=true] { border-image-source: url(${uiAssetUrl("button_selected")}); }
-${Object.entries(ELEMENT_SWATCH).map(([e, c]) => `.pm-choices button[data-value=${e}]::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 6px; background: ${c}; }`).join("\n")}
 .pm-node.learned { border-image-source: url(${uiAssetUrl("button_selected")}); }
 .pm-panel .pm-node button { white-space: normal; }
 .pm-list li[data-companion], .pm-list li[data-piece] { flex-wrap: wrap; }
@@ -204,6 +200,14 @@ ${Object.entries(ELEMENT_SWATCH).map(([e, c]) => `.pm-choices button[data-value=
   background: url(${uiAssetUrl("slot_48_common")}) no-repeat; image-rendering: pixelated; }
 .pm-slot .pm-icon { float: left; margin: 0 8px 2px 0; }
 .pm-icon.empty { opacity: 0.5; }
+.pm-sprite { display: inline-block; flex: none; vertical-align: middle; background-repeat: no-repeat; image-rendering: pixelated; }
+@keyframes pm-sprite { from { background-position-x: 0; } to { background-position-x: var(--pm-end); } }
+.pm-icon > .pm-sprite { position: absolute; left: 8px; top: 8px; }
+.pm-title { position: relative; flex: none; width: 580px; height: 540px; margin-right: 16px; }
+.pm-title > .pm-sprite { position: absolute; left: 0; top: 0; }
+@media (max-width: 1040px), (max-height: 560px) { .pm-title { display: none; } }
+.pm-icon > .pm-sprite.pm-el { left: 16px; top: 16px; }
+.pm-choices button .pm-sprite { margin-right: 6px; }
 .pm-icon .pm-portrait { position: absolute; left: 12px; top: 12px; width: 24px; height: 24px; }
 .pm-icon .pm-lock { position: absolute; left: 30px; top: 30px; width: 16px; height: 16px; background: url(${uiAssetUrl("badge_lock")}); }
 ${["uncommon", "rare", "epic", "legendary"].map((r) => `.pm-icon[data-rarity=${r.toUpperCase()}] { background-image: url(${uiAssetUrl(`slot_48_${r}`)}); }`).join("\n")}
@@ -232,16 +236,38 @@ export function overlay(): { root: HTMLDivElement; panel: HTMLDivElement; close:
   panel.className = "pm-panel";
   root.append(panel);
   document.body.append(root);
-  return { root, panel, close: () => root.remove() };
+  // Every list row that names an item, piece of gear or Sigil gets its Codex icon in a kit slot, so
+  // the many windows that build such rows need no per-window icon code.
+  const decorate = () => {
+    for (const li of panel.querySelectorAll<HTMLElement>(ICON_ROWS)) {
+      if (li.dataset.iconed !== undefined || li.querySelector(":scope > .pm-icon") !== null) continue;
+      li.dataset.iconed = "";
+      const id = ICON_ATTRS.map((a) => li.getAttribute(a)).find((v) => v !== null && contentIconKey(v) !== undefined);
+      if (id !== undefined && id !== null) li.prepend(slotIcon({ contentId: id }));
+    }
+  };
+  const watch = new MutationObserver(decorate);
+  watch.observe(panel, { childList: true, subtree: true });
+  return {
+    root,
+    panel,
+    close: () => {
+      watch.disconnect();
+      root.remove();
+    },
+  };
 }
 
 /**
  * A 48px kit slot: rarity rim, a 24px square in the middle (element colour until item and portrait
  * icons land, ART_HANDOFF §11 round 2) and the lock badge on protected things.
  */
-function slotIcon(opts: { rarity?: string; color?: string; locked?: boolean; empty?: boolean }): HTMLElement {
+function slotIcon(opts: { rarity?: string; color?: string; locked?: boolean; empty?: boolean; contentId?: string }): HTMLElement {
   const box = el("span", { class: opts.empty === true ? "pm-icon empty" : "pm-icon", "data-rarity": opts.rarity ?? "COMMON" });
-  if (opts.color !== undefined) {
+  const art = opts.contentId === undefined ? undefined : contentIconKey(opts.contentId);
+  const sprite = art === undefined ? null : htmlSprite(art);
+  if (sprite !== null) box.append(sprite);
+  else if (opts.color !== undefined) {
     const p = el("span", { class: "pm-portrait" });
     p.style.background = opts.color;
     box.append(p);
@@ -249,6 +275,9 @@ function slotIcon(opts: { rarity?: string; color?: string; locked?: boolean; emp
   if (opts.locked === true) box.append(el("span", { class: "pm-lock", title: "ล็อกอยู่" }));
   return box;
 }
+
+const ICON_ATTRS = ["data-item", "data-buy", "data-gear", "data-sigil", "data-sockets", "data-vault-item", "data-piece"];
+const ICON_ROWS = ICON_ATTRS.map((a) => `li[${a}]`).join(",");
 
 export function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<string, string> = {}, text?: string): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -258,11 +287,13 @@ export function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<
 }
 
 /** A row of toggle buttons; returns a getter for the picked value. */
-function choices(parent: HTMLElement, items: { value: string; label: string }[], initial: string): () => string {
+function choices(parent: HTMLElement, items: { value: string; label: string; icon?: string }[], initial: string): () => string {
   const box = el("div", { class: "pm-choices", role: "group" });
   let picked = initial;
   const buttons = items.map((it) => {
     const b = el("button", { type: "button", "aria-pressed": String(it.value === initial), "data-value": it.value }, it.label);
+    const art = it.icon === undefined ? null : htmlSprite(it.icon);
+    if (art !== null) b.prepend(art);
     b.addEventListener("click", () => {
       picked = it.value;
       buttons.forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
@@ -287,11 +318,11 @@ export function createCharacterForm(api: CharacterApi): Promise<CharacterBundle>
     const name = el("input", { id: "pm-name", type: "text", maxlength: "16", autocomplete: "off" });
     panel.append(name);
     panel.append(el("label", {}, "อาชีพเริ่มต้น (Class 1)"));
-    const cls = choices(panel, CLASS1_DEFINITIONS.map((c) => ({ value: c.id, label: c.name.th })), CLASS1_DEFINITIONS[0]!.id);
+    const cls = choices(panel, CLASS1_DEFINITIONS.map((c) => ({ value: c.id, label: c.name.th, icon: uiKey.classIcon(c.id) })), CLASS1_DEFINITIONS[0]!.id);
     panel.append(el("label", {}, "เผ่า"));
-    const race = choices(panel, RACE_DEFINITIONS.map((r) => ({ value: r.id, label: r.name.th })), RACE_DEFINITIONS[0]!.id);
+    const race = choices(panel, RACE_DEFINITIONS.map((r) => ({ value: r.id, label: r.name.th, icon: uiKey.race(r.id) })), RACE_DEFINITIONS[0]!.id);
     panel.append(el("label", {}, "ธาตุ"));
-    const element = choices(panel, PLAYER_ELEMENTS.map((e) => ({ value: e, label: ELEMENT_TH[e] })), PLAYER_ELEMENTS[0]);
+    const element = choices(panel, PLAYER_ELEMENTS.map((e) => ({ value: e, label: ELEMENT_TH[e], icon: uiKey.element(e, true) })), PLAYER_ELEMENTS[0]);
     panel.append(el("div", { class: "pm-note" }, "ชื่ออาชีพและเผ่าเป็นแบบร่าง (P16) · ทุกค่าสเตตัสเริ่มที่ 10"));
     const error = el("div", { class: "pm-error", role: "alert" });
     panel.append(error);
@@ -474,7 +505,7 @@ export function equipmentPanel(api: CharacterApi, start: CharacterBundle): Promi
         box.append(el("b", {}, SLOT_TH[slot]));
         const piece = worn.get(slot);
         const def = piece === undefined ? undefined : equipmentDefs.get(piece.definitionId);
-        box.prepend(slotIcon(piece === undefined ? { empty: true } : { rarity: piece.rarity, locked: piece.protected }));
+        box.prepend(slotIcon(piece === undefined ? { empty: true } : { rarity: piece.rarity, locked: piece.protected, contentId: piece.definitionId }));
         if (def === undefined) box.append(document.createTextNode(piece === undefined ? "ว่าง" : piece.definitionId));
         else box.append(gearName(def, piece!), el("small", { class: "pm-affix" }, affixLine(piece!)));
         if (piece !== undefined) {
@@ -501,7 +532,7 @@ export function equipmentPanel(api: CharacterApi, start: CharacterBundle): Promi
             ` · Lv${def.requiredLevel}${def.handedness === "two_hand" ? " · สองมือ" : ""} · ${statLine(refinedBaseStats(def, piece.refineLevel))}`,
             el("small", { class: "pm-affix" }, affixLine(piece)),
           );
-        li.append(slotIcon({ rarity: piece.rarity, locked: piece.protected }), text);
+        li.append(slotIcon({ rarity: piece.rarity, locked: piece.protected, contentId: piece.definitionId }), text);
         const targets = def === undefined ? [] : def.handedness === "two_hand" ? (["MAIN_HAND"] as const) : SLOT_FOR_CATEGORY[def.category];
         for (const slot of targets) {
           const b = el("button", { type: "button" }, targets.length > 1 ? `ใส่${SLOT_TH[slot]}` : "ใส่");
@@ -776,6 +807,9 @@ export function teamPanel(api: CharacterApi, start: CharacterBundle): Promise<Ch
           refresh();
         });
         const dot = slotIcon({ color: ELEMENT_CSS[c.element], locked: c.protected });
+        // No companion portraits yet: the element icon sits on the colour square.
+        const el16 = htmlSprite(uiKey.element(c.element));
+        if (el16 !== null) dot.append(Object.assign(el16, { className: "pm-sprite pm-el" }));
         const bar = expProgress(RULES, "companion", c.xp);
         const exp = bar.need === null ? "EXP สูงสุด" : `EXP ${bar.into.toLocaleString()}/${bar.need.toLocaleString()}`;
         const name = c.nickname ? `${c.nickname} (${sp?.name.th ?? c.speciesId})` : (sp?.name.th ?? c.speciesId);

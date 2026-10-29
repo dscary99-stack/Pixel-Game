@@ -6,6 +6,7 @@
  */
 import { CLASS1_DEFINITIONS, type AccountView, type SessionGrant } from "@pmrpg/shared";
 import { el, overlay } from "./character-ui";
+import { htmlSprite, uiKey } from "./ui-kit";
 import type { Identity } from "./identity";
 
 const TOKEN_KEY = "pmrpg.session";
@@ -90,7 +91,17 @@ export async function signInAndPick(base: string): Promise<Identity> {
 
 function signInForm(base: string): Promise<SessionGrant> {
   return new Promise((resolve) => {
-    const { panel, close } = overlay();
+    const { root, panel, close } = overlay();
+    // Codex's title scene (580×540) with its sparkle loop on top, left of the form on wide screens.
+    const scene = htmlSprite(uiKey.title("scene"));
+    const sparkles = htmlSprite(uiKey.title("sparkles"));
+    if (scene !== null) {
+      const title = el("div", { class: "pm-title" });
+      title.append(scene);
+      if (sparkles !== null) title.append(sparkles);
+      root.prepend(title);
+      panel.style.width = "min(400px, 100%)";
+    }
     panel.append(el("h2", {}, "เข้าสู่ระบบ"));
     panel.append(el("label", { for: "pm-login-id" }, "ID"));
     const id = el("input", { id: "pm-login-id", type: "text", maxlength: "24", autocomplete: "username" });

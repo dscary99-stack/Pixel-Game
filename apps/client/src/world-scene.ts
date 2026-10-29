@@ -147,6 +147,8 @@ export class WorldScene extends Phaser.Scene {
   /** The open menu group (GUI draft, screen 5): its frame and buttons, or null. */
   private groupMenu: { group: MenuIcon; parts: { destroy(): void }[] } | null = null;
   private autoHuntButton: UiButton | null = null;
+  private mailButton: UiButton | null = null;
+  private notices = { mail: false, quests: false };
   private notice!: Phaser.GameObjects.Text;
   /** The last Auto Hunt run's totals (chapter 08); tap to close. */
   private huntBox!: Phaser.GameObjects.Text;
@@ -223,7 +225,9 @@ export class WorldScene extends Phaser.Scene {
     if (this.api !== null) {
       // GUI draft screen 4: Auto Hunt and mail bottom-left, the five menu groups bottom-right (screen 5).
       this.autoHuntButton = new UiButton(this, 8, H - 56, 132, "ล่าอัตโนมัติ (H)", () => void this.toggleAutoHunt(), { fixed: true, depth: 100, fontSize: 13 });
-      new UiButton(this, 146, H - 56, 112, "จดหมาย (N)", () => void this.openMail(), { fixed: true, depth: 100, fontSize: 13 });
+      this.mailButton = new UiButton(this, 146, H - 56, 112, "จดหมาย (N)", () => void this.openMail(), { fixed: true, depth: 100, icon: uiKey.menu("mail") });
+      void this.refreshNotices();
+      this.time.addEvent({ delay: 30_000, loop: true, callback: () => void this.refreshNotices() });
       const groups: [MenuIcon, string][] = [
         ["character", "ตัวละคร"],
         ["companion", "คู่ใจ"],
@@ -627,18 +631,36 @@ export class WorldScene extends Phaser.Scene {
   }
 
   /** What each menu group opens (GUI draft screen 5); the keys still open them directly. */
-  private groupEntries(g: MenuIcon): [string, () => Promise<void>][] {
+  /** Each group's windows: label with its key, Codex's 24px window icon, and how to open it. */
+  private groupEntries(g: MenuIcon): [string, string, () => Promise<void>][] {
     switch (g) {
       case "character":
-        return [["สเตตัส (C)", () => this.openStats()], ["อุปกรณ์ (E)", () => this.openEquipment()], ["สกิลอาชีพ (X)", () => this.openSkillTree()], ["เปลี่ยนอาชีพ (I)", () => this.openClass()]];
+        return [["สเตตัส (C)", "stats", () => this.openStats()], ["อุปกรณ์ (E)", "equipment", () => this.openEquipment()], ["สกิลอาชีพ (X)", "skill_tree", () => this.openSkillTree()], ["เปลี่ยนอาชีพ (I)", "class", () => this.openClass()]];
       case "companion":
-        return [["ทีมคู่ใจ (T)", () => this.openTeam()], ["สกิลคู่ใจ (K)", () => this.openSkills()], ["จุติ (R)", () => this.openRebirth()]];
+        return [["ทีมคู่ใจ (T)", "team", () => this.openTeam()], ["สกิลคู่ใจ (K)", "companion_skills", () => this.openSkills()], ["จุติ (R)", "rebirth", () => this.openRebirth()]];
       case "inventory":
-        return [["ร้าน (B)", () => this.openShop()], ["อุปกรณ์ร้าน (U)", () => this.openArmory()], ["สร้างของ (F)", () => this.openCraft()], ["คลัง (V)", () => this.openVault()], ["จดหมาย (N)", () => this.openMail()], ["ตลาด (M)", () => this.openMarket()]];
+        return [["ร้าน (B)", "shop", () => this.openShop()], ["อุปกรณ์ร้าน (U)", "armory", () => this.openArmory()], ["สร้างของ (F)", "craft", () => this.openCraft()], ["คลัง (V)", "vault", () => this.openVault()], ["จดหมาย (N)", this.notices.mail ? "mail_new" : "mail", () => this.openMail()], ["ตลาด (M)", "market", () => this.openMarket()]];
       case "activities":
-        return [["เควส (Q)", () => this.openQuests()], ["งานสั่ง (O)", () => this.openOrders()], ["เควสลับ (L)", () => this.openSecretQuests()], ["หอคอย (G)", () => this.openFrontier()], ["ลานทดสอบ (Y)", () => this.openPractice()], ["ล่าอัตโนมัติ (H)", () => this.toggleAutoHunt()]];
+        return [["เควส (Q)", this.notices.quests ? "quests_new" : "quests", () => this.openQuests()], ["งานสั่ง (O)", "orders", () => this.openOrders()], ["เควสลับ (L)", "secret_quests", () => this.openSecretQuests()], ["หอคอย (G)", "tower", () => this.openFrontier()], ["ลานทดสอบ (Y)", "practice", () => this.openPractice()], ["ล่าอัตโนมัติ (H)", "auto_hunt", () => this.toggleAutoHunt()]];
       case "social":
-        return [["ปาร์ตี้ (P)", () => this.openParty()], ["สมุด/ฉายา (J)", () => this.openJournal()]];
+        return [["ปาร์ตี้ (P)", "party", () => this.openParty()], ["สมุด/ฉายา (J)", "journal", () => this.openJournal()]];
+    }
+  }
+
+  /**
+   * Unclaimed mail and quest rewards waiting: the mail button and the menu entries switch to Codex's
+   * animated "new" icons. A light read on load, every 30 s and after each window closes.
+   */
+  private async refreshNotices() {
+    if (this.api === null) return;
+    try {
+      const [mail, q] = await Promise.all([this.api.mail(), this.api.quests()]);
+      const ready = (b: { goals: { done: boolean; claimed: boolean }[]; claimsLeft: number; needs?: number }) =>
+        b.claimsLeft > 0 && (b.needs === undefined ? b.goals.some((x) => x.done && !x.claimed) : b.goals.filter((x) => x.done).length >= b.needs);
+      this.notices = { mail: mail.unclaimed > 0, quests: ready(q.daily) || ready(q.weekly) };
+      this.mailButton?.setIcon(uiKey.menu(this.notices.mail ? "mail_new" : "mail"));
+    } catch {
+      // The next refresh tries again.
     }
   }
 
@@ -656,12 +678,12 @@ export class WorldScene extends Phaser.Scene {
     const frame = uiPanel(this, left, top, w, h).setScrollFactor(0).setDepth(104).setInteractive();
     frame.on("pointerdown", (_p: Pointer, _x: number, _y: number, e: Phaser.Types.Input.EventData) => e.stopPropagation());
     const parts: { destroy(): void }[] = [frame];
-    entries.forEach(([label, open], i) => {
+    entries.forEach(([label, icon, open], i) => {
       parts.push(
         new UiButton(this, left + 10, top + 10 + i * 52, w - 20, label, () => {
           this.toggleGroup(g, x);
           void open();
-        }, { fixed: true, depth: 105, fontSize: 13 }),
+        }, { fixed: true, depth: 105, icon: uiKey.menu(icon) }),
       );
     });
     this.groupMenu = { group: g, parts };
@@ -708,6 +730,7 @@ export class WorldScene extends Phaser.Scene {
       this.flash(`เลเวลอัป! Lv${after} · ได้แต้มสเตตัส +${(after - before) * rules.provisional.statPointsPerLevel.value} (กด C)`);
     }
     this.refreshHud();
+    void this.refreshNotices();
   }
 
   /** Auto Hunt (C14): settings, then the server walks and fights until something stops it. */

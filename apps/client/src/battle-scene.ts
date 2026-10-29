@@ -9,7 +9,7 @@ import type { BattleTransport, Snapshot } from "./transport";
 import { savedAutoPolicy } from "./character-ui";
 import { capturePreview, pct2 } from "./capture-ui";
 import { fleePreview, refusalTh, reviveRefusal, skillButtonLine } from "./command-ui";
-import { UiBar, UiButton, loadUiKit, uiKey, uiPanel, type CommandIcon } from "./ui-kit";
+import { UiBar, UiButton, assetMeta, loadUiKit, reducedMotion, uiKey, uiPanel, uiSprite, type CommandIcon } from "./ui-kit";
 
 const CONTENT = exampleContentMaps();
 /** Display name for a loot line: item or equipment, falling back to the id. */
@@ -41,7 +41,17 @@ interface UnitView {
    * so ten enemies in two columns never stack text into the next cell.
    */
   sub: Phaser.GameObjects.Text;
-  ring: Phaser.GameObjects.Rectangle;
+  /** Codex target brackets (R2_HANDOFF §6): back under the body, front over it, arrow above the name. */
+  ringBack: Phaser.GameObjects.Sprite;
+  ringFront: Phaser.GameObjects.Sprite;
+  arrow: Phaser.GameObjects.Sprite;
+  ringKind: string | null;
+  element: Phaser.GameObjects.Image;
+  /** One 16px icon per active status under the HP bar, rebuilt when the set changes. */
+  statusIcons: Phaser.GameObjects.GameObject[];
+  statusKey: string;
+  ascBar: UiBar | null;
+  ascFull: Phaser.GameObjects.Sprite | null;
 }
 
 /** P36 warning window: shown this long before an untouched fight closes. */
@@ -63,6 +73,7 @@ export class BattleScene extends Phaser.Scene {
   private autoOn = false;
   private busy = false;
   private autoButton!: UiButton;
+  private ascendReady!: Phaser.GameObjects.Sprite;
 
   constructor() {
     super("battle");
@@ -131,6 +142,8 @@ export class BattleScene extends Phaser.Scene {
     ];
     // Eight kit buttons (icon + label) and Auto left of the log: 56px wide, 48px tall (P10 touch target height).
     buttons.forEach(([label, icon, fn], i) => new UiButton(this, 16 + i * 60, 470, 56, label, fn, { icon: uiKey.command(icon) }));
+    // Glows round จุติ while the acting unit's gauge is full (R2 ready frame, on the 56×48 button bounds).
+    this.ascendReady = uiSprite(this, 16 + 7 * 60, 470, uiKey.ready("ascend")).setVisible(false).setDepth(5);
     this.autoButton = new UiButton(this, 16 + buttons.length * 60, 470, 72, "Auto: ปิด", () => this.toggleAuto(), { icon: uiKey.command("auto") });
 
     // Auto only runs while this page is open and visible (C14: no offline farming).
@@ -505,11 +518,15 @@ export class BattleScene extends Phaser.Scene {
       case "ActionResolved": {
         const via = e.skillId === null ? "" : ` [${CONTENT.skills.get(e.skillId)?.name.th ?? e.skillId}]`;
         if (e.damage !== null && e.targetId) {
-          this.popup(e.targetId, e.hit ? `${e.damage}${e.crit ? "!" : ""}` : "พลาด", e.crit ? "#ffd84a" : "#ffffff");
+          if (e.hit) {
+            this.hitEffect(e.targetId, this.attackElement(e.actorId, e.skillId));
+            this.numberPopup(e.targetId, `${e.damage}`, e.crit ? "crit" : "damage", e.crit ? "critical" : undefined);
+          } else this.wordPopup(e.targetId, "miss");
           return this.pushLog(`${this.name(e.actorId)}${via} → ${this.name(e.targetId)}: ${e.hit ? e.damage : "พลาด"}${e.crit ? " (คริ)" : ""}`);
         }
         if (e.heal !== null && e.targetId) {
-          this.popup(e.targetId, `+${e.heal}`, "#7dff9b");
+          this.hitEffect(e.targetId, null);
+          this.numberPopup(e.targetId, `+${e.heal}`, "heal");
           return this.pushLog(`${this.name(e.actorId)}${via} ฟื้น ${this.name(e.targetId)} +${e.heal}`);
         }
         if (e.action === "guard") return this.pushLog(`${this.name(e.actorId)} ป้องกัน`);
@@ -573,7 +590,7 @@ export class BattleScene extends Phaser.Scene {
         return this.pushLog(`${who} หาย${th}`);
       }
       case "StatusTick":
-        this.popup(e.unitId, e.hp < 0 ? `${-e.hp}` : `+${e.hp}`, e.hp < 0 ? "#c58cff" : "#7dff9b");
+        this.numberPopup(e.unitId, e.hp < 0 ? `${-e.hp}` : `+${e.hp}`, e.hp < 0 ? "damage" : "heal");
         return this.pushLog(`${this.name(e.unitId)} ${STATUS_DEFINITIONS[e.statusId].th} ${e.hp < 0 ? e.hp : `+${e.hp}`}`);
       case "ActionRedirected":
         return this.pushLog(`${this.name(e.actorId)} ${STATUS_DEFINITIONS[e.statusId].th} หันไปทำใส่ ${this.name(e.toId)} แทน ${this.name(e.fromId)}`);
@@ -589,10 +606,10 @@ export class BattleScene extends Phaser.Scene {
       }
       case "ShieldChanged":
         if (e.change === "gained") {
-          this.popup(e.unitId, `โล่ ${e.amount}`, "#9fd8ff");
+          this.numberPopup(e.unitId, `+${e.amount}`, "shield");
           return this.pushLog(`${this.name(e.unitId)} ได้โล่ ${e.amount}`);
         }
-        this.popup(e.unitId, `โล่ −${e.amount}`, "#9fd8ff");
+        this.numberPopup(e.unitId, `-${e.amount}`, "shield");
         return this.pushLog(`${this.name(e.unitId)} โล่รับ ${e.amount}${e.change === "broken" ? " (แตก)" : ` เหลือ ${e.shieldLeft}`}`);
       case "TurnSkipped":
         return this.pushLog(`${this.name(e.unitId)} ${STATUS_DEFINITIONS[e.statusId].th} ข้ามเทิร์น`);
@@ -615,7 +632,13 @@ export class BattleScene extends Phaser.Scene {
       let v = this.views.get(u.unitId);
       // A tower enemy whose cell a reinforcement took: its body leaves the field.
       if (u.replacedBy !== undefined) {
-        if (v !== undefined) for (const o of [v.body, v.hpBar, v.label, v.ring, v.sub]) o.setVisible(false);
+        if (v !== undefined) {
+          for (const o of [v.body, v.hpBar, v.label, v.ringBack, v.ringFront, v.arrow, v.sub, v.element]) o.setVisible(false);
+          for (const o of v.statusIcons) o.destroy();
+          v.statusIcons = [];
+          v.ascBar?.setVisible(false);
+          v.ascFull?.setVisible(false);
+        }
         continue;
       }
       // Enemies are drawn a little shorter so a full row of five (tower floors: ten) stays readable.
@@ -625,6 +648,8 @@ export class BattleScene extends Phaser.Scene {
       const compact = enemy || partyFight;
       const bh = compact ? 36 : 56;
       if (!v) {
+        // Created before the body so it draws underneath it.
+        const ringBack = uiSprite(this, x - 30, y - bh / 2 - 6, uiKey.target("selected", "back")).setVisible(false);
         const body = this.add.rectangle(x, y, 48, bh, ELEMENT_COLOR[u.element]).setStrokeStyle(3, 0x0b0a12).setInteractive({ useHandCursor: true });
         body.on("pointerdown", () => {
           // Enemies for attacks and enemy skills; allies for heals, buffs and shields.
@@ -634,7 +659,9 @@ export class BattleScene extends Phaser.Scene {
         });
         if (u.cosmetic !== undefined) this.drawCosmetic(body, u.cosmetic);
         if (u.fashion !== undefined) this.drawFashion(body, u.fashion);
-        const ring = this.add.rectangle(x, y, 60, bh + 12).setStrokeStyle(2, 0xffffff).setVisible(false);
+        const ringFront = uiSprite(this, x - 30, y + bh / 2 - 10, uiKey.target("selected", "front")).setVisible(false);
+        const arrow = uiSprite(this, x - 30, y - bh / 2 - 40, uiKey.arrow).setVisible(false);
+        const element = this.add.image(0, 0, uiKey.element(u.element)).setOrigin(1, 1);
         const hpBar = new UiBar(this, x - 26, y + bh / 2 + 8, 52, enemy ? "hp_enemy" : "hp_ally", 4);
         // Bottom-anchored so a second line (statuses) grows upwards.
         const label = this.add.text(x, y - bh / 2 - 9, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#ffffff", align: "center" }).setOrigin(0.5, 1);
@@ -642,15 +669,31 @@ export class BattleScene extends Phaser.Scene {
           ? this.add.text(x + 30, y, "", { fontFamily: "sans-serif", fontSize: "10px", color: "#ffd84a", wordWrap: { width: u.row === "front" ? 96 : 140 } }).setOrigin(0, 0.5)
           : partyFight
             ? this.add.text(x - 30, y, "", { fontFamily: "sans-serif", fontSize: "10px", color: "#ffd84a", align: "right", wordWrap: { width: 80 } }).setOrigin(1, 0.5)
-          : this.add.text(x, y + bh / 2 + 14, "", { fontFamily: "sans-serif", fontSize: "11px", color: "#ffd84a", align: "center" }).setOrigin(0.5, 0);
-        v = { body, hpBar, label, ring, sub };
+          : this.add.text(x, y + bh / 2 + 32, "", { fontFamily: "sans-serif", fontSize: "11px", color: "#ffd84a", align: "center" }).setOrigin(0.5, 0);
+        v = { body, hpBar, label, sub, ringBack, ringFront, arrow, ringKind: null, element, statusIcons: [], statusKey: "", ascBar: null, ascFull: null };
         this.views.set(u.unitId, v);
       }
       v.body.setPosition(x, y).setAlpha(u.ko || u.retired ? 0.25 : 1);
-      v.ring.setPosition(x, y).setVisible(u.unitId === this.snap.actor || u.unitId === this.selectedTarget);
-      v.ring.setStrokeStyle(2, u.unitId === this.snap.actor ? 0x7dff9b : 0xff6b6b);
       v.hpBar.setPosition(x - 26, y + bh / 2 + 8).set(u.hp, u.stats.maxHp);
-      const tags = (u.statuses ?? []).map((st) => `${STATUS_DEFINITIONS[st.statusId].th}${st.turnsLeft}`).join(" ");
+      // Whose turn it is outranks the picked target; the arrow always marks the picked target.
+      const ring = state.status !== "active" ? null : u.unitId === this.snap.actor ? (enemy ? "turn_enemy" : "turn_ally") : u.unitId === this.selectedTarget ? "selected" : null;
+      this.setRing(v, ring as "selected" | "turn_ally" | "turn_enemy" | null, x, y, bh, state.status === "active" && u.unitId === this.selectedTarget);
+      // Divine awakening gauge under the HP bar, sparkling once full (P31).
+      let below = y + bh / 2 + 12;
+      if (u.awakening !== undefined && !u.ko) {
+        const max = DEV_FIXTURE_RULES.provisional.ascension.value.gaugeMax;
+        v.ascBar ??= new UiBar(this, x - 26, below + 2, 52, "ascend", 4);
+        v.ascBar.setPosition(x - 26, below + 2).set(u.awakening.gauge, max).setVisible(true);
+        const full = u.awakening.gauge >= max && !u.awakening.used;
+        if (full && v.ascFull === null) v.ascFull = uiSprite(this, x - 26, below, uiKey.ascendFull(4)).setCrop(0, 0, 52, 4);
+        v.ascFull?.setPosition(x - 26, below).setVisible(full);
+        below += 8;
+      } else {
+        v.ascBar?.setVisible(false);
+        v.ascFull?.setVisible(false);
+      }
+      this.drawStatuses(v, u, x, below);
+      const tags = "";
       // An elite leader says so, with its modifiers (chapter 07 §3), readable without colour.
       const elite = u.elite === undefined ? "" : `★ชั้นยอด\n${u.elite.modifiers.map((m) => ELITE_MODIFIER_TH[m].name).join(", ")}${u.elite.counterOn !== null ? " ⚠สวน!" : ""}`;
       // A tower reinforcement says so (it took a fallen enemy's cell this fight).
@@ -667,9 +710,17 @@ export class BattleScene extends Phaser.Scene {
         v.sub.setPosition(x - 30, y).setText([tags, elite].filter(Boolean).join("\n"));
         v.label.setPosition(x, y - bh / 2 - 9).setText(name).setColor((u.controllerId ?? state.ownerAccountId) === this.snap.you ? "#f2c94c" : "#ffffff");
       } else {
-        v.sub.setPosition(x, y + bh / 2 + 14).setText([elite, reinforcement].filter(Boolean).join("\n"));
+        v.sub.setPosition(x, below + (v.statusIcons.length > 0 ? 18 : 2)).setText([elite, reinforcement].filter(Boolean).join("\n"));
         v.label.setPosition(x, y - bh / 2 - 9).setText(`${name}${tags ? `\n${tags}` : ""}`);
       }
+    }
+    for (const u of state.units) {
+      const v = this.views.get(u.unitId);
+      if (v === undefined || u.replacedBy !== undefined) continue;
+      // The element icon sits left of the name's last line; the arrow rides above the name.
+      const b = v.label.getBounds();
+      v.element.setPosition(b.left - 2, b.bottom - 1).setVisible(u.part === undefined).setAlpha(u.ko || u.retired ? 0.4 : 1);
+      v.arrow.setPosition(v.body.x - 30, b.top - 20);
     }
     const actor = this.snap.actor ? this.unit(this.snap.actor) : undefined;
     // Boss fights: the phase, and a warned move with what answers it (chapter 07 §5, readable without colour).
@@ -712,6 +763,8 @@ export class BattleScene extends Phaser.Scene {
       state.status === "active" ? `รอบ ${state.round} · ตาของ ${actor?.name ?? "-"}${waiting} · แตะศัตรูเพื่อเลือกเป้า` : `จบไฟต์: ${OUTCOME_TH[state.status]}`,
     );
     this.infoText.setText(`${party}${tower}${bossLine}`.replace(/^\n/, ""));
+    const aw = actor?.awakening;
+    this.ascendReady?.setVisible(state.status === "active" && aw !== undefined && !aw.used && aw.turnsLeft === 0 && aw.gauge >= DEV_FIXTURE_RULES.provisional.ascension.value.gaugeMax && this.myTurn());
     if (state.status !== "active" && this.resultUi === null && !this.watching) this.showResult(state);
   }
 
@@ -866,6 +919,77 @@ export class BattleScene extends Phaser.Scene {
     if (u.side === "ally") return this.snap.state.members !== undefined ? { x: u.row === "front" ? 360 : 230, y: 118 + u.slot * 76 } : { x: u.row === "front" ? 330 : 210, y: 150 + u.slot * 100 };
     // Five cells a row, spaced so ten enemies (tower floors) keep their names and bars apart.
     return { x: u.row === "front" ? 600 : 760, y: 118 + u.slot * 76 };
+  }
+
+  /** Swaps a unit's target brackets (selected / whose turn) and keeps back and front on the same frame. */
+  private setRing(v: UnitView, kind: "selected" | "turn_ally" | "turn_enemy" | null, x: number, y: number, bh: number, picked: boolean) {
+    v.ringBack.setPosition(x - 30, y - bh / 2 - 6).setVisible(kind !== null);
+    v.ringFront.setPosition(x - 30, y + bh / 2 - 10).setVisible(kind !== null);
+    v.arrow.setVisible(picked);
+    if (picked && !reducedMotion && !v.arrow.anims.isPlaying && this.anims.exists(`${uiKey.arrow}#loop`)) v.arrow.play(`${uiKey.arrow}#loop`);
+    if (kind === null || kind === v.ringKind) return;
+    v.ringKind = kind;
+    for (const [o, part] of [[v.ringBack, "back"], [v.ringFront, "front"]] as const) {
+      const k = uiKey.target(kind, part);
+      o.setTexture(k, 0);
+      if (!reducedMotion && this.anims.exists(`${k}#loop`)) o.play(`${k}#loop`);
+    }
+  }
+
+  /** A row of status icons (16px, Codex R2) with turns left, four a row, under the HP bar. */
+  private drawStatuses(v: UnitView, u: BattleUnit, x: number, top: number) {
+    const list = (u.statuses ?? []).filter((st) => assetMeta(uiKey.status(st.statusId)) !== undefined);
+    const k = `${top}|${list.map((st) => `${st.statusId}${st.turnsLeft}`).join(",")}`;
+    if (k === v.statusKey) return;
+    v.statusKey = k;
+    for (const o of v.statusIcons) o.destroy();
+    v.statusIcons = [];
+    list.slice(0, 4).forEach((st, i) => {
+      const ix = x - 34 + i * 17;
+      v.statusIcons.push(uiSprite(this, ix, top, uiKey.status(st.statusId)));
+      if (st.turnsLeft > 0) v.statusIcons.push(this.add.text(ix + 17, top + 17, `${st.turnsLeft}`, { fontFamily: "sans-serif", fontSize: "9px", color: "#ffffff", stroke: "#000000", strokeThickness: 2 }).setOrigin(1, 1));
+    });
+    if (list.length > 4) v.statusIcons.push(this.add.text(x + 36, top + 8, `+${list.length - 4}`, { fontFamily: "sans-serif", fontSize: "10px", color: "#ffd84a" }).setOrigin(0, 0.5));
+  }
+
+  /** The element a hit lands with: its skill's damage element (or the user's own), else the attacker's. */
+  private attackElement(actorId: string, skillId: string | null): Element {
+    const actor = this.unit(actorId);
+    const dmg = skillId === null ? undefined : CONTENT.skills.get(skillId)?.effectSequence.find((f) => f.kind === "damage");
+    if (dmg !== undefined && dmg.kind === "damage" && dmg.ownElement !== true) return dmg.element;
+    return actor?.element ?? "NEUTRAL";
+  }
+
+  /** Codex's one-shot hit (per element) or heal burst over the body; gone when it ends. */
+  private hitEffect(unitId: string, element: Element | null) {
+    const v = this.views.get(unitId);
+    if (v === undefined || reducedMotion) return;
+    const s = uiSprite(this, v.body.x - 16, v.body.y - 16, element === null ? uiKey.heal : uiKey.hit(element)).setDepth(20);
+    s.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => s.destroy());
+    if (!s.anims.isPlaying) s.destroy();
+  }
+
+  /**
+   * Damage / crit / heal / shield numbers from Codex's glyph sheets: every glyph plays the same pop on
+   * the same clock (R2_HANDOFF §5), 12px apart, then the whole number floats up and fades.
+   */
+  private numberPopup(unitId: string, text: string, kind: "damage" | "crit" | "heal" | "shield", word?: "critical") {
+    const v = this.views.get(unitId);
+    if (v === undefined) return;
+    const glyphs = [...text].filter((c) => /[0-9+-]/.test(c));
+    const w = glyphs.length * 12 + 4;
+    const c = this.add.container(v.body.x - w / 2, v.body.y - 30).setDepth(21);
+    glyphs.forEach((g, i) => c.add(uiSprite(this, i * 12, 0, uiKey.number(kind, g))));
+    if (word !== undefined) c.add(uiSprite(this, w / 2 - 15, -22, uiKey.popup(word)));
+    this.tweens.add({ targets: c, y: c.y - 30, alpha: { from: 1, to: 0 }, delay: 350, duration: 650, onComplete: () => c.destroy(true) });
+  }
+
+  /** A missed hit or a dodge, as Codex's word sprite. */
+  private wordPopup(unitId: string, word: "miss" | "dodge") {
+    const v = this.views.get(unitId);
+    if (v === undefined) return;
+    const s = uiSprite(this, v.body.x - 22, v.body.y - 30, uiKey.popup(word)).setDepth(21);
+    this.tweens.add({ targets: s, y: s.y - 30, alpha: { from: 1, to: 0 }, delay: 350, duration: 650, onComplete: () => s.destroy() });
   }
 
   private popup(unitId: string, text: string, color: string) {

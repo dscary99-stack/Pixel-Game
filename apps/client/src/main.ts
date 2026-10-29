@@ -6,6 +6,7 @@ import { createCharacterForm } from "./character-ui";
 import { devIdentity, type Identity } from "./identity";
 import { signInAndPick } from "./login-ui";
 import { HttpTransport, LocalPreviewTransport, type BattleTransport } from "./transport";
+import { loadAssetRegistry } from "./ui-kit";
 import { WorldScene } from "./world-scene";
 import { LocalWorldTransport, ServerWorldTransport } from "./world-transport";
 
@@ -26,6 +27,9 @@ const game = new Phaser.Game({
 
 // Dev builds expose the game so browser checks can find things on screen.
 if (import.meta.env.DEV) (window as unknown as { __game: Phaser.Game }).__game = game;
+
+// Every scene preloads from the asset metadata, so it is read before the first scene is added.
+await loadAssetRegistry();
 
 if (params.has("battle")) {
   // Each battle page load is a fresh dev account: an account with an unfinished battle cannot start
