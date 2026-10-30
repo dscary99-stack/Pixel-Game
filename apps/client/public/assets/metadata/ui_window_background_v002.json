@@ -1,0 +1,48 @@
+{
+  "assetId": "ui:window:background",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_window_background_v002.png",
+  "frameWidth": 48,
+  "frameHeight": 48,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "fill",
+  "nineSlice": null,
+  "paletteVariants": [],
+  "nativeSize": [
+    48,
+    48
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      48,
+      48
+    ]
+  ],
+  "productionApproved": false,
+  "resize": "nearest-stretch",
+  "sha256": "452ac7f9c55074558e2178ee32b40faa85cf25858492abc816a668a52f07235e",
+  "staticFrame": 0,
+  "sourceMaster": "native authored rounded bevels in build.py",
+  "framing": null
+}

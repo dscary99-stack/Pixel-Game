@@ -1,0 +1,68 @@
+{
+  "assetId": "ui_target_turn_ally_back",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_target_turn_ally_back_v002.png",
+  "frameWidth": 60,
+  "frameHeight": 16,
+  "columns": 6,
+  "rows": 1,
+  "frameCount": 6,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "loop",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fps": 10,
+      "loop": true
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "target",
+  "nineSlice": null,
+  "nativeSize": [
+    60,
+    16
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      60,
+      16
+    ]
+  ],
+  "completion": "repeat",
+  "sha256": "a260d4af3959cd73fa07f6a0b3d7583b56a977b38c53e75fe66514b972ea280b",
+  "assembly": "split_vertical",
+  "part": "back",
+  "attachment": "actor-top-6",
+  "pair": "ui_target_turn_ally",
+  "phaseSync": true,
+  "layoutWidth": 60,
+  "noStretch": true,
+  "sourceMaster": "native authored motion in extras.py",
+  "framing": null
+}

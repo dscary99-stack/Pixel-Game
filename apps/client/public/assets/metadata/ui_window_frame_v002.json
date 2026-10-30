@@ -1,0 +1,54 @@
+{
+  "assetId": "ui:window:frame",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_window_frame_v002.png",
+  "frameWidth": 48,
+  "frameHeight": 48,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "nine_slice",
+  "nineSlice": {
+    "left": 16,
+    "right": 16,
+    "top": 16,
+    "bottom": 16,
+    "minWidth": 33,
+    "minHeight": 33
+  },
+  "paletteVariants": [],
+  "nativeSize": [
+    48,
+    48
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      48,
+      48
+    ]
+  ],
+  "productionApproved": false,
+  "sha256": "ccd0d12cd4e3687e11a31da090fa2a4027bc1e9f840a4c9c747931acef00cce5",
+  "staticFrame": 0,
+  "sourceMaster": "native authored rounded bevels in build.py",
+  "framing": null
+}

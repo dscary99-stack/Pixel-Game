@@ -1,0 +1,63 @@
+{
+  "assetId": "ui_target_arrow",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_target_arrow_v002.png",
+  "frameWidth": 60,
+  "frameHeight": 20,
+  "columns": 6,
+  "rows": 1,
+  "frameCount": 6,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "loop",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fps": 10,
+      "loop": true
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "target",
+  "nineSlice": null,
+  "nativeSize": [
+    60,
+    20
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      60,
+      20
+    ]
+  ],
+  "completion": "repeat",
+  "sha256": "c9d784c7023f1b365b4eb1912151e5e5acb405752072995cbe6c3f5fb0ca7357",
+  "attachment": "actor-top-20",
+  "noStretch": true,
+  "sourceMaster": "native authored motion in extras.py",
+  "framing": null
+}

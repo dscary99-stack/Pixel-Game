@@ -1,0 +1,61 @@
+{
+  "assetId": "ui_element_water_loop",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_element_water_loop_v002.png",
+  "frameWidth": 16,
+  "frameHeight": 16,
+  "columns": 4,
+  "rows": 1,
+  "frameCount": 4,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "loop",
+      "frames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "fps": 8,
+      "loop": true
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "element",
+  "nineSlice": null,
+  "nativeSize": [
+    16,
+    16
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      16,
+      16
+    ]
+  ],
+  "completion": "repeat",
+  "sha256": "e4a9b0ee8baaa986c1cea68afe10f4a3888779cc900bf2e4a3e9b3417e27bb6f",
+  "contentId": "WATER",
+  "staticAsset": "ui_element_water",
+  "sourceMaster": "illustrated master family water; native modifiers in extras.py",
+  "framing": null
+}

@@ -1,0 +1,65 @@
+{
+  "assetId": "ui_status_taunt",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_status_taunt_v002.png",
+  "frameWidth": 16,
+  "frameHeight": 16,
+  "columns": 4,
+  "rows": 1,
+  "frameCount": 4,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "loop",
+      "frames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "fps": 8,
+      "loop": true
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "status",
+  "nineSlice": null,
+  "nativeSize": [
+    16,
+    16
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      16,
+      16
+    ]
+  ],
+  "completion": "repeat",
+  "sha256": "ded355cb87f7b6fab3a9cc52dc9239c53e7375d1c618d7f6b9f8ae188e776e94",
+  "contentId": "taunt",
+  "harmful": true,
+  "category": "control",
+  "motif": "mouth",
+  "polarityBadge": "minus",
+  "motion": "stable readable glyph; subtle 1px travelling glint",
+  "sourceMaster": "illustrated master family mouth; native modifiers in extras.py",
+  "framing": null
+}

@@ -1,0 +1,61 @@
+{
+  "assetId": "ui_element_earth_loop",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_element_earth_loop_v002.png",
+  "frameWidth": 16,
+  "frameHeight": 16,
+  "columns": 4,
+  "rows": 1,
+  "frameCount": 4,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "loop",
+      "frames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "fps": 8,
+      "loop": true
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "element",
+  "nineSlice": null,
+  "nativeSize": [
+    16,
+    16
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      16,
+      16
+    ]
+  ],
+  "completion": "repeat",
+  "sha256": "90e58d0a11de8ce7523e25901792f1613e8f9b1f531cf6ba7dc1d70606804b94",
+  "contentId": "EARTH",
+  "staticAsset": "ui_element_earth",
+  "sourceMaster": "illustrated master family earth; native modifiers in extras.py",
+  "framing": null
+}

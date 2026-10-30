@@ -1,0 +1,83 @@
+{
+  "assetId": "ui_hit_earth",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_hit_earth_v002.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 6,
+  "rows": 1,
+  "frameCount": 6,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "play",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fps": 10,
+      "loop": false
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "hit",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hide",
+  "sha256": "1a6aaa3d4b2a225a0e1502443224e99275a43db00d389ab309b12dc4a4da881c",
+  "element": "EARTH",
+  "contactFrame": 1,
+  "attachment": [
+    16,
+    16
+  ],
+  "sourceMaster": "earth-sheet-master.png",
+  "framing": {
+    "sourceGrid": [
+      3,
+      2
+    ],
+    "fixedCrop": [
+      0,
+      24,
+      512,
+      504
+    ],
+    "fixedOffset": [
+      1,
+      2
+    ],
+    "scale": 0.05859375
+  }
+}

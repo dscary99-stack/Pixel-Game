@@ -1,0 +1,48 @@
+{
+  "assetId": "ui_menu_mail",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_menu_mail_v002.png",
+  "frameWidth": 24,
+  "frameHeight": 24,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "menu",
+  "nineSlice": null,
+  "nativeSize": [
+    24,
+    24
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      24,
+      24
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "fe536b35a022b420c80bffb0403244ede9f7d9ba0914796afd4d396f5a38b253",
+  "contentId": "mail",
+  "sourceMaster": "illustrated master family mail; native modifiers in extras.py",
+  "framing": null
+}

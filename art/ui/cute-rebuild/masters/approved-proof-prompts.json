@@ -1,0 +1,21 @@
+{
+  "tool": "built-in imagegen",
+  "status": "needs_review",
+  "prompts": [
+    [
+      "potion",
+      "potion-master.png",
+      "Restyle the reference health potion into a distinctly CUTER cozy fantasy RPG pixel-art item, preserving its dimensional glass, red potion and gold material quality. Make silhouette short, plump and round, oversized softly rounded cork, stubby neck, chunky aqua glass rim. Strawberry/coral pink-red potion, bright mint-aqua glass, warm honey-gold collar, small heart-shaped ruby charm on a simple ribbon. Simplify tiny noisy texture into larger readable square clusters; charming chibi proportions. Glossy cream highlights, softly colored lavender-indigo shadow clusters, deep navy outlines. Keep real volume and 3-4 material values, not a flat pictogram. No face or eyes on bottle, no text, no medallion, no frame, no background. Transparent background, crisp square pixel art not smooth vector, no anti-alias blur. Single centered bottle safely inside square canvas with 12% margins. Visual direction proof, cute SNES fantasy inventory style."
+    ],
+    [
+      "skill",
+      "fire-skill-master.png",
+      "Restyle reference flaming sword skill icon into CUTER cozy fantasy RPG pixel art. Preserve recognizability as an actual steel sword with material shading, but make a short chubby chibi sword, broad stubby blade with gentle rounded-point silhouette, small thick gold guard with curled ends, compact lavender leather grip and round red jewel pommel. Less intimidating, toy-like heroic proportions without becoming a flat symbol. Fire ribbon is peach/coral orange, honey yellow and warm cream, rounded curling flame lobes and 2 tiny star sparks, not violent sharp tongues or huge explosion. Mint-silver metal face with lavender shadows, deep indigo thin pixel outline, strong clustered highlights. Consistent clearly visible chunky square pixels, restrained detail that reads small, no gradients or soft glow. Transparent background. Center entire icon with 12% safe margins; sword bottom-left to top-right. No faces, words, UI border or medallion."
+    ],
+    [
+      "fire",
+      "fire-sheet-master.png",
+      "Restyle this exact SIX-cel fire impact animation sheet to CUTER cozy fantasy RPG pixel art. Keep 1536x1024 layout of3 columns x2 rows, each512x512, exactly six cels read left-to-right top-to-bottom, consistent center at each cell center. Redesign fire shapes as soft ROUND PUFFS and rounded curling lobes with peach-coral edges, honey orange body, buttery yellow and cream cores, thin dark mauve pixel edge. Cute magical pop, not aggressive pointed explosion, no face. Frame1 small plump curled fire puff; frame2 rounded contact pop with tiny cream core; frame3 larger soft flower-like burst with 5 rounded curling lobes; frame4 puff opens into separated rounded little flame curls; frame5 only a few small warm curls and tiny star-shaped sparks drifting outward; frame6 four tiny dying gold/coral sparks. Crisp hand-placed square pixel clusters and stepped edges, same pixel size across all cells, NO soft glow/haze/airbrush/gradient. True transparent outside crisp clusters, preserve 15% clear margins within cells. One coherent animation with clear growth and dissipation, no text, no frames, no checkerboard background."
+    ]
+  ]
+}

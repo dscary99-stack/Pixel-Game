@@ -1,0 +1,66 @@
+{
+  "assetId": "item_phoenix_feather",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/items/item_phoenix_feather_v002.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "item",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "da6ba3fa61ac7316faf89363269450340ad84f8b0c266098e91d5fedde3a7244",
+  "contentId": "item:phoenix_feather",
+  "contentGroup": "items",
+  "motif": "feather",
+  "sourceMaster": "feather-master.png",
+  "framing": {
+    "sourceGrid": [
+      1,
+      1
+    ],
+    "fixedCrop": [
+      206,
+      101,
+      1173,
+      1173
+    ],
+    "fixedOffset": [
+      2,
+      1
+    ],
+    "scale": 0.027985074626865673
+  }
+}

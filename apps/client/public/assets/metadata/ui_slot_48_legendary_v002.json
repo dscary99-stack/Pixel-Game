@@ -1,0 +1,59 @@
+{
+  "assetId": "ui:slot:48_legendary",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_slot_48_legendary_v002.png",
+  "frameWidth": 48,
+  "frameHeight": 48,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "slot",
+  "nineSlice": null,
+  "paletteVariants": [],
+  "nativeSize": [
+    48,
+    48
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      48,
+      48
+    ]
+  ],
+  "productionApproved": false,
+  "rarity": "LEGENDARY",
+  "contentRect": [
+    8,
+    8,
+    32,
+    32
+  ],
+  "lockOffset": [
+    30,
+    30
+  ],
+  "quantityText": "runtime-bottom-right; move when locked",
+  "sha256": "cbd7e771ccf57b3bdce29859ce55dcfa9098fe332ecfa48e7c402b4c1223d820",
+  "staticFrame": 0,
+  "sourceMaster": "native authored rounded bevels in build.py",
+  "framing": null
+}

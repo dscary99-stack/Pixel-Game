@@ -1,0 +1,59 @@
+{
+  "assetId": "ui:slot:64_common",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_slot_64_common_v002.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "slot",
+  "nineSlice": null,
+  "paletteVariants": [],
+  "nativeSize": [
+    64,
+    64
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      64,
+      64
+    ]
+  ],
+  "productionApproved": false,
+  "rarity": "COMMON",
+  "contentRect": [
+    8,
+    8,
+    48,
+    48
+  ],
+  "lockOffset": [
+    46,
+    46
+  ],
+  "quantityText": "runtime-bottom-right; move when locked",
+  "sha256": "2f49e6a6098a0cb35b8e8893bec9aad05bbb73e45414092e62e93f7a54264580",
+  "staticFrame": 0,
+  "sourceMaster": "native authored rounded bevels in build.py",
+  "framing": null
+}

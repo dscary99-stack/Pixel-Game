@@ -1,0 +1,50 @@
+{
+  "assetId": "item_shop_sword_30",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/items/item_shop_sword_30_v002.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "item",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "ee1321998e654939541f892fec4b16663559e99f4c78aeacc58f16193dd4a40e",
+  "contentId": "equip:shop_sword_30",
+  "contentGroup": "equipment",
+  "motif": "sword",
+  "sourceMaster": "illustrated master family sword; native modifiers in extras.py",
+  "framing": null
+}

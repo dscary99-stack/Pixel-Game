@@ -1,0 +1,48 @@
+{
+  "assetId": "ui_race_wildkin",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_race_wildkin_v002.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "race",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "f1322d8282c0a612af0b36578899d55ab9fd54786d368b8542b6245c7b97cd82",
+  "contentId": "wildkin",
+  "sourceMaster": "illustrated master family paw; native modifiers in extras.py",
+  "framing": null
+}

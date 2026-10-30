@@ -1,0 +1,50 @@
+{
+  "assetId": "item_refine_stone_t1",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/items/item_refine_stone_t1_v002.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "item",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "5625ad698c4e22e12fe82e24faa3bd4ce61e5251977e163da6bdb60e18d17f4e",
+  "contentId": "item:refine_stone_t1",
+  "contentGroup": "items",
+  "motif": "rock",
+  "sourceMaster": "illustrated master family stone; native modifiers in extras.py",
+  "framing": null
+}

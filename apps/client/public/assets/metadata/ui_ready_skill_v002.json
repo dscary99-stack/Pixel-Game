@@ -1,0 +1,63 @@
+{
+  "assetId": "ui_ready_skill",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_ready_skill_v002.png",
+  "frameWidth": 56,
+  "frameHeight": 48,
+  "columns": 6,
+  "rows": 1,
+  "frameCount": 6,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "loop",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fps": 10,
+      "loop": true
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "overlay",
+  "nineSlice": null,
+  "nativeSize": [
+    56,
+    48
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      56,
+      48
+    ]
+  ],
+  "completion": "repeat",
+  "sha256": "b44dc8f9da9d1aa3750d77ddb80b81fc88c9f610377820e39427031fc328d80a",
+  "attachment": "56x48 command bounds; above button below label",
+  "noStretch": true,
+  "sourceMaster": "native authored motion in extras.py",
+  "framing": null
+}

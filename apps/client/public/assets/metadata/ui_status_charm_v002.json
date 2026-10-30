@@ -1,0 +1,65 @@
+{
+  "assetId": "ui_status_charm",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_status_charm_v002.png",
+  "frameWidth": 16,
+  "frameHeight": 16,
+  "columns": 4,
+  "rows": 1,
+  "frameCount": 4,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "loop",
+      "frames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "fps": 8,
+      "loop": true
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "status",
+  "nineSlice": null,
+  "nativeSize": [
+    16,
+    16
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      16,
+      16
+    ]
+  ],
+  "completion": "repeat",
+  "sha256": "b18e3d730f6a2d9f7e0fbe9ba51fd12016c85966c3e0ae0ae6a8a4f8c5f8fbd9",
+  "contentId": "charm",
+  "harmful": true,
+  "category": "control",
+  "motif": "heart",
+  "polarityBadge": "minus",
+  "motion": "stable readable glyph; subtle 1px travelling glint",
+  "sourceMaster": "illustrated master family heart; native modifiers in extras.py",
+  "framing": null
+}

@@ -1,0 +1,69 @@
+{
+  "assetId": "ui:command:capture",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_command_capture_v002.png",
+  "frameWidth": 24,
+  "frameHeight": 24,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "icon",
+  "nineSlice": null,
+  "paletteVariants": [],
+  "nativeSize": [
+    24,
+    24
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      24,
+      24
+    ]
+  ],
+  "productionApproved": false,
+  "semantic": "capture",
+  "hitArea": [
+    48,
+    48
+  ],
+  "text": "runtime",
+  "sha256": "a4a52c9fd8af41ea28ec5b88854c762bfdfb8a4efb8aa16610ff1e191fa53bcb",
+  "staticFrame": 0,
+  "sourceMaster": "crystal-master.png",
+  "framing": {
+    "sourceGrid": [
+      1,
+      1
+    ],
+    "fixedCrop": [
+      226,
+      125,
+      1026,
+      1163
+    ],
+    "fixedOffset": [
+      3,
+      1
+    ],
+    "scale": 0.02119460500963391
+  }
+}

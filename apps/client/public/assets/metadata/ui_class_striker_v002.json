@@ -1,0 +1,48 @@
+{
+  "assetId": "ui_class_striker",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_class_striker_v002.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "class",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "ae828f20cafdff314acc462cd3be94cd2fec8b95ac9c9b5e17c3dfcc7b847264",
+  "contentId": "striker",
+  "sourceMaster": "illustrated master family fist; native modifiers in extras.py",
+  "framing": null
+}

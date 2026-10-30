@@ -1,0 +1,69 @@
+{
+  "assetId": "ui:command:flee",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_command_flee_v002.png",
+  "frameWidth": 24,
+  "frameHeight": 24,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "icon",
+  "nineSlice": null,
+  "paletteVariants": [],
+  "nativeSize": [
+    24,
+    24
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      24,
+      24
+    ]
+  ],
+  "productionApproved": false,
+  "semantic": "flee",
+  "hitArea": [
+    48,
+    48
+  ],
+  "text": "runtime",
+  "sha256": "0ca60fb04e1d264b2eb2900c17630e5461a0eb51bfdace09dfb3377e84c2662a",
+  "staticFrame": 0,
+  "sourceMaster": "boot-master.png",
+  "framing": {
+    "sourceGrid": [
+      1,
+      1
+    ],
+    "fixedCrop": [
+      100,
+      133,
+      1174,
+      1187
+    ],
+    "fixedOffset": [
+      1,
+      1
+    ],
+    "scale": 0.020484171322160148
+  }
+}

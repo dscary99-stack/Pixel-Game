@@ -1,0 +1,50 @@
+{
+  "assetId": "item_mana_potion",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/items/item_mana_potion_v002.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "item",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "ff14b9204978381eac03b15e59a7851dc8d591d448b52987c67ed0d0acaf9787",
+  "contentId": "item:mana_potion",
+  "contentGroup": "items",
+  "motif": "bottle",
+  "sourceMaster": "illustrated master family bottle; native modifiers in extras.py",
+  "framing": null
+}

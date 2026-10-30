@@ -1,0 +1,48 @@
+{
+  "assetId": "ui_element_wind",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_element_wind_v002.png",
+  "frameWidth": 16,
+  "frameHeight": 16,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "element",
+  "nineSlice": null,
+  "nativeSize": [
+    16,
+    16
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      16,
+      16
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "e29d6601644b0dc828fa3a58526b2a917ebfb4a9a0e8aa23a4c115530af9bed2",
+  "contentId": "WIND",
+  "sourceMaster": "illustrated master family wind; native modifiers in extras.py",
+  "framing": null
+}

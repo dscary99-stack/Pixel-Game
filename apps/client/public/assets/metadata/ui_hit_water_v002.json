@@ -1,0 +1,83 @@
+{
+  "assetId": "ui_hit_water",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_hit_water_v002.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 6,
+  "rows": 1,
+  "frameCount": 6,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "play",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fps": 10,
+      "loop": false
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "hit",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hide",
+  "sha256": "3beb8d137cbf9e0f04a9cfa2fe14e0f6a4aac8b35f0d64248f81fdfb532b6858",
+  "element": "WATER",
+  "contactFrame": 1,
+  "attachment": [
+    16,
+    16
+  ],
+  "sourceMaster": "water-sheet-master.png",
+  "framing": {
+    "sourceGrid": [
+      3,
+      2
+    ],
+    "fixedCrop": [
+      0,
+      81,
+      512,
+      512
+    ],
+    "fixedOffset": [
+      1,
+      3
+    ],
+    "scale": 0.05859375
+  }
+}
