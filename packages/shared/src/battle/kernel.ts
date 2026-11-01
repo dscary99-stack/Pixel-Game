@@ -376,6 +376,7 @@ function allyUnits(rules: RulesConfig, content: BattleContent, p: BattleSetup["p
       : { awakening: { pathId: (ascensionPath(p.ascensionId) ?? reject("MISSING_REFERENCE", `ascension ${p.ascensionId}`)).id, gauge: 0, gainedRound: 0, gainedThisRound: 0, used: false, turnsLeft: 0 } }),
     // Worn fashion (fashion.ts): a look for the client, never read for numbers; at most one per layer.
     ...(p.fashion !== undefined && p.fashion.length > 0 ? { fashion: p.fashion.slice(0, 4).map((f) => ({ layer: f.layer, effect: f.effect, color: f.color })) } : {}),
+    ...(p.look !== undefined ? { look: { raceId: p.look.raceId, ...(p.look.weaponKind !== undefined ? { weaponKind: p.look.weaponKind } : {}) } } : {}),
     basicAttackRange: p.basicAttackRange,
     primaryStats: { ...p.primaryStats },
     statuses: [],

@@ -9,6 +9,7 @@ import type { BattleTransport, Snapshot } from "./transport";
 import { savedAutoPolicy } from "./character-ui";
 import { capturePreview, pct2 } from "./capture-ui";
 import { fleePreview, refusalTh, reviveRefusal, skillButtonLine } from "./command-ui";
+import { BattleActor, artHeight, battleBackground, battleBase, type ActorState } from "./actor-art";
 import { UiBar, UiButton, assetMeta, contentIconKey, loadUiKit, reducedMotion, uiKey, uiPanel, uiSprite, type CommandIcon } from "./ui-kit";
 
 const CONTENT = exampleContentMaps();
@@ -33,7 +34,10 @@ export const ELEMENT_COLOR: Record<Element, number> = {
 };
 
 interface UnitView {
+  /** Tap area (and the placeholder shape when Codex has not drawn this unit). */
   body: Phaser.GameObjects.Rectangle;
+  /** Codex's animated body + weapon + shadow (art/world/HANDOFF.md), when drawn. */
+  actor: BattleActor | null;
   hpBar: UiBar;
   label: Phaser.GameObjects.Text;
   /**
@@ -121,11 +125,12 @@ export class BattleScene extends Phaser.Scene {
 
   async create() {
     this.cameras.main.setBackgroundColor("#1d1a2b");
-    this.add.rectangle(W / 2, 250, W, 400, 0x2a2540).setStrokeStyle(2, 0x0b0a12);
+    const field = this.add.rectangle(W / 2, 250, W, 400, 0x2a2540).setStrokeStyle(2, 0x0b0a12);
     this.add.text(12, 8, this.transport.label, { fontFamily: "sans-serif", fontSize: "13px", color: "#f2c94c" });
     this.turnText = this.add.text(12, 28, "", { fontFamily: "sans-serif", fontSize: "15px", color: "#ffffff" });
     this.infoText = this.add.text(12, 56, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#f2c94c", wordWrap: { width: 520 } });
     this.idleText = this.add.text(W - 12, 8, "", { fontFamily: "sans-serif", fontSize: "13px", color: "#ff8a80", align: "right" }).setOrigin(1, 0);
+    for (const t of this.children.list) if (t instanceof Phaser.GameObjects.Text) t.setStroke("#1d1a2b", 3);
     this.time.addEvent({ delay: 1000, loop: true, callback: () => this.idleTick() });
     uiPanel(this, 568, 446, 384, 88);
     this.logText = this.add.text(580, 456, "", { fontFamily: "sans-serif", fontSize: "12px", color: "#d8d4ea", wordWrap: { width: 362 } });
@@ -162,6 +167,8 @@ export class BattleScene extends Phaser.Scene {
     if (this.watching) this.showWatchUi();
 
     const { snapshot, events } = await this.transport.start();
+    // Codex's backdrop for where the fight is (tower floors, town training ground, else the field).
+    if (battleBackground(this, snapshot.state.frontier !== undefined ? "tower" : snapshot.state.practice === true ? "practice" : "field")) field.destroy();
     this.apply(snapshot, events);
   }
 
@@ -516,6 +523,8 @@ export class BattleScene extends Phaser.Scene {
         if (e.action !== undefined) return this.pushLog(`${this.name(e.unitId)} ลงมือครั้งที่ ${e.action}/${e.actionsThisRound}`);
         return;
       case "ActionResolved": {
+        this.animate(e.actorId, e.action === "attack" ? "attack" : e.action === "skill" || e.action === "awaken" ? "cast" : null);
+        if (e.hit && e.targetId && (e.damage ?? 0) > 0) this.animate(e.targetId, "hurt");
         const via = e.skillId === null ? "" : ` [${CONTENT.skills.get(e.skillId)?.name.th ?? e.skillId}]`;
         if (e.damage !== null && e.targetId) {
           if (e.hit) {
@@ -590,6 +599,7 @@ export class BattleScene extends Phaser.Scene {
         return this.pushLog(`${who} หาย${th}`);
       }
       case "StatusTick":
+        if (e.hp < 0) this.animate(e.unitId, "hurt");
         this.numberPopup(e.unitId, e.hp < 0 ? `${-e.hp}` : `+${e.hp}`, e.hp < 0 ? "damage" : "heal");
         return this.pushLog(`${this.name(e.unitId)} ${STATUS_DEFINITIONS[e.statusId].th} ${e.hp < 0 ? e.hp : `+${e.hp}`}`);
       case "ActionRedirected":
@@ -634,6 +644,7 @@ export class BattleScene extends Phaser.Scene {
       if (u.replacedBy !== undefined) {
         if (v !== undefined) {
           for (const o of [v.body, v.hpBar, v.label, v.ringBack, v.ringFront, v.arrow, v.sub, v.element]) o.setVisible(false);
+          v.actor?.setVisible(false);
           for (const o of v.statusIcons) o.destroy();
           v.statusIcons = [];
           v.ascBar?.setVisible(false);
@@ -646,11 +657,17 @@ export class BattleScene extends Phaser.Scene {
       // Party boss fights: ten allies in two rows of five, drawn like the enemy rows.
       const partyFight = state.members !== undefined;
       const compact = enemy || partyFight;
-      const bh = compact ? 36 : 56;
+      const base = battleBase(u);
+      // Drawn units: 64px frames show about 56px of body (44 in the tight rows), bosses 128px.
+      const bh = base !== null && artHeight(base) > 64 ? 112 : base !== null ? (compact ? 44 : 56) : compact ? 36 : 56;
       if (!v) {
         // Created before the body so it draws underneath it.
         const ringBack = uiSprite(this, x - 30, y - bh / 2 - 6, uiKey.target("selected", "back")).setVisible(false);
         const body = this.add.rectangle(x, y, 48, bh, ELEMENT_COLOR[u.element]).setStrokeStyle(3, 0x0b0a12).setInteractive({ useHandCursor: true });
+        // Art faces right; enemies stand on the right and face left (Nut 2026-10-07: flip for now).
+        const weapon = u.kind === "player" ? (u.look?.weaponKind ?? (u.basicAttackRange === "ranged" ? "physical_ranged" : "physical_melee")) : null;
+        const actor = base === null ? null : new BattleActor(this, base, weapon, enemy);
+        if (actor !== null) body.setFillStyle(0x000000, 0).setStrokeStyle();
         body.on("pointerdown", () => {
           // Enemies for attacks and enemy skills; allies for heals, buffs and shields.
           // A fallen ally can be picked too, as the target of a revive (O15).
@@ -670,10 +687,21 @@ export class BattleScene extends Phaser.Scene {
           : partyFight
             ? this.add.text(x - 30, y, "", { fontFamily: "sans-serif", fontSize: "10px", color: "#ffd84a", align: "right", wordWrap: { width: 80 } }).setOrigin(1, 0.5)
           : this.add.text(x, y + bh / 2 + 32, "", { fontFamily: "sans-serif", fontSize: "11px", color: "#ffd84a", align: "center" }).setOrigin(0.5, 0);
-        v = { body, hpBar, label, sub, ringBack, ringFront, arrow, ringKind: null, element, statusIcons: [], statusKey: "", ascBar: null, ascFull: null };
+        for (const o of [hpBar, label, sub, element, ringFront, arrow]) o.setDepth(3);
+        // Outlined so names stay readable on Codex's bright backdrops.
+        for (const t of [label, sub]) t.setStroke("#1d1a2b", 3);
+        v = { body, actor, hpBar, label, sub, ringBack, ringFront, arrow, ringKind: null, element, statusIcons: [], statusKey: "", ascBar: null, ascFull: null };
         this.views.set(u.unitId, v);
       }
-      v.body.setPosition(x, y).setAlpha(u.ko || u.retired ? 0.25 : 1);
+      v.body.setPosition(x, y);
+      if (v.actor === null) v.body.setAlpha(u.ko || u.retired ? 0.25 : 1);
+      else {
+        v.actor.place(x, y + bh / 2);
+        // A captured enemy fades out; a fallen unit lies at the end of its fall until revived.
+        v.actor.setAlpha(u.retired ? 0.25 : 1);
+        if (u.ko && v.actor.current !== "ko") v.actor.play("ko");
+        else if (!u.ko && v.actor.current === "ko") v.actor.play("idle");
+      }
       v.hpBar.setPosition(x - 26, y + bh / 2 + 8).set(u.hp, u.stats.maxHp);
       // Whose turn it is outranks the picked target; the arrow always marks the picked target.
       const ring = state.status !== "active" ? null : u.unitId === this.snap.actor ? (enemy ? "turn_enemy" : "turn_ally") : u.unitId === this.selectedTarget ? "selected" : null;
@@ -682,10 +710,10 @@ export class BattleScene extends Phaser.Scene {
       let below = y + bh / 2 + 12;
       if (u.awakening !== undefined && !u.ko) {
         const max = DEV_FIXTURE_RULES.provisional.ascension.value.gaugeMax;
-        v.ascBar ??= new UiBar(this, x - 26, below + 2, 52, "ascend", 4);
+        v.ascBar ??= new UiBar(this, x - 26, below + 2, 52, "ascend", 4).setDepth(3);
         v.ascBar.setPosition(x - 26, below + 2).set(u.awakening.gauge, max).setVisible(true);
         const full = u.awakening.gauge >= max && !u.awakening.used;
-        if (full && v.ascFull === null) v.ascFull = uiSprite(this, x - 26, below, uiKey.ascendFull(4)).setCrop(0, 0, 52, 4);
+        if (full && v.ascFull === null) v.ascFull = uiSprite(this, x - 26, below, uiKey.ascendFull(4)).setCrop(0, 0, 52, 4).setDepth(3);
         v.ascFull?.setPosition(x - 26, below).setVisible(full);
         below += 8;
       } else {
@@ -949,10 +977,15 @@ export class BattleScene extends Phaser.Scene {
     v.statusIcons = [];
     list.slice(0, 4).forEach((st, i) => {
       const ix = x - 34 + i * 17;
-      v.statusIcons.push(uiSprite(this, ix, top, uiKey.status(st.statusId)));
-      if (st.turnsLeft > 0) v.statusIcons.push(this.add.text(ix + 17, top + 17, `${st.turnsLeft}`, { fontFamily: "sans-serif", fontSize: "9px", color: "#ffffff", stroke: "#000000", strokeThickness: 2 }).setOrigin(1, 1));
+      v.statusIcons.push(uiSprite(this, ix, top, uiKey.status(st.statusId)).setDepth(3));
+      if (st.turnsLeft > 0) v.statusIcons.push(this.add.text(ix + 17, top + 17, `${st.turnsLeft}`, { fontFamily: "sans-serif", fontSize: "9px", color: "#ffffff", stroke: "#000000", strokeThickness: 2 }).setOrigin(1, 1).setDepth(3));
     });
-    if (list.length > 4) v.statusIcons.push(this.add.text(x + 36, top + 8, `+${list.length - 4}`, { fontFamily: "sans-serif", fontSize: "10px", color: "#ffd84a" }).setOrigin(0, 0.5));
+    if (list.length > 4) v.statusIcons.push(this.add.text(x + 36, top + 8, `+${list.length - 4}`, { fontFamily: "sans-serif", fontSize: "10px", color: "#ffd84a" }).setOrigin(0, 0.5).setDepth(3));
+  }
+
+  /** Plays an action clip on a drawn unit (ART_HANDOFF §5); back to idle when it ends. */
+  private animate(unitId: string, state: ActorState | null) {
+    if (state !== null) this.views.get(unitId)?.actor?.play(state);
   }
 
   /** The element a hit lands with: its skill's damage element (or the user's own), else the attacker's. */

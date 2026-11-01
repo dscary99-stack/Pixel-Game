@@ -48,6 +48,8 @@ export interface BattleUnit {
   cosmetic?: { effect: string; color: string };
   /** The player's worn fashion (fashion.ts), one look per layer; a look only. */
   fashion?: { layer: string; effect: string; color: string }[];
+  /** The player's body art and weapon family (ART_HANDOFF §5 layers): a look only, never read for numbers. */
+  look?: { raceId: string; weaponKind?: "physical_melee" | "physical_ranged" | "magic" | "support" };
   /** Companions only: knocked out at some point in this fight (Bond goes down, Nut 2026-10-03). */
   fell?: boolean;
   basicAttackRange: Range;
@@ -377,6 +379,8 @@ export interface BattleSetup {
     ascensionId?: string;
     /** Worn fashion looks (fashion.ts): drawn by the client, never read for numbers. */
     fashion?: { layer: string; effect: string; color: string }[];
+    /** Body art and weapon family for the client (a look only). */
+    look?: { raceId: string; weaponKind?: "physical_melee" | "physical_ranged" | "magic" | "support" };
   };
   companions: (Position & { instance: MonsterInstance; hp?: number; mp?: number })[];
   enemies: (Position & {

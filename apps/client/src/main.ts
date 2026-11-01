@@ -115,7 +115,8 @@ function previewSetup(seed: string): BattleSetup {
     enemies: [
       { unitId: "e1", speciesId: "species:ember_fox", element: "FIRE", row: "front", slot: 1 },
       { unitId: "e2", speciesId: "species:armor_crab", element: "WATER", row: "front", slot: 3 },
-      { unitId: "e3", speciesId: "species:lantern_snail", element: "LIGHT", row: "back", slot: 2 },
+      // `?battle&boss`: the field boss's 128px art in the back row (a look check only, no boss phases).
+      params.has("boss") ? { unitId: "b1", speciesId: "species:crystal_crab_lord", element: "WATER", row: "back", slot: 2 } : { unitId: "e3", speciesId: "species:lantern_snail", element: "LIGHT", row: "back", slot: 2 },
     ],
     bag: { "item:small_potion": 5, "item:phoenix_feather": 2, "item:ember_fox_capture": 3, "item:armor_crab_capture": 3, "item:lantern_snail_capture": 3 },
   };

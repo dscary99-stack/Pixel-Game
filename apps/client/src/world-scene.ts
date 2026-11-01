@@ -35,6 +35,7 @@ import type { CharacterApi, CharacterBundle } from "./character-api";
 import { autoHuntPanel, armoryPanel, classPanel, practicePanel, craftPanel, refinePanel, frontierPanel, journalPanel, ordersPanel, questPanel, titleName, equipmentPanel, partyPanel, rebirthPanel, secretQuestPanel, shopPanel, skillPanel, statsPanel, skillTreePanel, teamPanel, vitals } from "./character-ui";
 import { mailPanel, marketPanel, tradePanel, vaultPanel } from "./market-ui";
 import type { WorldTransport } from "./world-transport";
+import { WorldActor, drawTileMap, portalSprite, worldBase } from "./actor-art";
 import { UiBar, UiButton, loadUiKit, uiKey, uiPanel, type MenuIcon } from "./ui-kit";
 
 const W = 960;
@@ -72,8 +73,25 @@ const TILE_COLOR: Record<(typeof TILE_LEGEND)[TileChar]["kind"], number> = {
   water: 0x3a74b8,
 };
 
+/** Ground line of a walker on a tile: a little above the tile's bottom edge (tops sort at the edge). */
+const GROUND = 26;
+/** Names and pack labels draw over walkers and tree tops (depth = ground line, in pixels). */
+const LABEL_DEPTH = 100_000;
+/** A walker counts as walking until it has stood still this long (steps chain without a gap). */
+const WALK_HOLD_MS = 140;
+
+/** Codex's walker on the map, kept on its (invisible) anchor shape every frame. */
+interface WalkerArt {
+  actor: WorldActor;
+  lastX: number;
+  lastY: number;
+  movedAt: number;
+}
+
 interface PlayerView {
+  /** Moves and is followed by the camera; hidden when Codex's walker draws the player. */
   body: Phaser.GameObjects.Rectangle;
+  art: WalkerArt | null;
   nose: Phaser.GameObjects.Rectangle;
   label: Phaser.GameObjects.Text;
   /** Worn fashion shapes (placeholders until the art lands), each kept at an offset from the body. */
@@ -86,6 +104,7 @@ interface PlayerView {
 interface PackView {
   pack: VisiblePack;
   body: Phaser.GameObjects.Rectangle;
+  art: WalkerArt | null;
   shadow: Phaser.GameObjects.Ellipse;
   label: Phaser.GameObjects.Text;
   /** The idle bob, restarted after each wander step (P33). */
@@ -108,6 +127,9 @@ const AUTO_STOP_TEXT: Record<AutoStopReason, string> = {
   NO_CHARACTER: "ต้องสร้างตัวละครก่อน",
   REFUSED: "server ไม่ให้เริ่มไฟต์",
 };
+
+/** A one-tile step in each facing, to turn a walker that has not moved yet. */
+const FACING_STEP: Record<PublicPlayer["facing"], [number, number]> = { N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] };
 
 const FACE_OFFSET: Record<PublicPlayer["facing"], [number, number]> = { N: [0, -12], S: [0, 12], E: [10, 0], W: [-10, 0] };
 
@@ -132,6 +154,8 @@ export class WorldScene extends Phaser.Scene {
   /** "ช่อง 1 12/50 · ช่อง 2 3/50" for this map, refreshed on arrival and every few seconds. */
   private channelCounts = "";
   private layer: Phaser.GameObjects.Container | null = null;
+  /** Tree/wall tops and portals: depth-sorted with walkers, so not inside the tile container. */
+  private mapObjects: Phaser.GameObjects.GameObject[] = [];
   private players = new Map<string, PlayerView>();
   private walkTweens = new WeakMap<object, Phaser.Tweens.Tween>();
   private selfSid: string | null = null;
@@ -395,22 +419,33 @@ export class WorldScene extends Phaser.Scene {
     this.channelCounts = "";
     void this.refreshChannelCounts();
     this.layer?.destroy(true);
-    for (const v of this.players.values()) [v.body, v.nose, v.label].forEach((o) => o.destroy());
+    for (const o of this.mapObjects) o.destroy();
+    this.mapObjects = [];
+    for (const v of this.players.values()) {
+      [v.body, v.nose, v.label].forEach((o) => o.destroy());
+      v.art?.actor.destroy();
+    }
     this.players.clear();
     this.showPacks([]);
     this.pendingEngage = null;
     this.seq = 0;
     this.readyAt = 0;
 
-    const layer = this.add.container(0, 0).setDepth(0);
-    map.tiles.forEach((row, y) =>
-      [...row].forEach((c, x) => {
-        const kind = TILE_LEGEND[c as TileChar].kind;
-        layer.add(this.add.rectangle(x * TILE + TILE / 2, y * TILE + TILE / 2, TILE - 1, TILE - 1, TILE_COLOR[kind]));
-      }),
-    );
+    // Codex's oblique tiles when this map has a tileset; coloured squares otherwise.
+    const drawn = drawTileMap(this, map.id, map.tiles, TILE);
+    const layer = drawn?.base ?? this.add.container(0, 0).setDepth(0);
+    if (drawn !== null) this.mapObjects.push(...drawn.uppers);
+    else
+      map.tiles.forEach((row, y) =>
+        [...row].forEach((c, x) => {
+          const kind = TILE_LEGEND[c as TileChar].kind;
+          layer.add(this.add.rectangle(x * TILE + TILE / 2, y * TILE + TILE / 2, TILE - 1, TILE - 1, TILE_COLOR[kind]));
+        }),
+      );
     for (const p of map.portals) {
-      layer.add(this.add.rectangle(p.at.x * TILE + TILE / 2, p.at.y * TILE + TILE / 2, TILE - 4, TILE - 4, 0xb06bf2, 0.75));
+      const s = portalSprite(this, p.at.x * TILE + TILE / 2, (p.at.y + 1) * TILE);
+      if (s !== null) this.mapObjects.push(s);
+      else layer.add(this.add.rectangle(p.at.x * TILE + TILE / 2, p.at.y * TILE + TILE / 2, TILE - 4, TILE - 4, 0xb06bf2, 0.75));
     }
     const labelled = new Set<string>();
     for (const p of map.portals) {
@@ -420,17 +455,30 @@ export class WorldScene extends Phaser.Scene {
       const w = map.tiles[0]!.length;
       const originX = p.at.x <= 1 ? 0 : p.at.x >= w - 2 ? 1 : 0.5;
       const x = p.at.x * TILE + (originX === 0 ? 0 : originX === 1 ? TILE : TILE / 2);
-      layer.add(this.add.text(x, p.at.y * TILE - 6, `→ ${p.label}`, { fontFamily: "sans-serif", fontSize: "12px", color: "#ffffff" }).setOrigin(originX, 1));
+      this.mapObjects.push(
+        this.add
+          .text(x, p.at.y * TILE - 34, `→ ${p.label}`, { fontFamily: "sans-serif", fontSize: "12px", color: "#ffffff", stroke: "#1b1830", strokeThickness: 3 })
+          .setOrigin(originX, 1)
+          .setDepth(LABEL_DEPTH),
+      );
     }
     // Town people: a marker with a name; clicking one says who they are and opens their service (tapMove).
     for (const n of map.npcs ?? []) {
       const [nx, ny] = center(n.at);
-      layer.add(this.add.ellipse(nx, ny + 9, 22, 8, 0x000000, 0.35));
-      layer.add(this.add.rectangle(nx, ny, 18, 24, n.services.includes("frontier") ? 0xb06bf2 : 0x5fd1a4).setStrokeStyle(2, 0x1b1830));
-      layer.add(
+      const base = worldBase("npc", n.id);
+      if (base !== null) {
+        const a = new WorldActor(this, base);
+        a.place(nx, n.at.y * TILE + GROUND);
+        this.mapObjects.push(...[a.shadow, a.body, a.weapon].filter((o) => o !== null));
+      } else {
+        layer.add(this.add.ellipse(nx, ny + 9, 22, 8, 0x000000, 0.35));
+        layer.add(this.add.rectangle(nx, ny, 18, 24, n.services.includes("frontier") ? 0xb06bf2 : 0x5fd1a4).setStrokeStyle(2, 0x1b1830));
+      }
+      this.mapObjects.push(
         this.add
-          .text(nx, ny - 15, n.name.th, { fontFamily: "sans-serif", fontSize: "10px", color: "#e8fff4", align: "center", backgroundColor: "#00000077", padding: { x: 2, y: 1 } })
-          .setOrigin(0.5, 1),
+          .text(nx, base !== null ? n.at.y * TILE + GROUND - 54 : ny - 15, n.name.th, { fontFamily: "sans-serif", fontSize: "10px", color: "#e8fff4", align: "center", backgroundColor: "#00000077", padding: { x: 2, y: 1 } })
+          .setOrigin(0.5, 1)
+          .setDepth(LABEL_DEPTH),
       );
     }
     this.layer = layer;
@@ -451,11 +499,20 @@ export class WorldScene extends Phaser.Scene {
     const body = this.add.rectangle(px, py, 22, 28, self ? 0xf2c94c : 0x7ab8f2).setStrokeStyle(2, 0x1b1830).setDepth(10);
     const [fx, fy] = FACE_OFFSET[p.facing];
     const nose = this.add.rectangle(px + fx, py + fy, 6, 6, 0x1b1830).setDepth(11);
+    // Codex's walker (human until the other races are drawn); the shapes stay as its invisible anchor.
+    const base = worldBase("player");
+    const art = base === null ? null : this.walker(new WorldActor(this, base), body);
+    if (art !== null) {
+      body.setVisible(false);
+      nose.setVisible(false);
+      art.actor.move(...FACING_STEP[p.facing]);
+      art.actor.move(0, 0);
+    }
     const label = this.add
-      .text(px, py - 22, labelText(p.name, p.look?.titleId), { fontFamily: "sans-serif", fontSize: "11px", color: self ? "#f2c94c" : "#ffffff", backgroundColor: "#00000088", padding: { x: 3, y: 1 } })
+      .text(px, py - (art !== null ? 50 : 22), labelText(p.name, p.look?.titleId), { fontFamily: "sans-serif", fontSize: "11px", color: self ? "#f2c94c" : "#ffffff", backgroundColor: "#00000088", padding: { x: 3, y: 1 } })
       .setOrigin(0.5, 1)
-      .setDepth(12);
-    this.players.set(p.sid, { body, nose, label, extras: this.drawFashion(body, p.look?.fashion ?? []), pos: { x: p.x, y: p.y }, name: p.name, self });
+      .setDepth(LABEL_DEPTH);
+    this.players.set(p.sid, { body, art, nose, label, extras: this.drawFashion(body, p.look?.fashion ?? []), pos: { x: p.x, y: p.y }, name: p.name, self });
   }
 
   /** A player here changed title or fashion: redraw the name and the fashion shapes in place. */
@@ -495,6 +552,7 @@ export class WorldScene extends Phaser.Scene {
     const v = this.players.get(sid);
     if (v === undefined) return;
     [v.body, v.nose, v.label, ...v.extras.map((e) => e.obj)].forEach((o) => o.destroy());
+    v.art?.actor.destroy();
     this.players.delete(sid);
   }
 
@@ -507,7 +565,7 @@ export class WorldScene extends Phaser.Scene {
     const targets: [Phaser.GameObjects.Shape | Phaser.GameObjects.Text, number, number][] = [
       [v.body, px, py],
       [v.nose, px + fx, py + fy],
-      [v.label, px, py - 22],
+      [v.label, px, py - (v.art !== null ? 50 : 22)],
       ...v.extras.map((e): [Phaser.GameObjects.Shape, number, number] => [e.obj, px + e.dx, py + e.dy]),
     ];
     for (const [obj, x, y] of targets) {
@@ -518,6 +576,11 @@ export class WorldScene extends Phaser.Scene {
     }
     // y-sorting placeholder: lower on screen draws in front.
     v.body.setDepth(10 + pos.y / 1000);
+    if (facing !== null && v.art !== null) {
+      v.art.actor.move(...FACING_STEP[facing]);
+      // Turning on the spot (no step yet) still faces the new way.
+      if (!animate) v.art.actor.move(0, 0);
+    }
   }
 
   /** Everyone in the channel sees the same packs; ones this player already fought are left out. */
@@ -525,6 +588,7 @@ export class WorldScene extends Phaser.Scene {
     for (const v of this.packs.values()) {
       this.tweens.killTweensOf([v.body, v.shadow, v.label]);
       [v.body, v.shadow, v.label].forEach((o) => o.destroy());
+      v.art?.actor.destroy();
     }
     this.packs.clear();
     for (const p of packs) {
@@ -537,13 +601,20 @@ export class WorldScene extends Phaser.Scene {
         .setStrokeStyle(boss ? 3 : 2, boss ? 0xff4a4a : p.rank === "ELITE" ? 0xffd84a : 0x1b1830)
         .setDepth(9);
       const shadow = this.add.ellipse(px, py + 12, 26, 8, 0x000000, 0.35).setDepth(8);
+      // The leader's walker stands for the pack; it idles in place instead of the placeholder bob.
+      const leaderBase = worldBase("monster", p.leader.speciesId);
+      const art = leaderBase === null ? null : this.walker(new WorldActor(this, leaderBase), body);
+      if (art !== null) {
+        body.setVisible(false);
+        shadow.setVisible(false);
+      }
       const [min, max] = p.sizeRange;
       const name = this.species.get(p.leader.speciesId)?.name.th ?? p.leader.speciesId;
       // Elites show their modifiers before engaging (chapter 07 §3).
       const rank = boss ? "บอส " : p.rank === "ELITE" ? "★ชั้นยอด " : "";
       const mods = p.leader.elite === undefined ? "" : `\n${p.leader.elite.map((m) => ELITE_MODIFIER_TH[m].name).join(", ")}`;
       const label = this.add
-        .text(px, py - (boss ? 19 : 14), `${rank}${name} Lv${p.leader.level} · ${min === max ? min : `${min}–${max}`} ตัว${mods}`, {
+        .text(px, py - (art !== null ? 44 : boss ? 19 : 14), `${rank}${name} Lv${p.leader.level} · ${min === max ? min : `${min}–${max}`} ตัว${mods}`, {
           fontFamily: "sans-serif",
           fontSize: "11px",
           color: "#ffd0c0",
@@ -551,9 +622,11 @@ export class WorldScene extends Phaser.Scene {
           padding: { x: 3, y: 1 },
         })
         .setOrigin(0.5, 1)
-        .setDepth(12);
-      const bob = this.tweens.add({ targets: body, y: py - 3, duration: 500, yoyo: true, repeat: -1, ease: "Sine.InOut" });
-      this.packs.set(p.packId, { pack: p, body, shadow, label, bob });
+        .setDepth(LABEL_DEPTH);
+      // Elites and bosses keep their coloured outline as a ring under the walker.
+      if (art !== null && (boss || p.rank === "ELITE")) shadow.setVisible(true).setFillStyle(boss ? 0xff4a4a : 0xffd84a, 0.45).setPosition(px, py + 10).setSize(34, 10);
+      const bob = art !== null ? null : this.tweens.add({ targets: body, y: py - 3, duration: 500, yoyo: true, repeat: -1, ease: "Sine.InOut" });
+      this.packs.set(p.packId, { pack: p, body, art, shadow, label, bob });
     }
     if (this.pendingEngage !== null && !this.packs.has(this.pendingEngage)) this.pendingEngage = null;
   }
@@ -571,14 +644,14 @@ export class WorldScene extends Phaser.Scene {
     const ms = 600;
     v.body.setPosition(ox, oy);
     this.tweens.add({ targets: v.shadow, x: px, y: py + 12, duration: ms });
-    this.tweens.add({ targets: v.label, x: px, y: py - 14, duration: ms });
+    this.tweens.add({ targets: v.label, x: px, y: py - (v.art !== null ? 44 : 14), duration: ms });
     this.tweens.add({
       targets: v.body,
       x: px,
       y: py,
       duration: ms,
       onComplete: () => {
-        if (this.packs.get(packId) === v) v.bob = this.tweens.add({ targets: v.body, y: py - 3, duration: 500, yoyo: true, repeat: -1, ease: "Sine.InOut" });
+        if (this.packs.get(packId) === v && v.art === null) v.bob = this.tweens.add({ targets: v.body, y: py - 3, duration: 500, yoyo: true, repeat: -1, ease: "Sine.InOut" });
       },
     });
     // Still walking to this pack: re-route to where it is now.
@@ -1122,7 +1195,31 @@ export class WorldScene extends Phaser.Scene {
     return this.selfSid === null ? null : (this.players.get(this.selfSid) ?? null);
   }
 
+  /** Wraps a walker so `syncWalkers` keeps it on its anchor shape. */
+  private walker(actor: WorldActor, anchor: Phaser.GameObjects.Rectangle): WalkerArt {
+    actor.place(anchor.x, anchor.y - TILE / 2 + GROUND);
+    return { actor, lastX: anchor.x, lastY: anchor.y, movedAt: 0 };
+  }
+
+  /** Walkers follow their anchors (tweened per step) and walk while moving, idle once they stop. */
+  private syncWalkers(time: number) {
+    const all: [WalkerArt | null, Phaser.GameObjects.Rectangle][] = [...[...this.players.values()].map((v) => [v.art, v.body] as [WalkerArt | null, Phaser.GameObjects.Rectangle]), ...[...this.packs.values()].map((v) => [v.art, v.body] as [WalkerArt | null, Phaser.GameObjects.Rectangle])];
+    for (const [a, b] of all) {
+      if (a === null) continue;
+      const dx = b.x - a.lastX;
+      const dy = b.y - a.lastY;
+      if (dx !== 0 || dy !== 0) {
+        a.movedAt = time;
+        a.actor.move(dx, dy);
+        a.lastX = b.x;
+        a.lastY = b.y;
+        a.actor.place(b.x, b.y - TILE / 2 + GROUND);
+      } else if (time - a.movedAt > WALK_HOLD_MS) a.actor.move(0, 0);
+    }
+  }
+
   override update(time: number) {
+    this.syncWalkers(time);
     const self = this.selfView();
     if (this.map === null || self === null || this.stopped || this.nextConnect !== null || this.inBattle || this.panelOpen) return;
     if (this.autoOn) {

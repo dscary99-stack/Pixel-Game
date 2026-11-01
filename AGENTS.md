@@ -24,7 +24,7 @@ docs/             เอกสารออกแบบและสถานะ
 npm install
 npm run check          # typecheck + tests + build client + wrangler dry-run
 npm test               # vitest
-npm run dev:client     # http://127.0.0.1:5173 (local preview; หน้าแรก = เดินในแผนที่, ?battle = ฉากต่อสู้; ?server = ต่อ wrangler dev และต้องสร้างตัวละครก่อน; ?server&login = เข้าสู่ระบบและเลือกช่องตัวละครแบบจริง)
+npm run dev:client     # http://127.0.0.1:5173 (local preview; หน้าแรก = เดินในแผนที่, ?battle = ฉากต่อสู้ (`&boss` ใส่บอส 128px); ?server = ต่อ wrangler dev และต้องสร้างตัวละครก่อน; ?server&login = เข้าสู่ระบบและเลือกช่องตัวละครแบบจริง)
 npm run db:migrate:local  # ใส่ D1 migrations ลงฐานข้อมูล local ก่อน dev:server ครั้งแรก/หลังเพิ่ม migration
 npm run dev:server     # wrangler dev :8787; เปิด client ด้วย ?server
 npm run smoke:server   # end-to-end ไฟต์ → เครื่องมือผู้ดูแล `/admin` (ไม่มี token 401, outbox ส่งครบ, retry ไม่มีอะไรทำ) กับ wrangler dev ที่รันอยู่

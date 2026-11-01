@@ -232,6 +232,7 @@ export function playerSetup(
     ...(worn.sigilIds !== undefined && worn.sigilIds.length > 0 ? { sigilIds: [...worn.sigilIds] } : {}),
     ...(ascensionPassiveFor(c.raceId, c.ascensionId) !== undefined ? { ascensionId: c.ascensionId! } : {}),
     ...(c.fashion !== undefined && c.fashion.length > 0 ? { fashion: c.fashion.map((f) => ({ layer: f.layer, effect: f.effect, color: f.color })) } : {}),
+    look: { raceId: c.raceId, ...(worn.mainHand?.weaponKind !== undefined ? { weaponKind: worn.mainHand.weaponKind } : {}) },
     basicAttackRange: weaponRange(worn.mainHand, cls?.basicAttackRange ?? "melee"),
     ...(c.companionBox !== undefined ? { companionRoom: Math.max(0, c.companionBox.capacity - c.companionBox.used) } : {}),
     row: PLAYER_POSITION.row,

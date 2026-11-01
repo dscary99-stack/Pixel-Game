@@ -32,6 +32,16 @@ export interface AssetMeta {
   staticFrame?: number;
   contentId?: string | null;
   contentGroup?: string | null;
+  /** World art (art/world/HANDOFF.md): origin [0.5,1] sits groundOffset below the standing point. */
+  groundOffset?: number;
+  shadowAsset?: string;
+  renderAlpha?: number;
+  holdLastFrame?: boolean;
+  placements?: { x: number; y: number; phaseOffset: number }[];
+  tileOffset?: [number, number];
+  legend?: Record<string, string>;
+  adjacency?: { legendOrder: string[]; underlayIndex: Record<string, number> };
+  tileEntries?: { index: number; kind: string; neighborMask: number; underlay?: string }[];
 }
 
 /** Texture key = the file's stem without its version: `ui_status_stun`, `item_crab_shell`. */
