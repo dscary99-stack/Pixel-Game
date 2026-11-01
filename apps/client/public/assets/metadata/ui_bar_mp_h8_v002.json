@@ -1,0 +1,55 @@
+{
+  "assetId": "ui:bar:mp_h8",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_bar_mp_h8_v002.png",
+  "frameWidth": 64,
+  "frameHeight": 8,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "bar_fill",
+  "nineSlice": null,
+  "paletteVariants": [],
+  "nativeSize": [
+    64,
+    8
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      64,
+      8
+    ]
+  ],
+  "productionApproved": false,
+  "track": "ui:bar:track_h8",
+  "fillRule": "Stretch full image to track dimensions first; clip x from 1 to 1+floor((width-2)*clamp(value/max,0,1)). Hide fill at zero. Keep height fixed.",
+  "contentInsets": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "sha256": "f93a5313aff7867b3abe9d603b450226b288fe332a14cfe033386faf0343b5c7",
+  "staticFrame": 0,
+  "sourceMaster": "native authored rounded bevels in build.py",
+  "framing": null
+}

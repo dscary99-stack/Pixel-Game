@@ -1,0 +1,65 @@
+{
+  "assetId": "ui_status_petrify",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_status_petrify_v002.png",
+  "frameWidth": 16,
+  "frameHeight": 16,
+  "columns": 4,
+  "rows": 1,
+  "frameCount": 4,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "loop",
+      "frames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "fps": 8,
+      "loop": true
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "status",
+  "nineSlice": null,
+  "nativeSize": [
+    16,
+    16
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      16,
+      16
+    ]
+  ],
+  "completion": "repeat",
+  "sha256": "6a5e5bfd3f094c501ab3b9b6d935ddd4b14e12c4c99c0d9ea794aaca6bf7a93a",
+  "contentId": "petrify",
+  "harmful": true,
+  "category": "control",
+  "motif": "rock",
+  "polarityBadge": "minus",
+  "motion": "stable readable glyph; subtle 1px travelling glint",
+  "sourceMaster": "illustrated master family rock; native modifiers in extras.py",
+  "framing": null
+}

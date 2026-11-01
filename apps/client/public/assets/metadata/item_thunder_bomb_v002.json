@@ -1,0 +1,50 @@
+{
+  "assetId": "item_thunder_bomb",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/items/item_thunder_bomb_v002.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "item",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "1e813fa1a9bcdab2c36f216e8cebe2d5d6b85f49511880c0d72d3e6c27956fef",
+  "contentId": "item:thunder_bomb",
+  "contentGroup": "items",
+  "motif": "bolt",
+  "sourceMaster": "illustrated master family bomb; native modifiers in extras.py",
+  "framing": null
+}

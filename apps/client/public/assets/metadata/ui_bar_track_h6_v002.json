@@ -1,0 +1,54 @@
+{
+  "assetId": "ui:bar:track_h6",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_bar_track_h6_v002.png",
+  "frameWidth": 64,
+  "frameHeight": 6,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "bar_track",
+  "nineSlice": null,
+  "paletteVariants": [],
+  "nativeSize": [
+    64,
+    6
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      64,
+      6
+    ]
+  ],
+  "productionApproved": false,
+  "resize": "horizontal-nearest-stretch",
+  "contentInsets": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "sha256": "e17011f33e4de559a1e606151cc346c20ac1d3fdce7bf47b36b666d7e61c672f",
+  "staticFrame": 0,
+  "sourceMaster": "native authored rounded bevels in build.py",
+  "framing": null
+}

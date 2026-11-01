@@ -1,5 +1,12 @@
 # สถานะงาน — Phase A + Battle settlement + Phase B (walking slice) + Phase C แรก (encounter) + Phase D แรก (ตัวละคร + อุปกรณ์ + Sigil/เหรียญ + EXP/เลเวล + Auto Hunt + การเติบโตคู่ใจ/Rebirth/ปาร์ตี้ + เลเวลสกิล/Bond + Rebirth variant + ระบบสถานะ + หอคอยรายสัปดาห์)
 
+## UI asset รอบสอง — Codex: cute rebuild v002 (31 ต.ค. 2026)
+
+แก้ครบทั้งชุดเดิมและรอบสองตามคำสั่งผู้ใช้: **364 PNG / 151 animations / 910 source frames** บน `codex/ui-kit-cute-rebuild`. ใช้ภาพน่ารักมีมิติ โทนทองอุ่น coral mint lavender; ขนาดและ semantic IDs เดิม, ไฟล์ v002, palette ร่วม128สี, alpha0/255. เก็บ v001 เดิมและเปลี่ยน public metadata index ไป v002. ไม่แก้ apps/*/src หรือ packages.
+
+QA ผ่านครบ364; `npm run check` ผ่าน87 test files/795 tests รวมtypecheck, client build, Worker dry-run. ส่ง master/prompt, scripts, metadata,13ภาพรวม, GIF/strip และ preview ที่ `art/ui/cute-rebuild/`. คู่มือส่งต่อ [README](../art/ui/cute-rebuild/README.md). `grid_ready / productionApproved=false`; Claude ต่อเข้าเกมและทดสอบจริงต่อ. รายการบังคับครบ; ประกาย EPIC/LEGENDARY เสริมยังไม่ทำ. ไม่มี merge/deploy.
+
+
 อัปเดต: 7 ตุลาคม 2026 · ผู้ทำล่าสุด: Claude · ระยะ: **D แรก — ตัวละคร ทีม อุปกรณ์ 12 ช่อง, Sigil, เหรียญ และ EXP/เลเวล/แต้มสเตตัสที่บันทึกจริง** (บท02, บท03 §3–§4, บท05, บท06, บท13 §1 D) ต่อจาก C แรก
 
 ## UI asset รอบสอง — Codex

@@ -1,0 +1,65 @@
+{
+  "assetId": "ui_status_corrode",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_status_corrode_v002.png",
+  "frameWidth": 16,
+  "frameHeight": 16,
+  "columns": 4,
+  "rows": 1,
+  "frameCount": 4,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "loop",
+      "frames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "fps": 8,
+      "loop": true
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "status",
+  "nineSlice": null,
+  "nativeSize": [
+    16,
+    16
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      16,
+      16
+    ]
+  ],
+  "completion": "repeat",
+  "sha256": "f61ca350247aea8c24911e73af9fdcad68335d9968f74a7a880f7c5ea87b05d8",
+  "contentId": "corrode",
+  "harmful": true,
+  "category": "dot",
+  "motif": "shield",
+  "polarityBadge": "minus",
+  "motion": "stable readable glyph; subtle 1px travelling glint",
+  "sourceMaster": "illustrated master family shield; native modifiers in extras.py",
+  "framing": null
+}

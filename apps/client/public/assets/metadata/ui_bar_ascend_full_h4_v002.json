@@ -1,0 +1,64 @@
+{
+  "assetId": "ui_bar_ascend_full_h4",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_bar_ascend_full_h4_v002.png",
+  "frameWidth": 64,
+  "frameHeight": 4,
+  "columns": 6,
+  "rows": 1,
+  "frameCount": 6,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "loop",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fps": 10,
+      "loop": true
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "overlay",
+  "nineSlice": null,
+  "nativeSize": [
+    64,
+    4
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      64,
+      4
+    ]
+  ],
+  "completion": "repeat",
+  "sha256": "ef261661778f2051c6c908d016a1fe445e7811b20abbc014b0aa4d578ce19f70",
+  "attachment": "overlay full ascend fill only",
+  "tileAxis": "x",
+  "resize": "repeat/crop horizontally; keep native pixels",
+  "sourceMaster": "native authored motion in extras.py",
+  "framing": null
+}

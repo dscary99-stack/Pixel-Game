@@ -1,3 +1,9 @@
+## UI asset รอบสอง — Codex: cute rebuild v002 (31 ต.ค. 2026)
+
+แก้ครบทั้งชุดเดิมและรอบสองตามคำสั่งผู้ใช้: **364 PNG / 151 animations / 910 source frames** บน `codex/ui-kit-cute-rebuild`. ใช้ภาพน่ารักมีมิติ โทนทองอุ่น coral mint lavender; ขนาดและ semantic IDs เดิม, ไฟล์ v002, palette ร่วม128สี, alpha0/255. เก็บ v001 เดิมและเปลี่ยน public metadata index ไป v002. ไม่แก้ apps/*/src หรือ packages.
+
+QA ผ่านครบ364; `npm run check` ผ่าน87 test files/795 tests รวมtypecheck, client build, Worker dry-run. ส่ง master/prompt, scripts, metadata,13ภาพรวม, GIF/strip และ preview ที่ `art/ui/cute-rebuild/`. คู่มือส่งต่อ [README](cute-rebuild/README.md). `grid_ready / productionApproved=false`; Claude ต่อเข้าเกมและทดสอบจริงต่อ. รายการบังคับครบ; ประกาย EPIC/LEGENDARY เสริมยังไม่ทำ. ไม่มี merge/deploy.
+
 # UI kit proof v001 — 27 ต.ค. 2026
 
 ## UI รอบสอง — 29 ต.ค. 2026

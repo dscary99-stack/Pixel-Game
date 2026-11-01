@@ -1,0 +1,48 @@
+{
+  "assetId": "ui:badge:lock",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_badge_lock_v002.png",
+  "frameWidth": 16,
+  "frameHeight": 16,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "overlay",
+  "nineSlice": null,
+  "paletteVariants": [],
+  "nativeSize": [
+    16,
+    16
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      16,
+      16
+    ]
+  ],
+  "productionApproved": false,
+  "attachment": "slot lower-right inset 2px",
+  "sha256": "2aed1370d830d1000f6b79d51cea4ec5408113ee6ff9b9f7ee58dffce4aee3e1",
+  "staticFrame": 0,
+  "sourceMaster": "native authored rounded bevels in build.py",
+  "framing": null
+}
