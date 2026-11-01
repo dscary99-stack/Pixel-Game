@@ -9,7 +9,7 @@ import type { BattleTransport, Snapshot } from "./transport";
 import { savedAutoPolicy } from "./character-ui";
 import { capturePreview, pct2 } from "./capture-ui";
 import { fleePreview, refusalTh, reviveRefusal, skillButtonLine } from "./command-ui";
-import { UiBar, UiButton, assetMeta, loadUiKit, reducedMotion, uiKey, uiPanel, uiSprite, type CommandIcon } from "./ui-kit";
+import { UiBar, UiButton, assetMeta, contentIconKey, loadUiKit, reducedMotion, uiKey, uiPanel, uiSprite, type CommandIcon } from "./ui-kit";
 
 const CONTENT = exampleContentMaps();
 /** Display name for a loot line: item or equipment, falling back to the id. */
@@ -849,7 +849,10 @@ export class BattleScene extends Phaser.Scene {
       const x = px + 20 + i * 66;
       const y = top + 134;
       ui.push(this.add.image(x, y, uiKey.slot(48, "common")).setOrigin(0, 0).setDepth(40));
-      text(x + 24, y + 24, `×${n}`, 12, "#ffffff").setOrigin(0.5);
+      // The item's own icon in the slot's 32px content area, count bottom-right (slot metadata).
+      const icon = contentIconKey(id);
+      if (icon !== undefined) ui.push(this.add.image(x + 8, y + 8, icon).setOrigin(0, 0).setDepth(41));
+      text(icon === undefined ? x + 24 : x + 45, icon === undefined ? y + 24 : y + 45, `×${n}`, 12, "#ffffff").setOrigin(icon === undefined ? 0.5 : 1).setStroke("#000000", 3);
       text(x + 24, y + 52, lootName(id), 10, "#d8d4ea", 62).setOrigin(0.5, 0).setAlign("center");
     });
     if (loot.size > 9) text(px + pw - 20, top + 150, `+${loot.size - 9} ชนิด`, 11, "#b8b2d6").setOrigin(1, 0);

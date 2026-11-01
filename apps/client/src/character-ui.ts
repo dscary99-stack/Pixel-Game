@@ -126,7 +126,8 @@ export const ELEMENT_TH: Record<Element, string> = {
   NEUTRAL: "ไร้ธาตุ",
 };
 
-const CSS = `
+/** Built on first use: the kit URLs come from the asset metadata, read after this module loads. */
+const css = () => `
 .pm-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
   background: #0b0a12cc; z-index: 10; font-family: sans-serif; color: #fff; padding: 16px; box-sizing: border-box; }
 .pm-panel { background: #241f36; border: 2px solid #463f6b; border-radius: 8px; padding: 18px 20px; width: min(560px, 100%);
@@ -227,7 +228,7 @@ export function overlay(): { root: HTMLDivElement; panel: HTMLDivElement; close:
   if (document.getElementById("pm-style") === null) {
     const style = document.createElement("style");
     style.id = "pm-style";
-    style.textContent = CSS;
+    style.textContent = css();
     document.head.append(style);
   }
   const root = document.createElement("div");

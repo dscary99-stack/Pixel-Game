@@ -62,8 +62,11 @@ export const contentIconKey = (contentId: string) => byContent.get(contentId);
 export const reducedMotion = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 const key = (name: string) => `ui_${name}`;
-/** Public URL of one kit image, for HTML windows that skin themselves with the same art. */
-export const uiAssetUrl = (name: string) => `/assets/sprites/ui/ui_${name}_${V}.png`;
+/**
+ * Public URL of one kit image, for HTML windows that skin themselves with the same art. Read from the
+ * metadata, so a new art version (v002 cute rebuild) needs no code change; v001 is the fallback.
+ */
+export const uiAssetUrl = (name: string) => registry.get(key(name))?.file ?? `/assets/sprites/ui/ui_${name}_${V}.png`;
 /** Texture keys, for scenes that place a kit image themselves. */
 export const uiKey = {
   button: (k: ButtonKind) => key(`button_${k}`),
