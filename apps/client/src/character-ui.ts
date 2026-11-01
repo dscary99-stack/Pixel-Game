@@ -108,6 +108,7 @@ import {
   statRaiseCost,
   unspentPoints,
 } from "@pmrpg/shared";
+import { appearancePicker } from "./appearance-ui";
 import { ApiError, type CharacterApi, type CharacterBundle } from "./character-api";
 import { contentIconKey, htmlSprite, uiAssetUrl, uiKey } from "./ui-kit";
 
@@ -209,6 +210,11 @@ const css = () => `
 @media (max-width: 1040px), (max-height: 560px) { .pm-title { display: none; } }
 .pm-icon > .pm-sprite.pm-el { left: 16px; top: 16px; }
 .pm-choices button .pm-sprite { margin-right: 6px; }
+.pm-look { display: flex; gap: 12px; align-items: flex-start; }
+.pm-look-preview { width: 128px; height: 128px; flex: none; image-rendering: pixelated; background: #2f2a46; border: 2px solid #463f6b; }
+.pm-look-parts { flex: 1; min-width: 0; }
+.pm-panel .pm-choices button.pm-swatch { min-height: 36px; width: 36px; padding: 0; border: 3px solid #1b1830; border-image: none; }
+.pm-panel .pm-choices button.pm-swatch[aria-pressed=true] { border-color: #f2c94c; outline: 2px solid #f2c94c; }
 .pm-icon .pm-portrait { position: absolute; left: 12px; top: 12px; width: 24px; height: 24px; }
 .pm-icon .pm-lock { position: absolute; left: 30px; top: 30px; width: 16px; height: 16px; background: url(${uiAssetUrl("badge_lock")}); }
 ${["uncommon", "rare", "epic", "legendary"].map((r) => `.pm-icon[data-rarity=${r.toUpperCase()}] { background-image: url(${uiAssetUrl(`slot_48_${r}`)}); }`).join("\n")}
@@ -288,7 +294,7 @@ export function el<K extends keyof HTMLElementTagNameMap>(tag: K, attrs: Record<
 }
 
 /** A row of toggle buttons; returns a getter for the picked value. */
-function choices(parent: HTMLElement, items: { value: string; label: string; icon?: string }[], initial: string): () => string {
+function choices(parent: HTMLElement, items: { value: string; label: string; icon?: string }[], initial: string, onChange?: () => void): () => string {
   const box = el("div", { class: "pm-choices", role: "group" });
   let picked = initial;
   const buttons = items.map((it) => {
@@ -298,6 +304,7 @@ function choices(parent: HTMLElement, items: { value: string; label: string; ico
     b.addEventListener("click", () => {
       picked = it.value;
       buttons.forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      onChange?.();
     });
     box.append(b);
     return b;
@@ -321,9 +328,11 @@ export function createCharacterForm(api: CharacterApi): Promise<CharacterBundle>
     panel.append(el("label", {}, "อาชีพเริ่มต้น (Class 1)"));
     const cls = choices(panel, CLASS1_DEFINITIONS.map((c) => ({ value: c.id, label: c.name.th, icon: uiKey.classIcon(c.id) })), CLASS1_DEFINITIONS[0]!.id);
     panel.append(el("label", {}, "เผ่า"));
-    const race = choices(panel, RACE_DEFINITIONS.map((r) => ({ value: r.id, label: r.name.th, icon: uiKey.race(r.id) })), RACE_DEFINITIONS[0]!.id);
-    panel.append(el("label", {}, "ธาตุ"));
-    const element = choices(panel, PLAYER_ELEMENTS.map((e) => ({ value: e, label: ELEMENT_TH[e], icon: uiKey.element(e, true) })), PLAYER_ELEMENTS[0]);
+    const race = choices(panel, RACE_DEFINITIONS.map((r) => ({ value: r.id, label: r.name.th, icon: uiKey.race(r.id) })), RACE_DEFINITIONS[0]!.id, () => look.refresh());
+    panel.append(el("label", {}, "ธาตุ (สีขอบชุด)"));
+    const element = choices(panel, PLAYER_ELEMENTS.map((e) => ({ value: e, label: ELEMENT_TH[e], icon: uiKey.element(e, true) })), PLAYER_ELEMENTS[0], () => look.refresh());
+    panel.append(el("h3", {}, "รูปลักษณ์"));
+    const look = appearancePicker(panel, () => ({ raceId: race(), element: element() as Element }));
     panel.append(el("div", { class: "pm-note" }, "ชื่ออาชีพและเผ่าเป็นแบบร่าง (P16) · ทุกค่าสเตตัสเริ่มที่ 10"));
     const error = el("div", { class: "pm-error", role: "alert" });
     panel.append(error);
@@ -337,7 +346,7 @@ export function createCharacterForm(api: CharacterApi): Promise<CharacterBundle>
       submit.disabled = true;
       error.textContent = "";
       try {
-        await api.create({ name: name.value, classId: cls(), raceId: race(), element: element() as Element }, operationId);
+        await api.create({ name: name.value, classId: cls(), raceId: race(), element: element() as Element, appearance: look.get() }, operationId);
         const bundle = await api.get();
         if (bundle === null) throw new Error("character not found after create");
         close();

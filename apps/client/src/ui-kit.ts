@@ -34,6 +34,8 @@ export interface AssetMeta {
   contentGroup?: string | null;
   /** World art (art/world/HANDOFF.md): origin [0.5,1] sits groundOffset below the standing point. */
   groundOffset?: number;
+  /** Race bodies (ART_HANDOFF §12): where face/hair layers shift for this race's head. */
+  headOffset?: [number, number];
   shadowAsset?: string;
   renderAlpha?: number;
   holdLastFrame?: boolean;

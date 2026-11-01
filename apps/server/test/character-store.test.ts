@@ -2,7 +2,7 @@
  * Characters, teams, rest and HP carry-over on the D1 migrations (node:sqlite stand-in).
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { PRODUCTION_RULES, exampleContentMaps } from "@pmrpg/shared";
+import { DEFAULT_APPEARANCE, PRODUCTION_RULES, exampleContentMaps } from "@pmrpg/shared";
 import { CharacterStore } from "../src/character-store";
 import { Economy } from "../src/economy";
 import { SqliteD1, freshDb, type Db } from "./sqlite-d1";
@@ -52,6 +52,15 @@ describe("create", () => {
     if (r.status !== "created") return;
     expect(r.character).toMatchObject({ name: "นัท", level: 1, xp: 0, hp: null, mp: null, version: 1, team: [] });
     expect(Object.values(r.character.primaryStats)).toEqual([10, 10, 10, 10, 10, 10]);
+  });
+
+  it("stores the picked look (hair, face, colours); none picked = the default look", async () => {
+    const look = { hair: "hair:05", hairColor: "haircolor:08", face: "face:03", skin: "skin:04", eye: "eye:06" };
+    const r = await store.create(A, req({ appearance: look }));
+    expect(r.status === "created" && r.character.appearance).toEqual(look);
+    const b = await store.create(B, req({ operationId: "op_create_b" }));
+    expect(b.status === "created" && b.character.appearance).toEqual(DEFAULT_APPEARANCE);
+    expect((await store.create(A, req({ operationId: "op_bad_look", appearance: { ...look, face: "face:99" } }))).status).toBe("rejected");
   });
 
   it("is idempotent on operationId, and an account gets one character until O10", async () => {

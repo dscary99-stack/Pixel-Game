@@ -375,7 +375,10 @@ async function worldRoute(request: Request, env: Env, url: URL): Promise<Respons
 async function lookFor(env: Env, accountId: string): Promise<PlayerLook> {
   const ch = await charactersFor(env).get(accountId);
   const titleId = ch === null ? null : await journalFor(env).title(accountId);
-  return { ...(titleId !== null ? { titleId } : {}), ...(ch?.fashion !== undefined && ch.fashion.length > 0 ? { fashion: ch.fashion.map((f) => ({ layer: f.layer, effect: f.effect, color: f.color })) } : {}) };
+  return {
+    ...(ch !== null ? { raceId: ch.raceId, element: ch.element, ...(ch.appearance !== undefined ? { appearance: ch.appearance } : {}) } : {}),
+    ...(titleId !== null ? { titleId } : {}),
+    ...(ch?.fashion !== undefined && ch.fashion.length > 0 ? { fashion: ch.fashion.map((f) => ({ layer: f.layer, effect: f.effect, color: f.color })) } : {}) };
 }
 
 /** After a title or fashion change: the channel the player stands in shows the new look now (best effort). */

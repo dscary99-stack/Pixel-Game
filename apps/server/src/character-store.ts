@@ -31,6 +31,8 @@ import {
   CreateCharacterRequestSchema,
   expForLevel,
   fashionLooks,
+  appearanceOf,
+  DEFAULT_APPEARANCE,
   levelForExp,
   planAllocation,
   EquipRequestSchema,
@@ -64,6 +66,7 @@ interface CharacterRow {
   class3_id?: string | null;
   ascension_id?: string | null;
   fashion_json?: string | null;
+  appearance_json?: string | null;
   race_id: string;
   element: CharacterView["element"];
   level: number;
@@ -215,10 +218,10 @@ export class CharacterStore {
       this.db.prepare(`INSERT INTO accounts (id, created_at) VALUES (?, ?) ON CONFLICT DO NOTHING`).bind(accountId, at),
       this.db
         .prepare(
-          `INSERT INTO characters (id, account_id, name, class_id, race_id, element, level, xp, primary_stats_json, created_operation_id, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, 1, 0, ?, ?, ?) ON CONFLICT DO NOTHING`,
+          `INSERT INTO characters (id, account_id, name, class_id, race_id, element, level, xp, primary_stats_json, created_operation_id, created_at, appearance_json)
+           VALUES (?, ?, ?, ?, ?, ?, 1, 0, ?, ?, ?, ?) ON CONFLICT DO NOTHING`,
         )
-        .bind(id, accountId, req.name, req.classId, req.raceId, req.element, JSON.stringify(stats), req.operationId, at),
+        .bind(id, accountId, req.name, req.classId, req.raceId, req.element, JSON.stringify(stats), req.operationId, at, JSON.stringify(req.appearance ?? DEFAULT_APPEARANCE)),
       ...Object.entries(STARTER_KIT.items).map(([itemId, qty], i) =>
         this.db
           .prepare(
@@ -733,6 +736,7 @@ export class CharacterStore {
       class3Id: row.class3_id ?? null,
       ascensionId: row.ascension_id ?? null,
       fashion: fashionLooks(row.fashion_json),
+      appearance: appearanceOf(row.appearance_json ?? null),
       raceId: row.race_id,
       element: row.element,
       level: row.level,

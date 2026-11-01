@@ -9,7 +9,7 @@ import type { BattleTransport, Snapshot } from "./transport";
 import { savedAutoPolicy } from "./character-ui";
 import { capturePreview, pct2 } from "./capture-ui";
 import { fleePreview, refusalTh, reviveRefusal, skillButtonLine } from "./command-ui";
-import { BattleActor, artHeight, battleBackground, battleBase, type ActorState } from "./actor-art";
+import { BattleActor, artHeight, battleBackground, battleBase, playerLayers, type ActorState } from "./actor-art";
 import { UiBar, UiButton, assetMeta, contentIconKey, loadUiKit, reducedMotion, uiKey, uiPanel, uiSprite, type CommandIcon } from "./ui-kit";
 
 const CONTENT = exampleContentMaps();
@@ -666,7 +666,8 @@ export class BattleScene extends Phaser.Scene {
         const body = this.add.rectangle(x, y, 48, bh, ELEMENT_COLOR[u.element]).setStrokeStyle(3, 0x0b0a12).setInteractive({ useHandCursor: true });
         // Art faces right; enemies stand on the right and face left (Nut 2026-10-07: flip for now).
         const weapon = u.kind === "player" ? (u.look?.weaponKind ?? (u.basicAttackRange === "ranged" ? "physical_ranged" : "physical_melee")) : null;
-        const actor = base === null ? null : new BattleActor(this, base, weapon, enemy);
+        const layers = u.kind !== "player" || base === null ? base : playerLayers("battle", { ...(u.look?.raceId !== undefined ? { raceId: u.look.raceId } : {}), element: u.element, ...(u.look?.appearance !== undefined ? { appearance: u.look.appearance } : {}), weaponKind: weapon });
+        const actor = layers === null ? null : new BattleActor(this, layers, weapon, enemy);
         if (actor !== null) body.setFillStyle(0x000000, 0).setStrokeStyle();
         body.on("pointerdown", () => {
           // Enemies for attacks and enemy skills; allies for heals, buffs and shields.

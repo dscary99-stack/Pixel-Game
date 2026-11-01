@@ -35,7 +35,7 @@ import type { CharacterApi, CharacterBundle } from "./character-api";
 import { autoHuntPanel, armoryPanel, classPanel, practicePanel, craftPanel, refinePanel, frontierPanel, journalPanel, ordersPanel, questPanel, titleName, equipmentPanel, partyPanel, rebirthPanel, secretQuestPanel, shopPanel, skillPanel, statsPanel, skillTreePanel, teamPanel, vitals } from "./character-ui";
 import { mailPanel, marketPanel, tradePanel, vaultPanel } from "./market-ui";
 import type { WorldTransport } from "./world-transport";
-import { WorldActor, drawTileMap, portalSprite, worldBase } from "./actor-art";
+import { WorldActor, drawTileMap, playerLayers, portalSprite, worldBase } from "./actor-art";
 import { UiBar, UiButton, loadUiKit, uiKey, uiPanel, type MenuIcon } from "./ui-kit";
 
 const W = 960;
@@ -469,7 +469,7 @@ export class WorldScene extends Phaser.Scene {
       if (base !== null) {
         const a = new WorldActor(this, base);
         a.place(nx, n.at.y * TILE + GROUND);
-        this.mapObjects.push(...[a.shadow, a.body, a.weapon].filter((o) => o !== null));
+        this.mapObjects.push(...a.sprites.map((l) => l.sprite), ...(a.shadow !== null ? [a.shadow] : []));
       } else {
         layer.add(this.add.ellipse(nx, ny + 9, 22, 8, 0x000000, 0.35));
         layer.add(this.add.rectangle(nx, ny, 18, 24, n.services.includes("frontier") ? 0xb06bf2 : 0x5fd1a4).setStrokeStyle(2, 0x1b1830));
@@ -500,8 +500,9 @@ export class WorldScene extends Phaser.Scene {
     const [fx, fy] = FACE_OFFSET[p.facing];
     const nose = this.add.rectangle(px + fx, py + fy, 6, 6, 0x1b1830).setDepth(11);
     // Codex's walker (human until the other races are drawn); the shapes stay as its invisible anchor.
-    const base = worldBase("player");
-    const art = base === null ? null : this.walker(new WorldActor(this, base), body);
+    // Layered by race, hair, face and colours (appearance.ts); human until the other races are drawn.
+    const layers = playerLayers("world", { ...(p.look?.raceId !== undefined ? { raceId: p.look.raceId } : {}), ...(p.look?.element !== undefined ? { element: p.look.element } : {}), ...(p.look?.appearance !== undefined ? { appearance: p.look.appearance } : {}) });
+    const art = layers.length === 0 ? null : this.walker(new WorldActor(this, layers), body);
     if (art !== null) {
       body.setVisible(false);
       nose.setVisible(false);

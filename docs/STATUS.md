@@ -1,5 +1,18 @@
 # สถานะงาน — Phase A + Battle settlement + Phase B (walking slice) + Phase C แรก (encounter) + Phase D แรก (ตัวละคร + อุปกรณ์ + Sigil/เหรียญ + EXP/เลเวล + Auto Hunt + การเติบโตคู่ใจ/Rebirth/ปาร์ตี้ + เลเวลสกิล/Bond + Rebirth variant + ระบบสถานะ + หอคอยรายสัปดาห์)
 
+## ตัวละครแบบซ้อนชั้น: โครงก่อนภาพ — Claude (1 พ.ย. 2026)
+
+นัทถามว่าควรทำ asset ตัวละครแยกไหม (เลือกผม หน้า เผ่า ธาตุ) แล้วสั่ง "ร่างโครงก่อน ค่อยสร้างภาพ":
+
+- **ข้อมูล** `packages/shared/src/appearance.ts` (**P38** ร่างของ Claude): ผม 8 ทรง, หน้า 6 แบบ, สีผิว 6, สีผม 10, สีตา 8, สีขอบชุดตามธาตุ; `AppearanceSchema` ใน `CreateCharacterRequest.appearance` (ไม่ส่ง = ค่าเริ่มต้น), `appearanceOf` อ่านค่าเก่า/เสียเป็นค่าเริ่มต้นทีละส่วน, `recolorMap` สี key → สีที่เลือก
+- **server**: migration `0041_character_appearance.sql` (`appearance_json`), create เก็บค่า (idempotent เหมือนเดิม ไปกับ row ตัวละคร), `CharacterView.appearance`; ไฟต์ได้ `BattleUnit.look.appearance`; แผนที่ได้ `PlayerLook.raceId/element/appearance` (parsePlayerLook กรองค่าแปลก) — ข้อมูลภาพเท่านั้น ไม่ถูกอ่านเป็นตัวเลข
+- **client**: `playerLayers` ซ้อน ผมหลัง → ตัวฐานเผ่า → หน้า → ผมหน้า → อาวุธ, `recolored` แทนสี key ต่อ texture (cache ตามชุดสี พร้อมคลิป), `headOffset` ต่อเผ่า; ชั้นที่ยังไม่มีภาพถูกข้าม หน้าสร้างตัวละครมีหัวข้อ "รูปลักษณ์" (ทรงผม/สีผม/หน้า/สีผิว/สีตา) พร้อมตัวอย่างขยับ (idle) ที่ซ้อนชั้นและเปลี่ยนสีแบบเดียวกับในเกม
+- **contract ภาพ** ART_HANDOFF §12 (ชื่อไฟล์ ลำดับชั้น สี key ปริมาณงาน) + แถว §9
+
+ตรวจ: test ใหม่ `appearance.test.ts` (6) + character-store (เก็บลุค/ค่าเริ่มต้น/ปฏิเสธ id ที่ไม่มี); สร้างตัวละครจริงผ่าน `?server` เลือกหางม้า+ผมแดง → D1 เก็บ `hair:03`/`haircolor:05` แล้วเข้าแผนที่ได้; ไฟต์ preview ยังเหมือนเดิม; `npm run check` ผ่าน
+
+ข้อจำกัด: ยังไม่มีภาพผม/หน้า/เผ่าอื่น และ human ชุดปัจจุบันไม่ได้ทาสี key จึงยังไม่เห็นความต่างในเกม (หน้าสร้างตัวละครบอกไว้); ยังเปลี่ยนรูปลักษณ์หลังสร้างไม่ได้; ไม่มีทรงตัว (ชาย/หญิง ผอม/ล่ำ); แฟชั่นยังเป็นรูปทรงชั่วคราว
+
 ## ต่อภาพโลกเข้าเกม — Claude (1 พ.ย. 2026)
 
 รวม `codex/world-sprites` (57cac69) แล้วต่อเข้า renderer ใน `apps/client/src/actor-art.ts`:

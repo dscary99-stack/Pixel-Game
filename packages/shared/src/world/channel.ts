@@ -11,6 +11,8 @@ import type { RulesConfig } from "../rules";
 import { portalAt, type MapDefinition, type Portal, type TilePos } from "./map";
 import { DIRECTIONS, artFacing, tryStep, type Direction, type StepRejection } from "./movement";
 import type { VisiblePack } from "./encounter";
+import { ElementSchema, type Element } from "../schemas";
+import { appearanceOf, type Appearance } from "../appearance";
 import { AutoHuntSettingsSchema, type AutoStopReason, type HuntSummary } from "./auto-hunt";
 
 // ---------------------------------------------------------------- wire protocol
@@ -37,6 +39,10 @@ export type Facing = "N" | "E" | "S" | "W";
 export interface PlayerLook {
   titleId?: string;
   fashion?: { layer: string; effect: string; color: string }[];
+  /** Body art: race, element (outfit trim) and the picked hair/face/colours (appearance.ts). */
+  raceId?: string;
+  element?: Element;
+  appearance?: Appearance;
 }
 
 /** What other players may see. No account id, no timing state. */
@@ -137,7 +143,7 @@ export function sameLook(a: PlayerLook | undefined, b: PlayerLook | undefined): 
 export function parsePlayerLook(raw: string | null): PlayerLook | undefined {
   if (raw === null || raw === "") return undefined;
   try {
-    const o = JSON.parse(raw) as { titleId?: unknown; fashion?: unknown };
+    const o = JSON.parse(raw) as { titleId?: unknown; fashion?: unknown; raceId?: unknown; element?: unknown; appearance?: unknown };
     const titleId = typeof o.titleId === "string" && /^title:[a-z0-9_]{1,80}$/.test(o.titleId) ? o.titleId : undefined;
     const layers = new Set<string>();
     const fashion = (Array.isArray(o.fashion) ? o.fashion : []).flatMap((f: { layer?: unknown; effect?: unknown; color?: unknown }) => {
@@ -146,7 +152,16 @@ export function parsePlayerLook(raw: string | null): PlayerLook | undefined {
       layers.add(f.layer);
       return [{ layer: f.layer, effect: f.effect, color: f.color }];
     });
-    const look: PlayerLook = { ...(titleId !== undefined ? { titleId } : {}), ...(fashion.length > 0 ? { fashion } : {}) };
+    const raceId = typeof o.raceId === "string" && /^race:[a-z]{1,32}$/.test(o.raceId) ? o.raceId : undefined;
+    const element = typeof o.element === "string" && ElementSchema.safeParse(o.element).success ? (o.element as Element) : undefined;
+    const appearance = o.appearance === undefined ? undefined : appearanceOf(o.appearance);
+    const look: PlayerLook = {
+      ...(titleId !== undefined ? { titleId } : {}),
+      ...(fashion.length > 0 ? { fashion } : {}),
+      ...(raceId !== undefined ? { raceId } : {}),
+      ...(element !== undefined ? { element } : {}),
+      ...(appearance !== undefined ? { appearance } : {}),
+    };
     return Object.keys(look).length > 0 ? look : undefined;
   } catch {
     return undefined;

@@ -16,6 +16,7 @@ import { gearBonuses, weaponRange } from "./equipment";
 import { ascensionPassiveFor, playerKit } from "./player-kit";
 import type { EquipmentDefinition, RolledAffix } from "./schemas";
 import type { FashionLook } from "./fashion";
+import { AppearanceSchema, type Appearance } from "./appearance";
 
 export interface ClassDefinition {
   id: string;
@@ -80,6 +81,8 @@ export const CreateCharacterRequestSchema = z
     classId: z.enum(classIds),
     raceId: z.enum(raceIds),
     element: ElementSchema.refine((e) => (PLAYER_ELEMENTS as readonly string[]).includes(e), "pick one of the six elements"),
+    /** Hair, face and colours (appearance.ts); omitted = the default look. A look only. */
+    appearance: AppearanceSchema.optional(),
   })
   .strict();
 export type CreateCharacterRequest = z.infer<typeof CreateCharacterRequestSchema>;
@@ -121,6 +124,8 @@ export interface CharacterView {
   ascensionId?: string | null;
   /** Worn fashion looks, one per layer (fashion.ts); a look only, no stats. */
   fashion?: FashionLook[];
+  /** Hair, face and colours picked at creation (appearance.ts); a look only. */
+  appearance?: Appearance;
   raceId: string;
   element: Element;
   level: number;
@@ -232,7 +237,7 @@ export function playerSetup(
     ...(worn.sigilIds !== undefined && worn.sigilIds.length > 0 ? { sigilIds: [...worn.sigilIds] } : {}),
     ...(ascensionPassiveFor(c.raceId, c.ascensionId) !== undefined ? { ascensionId: c.ascensionId! } : {}),
     ...(c.fashion !== undefined && c.fashion.length > 0 ? { fashion: c.fashion.map((f) => ({ layer: f.layer, effect: f.effect, color: f.color })) } : {}),
-    look: { raceId: c.raceId, ...(worn.mainHand?.weaponKind !== undefined ? { weaponKind: worn.mainHand.weaponKind } : {}) },
+    look: { raceId: c.raceId, ...(worn.mainHand?.weaponKind !== undefined ? { weaponKind: worn.mainHand.weaponKind } : {}), ...(c.appearance !== undefined ? { appearance: { ...c.appearance } } : {}) },
     basicAttackRange: weaponRange(worn.mainHand, cls?.basicAttackRange ?? "melee"),
     ...(c.companionBox !== undefined ? { companionRoom: Math.max(0, c.companionBox.capacity - c.companionBox.used) } : {}),
     row: PLAYER_POSITION.row,
