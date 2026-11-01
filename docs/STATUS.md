@@ -1,5 +1,11 @@
 # สถานะงาน — Phase A + Battle settlement + Phase B (walking slice) + Phase C แรก (encounter) + Phase D แรก (ตัวละคร + อุปกรณ์ + Sigil/เหรียญ + EXP/เลเวล + Auto Hunt + การเติบโตคู่ใจ/Rebirth/ปาร์ตี้ + เลเวลสกิล/Bond + Rebirth variant + ระบบสถานะ + หอคอยรายสัปดาห์)
 
+## ภาพตัวละคร/มอน/แผนที่ — Codex
+
+1 พ.ย. 2026 · `codex/world-sprites` จาก `claude/project-thread-ektp0t` commit `582c4d7` ส่ง **173 PNG / 879 native frames / 162 animations**: มอน6ชนิดครบ battle/world4ทิศ, humanพร้อมอาวุธแยก4ตระกูลและท่ายิงธนูเฉพาะ, NPC14คน, tilesเมือง/ทุ่งครบTILE_LEGENDพร้อมรอยต่อ/ชั้นบัง/portal, ฉากไฟต์3ฉากพร้อมambient และเงา2ขนาด ใช้ palette cute v002 เดิม
+
+QA native ผ่าน ไม่มี failures/warnings; `npm run check` ผ่าน รวมtypecheck/tests/client build/Worker dry-run ภาพตรวจจากแผนที่จริงและไฟต์6ต่อ10มี1×/2× พร้อมGIFทุกคลิปที่ [world preview](../art/world/preview.html), [PROOF](../art/world/PROOF.md), [คู่มือส่งต่อ](../art/world/HANDOFF.md) เพิ่มmetadata/indexแล้ว ไม่แก้apps/*/srcหรือpackages; Claudeต่อrendererเอง ยังไม่merge/deploy งานเสริมที่เหลือ: ฐานอีก7เผ่าและชั้นก้ามบอสแยก (ปัจจุบันก้ามรวมในตัว) ธาตุใช้VFX/badgeภายนอกตามmetadata
+
 ## UI asset รอบสอง — Codex: cute rebuild v002 (31 ต.ค. 2026)
 
 แก้ครบทั้งชุดเดิมและรอบสองตามคำสั่งผู้ใช้: **364 PNG / 151 animations / 910 source frames** บน `codex/ui-kit-cute-rebuild`. ใช้ภาพน่ารักมีมิติ โทนทองอุ่น coral mint lavender; ขนาดและ semantic IDs เดิม, ไฟล์ v002, palette ร่วม128สี, alpha0/255. เก็บ v001 เดิมและเปลี่ยน public metadata index ไป v002. ไม่แก้ apps/*/src หรือ packages.

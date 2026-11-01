@@ -1,0 +1,43 @@
+{
+  "assetId": "mon_bell_bird_world_idle_right",
+  "version": 1,
+  "file": "/assets/sprites/monsters/mon_bell_bird_world_idle_right_v001.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "columns": 4,
+  "rows": 1,
+  "frameCount": 4,
+  "origin": [
+    0.5,
+    1
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-ui-v002",
+  "animations": [
+    {
+      "name": "idle",
+      "frames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "fps": 6,
+      "loop": true
+    }
+  ],
+  "groundOffset": 4,
+  "groundPoint": [
+    32,
+    60
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "facing": "right",
+  "shadowAsset": "shadow_small",
+  "artId": "art:bell_bird",
+  "sourceAtlas": "bell_bird_world_idle"
+}

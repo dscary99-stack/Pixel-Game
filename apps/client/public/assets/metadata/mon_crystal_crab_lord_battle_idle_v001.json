@@ -1,0 +1,59 @@
+{
+  "assetId": "mon_crystal_crab_lord_battle_idle",
+  "version": 1,
+  "file": "/assets/sprites/monsters/mon_crystal_crab_lord_battle_idle_v001.png",
+  "frameWidth": 128,
+  "frameHeight": 128,
+  "columns": 4,
+  "rows": 1,
+  "frameCount": 4,
+  "origin": [
+    0.5,
+    1
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-ui-v002",
+  "animations": [
+    {
+      "name": "idle",
+      "frames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "fps": 6,
+      "loop": true
+    }
+  ],
+  "groundOffset": 8,
+  "groundPoint": [
+    64,
+    120
+  ],
+  "hitPoint": [
+    64,
+    32
+  ],
+  "castPoint": [
+    100,
+    60
+  ],
+  "allowedFlip": {
+    "x": true,
+    "y": false
+  },
+  "facing": "right",
+  "shadowAsset": "shadow_large",
+  "artId": "art:crystal_crab_lord",
+  "contentGroup": "species",
+  "elementRendering": {
+    "mode": "external-vfx",
+    "allowedElements": [
+      "WATER",
+      "EARTH"
+    ]
+  },
+  "sourceAtlas": "crystal_crab_lord_battle"
+}

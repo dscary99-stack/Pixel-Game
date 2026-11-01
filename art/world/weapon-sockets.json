@@ -1,0 +1,1342 @@
+{
+  "weapon_physical_melee_battle_idle": {
+    "bodyAsset": "player_human_battle_idle",
+    "grips": [
+      [
+        27,
+        48,
+        -25
+      ],
+      [
+        27,
+        48,
+        -25
+      ],
+      [
+        27,
+        48,
+        -25
+      ],
+      [
+        27,
+        48,
+        -25
+      ]
+    ]
+  },
+  "weapon_physical_melee_battle_hurt": {
+    "bodyAsset": "player_human_battle_hurt",
+    "grips": [
+      [
+        25,
+        39,
+        15
+      ],
+      [
+        29,
+        44,
+        -10
+      ]
+    ]
+  },
+  "weapon_physical_melee_battle_attack": {
+    "bodyAsset": "player_human_battle_attack",
+    "grips": [
+      [
+        28,
+        42,
+        -20
+      ],
+      [
+        29,
+        46,
+        20
+      ],
+      [
+        17,
+        31,
+        55
+      ],
+      [
+        56,
+        37,
+        20
+      ],
+      [
+        50,
+        46,
+        -30
+      ],
+      [
+        28,
+        44,
+        -25
+      ]
+    ]
+  },
+  "weapon_physical_melee_battle_cast": {
+    "bodyAsset": "player_human_battle_cast",
+    "grips": [
+      [
+        31,
+        42,
+        -10
+      ],
+      [
+        37,
+        41,
+        0
+      ],
+      [
+        54,
+        20,
+        15
+      ],
+      [
+        55,
+        29,
+        15
+      ],
+      [
+        34,
+        42,
+        -15
+      ],
+      [
+        24,
+        46,
+        -25
+      ]
+    ]
+  },
+  "weapon_physical_melee_battle_ko": {
+    "bodyAsset": "player_human_battle_ko",
+    "grips": [
+      [
+        26,
+        46,
+        -30
+      ],
+      [
+        32,
+        53,
+        -75
+      ],
+      [
+        39,
+        53,
+        -90
+      ],
+      [
+        40,
+        53,
+        -90
+      ]
+    ]
+  },
+  "weapon_physical_melee_world_walk_up": {
+    "bodyAsset": "player_human_world_walk_up",
+    "grips": [
+      [
+        44,
+        42,
+        12
+      ],
+      [
+        45,
+        40,
+        10
+      ],
+      [
+        42,
+        44,
+        15
+      ],
+      [
+        44,
+        42,
+        12
+      ]
+    ]
+  },
+  "weapon_physical_melee_world_idle_up": {
+    "bodyAsset": "player_human_world_idle_up",
+    "grips": [
+      [
+        44,
+        42,
+        12
+      ],
+      [
+        44,
+        42,
+        12
+      ],
+      [
+        44,
+        42,
+        12
+      ],
+      [
+        44,
+        42,
+        12
+      ]
+    ]
+  },
+  "weapon_physical_melee_world_walk_right": {
+    "bodyAsset": "player_human_world_walk_right",
+    "grips": [
+      [
+        25,
+        45,
+        -20
+      ],
+      [
+        42,
+        43,
+        -15
+      ],
+      [
+        26,
+        45,
+        -25
+      ],
+      [
+        25,
+        45,
+        -20
+      ]
+    ]
+  },
+  "weapon_physical_melee_world_idle_right": {
+    "bodyAsset": "player_human_world_idle_right",
+    "grips": [
+      [
+        25,
+        45,
+        -20
+      ],
+      [
+        25,
+        45,
+        -20
+      ],
+      [
+        25,
+        45,
+        -20
+      ],
+      [
+        25,
+        45,
+        -20
+      ]
+    ]
+  },
+  "weapon_physical_melee_world_walk_down": {
+    "bodyAsset": "player_human_world_walk_down",
+    "grips": [
+      [
+        22,
+        43,
+        -12
+      ],
+      [
+        24,
+        41,
+        -8
+      ],
+      [
+        20,
+        44,
+        -16
+      ],
+      [
+        22,
+        43,
+        -12
+      ]
+    ]
+  },
+  "weapon_physical_melee_world_idle_down": {
+    "bodyAsset": "player_human_world_idle_down",
+    "grips": [
+      [
+        22,
+        43,
+        -12
+      ],
+      [
+        22,
+        43,
+        -12
+      ],
+      [
+        22,
+        43,
+        -12
+      ],
+      [
+        22,
+        43,
+        -12
+      ]
+    ]
+  },
+  "weapon_physical_melee_world_walk_left": {
+    "bodyAsset": "player_human_world_walk_left",
+    "grips": [
+      [
+        39,
+        45,
+        20
+      ],
+      [
+        22,
+        43,
+        15
+      ],
+      [
+        38,
+        45,
+        25
+      ],
+      [
+        39,
+        45,
+        20
+      ]
+    ]
+  },
+  "weapon_physical_melee_world_idle_left": {
+    "bodyAsset": "player_human_world_idle_left",
+    "grips": [
+      [
+        39,
+        45,
+        20
+      ],
+      [
+        39,
+        45,
+        20
+      ],
+      [
+        39,
+        45,
+        20
+      ],
+      [
+        39,
+        45,
+        20
+      ]
+    ]
+  },
+  "weapon_physical_ranged_battle_idle": {
+    "bodyAsset": "player_human_battle_idle",
+    "grips": [
+      [
+        27,
+        48,
+        -25
+      ],
+      [
+        27,
+        48,
+        -25
+      ],
+      [
+        27,
+        48,
+        -25
+      ],
+      [
+        27,
+        48,
+        -25
+      ]
+    ]
+  },
+  "weapon_physical_ranged_battle_hurt": {
+    "bodyAsset": "player_human_battle_hurt",
+    "grips": [
+      [
+        25,
+        39,
+        15
+      ],
+      [
+        29,
+        44,
+        -10
+      ]
+    ]
+  },
+  "weapon_physical_ranged_battle_attack": {
+    "bodyAsset": "player_human_battle_attack_physical_ranged",
+    "grips": [
+      [
+        45,
+        40,
+        0
+      ],
+      [
+        54,
+        35,
+        0
+      ],
+      [
+        54,
+        35,
+        0
+      ],
+      [
+        54,
+        33,
+        0
+      ],
+      [
+        54,
+        33,
+        0
+      ],
+      [
+        45,
+        40,
+        0
+      ]
+    ]
+  },
+  "weapon_physical_ranged_battle_cast": {
+    "bodyAsset": "player_human_battle_cast",
+    "grips": [
+      [
+        31,
+        42,
+        -10
+      ],
+      [
+        37,
+        41,
+        0
+      ],
+      [
+        54,
+        20,
+        0
+      ],
+      [
+        55,
+        29,
+        0
+      ],
+      [
+        34,
+        42,
+        -15
+      ],
+      [
+        24,
+        46,
+        -25
+      ]
+    ]
+  },
+  "weapon_physical_ranged_battle_ko": {
+    "bodyAsset": "player_human_battle_ko",
+    "grips": [
+      [
+        26,
+        46,
+        -30
+      ],
+      [
+        32,
+        53,
+        -75
+      ],
+      [
+        39,
+        53,
+        -90
+      ],
+      [
+        40,
+        53,
+        -90
+      ]
+    ]
+  },
+  "weapon_physical_ranged_world_walk_up": {
+    "bodyAsset": "player_human_world_walk_up",
+    "grips": [
+      [
+        44,
+        42,
+        12
+      ],
+      [
+        45,
+        40,
+        10
+      ],
+      [
+        42,
+        44,
+        15
+      ],
+      [
+        44,
+        42,
+        12
+      ]
+    ]
+  },
+  "weapon_physical_ranged_world_idle_up": {
+    "bodyAsset": "player_human_world_idle_up",
+    "grips": [
+      [
+        44,
+        42,
+        12
+      ],
+      [
+        44,
+        42,
+        12
+      ],
+      [
+        44,
+        42,
+        12
+      ],
+      [
+        44,
+        42,
+        12
+      ]
+    ]
+  },
+  "weapon_physical_ranged_world_walk_right": {
+    "bodyAsset": "player_human_world_walk_right",
+    "grips": [
+      [
+        25,
+        45,
+        -20
+      ],
+      [
+        42,
+        43,
+        -15
+      ],
+      [
+        26,
+        45,
+        -25
+      ],
+      [
+        25,
+        45,
+        -20
+      ]
+    ]
+  },
+  "weapon_physical_ranged_world_idle_right": {
+    "bodyAsset": "player_human_world_idle_right",
+    "grips": [
+      [
+        25,
+        45,
+        -20
+      ],
+      [
+        25,
+        45,
+        -20
+      ],
+      [
+        25,
+        45,
+        -20
+      ],
+      [
+        25,
+        45,
+        -20
+      ]
+    ]
+  },
+  "weapon_physical_ranged_world_walk_down": {
+    "bodyAsset": "player_human_world_walk_down",
+    "grips": [
+      [
+        22,
+        43,
+        -12
+      ],
+      [
+        24,
+        41,
+        -8
+      ],
+      [
+        20,
+        44,
+        -16
+      ],
+      [
+        22,
+        43,
+        -12
+      ]
+    ]
+  },
+  "weapon_physical_ranged_world_idle_down": {
+    "bodyAsset": "player_human_world_idle_down",
+    "grips": [
+      [
+        22,
+        43,
+        -12
+      ],
+      [
+        22,
+        43,
+        -12
+      ],
+      [
+        22,
+        43,
+        -12
+      ],
+      [
+        22,
+        43,
+        -12
+      ]
+    ]
+  },
+  "weapon_physical_ranged_world_walk_left": {
+    "bodyAsset": "player_human_world_walk_left",
+    "grips": [
+      [
+        39,
+        45,
+        20
+      ],
+      [
+        22,
+        43,
+        15
+      ],
+      [
+        38,
+        45,
+        25
+      ],
+      [
+        39,
+        45,
+        20
+      ]
+    ]
+  },
+  "weapon_physical_ranged_world_idle_left": {
+    "bodyAsset": "player_human_world_idle_left",
+    "grips": [
+      [
+        39,
+        45,
+        20
+      ],
+      [
+        39,
+        45,
+        20
+      ],
+      [
+        39,
+        45,
+        20
+      ],
+      [
+        39,
+        45,
+        20
+      ]
+    ]
+  },
+  "weapon_magic_battle_idle": {
+    "bodyAsset": "player_human_battle_idle",
+    "grips": [
+      [
+        27,
+        48,
+        -25
+      ],
+      [
+        27,
+        48,
+        -25
+      ],
+      [
+        27,
+        48,
+        -25
+      ],
+      [
+        27,
+        48,
+        -25
+      ]
+    ]
+  },
+  "weapon_magic_battle_hurt": {
+    "bodyAsset": "player_human_battle_hurt",
+    "grips": [
+      [
+        25,
+        39,
+        15
+      ],
+      [
+        29,
+        44,
+        -10
+      ]
+    ]
+  },
+  "weapon_magic_battle_attack": {
+    "bodyAsset": "player_human_battle_attack",
+    "grips": [
+      [
+        28,
+        42,
+        -20
+      ],
+      [
+        29,
+        46,
+        20
+      ],
+      [
+        17,
+        31,
+        55
+      ],
+      [
+        56,
+        37,
+        20
+      ],
+      [
+        50,
+        46,
+        -30
+      ],
+      [
+        28,
+        44,
+        -25
+      ]
+    ]
+  },
+  "weapon_magic_battle_cast": {
+    "bodyAsset": "player_human_battle_cast",
+    "grips": [
+      [
+        31,
+        42,
+        -10
+      ],
+      [
+        37,
+        41,
+        0
+      ],
+      [
+        54,
+        20,
+        15
+      ],
+      [
+        55,
+        29,
+        15
+      ],
+      [
+        34,
+        42,
+        -15
+      ],
+      [
+        24,
+        46,
+        -25
+      ]
+    ]
+  },
+  "weapon_magic_battle_ko": {
+    "bodyAsset": "player_human_battle_ko",
+    "grips": [
+      [
+        26,
+        46,
+        -30
+      ],
+      [
+        32,
+        53,
+        -75
+      ],
+      [
+        39,
+        53,
+        -90
+      ],
+      [
+        40,
+        53,
+        -90
+      ]
+    ]
+  },
+  "weapon_magic_world_walk_up": {
+    "bodyAsset": "player_human_world_walk_up",
+    "grips": [
+      [
+        44,
+        42,
+        12
+      ],
+      [
+        45,
+        40,
+        10
+      ],
+      [
+        42,
+        44,
+        15
+      ],
+      [
+        44,
+        42,
+        12
+      ]
+    ]
+  },
+  "weapon_magic_world_idle_up": {
+    "bodyAsset": "player_human_world_idle_up",
+    "grips": [
+      [
+        44,
+        42,
+        12
+      ],
+      [
+        44,
+        42,
+        12
+      ],
+      [
+        44,
+        42,
+        12
+      ],
+      [
+        44,
+        42,
+        12
+      ]
+    ]
+  },
+  "weapon_magic_world_walk_right": {
+    "bodyAsset": "player_human_world_walk_right",
+    "grips": [
+      [
+        25,
+        45,
+        -20
+      ],
+      [
+        42,
+        43,
+        -15
+      ],
+      [
+        26,
+        45,
+        -25
+      ],
+      [
+        25,
+        45,
+        -20
+      ]
+    ]
+  },
+  "weapon_magic_world_idle_right": {
+    "bodyAsset": "player_human_world_idle_right",
+    "grips": [
+      [
+        25,
+        45,
+        -20
+      ],
+      [
+        25,
+        45,
+        -20
+      ],
+      [
+        25,
+        45,
+        -20
+      ],
+      [
+        25,
+        45,
+        -20
+      ]
+    ]
+  },
+  "weapon_magic_world_walk_down": {
+    "bodyAsset": "player_human_world_walk_down",
+    "grips": [
+      [
+        22,
+        43,
+        -12
+      ],
+      [
+        24,
+        41,
+        -8
+      ],
+      [
+        20,
+        44,
+        -16
+      ],
+      [
+        22,
+        43,
+        -12
+      ]
+    ]
+  },
+  "weapon_magic_world_idle_down": {
+    "bodyAsset": "player_human_world_idle_down",
+    "grips": [
+      [
+        22,
+        43,
+        -12
+      ],
+      [
+        22,
+        43,
+        -12
+      ],
+      [
+        22,
+        43,
+        -12
+      ],
+      [
+        22,
+        43,
+        -12
+      ]
+    ]
+  },
+  "weapon_magic_world_walk_left": {
+    "bodyAsset": "player_human_world_walk_left",
+    "grips": [
+      [
+        39,
+        45,
+        20
+      ],
+      [
+        22,
+        43,
+        15
+      ],
+      [
+        38,
+        45,
+        25
+      ],
+      [
+        39,
+        45,
+        20
+      ]
+    ]
+  },
+  "weapon_magic_world_idle_left": {
+    "bodyAsset": "player_human_world_idle_left",
+    "grips": [
+      [
+        39,
+        45,
+        20
+      ],
+      [
+        39,
+        45,
+        20
+      ],
+      [
+        39,
+        45,
+        20
+      ],
+      [
+        39,
+        45,
+        20
+      ]
+    ]
+  },
+  "weapon_support_battle_idle": {
+    "bodyAsset": "player_human_battle_idle",
+    "grips": [
+      [
+        27,
+        48,
+        -25
+      ],
+      [
+        27,
+        48,
+        -25
+      ],
+      [
+        27,
+        48,
+        -25
+      ],
+      [
+        27,
+        48,
+        -25
+      ]
+    ]
+  },
+  "weapon_support_battle_hurt": {
+    "bodyAsset": "player_human_battle_hurt",
+    "grips": [
+      [
+        25,
+        39,
+        15
+      ],
+      [
+        29,
+        44,
+        -10
+      ]
+    ]
+  },
+  "weapon_support_battle_attack": {
+    "bodyAsset": "player_human_battle_attack",
+    "grips": [
+      [
+        28,
+        42,
+        -20
+      ],
+      [
+        29,
+        46,
+        20
+      ],
+      [
+        17,
+        31,
+        55
+      ],
+      [
+        56,
+        37,
+        20
+      ],
+      [
+        50,
+        46,
+        -30
+      ],
+      [
+        28,
+        44,
+        -25
+      ]
+    ]
+  },
+  "weapon_support_battle_cast": {
+    "bodyAsset": "player_human_battle_cast",
+    "grips": [
+      [
+        31,
+        42,
+        -10
+      ],
+      [
+        37,
+        41,
+        0
+      ],
+      [
+        54,
+        20,
+        15
+      ],
+      [
+        55,
+        29,
+        15
+      ],
+      [
+        34,
+        42,
+        -15
+      ],
+      [
+        24,
+        46,
+        -25
+      ]
+    ]
+  },
+  "weapon_support_battle_ko": {
+    "bodyAsset": "player_human_battle_ko",
+    "grips": [
+      [
+        26,
+        46,
+        -30
+      ],
+      [
+        32,
+        53,
+        -75
+      ],
+      [
+        39,
+        53,
+        -90
+      ],
+      [
+        40,
+        53,
+        -90
+      ]
+    ]
+  },
+  "weapon_support_world_walk_up": {
+    "bodyAsset": "player_human_world_walk_up",
+    "grips": [
+      [
+        44,
+        42,
+        12
+      ],
+      [
+        45,
+        40,
+        10
+      ],
+      [
+        42,
+        44,
+        15
+      ],
+      [
+        44,
+        42,
+        12
+      ]
+    ]
+  },
+  "weapon_support_world_idle_up": {
+    "bodyAsset": "player_human_world_idle_up",
+    "grips": [
+      [
+        44,
+        42,
+        12
+      ],
+      [
+        44,
+        42,
+        12
+      ],
+      [
+        44,
+        42,
+        12
+      ],
+      [
+        44,
+        42,
+        12
+      ]
+    ]
+  },
+  "weapon_support_world_walk_right": {
+    "bodyAsset": "player_human_world_walk_right",
+    "grips": [
+      [
+        25,
+        45,
+        -20
+      ],
+      [
+        42,
+        43,
+        -15
+      ],
+      [
+        26,
+        45,
+        -25
+      ],
+      [
+        25,
+        45,
+        -20
+      ]
+    ]
+  },
+  "weapon_support_world_idle_right": {
+    "bodyAsset": "player_human_world_idle_right",
+    "grips": [
+      [
+        25,
+        45,
+        -20
+      ],
+      [
+        25,
+        45,
+        -20
+      ],
+      [
+        25,
+        45,
+        -20
+      ],
+      [
+        25,
+        45,
+        -20
+      ]
+    ]
+  },
+  "weapon_support_world_walk_down": {
+    "bodyAsset": "player_human_world_walk_down",
+    "grips": [
+      [
+        22,
+        43,
+        -12
+      ],
+      [
+        24,
+        41,
+        -8
+      ],
+      [
+        20,
+        44,
+        -16
+      ],
+      [
+        22,
+        43,
+        -12
+      ]
+    ]
+  },
+  "weapon_support_world_idle_down": {
+    "bodyAsset": "player_human_world_idle_down",
+    "grips": [
+      [
+        22,
+        43,
+        -12
+      ],
+      [
+        22,
+        43,
+        -12
+      ],
+      [
+        22,
+        43,
+        -12
+      ],
+      [
+        22,
+        43,
+        -12
+      ]
+    ]
+  },
+  "weapon_support_world_walk_left": {
+    "bodyAsset": "player_human_world_walk_left",
+    "grips": [
+      [
+        39,
+        45,
+        20
+      ],
+      [
+        22,
+        43,
+        15
+      ],
+      [
+        38,
+        45,
+        25
+      ],
+      [
+        39,
+        45,
+        20
+      ]
+    ]
+  },
+  "weapon_support_world_idle_left": {
+    "bodyAsset": "player_human_world_idle_left",
+    "grips": [
+      [
+        39,
+        45,
+        20
+      ],
+      [
+        39,
+        45,
+        20
+      ],
+      [
+        39,
+        45,
+        20
+      ],
+      [
+        39,
+        45,
+        20
+      ]
+    ]
+  }
+}

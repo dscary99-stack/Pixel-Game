@@ -1,0 +1,44 @@
+{
+  "assetId": "npc_uncle_lek_world_idle_down",
+  "version": 1,
+  "file": "/assets/sprites/npcs/npc_uncle_lek_world_idle_down_v001.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "columns": 4,
+  "rows": 1,
+  "frameCount": 4,
+  "origin": [
+    0.5,
+    1
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-ui-v002",
+  "animations": [
+    {
+      "name": "idle",
+      "frames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "fps": 6,
+      "loop": true
+    }
+  ],
+  "groundOffset": 4,
+  "groundPoint": [
+    32,
+    60
+  ],
+  "facing": "down",
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "shadowAsset": "shadow_small",
+  "contentId": "npc:uncle_lek",
+  "contentGroup": "npcs",
+  "sourceAtlas": "npc_uncle_lek"
+}

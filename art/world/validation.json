@@ -1,0 +1,10 @@
+{
+  "date": "2026-11-01",
+  "command": "npm run check",
+  "exitCode": 0,
+  "checks": ["typecheck", "tests", "client build", "Worker dry-run"],
+  "sourceCodeModified": false,
+  "deploymentPerformed": false,
+  "visualReview": ["battle contact sheets", "world four-direction contact sheets", "14 NPC contact sheets", "equipment/body composite strips", "actual town and field maps", "three 6v10 battle compositions", "reserved-slot boss composition"],
+  "runtimeIntegrationTested": false
+}

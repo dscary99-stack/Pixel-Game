@@ -1,0 +1,43 @@
+{
+  "assetId": "mon_armor_crab_world_idle_left",
+  "version": 1,
+  "file": "/assets/sprites/monsters/mon_armor_crab_world_idle_left_v001.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "columns": 4,
+  "rows": 1,
+  "frameCount": 4,
+  "origin": [
+    0.5,
+    1
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-ui-v002",
+  "animations": [
+    {
+      "name": "idle",
+      "frames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "fps": 6,
+      "loop": true
+    }
+  ],
+  "groundOffset": 4,
+  "groundPoint": [
+    32,
+    60
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "facing": "left",
+  "shadowAsset": "shadow_small",
+  "artId": "art:armor_crab",
+  "sourceAtlas": "armor_crab_world_idle"
+}

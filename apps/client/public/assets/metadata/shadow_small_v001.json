@@ -1,0 +1,20 @@
+{
+  "assetId": "shadow_small",
+  "version": 1,
+  "file": "/assets/sprites/effects/shadow_small_v001.png",
+  "frameWidth": 40,
+  "frameHeight": 12,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "origin": [
+    0.5,
+    0.5
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-ui-v002",
+  "animations": [],
+  "renderAlpha": 0.28,
+  "note": "Binary-alpha shared sprite; set runtime alpha to .28. Place at actor groundPoint, not frame bottom."
+}

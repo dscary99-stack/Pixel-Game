@@ -1,0 +1,68 @@
+{
+  "assetId": "mon_crystal_crab_lord_battle_attack",
+  "version": 1,
+  "file": "/assets/sprites/monsters/mon_crystal_crab_lord_battle_attack_v001.png",
+  "frameWidth": 128,
+  "frameHeight": 128,
+  "columns": 6,
+  "rows": 1,
+  "frameCount": 6,
+  "origin": [
+    0.5,
+    1
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-ui-v002",
+  "animations": [
+    {
+      "name": "attack",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fps": 10,
+      "loop": false
+    }
+  ],
+  "groundOffset": 8,
+  "groundPoint": [
+    64,
+    120
+  ],
+  "hitPoint": [
+    64,
+    32
+  ],
+  "castPoint": [
+    100,
+    60
+  ],
+  "allowedFlip": {
+    "x": true,
+    "y": false
+  },
+  "facing": "right",
+  "shadowAsset": "shadow_large",
+  "artId": "art:crystal_crab_lord",
+  "contentGroup": "species",
+  "elementRendering": {
+    "mode": "external-vfx",
+    "allowedElements": [
+      "WATER",
+      "EARTH"
+    ]
+  },
+  "sourceAtlas": "crystal_crab_lord_attack_clean",
+  "hitFrame": 3,
+  "events": [
+    {
+      "frame": 3,
+      "name": "hit"
+    }
+  ]
+}

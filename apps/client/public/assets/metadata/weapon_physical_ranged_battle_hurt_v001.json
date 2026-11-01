@@ -1,0 +1,57 @@
+{
+  "assetId": "weapon_physical_ranged_battle_hurt",
+  "version": 1,
+  "file": "/assets/sprites/equipment/weapon_physical_ranged_battle_hurt_v001.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "columns": 2,
+  "rows": 1,
+  "frameCount": 2,
+  "origin": [
+    0.5,
+    1
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-ui-v002",
+  "animations": [
+    {
+      "name": "hurt",
+      "frames": [
+        0,
+        1
+      ],
+      "fps": 8,
+      "loop": false
+    }
+  ],
+  "groundOffset": 4,
+  "groundPoint": [
+    32,
+    60
+  ],
+  "allowedFlip": {
+    "x": true,
+    "y": false
+  },
+  "facing": "right",
+  "bodyAsset": "player_human_battle_hurt",
+  "weaponFamily": "physical_ranged",
+  "layer": "equipment",
+  "sync": "same frame index as bodyAsset; no independent animation clock",
+  "gripPoints": [
+    [
+      25,
+      39
+    ],
+    [
+      29,
+      44
+    ]
+  ],
+  "gripAngles": [
+    15,
+    -10
+  ],
+  "sourceAtlas": "weapon_master"
+}

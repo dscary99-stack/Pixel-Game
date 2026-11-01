@@ -1,0 +1,82 @@
+{
+  "assetId": "weapon_physical_melee_battle_attack",
+  "version": 1,
+  "file": "/assets/sprites/equipment/weapon_physical_melee_battle_attack_v001.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "columns": 6,
+  "rows": 1,
+  "frameCount": 6,
+  "origin": [
+    0.5,
+    1
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-ui-v002",
+  "animations": [
+    {
+      "name": "attack",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fps": 10,
+      "loop": false
+    }
+  ],
+  "groundOffset": 4,
+  "groundPoint": [
+    32,
+    60
+  ],
+  "allowedFlip": {
+    "x": true,
+    "y": false
+  },
+  "facing": "right",
+  "bodyAsset": "player_human_battle_attack",
+  "weaponFamily": "physical_melee",
+  "layer": "equipment",
+  "sync": "same frame index as bodyAsset; no independent animation clock",
+  "gripPoints": [
+    [
+      28,
+      42
+    ],
+    [
+      29,
+      46
+    ],
+    [
+      17,
+      31
+    ],
+    [
+      56,
+      37
+    ],
+    [
+      50,
+      46
+    ],
+    [
+      28,
+      44
+    ]
+  ],
+  "gripAngles": [
+    -20,
+    20,
+    55,
+    20,
+    -30,
+    -25
+  ],
+  "sourceAtlas": "weapon_master",
+  "hitFrame": 3
+}

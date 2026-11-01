@@ -1,0 +1,43 @@
+{
+  "assetId": "mon_crystal_crab_lord_world_walk_down",
+  "version": 1,
+  "file": "/assets/sprites/monsters/mon_crystal_crab_lord_world_walk_down_v001.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "columns": 4,
+  "rows": 1,
+  "frameCount": 4,
+  "origin": [
+    0.5,
+    1
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-ui-v002",
+  "animations": [
+    {
+      "name": "walk",
+      "frames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "fps": 8,
+      "loop": true
+    }
+  ],
+  "groundOffset": 4,
+  "groundPoint": [
+    32,
+    60
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "facing": "down",
+  "shadowAsset": "shadow_small",
+  "artId": "art:crystal_crab_lord",
+  "sourceAtlas": "crystal_crab_lord_world"
+}
