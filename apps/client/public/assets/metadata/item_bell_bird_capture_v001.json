@@ -1,0 +1,48 @@
+{
+  "assetId": "item_bell_bird_capture",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/items/item_bell_bird_capture_v001.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "item",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "7942c1fb036ab530230e5be163460340d93f2c376641fbe6ee6224b69316f945",
+  "contentId": "item:bell_bird_capture",
+  "contentGroup": "items",
+  "motif": "bell"
+}

@@ -1,0 +1,70 @@
+{
+  "assetId": "bg_town_practice_ambient",
+  "version": 1,
+  "file": "/assets/sprites/backgrounds/bg_town_practice_ambient_v001.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "columns": 6,
+  "rows": 1,
+  "frameCount": 6,
+  "origin": [
+    0,
+    0
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-ui-v002",
+  "animations": [
+    {
+      "name": "ambient",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fps": 6,
+      "loop": true
+    }
+  ],
+  "compositeOver": "bg_town_practice_battle",
+  "reducedMotion": "hide ambient layer",
+  "placements": [
+    {
+      "x": 48,
+      "y": 84,
+      "phaseOffset": 0
+    },
+    {
+      "x": 848,
+      "y": 123,
+      "phaseOffset": 1
+    },
+    {
+      "x": 84,
+      "y": 378,
+      "phaseOffset": 2
+    },
+    {
+      "x": 821,
+      "y": 358,
+      "phaseOffset": 3
+    }
+  ],
+  "safeCombatAreas": [
+    [
+      170,
+      90,
+      240,
+      360
+    ],
+    [
+      550,
+      90,
+      280,
+      360
+    ]
+  ]
+}

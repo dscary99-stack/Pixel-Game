@@ -1,0 +1,64 @@
+{
+  "assetId": "ui_number_shield_1",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_number_shield_1_v001.png",
+  "frameWidth": 16,
+  "frameHeight": 24,
+  "columns": 5,
+  "rows": 1,
+  "frameCount": 5,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "pop",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "fps": 10,
+      "loop": false
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "popup",
+  "nineSlice": null,
+  "nativeSize": [
+    16,
+    24
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      16,
+      24
+    ]
+  ],
+  "completion": "hold-until-owner-removes",
+  "sha256": "e4593eb37d21fc92bab26adffe9e74b4654baf90858ad8c24f14bb396819f224",
+  "glyph": "1",
+  "style": "shield",
+  "advance": 12,
+  "inkHeight": 14,
+  "baseline": 20,
+  "motion": "readable -> rise 3px/flash -> settle; no scaling"
+}

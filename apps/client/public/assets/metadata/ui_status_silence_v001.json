@@ -1,0 +1,63 @@
+{
+  "assetId": "ui_status_silence",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_status_silence_v001.png",
+  "frameWidth": 16,
+  "frameHeight": 16,
+  "columns": 4,
+  "rows": 1,
+  "frameCount": 4,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "loop",
+      "frames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "fps": 8,
+      "loop": true
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "status",
+  "nineSlice": null,
+  "nativeSize": [
+    16,
+    16
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      16,
+      16
+    ]
+  ],
+  "completion": "repeat",
+  "sha256": "b3d704e2afdc67b97b1cd17bf825aa65e39bf851ffe0ff3843c012e198788103",
+  "contentId": "silence",
+  "harmful": true,
+  "category": "control",
+  "motif": "mouth",
+  "polarityBadge": "minus",
+  "motion": "stable readable glyph; subtle 1px travelling glint"
+}

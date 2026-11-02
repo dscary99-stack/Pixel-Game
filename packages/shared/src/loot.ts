@@ -26,7 +26,13 @@ export function lootRetention(rules: RulesConfig, origin: OriginMode): number {
     : rules.provisional.manualStartLootRetention.value;
 }
 
-export function rollLoot(rules: RulesConfig, table: LootTable, origin: OriginMode, rng: Rng): LootLine[] {
+/** Party material bonus (P02): relative percent, and which items count as ordinary materials. */
+export interface MaterialBonus {
+  percent: number;
+  isMaterial: (itemId: string) => boolean;
+}
+
+export function rollLoot(rules: RulesConfig, table: LootTable, origin: OriginMode, rng: Rng, material?: MaterialBonus): LootLine[] {
   const maxSlots = rules.confirmed.maxLootTypesPerEnemy.value;
   const candidates: LootLine[] = [];
 
@@ -47,10 +53,46 @@ export function rollLoot(rules: RulesConfig, table: LootTable, origin: OriginMod
     candidates.push({ itemId: entry.itemId, quantity });
   }
 
+  // Step 4, with the party bonus on ordinary materials folded into the same multiplier once:
+  // r = q × (1 + b). Above 1, the line is kept and doubled with chance r − 1, so the expected
+  // amount is r × quantity (1% becomes 1.06%, not 7%). With no bonus this is the plain q filter.
   const q = lootRetention(rules, origin);
-  const kept = q >= 1 ? candidates : candidates.filter(() => rng.chance(q));
+  const kept: LootLine[] = [];
+  for (const line of candidates) {
+    const b = material !== undefined && material.percent > 0 && material.isMaterial(line.itemId) ? material.percent : 0;
+    const r = (q * (100 + b)) / 100;
+    if (r < 1 && !rng.chance(r)) continue;
+    kept.push(line);
+    if (r > 1 && rng.chance(r - 1)) kept.push({ ...line });
+  }
 
   const merged = new Map<string, number>();
   for (const line of kept) merged.set(line.itemId, (merged.get(line.itemId) ?? 0) + line.quantity);
   return [...merged].map(([itemId, quantity]) => ({ itemId, quantity }));
+}
+
+/**
+ * The chance that one defeated enemy drops at least one of `itemId` from this table, before the
+ * Auto Hunt / manual-start keep filter (the item's own rarity, not the run's luck).
+ */
+export function dropChance(rules: RulesConfig, table: LootTable, itemId: string): number {
+  const n = rules.confirmed.maxLootTypesPerEnemy.value;
+  const totalPool = table.pools.reduce((sum, p) => sum + p.weight, 0);
+  const filled = totalPool / (table.emptySlotWeight + totalPool);
+  let perSlot = 0;
+  for (const pool of table.pools) {
+    const totalEntries = pool.entries.reduce((sum, e) => sum + e.weight, 0);
+    for (const e of pool.entries) if (e.itemId === itemId) perSlot += filled * (pool.weight / totalPool) * (e.weight / totalEntries);
+  }
+  const p = table.sigilRoll.probability;
+  const missSlot = 1 - perSlot;
+  const noneIfSigil = table.sigilRoll.itemId === itemId ? 0 : missSlot ** (n - 1);
+  return 1 - (p * noneIfSigil + (1 - p) * missSlot ** n);
+}
+
+/** Whether a drop is rare (Nut: drop chance under 1%). Unknown items are not called rare. */
+export function isRareDrop(rules: RulesConfig, table: LootTable | undefined, itemId: string): boolean {
+  if (table === undefined) return false;
+  const c = dropChance(rules, table, itemId);
+  return c > 0 && c < rules.confirmed.rareDropBelowChance.value;
 }

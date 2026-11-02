@@ -1,0 +1,44 @@
+{
+  "assetId": "bg_rift_tower_battle",
+  "version": 1,
+  "file": "/assets/sprites/backgrounds/bg_rift_tower_battle_v001.png",
+  "frameWidth": 960,
+  "frameHeight": 540,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "origin": [
+    0,
+    0
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-ui-v002",
+  "animations": [],
+  "safeCombatAreas": [
+    [
+      170,
+      90,
+      240,
+      360
+    ],
+    [
+      550,
+      90,
+      280,
+      360
+    ]
+  ],
+  "uiReservedRect": [
+    0,
+    450,
+    960,
+    90
+  ],
+  "sourceAtlas": "bg_rift_tower",
+  "sourceSize": [
+    1672,
+    941
+  ],
+  "contentGroup": "battle-backgrounds"
+}

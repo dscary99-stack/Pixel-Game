@@ -1,0 +1,65 @@
+{
+  "assetId": "ui_hit_neutral",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_hit_neutral_v001.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 6,
+  "rows": 1,
+  "frameCount": 6,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "play",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fps": 10,
+      "loop": false
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "hit",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hide",
+  "sha256": "ce0392c34176676fb97132cfd8816e6edfe7946190c530806466ce7404def6fd",
+  "element": "NEUTRAL",
+  "contactFrame": 1,
+  "attachment": [
+    16,
+    16
+  ]
+}

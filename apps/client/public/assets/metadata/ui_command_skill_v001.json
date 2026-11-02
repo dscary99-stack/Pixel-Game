@@ -1,0 +1,50 @@
+{
+  "assetId": "ui:command:skill",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_command_skill_v001.png",
+  "frameWidth": 24,
+  "frameHeight": 24,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "icon",
+  "nineSlice": null,
+  "paletteVariants": [],
+  "nativeSize": [
+    24,
+    24
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      24,
+      24
+    ]
+  ],
+  "productionApproved": false,
+  "semantic": "skill",
+  "hitArea": [
+    48,
+    48
+  ],
+  "text": "runtime",
+  "sha256": "bbe7b2269590e48161985cf83349e7bfbb5fcfb5d4e76799e9e1ad68e40c25d7"
+}

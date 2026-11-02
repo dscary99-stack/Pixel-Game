@@ -1,0 +1,46 @@
+{
+  "assetId": "ui_element_water",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_element_water_v001.png",
+  "frameWidth": 16,
+  "frameHeight": 16,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "element",
+  "nineSlice": null,
+  "nativeSize": [
+    16,
+    16
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      16,
+      16
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "3389335b73556c2b9ff75c195dedf0fff86ef7892c12c85233353d35a5b67e0d",
+  "contentId": "WATER"
+}

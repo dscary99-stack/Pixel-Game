@@ -1,0 +1,69 @@
+{
+  "assetId": "ui:menu:inventory",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_menu_inventory_v002.png",
+  "frameWidth": 24,
+  "frameHeight": 24,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "icon",
+  "nineSlice": null,
+  "paletteVariants": [],
+  "nativeSize": [
+    24,
+    24
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      24,
+      24
+    ]
+  ],
+  "productionApproved": false,
+  "semantic": "inventory",
+  "hitArea": [
+    48,
+    48
+  ],
+  "text": "runtime",
+  "sha256": "cd9ac14774188f08ea9105820a6b2c58a9c6ec3270ee02e13b69f0c5ab317361",
+  "staticFrame": 0,
+  "sourceMaster": "bag-master.png",
+  "framing": {
+    "sourceGrid": [
+      1,
+      1
+    ],
+    "fixedCrop": [
+      120,
+      93,
+      1164,
+      1192
+    ],
+    "fixedOffset": [
+      1,
+      1
+    ],
+    "scale": 0.020018198362147407
+  }
+}

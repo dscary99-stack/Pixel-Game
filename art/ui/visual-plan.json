@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "date": "2026-10-27",
+  "scope": "UI proof only; static one-frame PNG assets",
+  "styleContract": {
+    "requestedStyle": "ART_STYLE_AND_ANIMATION Preproduction v1 + ART_HANDOFF section11",
+    "preset": "16-bit RPG / clean pixel UI",
+    "view": "flat 2D UI",
+    "outlinePolicy": "dark navy/plum, crisp integer contours",
+    "paletteRoles": {
+      "background": "#14121c",
+      "panel": "#242033",
+      "edge": "#625770",
+      "highlight": "#b9a7bf",
+      "ornament": "#efc477",
+      "selected": "#4fc5b0",
+      "danger": "#e26779"
+    },
+    "light": "upper-left hard highlight",
+    "texture": "flat clusters",
+    "dither": "off",
+    "alpha": "binary",
+    "forbiddenTraits": [
+      "baked runtime text",
+      "soft gradients",
+      "blur",
+      "supersampled native output"
+    ]
+  },
+  "source": {
+    "reference": "reference/ui-style-reference-v001.png",
+    "tool": "built-in image_gen",
+    "role": "concept palette/shape reference; not exact GUI layout",
+    "nativeAuthoring": "integer-coordinate original pixel contours in build_ui_kit.py",
+    "externalArt": "none"
+  },
+  "layoutReference": {
+    "documents": [
+      "docs/ART_HANDOFF.md",
+      "docs/GUI_SCREENS.md"
+    ],
+    "claudeArtifact": "not accessible; no pixel-exact match claimed"
+  },
+  "review": {
+    "nativeSheet": "inspected",
+    "lightDarkIcons": "inspected",
+    "windowCorners": "verified against rendered proof",
+    "engineAndMobile": "pending"
+  },
+  "assets": 51
+}

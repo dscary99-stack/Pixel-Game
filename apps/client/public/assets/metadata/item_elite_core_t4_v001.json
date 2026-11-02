@@ -1,0 +1,48 @@
+{
+  "assetId": "item_elite_core_t4",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/items/item_elite_core_t4_v001.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "item",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "3a09d0e1dca072e16070172f09247549dad2605a8b0bd6d4ca90d321c2f2cf79",
+  "contentId": "item:elite_core_t4",
+  "contentGroup": "items",
+  "motif": "star"
+}

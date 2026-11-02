@@ -1,0 +1,59 @@
+{
+  "assetId": "ui_menu_mail_new",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_menu_mail_new_v001.png",
+  "frameWidth": 24,
+  "frameHeight": 24,
+  "columns": 4,
+  "rows": 1,
+  "frameCount": 4,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "loop",
+      "frames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "fps": 8,
+      "loop": true
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "menu",
+  "nineSlice": null,
+  "nativeSize": [
+    24,
+    24
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      24,
+      24
+    ]
+  ],
+  "completion": "repeat",
+  "sha256": "577aa9981be88b51d03cb2bf862f0ee1dfa742bb43d5da0461d6494c3c7ad500",
+  "contentId": "mail",
+  "notification": true
+}

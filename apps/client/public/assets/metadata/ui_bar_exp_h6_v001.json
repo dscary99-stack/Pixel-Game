@@ -1,0 +1,52 @@
+{
+  "assetId": "ui:bar:exp_h6",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_bar_exp_h6_v001.png",
+  "frameWidth": 64,
+  "frameHeight": 6,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "bar_fill",
+  "nineSlice": null,
+  "paletteVariants": [],
+  "nativeSize": [
+    64,
+    6
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      64,
+      6
+    ]
+  ],
+  "productionApproved": false,
+  "track": "ui:bar:track_h6",
+  "fillRule": "Stretch full image to track dimensions first; clip x from 1 to 1+floor((width-2)*clamp(value/max,0,1)). Hide fill at zero. Keep height fixed.",
+  "contentInsets": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "sha256": "712f8f5e24998f5fa94ae4745edd330a509e5c7d3f3fec421ef588b632aab17a"
+}

@@ -1,0 +1,52 @@
+{
+  "assetId": "ui:bar:mp_h4",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_bar_mp_h4_v001.png",
+  "frameWidth": 64,
+  "frameHeight": 4,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "bar_fill",
+  "nineSlice": null,
+  "paletteVariants": [],
+  "nativeSize": [
+    64,
+    4
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      64,
+      4
+    ]
+  ],
+  "productionApproved": false,
+  "track": "ui:bar:track_h4",
+  "fillRule": "Stretch full image to track dimensions first; clip x from 1 to 1+floor((width-2)*clamp(value/max,0,1)). Hide fill at zero. Keep height fixed.",
+  "contentInsets": [
+    1,
+    1,
+    1,
+    1
+  ],
+  "sha256": "352d727a32089c26f6163b2fa069849a7c3383c9b07a7c15eff45b9984eb3fbe"
+}

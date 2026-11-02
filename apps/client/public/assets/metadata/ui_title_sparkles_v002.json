@@ -1,0 +1,68 @@
+{
+  "assetId": "ui_title_sparkles",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_title_sparkles_v002.png",
+  "frameWidth": 580,
+  "frameHeight": 540,
+  "columns": 6,
+  "rows": 1,
+  "frameCount": 6,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "loop",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fps": 8,
+      "loop": true
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "title",
+  "nineSlice": null,
+  "nativeSize": [
+    580,
+    540
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      580,
+      540
+    ]
+  ],
+  "completion": "repeat",
+  "sha256": "591d5df4075a641877ae28118764a96eeb9e07a52a6a4e9089d9810fc70bc5c0",
+  "attachment": [
+    0,
+    0
+  ],
+  "layerOrder": 1,
+  "baseAsset": "ui_title_scene",
+  "motion": "fixed glints and two closed firefly paths",
+  "sourceMaster": "native six-cel sparkle loop in extras.py",
+  "framing": null
+}

@@ -1,0 +1,66 @@
+{
+  "assetId": "ui_target_turn_ally_front",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_target_turn_ally_front_v001.png",
+  "frameWidth": 60,
+  "frameHeight": 16,
+  "columns": 6,
+  "rows": 1,
+  "frameCount": 6,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "loop",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fps": 10,
+      "loop": true
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "target",
+  "nineSlice": null,
+  "nativeSize": [
+    60,
+    16
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      60,
+      16
+    ]
+  ],
+  "completion": "repeat",
+  "sha256": "76c360d9c344336b832d83c900227d0c90dce02e159a8f0b0350c0d20f465568",
+  "assembly": "split_vertical",
+  "part": "front",
+  "attachment": "actor-bottom-10",
+  "pair": "ui_target_turn_ally",
+  "phaseSync": true,
+  "layoutWidth": 60,
+  "noStretch": true
+}

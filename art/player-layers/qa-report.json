@@ -1,0 +1,2195 @@
+{
+  "status": "pass",
+  "assets": 56,
+  "frames": 240,
+  "clips": 14,
+  "skinHairCombinations": 60,
+  "failures": [],
+  "entries": [
+    {
+      "asset": "player_human_battle_attack_physical_ranged",
+      "frames": 6,
+      "uniqueCels": 6,
+      "bounds": [
+        [
+          14,
+          12,
+          47,
+          55
+        ],
+        [
+          11,
+          11,
+          53,
+          55
+        ],
+        [
+          9,
+          12,
+          53,
+          55
+        ],
+        [
+          13,
+          10,
+          57,
+          52
+        ],
+        [
+          11,
+          9,
+          55,
+          52
+        ],
+        [
+          12,
+          10,
+          45,
+          52
+        ]
+      ],
+      "keyPixels": {
+        "skin": 2369,
+        "hair": 0,
+        "eye": 0,
+        "trim": 427
+      },
+      "sha256": "0c0b173126865f2db95976cb2652ab99689bbe7c8e83a71e8aed6c7222b51288"
+    },
+    {
+      "asset": "hair_01_back_battle_attack_physical_ranged",
+      "frames": 6,
+      "uniqueCels": 6,
+      "bounds": [
+        [
+          21,
+          5,
+          53,
+          31
+        ],
+        [
+          17,
+          5,
+          49,
+          32
+        ],
+        [
+          18,
+          6,
+          50,
+          31
+        ],
+        [
+          21,
+          3,
+          53,
+          29
+        ],
+        [
+          16,
+          3,
+          48,
+          30
+        ],
+        [
+          19,
+          3,
+          51,
+          29
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 2032,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "3ab1098126d077914563b2bc95be8543656d40826ff61d2d9c801f50cba4fcdf"
+    },
+    {
+      "asset": "face_01_battle_attack_physical_ranged",
+      "frames": 6,
+      "uniqueCels": 6,
+      "bounds": [
+        [
+          33,
+          25,
+          44,
+          32
+        ],
+        [
+          30,
+          24,
+          41,
+          31
+        ],
+        [
+          30,
+          25,
+          41,
+          32
+        ],
+        [
+          33,
+          23,
+          44,
+          30
+        ],
+        [
+          29,
+          22,
+          40,
+          29
+        ],
+        [
+          31,
+          23,
+          42,
+          30
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 0,
+        "eye": 60,
+        "trim": 0
+      },
+      "sha256": "60a84ab54d521b20df74bede5949e2b56b20bb10e5b0b18875af8c11f5b8e9b5"
+    },
+    {
+      "asset": "hair_01_front_battle_attack_physical_ranged",
+      "frames": 6,
+      "uniqueCels": 6,
+      "bounds": [
+        [
+          24,
+          12,
+          47,
+          31
+        ],
+        [
+          20,
+          11,
+          44,
+          32
+        ],
+        [
+          21,
+          12,
+          44,
+          31
+        ],
+        [
+          24,
+          10,
+          47,
+          29
+        ],
+        [
+          19,
+          9,
+          43,
+          30
+        ],
+        [
+          22,
+          10,
+          45,
+          29
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 1190,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "3a03a15169e2a7615227b6e6f3a6773a6be7e86921d00e7f95564db6461db129"
+    },
+    {
+      "asset": "player_human_battle_attack",
+      "frames": 6,
+      "uniqueCels": 6,
+      "bounds": [
+        [
+          14,
+          13,
+          50,
+          60
+        ],
+        [
+          9,
+          16,
+          50,
+          60
+        ],
+        [
+          10,
+          12,
+          49,
+          60
+        ],
+        [
+          12,
+          13,
+          60,
+          60
+        ],
+        [
+          13,
+          13,
+          53,
+          60
+        ],
+        [
+          11,
+          13,
+          49,
+          60
+        ]
+      ],
+      "keyPixels": {
+        "skin": 2436,
+        "hair": 0,
+        "eye": 0,
+        "trim": 552
+      },
+      "sha256": "7556b38b38c36c1f4fd755446af660c7775977145f5c221ef25daa9708041368"
+    },
+    {
+      "asset": "hair_01_back_battle_attack",
+      "frames": 6,
+      "uniqueCels": 6,
+      "bounds": [
+        [
+          23,
+          6,
+          55,
+          32
+        ],
+        [
+          21,
+          10,
+          53,
+          37
+        ],
+        [
+          23,
+          6,
+          55,
+          31
+        ],
+        [
+          24,
+          6,
+          56,
+          32
+        ],
+        [
+          20,
+          7,
+          52,
+          34
+        ],
+        [
+          19,
+          6,
+          51,
+          32
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 2032,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "2a8900f8a2d858266c9ecce86c236f419ecd959430a38b89180ff7fa5bf43bf2"
+    },
+    {
+      "asset": "face_01_battle_attack",
+      "frames": 6,
+      "uniqueCels": 6,
+      "bounds": [
+        [
+          35,
+          26,
+          46,
+          33
+        ],
+        [
+          34,
+          29,
+          45,
+          36
+        ],
+        [
+          35,
+          25,
+          46,
+          32
+        ],
+        [
+          36,
+          26,
+          47,
+          33
+        ],
+        [
+          33,
+          26,
+          44,
+          33
+        ],
+        [
+          31,
+          26,
+          42,
+          33
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 0,
+        "eye": 60,
+        "trim": 0
+      },
+      "sha256": "990ec1d4ed206cabdd5cde2700e58799c9d662194f96b6ddeb98b3311e67c758"
+    },
+    {
+      "asset": "hair_01_front_battle_attack",
+      "frames": 6,
+      "uniqueCels": 6,
+      "bounds": [
+        [
+          26,
+          13,
+          49,
+          32
+        ],
+        [
+          24,
+          16,
+          48,
+          37
+        ],
+        [
+          26,
+          12,
+          49,
+          31
+        ],
+        [
+          27,
+          13,
+          50,
+          32
+        ],
+        [
+          23,
+          13,
+          47,
+          34
+        ],
+        [
+          22,
+          13,
+          45,
+          32
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 1190,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "1967ac9b13e4de7e795c1e68c8af7a464f64cd11ebd220a4bf479c932d5a7bc2"
+    },
+    {
+      "asset": "player_human_battle_cast",
+      "frames": 6,
+      "uniqueCels": 6,
+      "bounds": [
+        [
+          14,
+          12,
+          49,
+          60
+        ],
+        [
+          12,
+          13,
+          48,
+          60
+        ],
+        [
+          14,
+          11,
+          57,
+          60
+        ],
+        [
+          11,
+          13,
+          60,
+          60
+        ],
+        [
+          12,
+          13,
+          49,
+          60
+        ],
+        [
+          11,
+          12,
+          48,
+          60
+        ]
+      ],
+      "keyPixels": {
+        "skin": 2505,
+        "hair": 0,
+        "eye": 0,
+        "trim": 548
+      },
+      "sha256": "a804234db82f4983b7b87ba5f7ea8042aae21570ac067ba1ca32621ff283ccd7"
+    },
+    {
+      "asset": "hair_01_back_battle_cast",
+      "frames": 6,
+      "uniqueCels": 5,
+      "bounds": [
+        [
+          22,
+          5,
+          54,
+          31
+        ],
+        [
+          19,
+          6,
+          51,
+          32
+        ],
+        [
+          18,
+          5,
+          51,
+          31
+        ],
+        [
+          18,
+          6,
+          50,
+          32
+        ],
+        [
+          19,
+          6,
+          51,
+          32
+        ],
+        [
+          19,
+          5,
+          51,
+          31
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 2022,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "aae9b3e52d18150375b12370f580f57030e4d572103242c7391086a5da8f13a7"
+    },
+    {
+      "asset": "face_01_battle_cast",
+      "frames": 6,
+      "uniqueCels": 5,
+      "bounds": [
+        [
+          34,
+          25,
+          45,
+          32
+        ],
+        [
+          31,
+          25,
+          42,
+          33
+        ],
+        [
+          30,
+          24,
+          41,
+          32
+        ],
+        [
+          29,
+          26,
+          41,
+          33
+        ],
+        [
+          31,
+          25,
+          42,
+          33
+        ],
+        [
+          31,
+          25,
+          42,
+          32
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 0,
+        "eye": 60,
+        "trim": 0
+      },
+      "sha256": "d5177771098fb4b6470ce5c70e891d0f1d7e0b169fe894d34c7d52d75a43eb4d"
+    },
+    {
+      "asset": "hair_01_front_battle_cast",
+      "frames": 6,
+      "uniqueCels": 5,
+      "bounds": [
+        [
+          25,
+          12,
+          48,
+          31
+        ],
+        [
+          22,
+          13,
+          46,
+          32
+        ],
+        [
+          21,
+          11,
+          45,
+          31
+        ],
+        [
+          21,
+          13,
+          44,
+          32
+        ],
+        [
+          22,
+          13,
+          46,
+          32
+        ],
+        [
+          22,
+          12,
+          45,
+          31
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 1183,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "a3b4fddb5d5d40f4b9b5f579469b0536785f629bcc49dec78e066d7160bc557d"
+    },
+    {
+      "asset": "player_human_battle_hurt",
+      "frames": 2,
+      "uniqueCels": 2,
+      "bounds": [
+        [
+          11,
+          13,
+          52,
+          60
+        ],
+        [
+          12,
+          13,
+          48,
+          60
+        ]
+      ],
+      "keyPixels": {
+        "skin": 828,
+        "hair": 0,
+        "eye": 0,
+        "trim": 195
+      },
+      "sha256": "1bc0387d41555e4a209c7585ccb39ab9cc5764ae6b3c8a1e8b957c6be5473b3b"
+    },
+    {
+      "asset": "hair_01_back_battle_hurt",
+      "frames": 2,
+      "uniqueCels": 2,
+      "bounds": [
+        [
+          26,
+          6,
+          58,
+          32
+        ],
+        [
+          22,
+          6,
+          54,
+          32
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 676,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "fb9bdd813bb4c0379eda5371937a184d52f068ed12c045879899bd4b4f5e07a3"
+    },
+    {
+      "asset": "face_01_battle_hurt",
+      "frames": 2,
+      "uniqueCels": 2,
+      "bounds": [
+        [
+          38,
+          27,
+          49,
+          33
+        ],
+        [
+          34,
+          27,
+          45,
+          33
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 0,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "cfcd8fed5ebebd3ac108ca344e21ba041fb8b9ac749973b948bd54837a57d81d"
+    },
+    {
+      "asset": "hair_01_front_battle_hurt",
+      "frames": 2,
+      "uniqueCels": 2,
+      "bounds": [
+        [
+          29,
+          13,
+          52,
+          32
+        ],
+        [
+          25,
+          13,
+          48,
+          32
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 396,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "fbdf6a92e1cdf3004dca053fdfa3408fd231043625a17f3d3cbac528d274226e"
+    },
+    {
+      "asset": "player_human_battle_idle",
+      "frames": 4,
+      "uniqueCels": 4,
+      "bounds": [
+        [
+          15,
+          13,
+          50,
+          60
+        ],
+        [
+          16,
+          13,
+          50,
+          60
+        ],
+        [
+          14,
+          13,
+          48,
+          60
+        ],
+        [
+          13,
+          13,
+          46,
+          60
+        ]
+      ],
+      "keyPixels": {
+        "skin": 1624,
+        "hair": 0,
+        "eye": 0,
+        "trim": 404
+      },
+      "sha256": "ce1b8bd8072a4587aff2e6d778ab19dfcaa2c75f3bf533917664735b7ed0e7a2"
+    },
+    {
+      "asset": "hair_01_back_battle_idle",
+      "frames": 4,
+      "uniqueCels": 3,
+      "bounds": [
+        [
+          24,
+          6,
+          56,
+          32
+        ],
+        [
+          24,
+          6,
+          56,
+          32
+        ],
+        [
+          21,
+          6,
+          53,
+          32
+        ],
+        [
+          20,
+          6,
+          52,
+          32
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 1352,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "5724406e38f8a03fe7ba09f59304942c5804874671f235593b8d6d262fb0d7ba"
+    },
+    {
+      "asset": "face_01_battle_idle",
+      "frames": 4,
+      "uniqueCels": 3,
+      "bounds": [
+        [
+          36,
+          26,
+          47,
+          33
+        ],
+        [
+          36,
+          26,
+          47,
+          33
+        ],
+        [
+          33,
+          27,
+          44,
+          33
+        ],
+        [
+          32,
+          26,
+          43,
+          33
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 0,
+        "eye": 30,
+        "trim": 0
+      },
+      "sha256": "82539da4b5e714d9426c655157b8a7ca577aaca47de4bbef69311e84b83c0528"
+    },
+    {
+      "asset": "hair_01_front_battle_idle",
+      "frames": 4,
+      "uniqueCels": 3,
+      "bounds": [
+        [
+          27,
+          13,
+          50,
+          32
+        ],
+        [
+          27,
+          13,
+          50,
+          32
+        ],
+        [
+          24,
+          13,
+          47,
+          32
+        ],
+        [
+          23,
+          13,
+          46,
+          32
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 792,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "9569f5a33712b033c3fca1579a6c8ff257531133fe130e8c6e90d097dac10d20"
+    },
+    {
+      "asset": "player_human_battle_ko",
+      "frames": 4,
+      "uniqueCels": 4,
+      "bounds": [
+        [
+          14,
+          14,
+          58,
+          55
+        ],
+        [
+          14,
+          23,
+          55,
+          56
+        ],
+        [
+          5,
+          31,
+          52,
+          56
+        ],
+        [
+          8,
+          32,
+          60,
+          58
+        ]
+      ],
+      "keyPixels": {
+        "skin": 1548,
+        "hair": 0,
+        "eye": 0,
+        "trim": 254
+      },
+      "sha256": "120f6c387fc25b826aa6f134c46b671e19d554a16141fdb3cdfde159423b5c80"
+    },
+    {
+      "asset": "hair_01_back_battle_ko",
+      "frames": 4,
+      "uniqueCels": 4,
+      "bounds": [
+        [
+          26,
+          7,
+          58,
+          33
+        ],
+        [
+          30,
+          18,
+          62,
+          45
+        ],
+        [
+          31,
+          27,
+          59,
+          57
+        ],
+        [
+          31,
+          30,
+          59,
+          60
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 1352,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "17913b0e8a285191c3694e2cd8c2f315222c4dfee5b156654d482255aa6c3e9e"
+    },
+    {
+      "asset": "face_01_battle_ko",
+      "frames": 4,
+      "uniqueCels": 4,
+      "bounds": [
+        [
+          38,
+          27,
+          49,
+          34
+        ],
+        [
+          39,
+          36,
+          51,
+          44
+        ],
+        [
+          34,
+          42,
+          44,
+          53
+        ],
+        [
+          34,
+          44,
+          42,
+          55
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 0,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "823aabdc3feb3634456677851c7a5a751ab8f04d007c85e7e1dee6497ac32523"
+    },
+    {
+      "asset": "hair_01_front_battle_ko",
+      "frames": 4,
+      "uniqueCels": 4,
+      "bounds": [
+        [
+          29,
+          14,
+          52,
+          33
+        ],
+        [
+          32,
+          23,
+          55,
+          45
+        ],
+        [
+          31,
+          31,
+          52,
+          56
+        ],
+        [
+          31,
+          33,
+          53,
+          55
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 791,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "ca85798187b0dbef383357c03d09d119b4e1dcc12ea285450c3057b8b1f5e3e4"
+    },
+    {
+      "asset": "player_human_world_idle_down",
+      "frames": 4,
+      "uniqueCels": 4,
+      "bounds": [
+        [
+          19,
+          11,
+          53,
+          57
+        ],
+        [
+          18,
+          11,
+          52,
+          57
+        ],
+        [
+          16,
+          11,
+          47,
+          57
+        ],
+        [
+          16,
+          11,
+          51,
+          57
+        ]
+      ],
+      "keyPixels": {
+        "skin": 1526,
+        "hair": 0,
+        "eye": 0,
+        "trim": 359
+      },
+      "sha256": "1f067a383e0aac9c9b1d01a9fd7f8dd33269da77894f8829d021be98421f0007"
+    },
+    {
+      "asset": "hair_01_back_world_idle_down",
+      "frames": 4,
+      "uniqueCels": 3,
+      "bounds": [
+        [
+          19,
+          7,
+          51,
+          29
+        ],
+        [
+          18,
+          7,
+          50,
+          29
+        ],
+        [
+          17,
+          7,
+          49,
+          29
+        ],
+        [
+          17,
+          7,
+          49,
+          29
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 1248,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "7bb389886039b1e83330abd21b5a4482c315b301c10df3380fbfce774cfd4606"
+    },
+    {
+      "asset": "face_01_world_idle_down",
+      "frames": 4,
+      "uniqueCels": 4,
+      "bounds": [
+        [
+          29,
+          23,
+          41,
+          31
+        ],
+        [
+          28,
+          23,
+          40,
+          31
+        ],
+        [
+          27,
+          24,
+          39,
+          31
+        ],
+        [
+          27,
+          23,
+          39,
+          31
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 0,
+        "eye": 30,
+        "trim": 0
+      },
+      "sha256": "736c866add288b87a1ca354c579403c06e1594644b60a0b416743bee5369afb8"
+    },
+    {
+      "asset": "hair_01_front_world_idle_down",
+      "frames": 4,
+      "uniqueCels": 3,
+      "bounds": [
+        [
+          22,
+          11,
+          48,
+          29
+        ],
+        [
+          21,
+          11,
+          47,
+          29
+        ],
+        [
+          20,
+          11,
+          46,
+          29
+        ],
+        [
+          20,
+          11,
+          46,
+          29
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 632,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "0669ddccc2de79cfdc1e6d3369c1d9c9eb914a2b37bfbddefcf70e4ddfb45fbf"
+    },
+    {
+      "asset": "player_human_world_idle_left",
+      "frames": 4,
+      "uniqueCels": 4,
+      "bounds": [
+        [
+          19,
+          9,
+          55,
+          56
+        ],
+        [
+          17,
+          9,
+          54,
+          56
+        ],
+        [
+          17,
+          9,
+          53,
+          56
+        ],
+        [
+          17,
+          9,
+          54,
+          56
+        ]
+      ],
+      "keyPixels": {
+        "skin": 1478,
+        "hair": 0,
+        "eye": 0,
+        "trim": 433
+      },
+      "sha256": "ddd6dcac606f3768e5062e188319393b0e156b16057214d623f8dacfae5b945e"
+    },
+    {
+      "asset": "hair_01_back_world_idle_left",
+      "frames": 4,
+      "uniqueCels": 2,
+      "bounds": [
+        [
+          17,
+          1,
+          47,
+          27
+        ],
+        [
+          15,
+          1,
+          45,
+          27
+        ],
+        [
+          15,
+          1,
+          45,
+          27
+        ],
+        [
+          15,
+          1,
+          45,
+          27
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 1484,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "6f60b3d369b1dde8dc6785052b4cc762b0980ccc3efb401938b3aadd19d128a3"
+    },
+    {
+      "asset": "face_01_world_idle_left",
+      "frames": 4,
+      "uniqueCels": 3,
+      "bounds": [
+        [
+          22,
+          22,
+          28,
+          29
+        ],
+        [
+          20,
+          22,
+          26,
+          29
+        ],
+        [
+          20,
+          23,
+          26,
+          29
+        ],
+        [
+          20,
+          22,
+          26,
+          29
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 0,
+        "eye": 15,
+        "trim": 0
+      },
+      "sha256": "b2d19b4937edbb5c6f7c5c9c60a41bfbcb05cf8ae67b408c96bc1f8b549fd475"
+    },
+    {
+      "asset": "hair_01_front_world_idle_left",
+      "frames": 4,
+      "uniqueCels": 2,
+      "bounds": [
+        [
+          23,
+          9,
+          44,
+          27
+        ],
+        [
+          21,
+          9,
+          42,
+          27
+        ],
+        [
+          21,
+          9,
+          42,
+          27
+        ],
+        [
+          21,
+          9,
+          42,
+          27
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 820,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "c160fd07afa38c7715429bad6a8793e1f17ce8ecf3dd98f2655d014febf418c2"
+    },
+    {
+      "asset": "player_human_world_idle_right",
+      "frames": 4,
+      "uniqueCels": 4,
+      "bounds": [
+        [
+          13,
+          10,
+          47,
+          58
+        ],
+        [
+          12,
+          10,
+          47,
+          58
+        ],
+        [
+          12,
+          10,
+          47,
+          58
+        ],
+        [
+          12,
+          10,
+          46,
+          58
+        ]
+      ],
+      "keyPixels": {
+        "skin": 1500,
+        "hair": 0,
+        "eye": 0,
+        "trim": 446
+      },
+      "sha256": "2d07125c92f93cf5c7ee9e4d97e512fa105b25d5c59f08cd61b656ffd51da351"
+    },
+    {
+      "asset": "hair_01_back_world_idle_right",
+      "frames": 4,
+      "uniqueCels": 2,
+      "bounds": [
+        [
+          21,
+          2,
+          51,
+          28
+        ],
+        [
+          21,
+          2,
+          51,
+          28
+        ],
+        [
+          20,
+          2,
+          50,
+          28
+        ],
+        [
+          20,
+          2,
+          50,
+          28
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 1484,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "c73f437d6b379030d1e61118ffe7aca4f753df0e1f809456df538bb7a30d8819"
+    },
+    {
+      "asset": "face_01_world_idle_right",
+      "frames": 4,
+      "uniqueCels": 3,
+      "bounds": [
+        [
+          40,
+          23,
+          46,
+          30
+        ],
+        [
+          40,
+          23,
+          46,
+          30
+        ],
+        [
+          39,
+          24,
+          45,
+          30
+        ],
+        [
+          39,
+          23,
+          45,
+          30
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 0,
+        "eye": 15,
+        "trim": 0
+      },
+      "sha256": "ed0128e727676bf814f1ce0c7a3b8a8e60e307c919a99d2996eb6312f25e9293"
+    },
+    {
+      "asset": "hair_01_front_world_idle_right",
+      "frames": 4,
+      "uniqueCels": 2,
+      "bounds": [
+        [
+          24,
+          10,
+          45,
+          28
+        ],
+        [
+          24,
+          10,
+          45,
+          28
+        ],
+        [
+          23,
+          10,
+          44,
+          28
+        ],
+        [
+          23,
+          10,
+          44,
+          28
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 820,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "a1f3b2c3cbec4d789085623ab185875f969c0714d5d39750a15c0556d6249971"
+    },
+    {
+      "asset": "player_human_world_idle_up",
+      "frames": 4,
+      "uniqueCels": 4,
+      "bounds": [
+        [
+          16,
+          11,
+          48,
+          59
+        ],
+        [
+          14,
+          11,
+          47,
+          59
+        ],
+        [
+          16,
+          11,
+          48,
+          59
+        ],
+        [
+          13,
+          11,
+          46,
+          59
+        ]
+      ],
+      "keyPixels": {
+        "skin": 1575,
+        "hair": 0,
+        "eye": 0,
+        "trim": 458
+      },
+      "sha256": "d406282dce9b6016c4a10d18c9a4cfd85235e7a9db8756026dda2faf9662eb14"
+    },
+    {
+      "asset": "hair_01_back_world_idle_up",
+      "frames": 4,
+      "uniqueCels": 3,
+      "bounds": [
+        [
+          20,
+          7,
+          51,
+          30
+        ],
+        [
+          18,
+          7,
+          49,
+          30
+        ],
+        [
+          18,
+          7,
+          49,
+          30
+        ],
+        [
+          17,
+          7,
+          48,
+          30
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 1808,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "5a2684698c8f1c81f13b3c81c465b9bdd3b128d812045d647a6a55659f969481"
+    },
+    {
+      "asset": "face_01_world_idle_up",
+      "frames": 4,
+      "uniqueCels": 1,
+      "bounds": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 0,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "a709d23dd34555baba242210238b4cd6ec5915c3283126b9403f4271a61127a2"
+    },
+    {
+      "asset": "hair_01_front_world_idle_up",
+      "frames": 4,
+      "uniqueCels": 3,
+      "bounds": [
+        [
+          21,
+          11,
+          48,
+          30
+        ],
+        [
+          19,
+          11,
+          46,
+          30
+        ],
+        [
+          19,
+          11,
+          46,
+          30
+        ],
+        [
+          18,
+          11,
+          45,
+          30
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 1268,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "f2d100fe65a279bb0cf76120304911cdd9bc25b29450dd57ccd25da85136cc22"
+    },
+    {
+      "asset": "player_human_world_walk_down",
+      "frames": 4,
+      "uniqueCels": 4,
+      "bounds": [
+        [
+          19,
+          11,
+          51,
+          58
+        ],
+        [
+          18,
+          11,
+          50,
+          58
+        ],
+        [
+          17,
+          11,
+          47,
+          58
+        ],
+        [
+          15,
+          11,
+          47,
+          58
+        ]
+      ],
+      "keyPixels": {
+        "skin": 1525,
+        "hair": 0,
+        "eye": 0,
+        "trim": 320
+      },
+      "sha256": "6d896cf0edc2fad54dac488188ab959b2a464779d4679c1ac594af32b41e32aa"
+    },
+    {
+      "asset": "hair_01_back_world_walk_down",
+      "frames": 4,
+      "uniqueCels": 2,
+      "bounds": [
+        [
+          18,
+          7,
+          50,
+          29
+        ],
+        [
+          17,
+          7,
+          49,
+          29
+        ],
+        [
+          17,
+          7,
+          49,
+          29
+        ],
+        [
+          17,
+          7,
+          49,
+          29
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 1248,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "e7fd5bf3d2c63181047518293a4ab6cad12f9b9f3ac815f81c6233d72082ed9d"
+    },
+    {
+      "asset": "face_01_world_walk_down",
+      "frames": 4,
+      "uniqueCels": 2,
+      "bounds": [
+        [
+          28,
+          23,
+          40,
+          31
+        ],
+        [
+          27,
+          23,
+          39,
+          31
+        ],
+        [
+          27,
+          23,
+          39,
+          31
+        ],
+        [
+          27,
+          23,
+          39,
+          31
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 0,
+        "eye": 40,
+        "trim": 0
+      },
+      "sha256": "033d854e2e21a9715d05a52d0cd189049ba2bf7f7b8d6d91ffbec145e77ad2fd"
+    },
+    {
+      "asset": "hair_01_front_world_walk_down",
+      "frames": 4,
+      "uniqueCels": 2,
+      "bounds": [
+        [
+          21,
+          11,
+          47,
+          29
+        ],
+        [
+          20,
+          11,
+          46,
+          29
+        ],
+        [
+          20,
+          11,
+          46,
+          29
+        ],
+        [
+          20,
+          11,
+          46,
+          29
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 632,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "4e48e98494d9bed05d2be7123360de2c273a05ac1758256a775df8f3515f9ffc"
+    },
+    {
+      "asset": "player_human_world_walk_left",
+      "frames": 4,
+      "uniqueCels": 4,
+      "bounds": [
+        [
+          17,
+          9,
+          55,
+          56
+        ],
+        [
+          17,
+          9,
+          54,
+          56
+        ],
+        [
+          18,
+          9,
+          53,
+          56
+        ],
+        [
+          17,
+          9,
+          54,
+          56
+        ]
+      ],
+      "keyPixels": {
+        "skin": 1486,
+        "hair": 0,
+        "eye": 0,
+        "trim": 387
+      },
+      "sha256": "ccb07c4a363dfeece9edcabbd3e8e45d0a0b37def939fa9c564c1b172ca7fae2"
+    },
+    {
+      "asset": "hair_01_back_world_walk_left",
+      "frames": 4,
+      "uniqueCels": 3,
+      "bounds": [
+        [
+          17,
+          1,
+          47,
+          27
+        ],
+        [
+          16,
+          1,
+          46,
+          27
+        ],
+        [
+          15,
+          1,
+          45,
+          27
+        ],
+        [
+          16,
+          1,
+          46,
+          27
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 1484,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "b48e74cd5fb86e0b35d86a06589e53bdc94c3cd705e5bd47ab16826485bf0518"
+    },
+    {
+      "asset": "face_01_world_walk_left",
+      "frames": 4,
+      "uniqueCels": 3,
+      "bounds": [
+        [
+          22,
+          22,
+          28,
+          29
+        ],
+        [
+          21,
+          22,
+          27,
+          29
+        ],
+        [
+          20,
+          22,
+          26,
+          29
+        ],
+        [
+          21,
+          22,
+          27,
+          29
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 0,
+        "eye": 20,
+        "trim": 0
+      },
+      "sha256": "fb6c9ddaf228c168a9f6121f0921a36027d889bd3a98b86d138801949884d16c"
+    },
+    {
+      "asset": "hair_01_front_world_walk_left",
+      "frames": 4,
+      "uniqueCels": 3,
+      "bounds": [
+        [
+          23,
+          9,
+          44,
+          27
+        ],
+        [
+          22,
+          9,
+          43,
+          27
+        ],
+        [
+          21,
+          9,
+          42,
+          27
+        ],
+        [
+          22,
+          9,
+          43,
+          27
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 820,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "1f875caa15841442c0b2e8eca3d3f0a9d5bad5a294730bb4dd332248ce8f9f3f"
+    },
+    {
+      "asset": "player_human_world_walk_right",
+      "frames": 4,
+      "uniqueCels": 4,
+      "bounds": [
+        [
+          13,
+          10,
+          49,
+          58
+        ],
+        [
+          12,
+          10,
+          47,
+          58
+        ],
+        [
+          11,
+          10,
+          48,
+          58
+        ],
+        [
+          12,
+          10,
+          47,
+          58
+        ]
+      ],
+      "keyPixels": {
+        "skin": 1506,
+        "hair": 0,
+        "eye": 0,
+        "trim": 410
+      },
+      "sha256": "f54a03d6529b086b69fabb5efc07128ad81317d51b620ab52d70d5d664e54e44"
+    },
+    {
+      "asset": "hair_01_back_world_walk_right",
+      "frames": 4,
+      "uniqueCels": 2,
+      "bounds": [
+        [
+          21,
+          2,
+          51,
+          28
+        ],
+        [
+          21,
+          2,
+          51,
+          28
+        ],
+        [
+          20,
+          2,
+          50,
+          28
+        ],
+        [
+          21,
+          2,
+          51,
+          28
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 1484,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "be6d08770f11cfbf50a622dbb01a7e07aa7813eaa5d73cf1eba89ed568aa0a71"
+    },
+    {
+      "asset": "face_01_world_walk_right",
+      "frames": 4,
+      "uniqueCels": 2,
+      "bounds": [
+        [
+          40,
+          23,
+          46,
+          30
+        ],
+        [
+          40,
+          23,
+          46,
+          30
+        ],
+        [
+          39,
+          23,
+          45,
+          30
+        ],
+        [
+          40,
+          23,
+          46,
+          30
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 0,
+        "eye": 20,
+        "trim": 0
+      },
+      "sha256": "a9cf8595bfc340d19f88104bd381da95cbe96247d78455f6df66d347e8b0ff20"
+    },
+    {
+      "asset": "hair_01_front_world_walk_right",
+      "frames": 4,
+      "uniqueCels": 2,
+      "bounds": [
+        [
+          24,
+          10,
+          45,
+          28
+        ],
+        [
+          24,
+          10,
+          45,
+          28
+        ],
+        [
+          23,
+          10,
+          44,
+          28
+        ],
+        [
+          24,
+          10,
+          45,
+          28
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 820,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "512aab80482a565dedaa5c3d0a554dd293d66472bf74097e15eba5678b084039"
+    },
+    {
+      "asset": "player_human_world_walk_up",
+      "frames": 4,
+      "uniqueCels": 4,
+      "bounds": [
+        [
+          16,
+          11,
+          48,
+          59
+        ],
+        [
+          14,
+          11,
+          48,
+          59
+        ],
+        [
+          16,
+          11,
+          47,
+          59
+        ],
+        [
+          13,
+          11,
+          47,
+          59
+        ]
+      ],
+      "keyPixels": {
+        "skin": 1619,
+        "hair": 0,
+        "eye": 0,
+        "trim": 447
+      },
+      "sha256": "996c620e985a5d62d597a7ee433bc45ce903b7b35e8425224ecb3afb721e300d"
+    },
+    {
+      "asset": "hair_01_back_world_walk_up",
+      "frames": 4,
+      "uniqueCels": 3,
+      "bounds": [
+        [
+          20,
+          7,
+          51,
+          30
+        ],
+        [
+          19,
+          7,
+          50,
+          30
+        ],
+        [
+          18,
+          7,
+          49,
+          30
+        ],
+        [
+          18,
+          7,
+          49,
+          30
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 1808,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "6584ab9421d26408d44a58da528c2001ee1639cfe4b01fee2515211984990250"
+    },
+    {
+      "asset": "face_01_world_walk_up",
+      "frames": 4,
+      "uniqueCels": 1,
+      "bounds": [
+        null,
+        null,
+        null,
+        null
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 0,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "a709d23dd34555baba242210238b4cd6ec5915c3283126b9403f4271a61127a2"
+    },
+    {
+      "asset": "hair_01_front_world_walk_up",
+      "frames": 4,
+      "uniqueCels": 3,
+      "bounds": [
+        [
+          21,
+          11,
+          48,
+          30
+        ],
+        [
+          20,
+          11,
+          47,
+          30
+        ],
+        [
+          19,
+          11,
+          46,
+          30
+        ],
+        [
+          19,
+          11,
+          46,
+          30
+        ]
+      ],
+      "keyPixels": {
+        "skin": 0,
+        "hair": 1268,
+        "eye": 0,
+        "trim": 0
+      },
+      "sha256": "cb2f91a059ccc9c2e17ada5c20ce248d07e1d3a1c3b2ba3025146646df05c9c1"
+    }
+  ],
+  "note": "Colour/geometry validation does not substitute for visual alignment review."
+}

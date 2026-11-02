@@ -1,0 +1,134 @@
+[
+  {
+    "mapId": "map:dawn_town",
+    "source": "packages/shared/src/content/maps.ts",
+    "sourceSha256": "2a6bfa973f540c4a906043c147a39e261a1f7200c78ca16c16ac80ebe9bff623",
+    "width": 24,
+    "height": 16,
+    "rows": [
+      "########################",
+      "#,,,,,,,,,,====,,,,,,,,#",
+      "#,TT,,,,,,,====,,,,,TT,#",
+      "#,TT,,####,====,####,,,#",
+      "#,,,,,#..#,====,#..#,,,#",
+      "#,,,,,#..#,====,#..#,,,#",
+      "#,,,,,##=#,====,#=##,,,#",
+      "#=======================",
+      "#=======================",
+      "#,,,,,,,,,,====,,,,,,,,#",
+      "#,~~~~,,,,,====,,,,,,,,#",
+      "#,~~~~,,,,,====,,,,TT,,#",
+      "#,,,,,,,,,,====,,,,TT,,#",
+      "#,TT,,,,,,,====,,,,,,,,#",
+      "#,,,,,,,,,,====,,,,,,,,#",
+      "########################"
+    ],
+    "rowWidthIssues": [],
+    "npcIds": [
+      "elder_pim",
+      "aunt_bua",
+      "uncle_lek",
+      "pi_kaew",
+      "ta_sai",
+      "nong_min",
+      "uncle_som",
+      "rune_reader",
+      "kru_ueang",
+      "pi_mek",
+      "boon_harbor",
+      "doc_ploy",
+      "nang_prae",
+      "uncle_han"
+    ],
+    "packs": [],
+    "portals": [
+      [
+        "23",
+        "7"
+      ],
+      [
+        "23",
+        "8"
+      ]
+    ],
+    "note": "EXAMPLE source layout, unchanged. Missing cells remain dark/blocked as tileAt=null; never invented or padded as walkable."
+  },
+  {
+    "mapId": "map:dawn_field",
+    "source": "packages/shared/src/content/maps.ts",
+    "sourceSha256": "2a6bfa973f540c4a906043c147a39e261a1f7200c78ca16c16ac80ebe9bff623",
+    "width": 28,
+    "height": 18,
+    "rows": [
+      "############################",
+      "#,,,,TT,,,,,,,,,,,,,TT,,,,,#",
+      "#,,,,TT,,,,,~~~~,,,,TT,,,,,#",
+      "#,,,,,,,,,,~~~~~~,,,,,,,,,,#",
+      "#,,TT,,,,,,~~~~~~,,,,,,TT,,#",
+      "#,,TT,,,,,,,~~~~,,,,,,,TT,,#",
+      "#,,,,,,,,,,,,,,,,,,,,,,,,,,#",
+      "=====,,,,,,,,,TT,,,,,,,,,,,#",
+      "=====,,,,,,,,,TT,,,,,,,,,,,#",
+      "#,,,,,,,,,,,,,,,,,,,,,,,,,,#",
+      "#,,TT,,,,,,,,,,,,,,,,,TT,,,#",
+      "#,,TT,,,,,~~,,,,,,,,,,TT,,,#",
+      "#,,,,,,,,,~~,,,,TT,,,,,,,,,#",
+      "#,,,,,,,,,,,,,,,TT,,,,,,,,,#",
+      "#,,,,TT,,,,,,,,,,,,,,,TT,,,#",
+      "#,,,,TT,,,,,,,,,,,,,,,TT,,,#",
+      "#,,,,,,,,,,,,,,,,,,,,,,,,,,#",
+      "############################"
+    ],
+    "rowWidthIssues": [],
+    "npcIds": [],
+    "packs": [
+      {
+        "pack": "gate_moles",
+        "species": "supply_mole",
+        "x": 6,
+        "y": 5
+      },
+      {
+        "pack": "gate_birds",
+        "species": "bell_bird",
+        "x": 6,
+        "y": 11
+      },
+      {
+        "pack": "pond_crabs",
+        "species": "armor_crab",
+        "x": 9,
+        "y": 6
+      },
+      {
+        "pack": "meadow_foxes",
+        "species": "ember_fox",
+        "x": 19,
+        "y": 9
+      },
+      {
+        "pack": "elite_moles",
+        "species": "supply_mole",
+        "x": 14,
+        "y": 10
+      },
+      {
+        "pack": "south_snails",
+        "species": "lantern_snail",
+        "x": 8,
+        "y": 14
+      }
+    ],
+    "portals": [
+      [
+        "0",
+        "7"
+      ],
+      [
+        "0",
+        "8"
+      ]
+    ],
+    "note": "EXAMPLE source layout, unchanged. Missing cells remain dark/blocked as tileAt=null; never invented or padded as walkable."
+  }
+]

@@ -7,6 +7,13 @@ import type { PrimaryStats } from "./schemas";
 export const PRIMARY_STATS = ["STR", "VIT", "INT", "DEX", "AGI", "SPI"] as const;
 
 export interface GearBonuses {
+  /** Primary stats from gear affixes (chapter 05 §3); added before the formulas. */
+  STR?: number;
+  VIT?: number;
+  INT?: number;
+  DEX?: number;
+  AGI?: number;
+  SPI?: number;
   HP?: number;
   MP?: number;
   PATK?: number;
@@ -19,6 +26,8 @@ export interface GearBonuses {
   EVASION_PCT?: number;
   CRIT_PCT?: number;
   CRIT_DAMAGE?: number;
+  EFFECT_HIT_PCT?: number;
+  EFFECT_RES_PCT?: number;
 }
 
 export interface DerivedStats {
@@ -35,10 +44,22 @@ export interface DerivedStats {
   evasionPct: number;
   critPct: number;
   critDamageBonus: number;
+  /** Offsets a target's status resistance (O15, Nut 2026-10-04). From gear and statuses; no stat gives it. */
+  effectHitPct: number;
+  /** Lowers the chance of harmful statuses; the resisting primary stat adds more per status (status.ts). */
+  effectResPct: number;
 }
 
-export function deriveStats(level: number, p: PrimaryStats, gear: GearBonuses = {}): DerivedStats {
+export function deriveStats(level: number, base: PrimaryStats, gear: GearBonuses = {}): DerivedStats {
   const L = level;
+  const p: PrimaryStats = {
+    STR: base.STR + (gear.STR ?? 0),
+    VIT: base.VIT + (gear.VIT ?? 0),
+    INT: base.INT + (gear.INT ?? 0),
+    DEX: base.DEX + (gear.DEX ?? 0),
+    AGI: base.AGI + (gear.AGI ?? 0),
+    SPI: base.SPI + (gear.SPI ?? 0),
+  };
   return {
     maxHp: 400 + 30 * (L - 1) + 25 * p.VIT + (gear.HP ?? 0),
     maxMp: 60 + 4 * (L - 1) + 3 * p.INT + 5 * p.SPI + (gear.MP ?? 0),
@@ -52,6 +73,8 @@ export function deriveStats(level: number, p: PrimaryStats, gear: GearBonuses = 
     evasionPct: 0.15 * p.AGI + (gear.EVASION_PCT ?? 0),
     critPct: 5 + 0.1 * p.DEX + (gear.CRIT_PCT ?? 0),
     critDamageBonus: gear.CRIT_DAMAGE ?? 0,
+    effectHitPct: gear.EFFECT_HIT_PCT ?? 0,
+    effectResPct: gear.EFFECT_RES_PCT ?? 0,
   };
 }
 

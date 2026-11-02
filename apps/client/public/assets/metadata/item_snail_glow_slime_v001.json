@@ -1,0 +1,48 @@
+{
+  "assetId": "item_snail_glow_slime",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/items/item_snail_glow_slime_v001.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "item",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "eb8c970dbd889774ac3934866fb429ce6c2c798527dd01c035632499c9892ce5",
+  "contentId": "item:snail_glow_slime",
+  "contentGroup": "items",
+  "motif": "drop"
+}

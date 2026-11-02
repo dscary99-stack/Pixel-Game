@@ -1,0 +1,77 @@
+[
+  {
+    "name": "item_small_potion",
+    "source": "potion-master.png",
+    "nativeSize": [
+      32,
+      32
+    ],
+    "sourceGrid": [
+      1,
+      1
+    ],
+    "frameCount": 1,
+    "fixedSourceCrop": [
+      192,
+      62,
+      1062,
+      1227
+    ],
+    "scale": 0.02575107296137339,
+    "offset": [
+      5,
+      1
+    ],
+    "status": "needs_visual_review"
+  },
+  {
+    "name": "ui_command_skill",
+    "source": "fire-skill-master.png",
+    "nativeSize": [
+      24,
+      24
+    ],
+    "sourceGrid": [
+      1,
+      1
+    ],
+    "frameCount": 1,
+    "fixedSourceCrop": [
+      224,
+      113,
+      1207,
+      1162
+    ],
+    "scale": 0.020972354623450904,
+    "offset": [
+      1,
+      1
+    ],
+    "status": "needs_visual_review"
+  },
+  {
+    "name": "ui_hit_fire",
+    "source": "fire-sheet-master.png",
+    "nativeSize": [
+      32,
+      32
+    ],
+    "sourceGrid": [
+      3,
+      2
+    ],
+    "frameCount": 6,
+    "fixedSourceCrop": [
+      48,
+      41,
+      486,
+      473
+    ],
+    "scale": 0.0684931506849315,
+    "offset": [
+      1,
+      1
+    ],
+    "status": "needs_visual_review"
+  }
+]

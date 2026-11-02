@@ -1,0 +1,65 @@
+{
+  "assetId": "ui_status_oil",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_status_oil_v002.png",
+  "frameWidth": 16,
+  "frameHeight": 16,
+  "columns": 4,
+  "rows": 1,
+  "frameCount": 4,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "loop",
+      "frames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "fps": 8,
+      "loop": true
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "status",
+  "nineSlice": null,
+  "nativeSize": [
+    16,
+    16
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      16,
+      16
+    ]
+  ],
+  "completion": "repeat",
+  "sha256": "598e3db9c8fc1610c809bf3da0666a530bf39877667f645db927da7e6e83ffc8",
+  "contentId": "oil",
+  "harmful": true,
+  "category": "stat",
+  "motif": "bottle",
+  "polarityBadge": "minus",
+  "motion": "stable readable glyph; subtle 1px travelling glint",
+  "sourceMaster": "illustrated master family bottle; native modifiers in extras.py",
+  "framing": null
+}

@@ -1,0 +1,48 @@
+{
+  "assetId": "item_shop_cap_30",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/items/item_shop_cap_30_v001.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "item",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "3bafc985d4fc64eea45017e6d78008863000073ef26f4aa1f27def41a4b3f789",
+  "contentId": "equip:shop_cap_30",
+  "contentGroup": "equipment",
+  "motif": "helmet"
+}

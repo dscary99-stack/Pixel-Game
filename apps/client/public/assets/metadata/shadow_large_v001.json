@@ -1,0 +1,20 @@
+{
+  "assetId": "shadow_large",
+  "version": 1,
+  "file": "/assets/sprites/effects/shadow_large_v001.png",
+  "frameWidth": 88,
+  "frameHeight": 24,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "origin": [
+    0.5,
+    0.5
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-ui-v002",
+  "animations": [],
+  "renderAlpha": 0.28,
+  "note": "Binary-alpha shared sprite; set runtime alpha to .28. Place at actor groundPoint, not frame bottom."
+}

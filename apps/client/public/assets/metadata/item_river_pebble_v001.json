@@ -1,0 +1,48 @@
+{
+  "assetId": "item_river_pebble",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/items/item_river_pebble_v001.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "item",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "b6b288748a2a65df360711ce438812b8b814c7e739b86b630ffdd15788c2b510",
+  "contentId": "item:river_pebble",
+  "contentGroup": "items",
+  "motif": "rock"
+}

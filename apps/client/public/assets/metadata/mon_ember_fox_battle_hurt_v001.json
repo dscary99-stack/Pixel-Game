@@ -1,0 +1,58 @@
+{
+  "assetId": "mon_ember_fox_battle_hurt",
+  "version": 1,
+  "file": "/assets/sprites/monsters/mon_ember_fox_battle_hurt_v001.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "columns": 2,
+  "rows": 1,
+  "frameCount": 2,
+  "origin": [
+    0.5,
+    1
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-ui-v002",
+  "animations": [
+    {
+      "name": "hurt",
+      "frames": [
+        0,
+        1
+      ],
+      "fps": 8,
+      "loop": false
+    }
+  ],
+  "groundOffset": 4,
+  "groundPoint": [
+    32,
+    60
+  ],
+  "hitPoint": [
+    32,
+    16
+  ],
+  "castPoint": [
+    50,
+    30
+  ],
+  "allowedFlip": {
+    "x": true,
+    "y": false
+  },
+  "facing": "right",
+  "shadowAsset": "shadow_small",
+  "artId": "art:ember_fox",
+  "contentGroup": "species",
+  "elementRendering": {
+    "mode": "external-vfx",
+    "allowedElements": [
+      "FIRE",
+      "WIND",
+      "SHADOW"
+    ]
+  },
+  "sourceAtlas": "ember_fox_battle"
+}

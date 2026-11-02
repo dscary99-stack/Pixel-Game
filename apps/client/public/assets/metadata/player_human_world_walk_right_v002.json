@@ -1,0 +1,55 @@
+{
+  "assetId": "player_human_world_walk_right",
+  "version": 2,
+  "file": "/assets/sprites/characters/player_human_world_walk_right_v002.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "columns": 4,
+  "rows": 1,
+  "frameCount": 4,
+  "origin": [
+    0.5,
+    1
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-v002 + exact appearance keys",
+  "animations": [
+    {
+      "name": "walk",
+      "frames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "fps": 8,
+      "loop": true
+    }
+  ],
+  "groundOffset": 4,
+  "groundPoint": [
+    32,
+    60
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "facing": "right",
+  "shadowAsset": "shadow_small",
+  "artId": "art:human",
+  "sourceAtlas": "art/player-layers/source",
+  "padding": 0,
+  "spacing": 0,
+  "headOffset": [
+    0,
+    0
+  ],
+  "layer": "body",
+  "recolorParts": [
+    "skin",
+    "trim"
+  ],
+  "headRig": "human-v002-proof"
+}

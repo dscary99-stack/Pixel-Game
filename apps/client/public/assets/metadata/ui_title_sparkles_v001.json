@@ -1,0 +1,66 @@
+{
+  "assetId": "ui_title_sparkles",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_title_sparkles_v001.png",
+  "frameWidth": 580,
+  "frameHeight": 540,
+  "columns": 6,
+  "rows": 1,
+  "frameCount": 6,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "loop",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fps": 8,
+      "loop": true
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "title",
+  "nineSlice": null,
+  "nativeSize": [
+    580,
+    540
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      580,
+      540
+    ]
+  ],
+  "completion": "repeat",
+  "sha256": "0063938ab41e5fcb502ac2e594da0d47f6c6c1e315c9df299fadb91712ee3c63",
+  "attachment": [
+    0,
+    0
+  ],
+  "layerOrder": 1,
+  "baseAsset": "ui_title_scene",
+  "motion": "fixed glints and two closed firefly paths"
+}

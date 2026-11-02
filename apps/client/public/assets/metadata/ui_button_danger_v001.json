@@ -1,0 +1,63 @@
+{
+  "assetId": "ui:button:danger",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_button_danger_v001.png",
+  "frameWidth": 64,
+  "frameHeight": 48,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "nine_slice",
+  "nineSlice": {
+    "left": 16,
+    "right": 16,
+    "top": 16,
+    "bottom": 16,
+    "minWidth": 33,
+    "minHeight": 48
+  },
+  "paletteVariants": [],
+  "nativeSize": [
+    64,
+    48
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      64,
+      48
+    ]
+  ],
+  "productionApproved": false,
+  "recommendedHeight": 48,
+  "minimumTouchHeight": 48,
+  "contentInsets": [
+    16,
+    10,
+    16,
+    10
+  ],
+  "textOffset": [
+    0,
+    0
+  ],
+  "sha256": "f9ce83fcf032145b48cc5d04e7f21b7be960ed3452eac841bc1e5384cfde5a2c"
+}

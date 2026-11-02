@@ -1,0 +1,61 @@
+{
+  "assetId": "ui_ready_ascend",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_ready_ascend_v001.png",
+  "frameWidth": 56,
+  "frameHeight": 48,
+  "columns": 6,
+  "rows": 1,
+  "frameCount": 6,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "loop",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fps": 10,
+      "loop": true
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "overlay",
+  "nineSlice": null,
+  "nativeSize": [
+    56,
+    48
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      56,
+      48
+    ]
+  ],
+  "completion": "repeat",
+  "sha256": "f47ce330f2e7f7a9824a371d0d41b6e5d0375044dc49cf63a042418a21362113",
+  "attachment": "56x48 command bounds; above button below label",
+  "noStretch": true
+}

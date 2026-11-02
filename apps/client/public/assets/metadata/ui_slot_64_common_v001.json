@@ -1,0 +1,56 @@
+{
+  "assetId": "ui:slot:64_common",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_slot_64_common_v001.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "slot",
+  "nineSlice": null,
+  "paletteVariants": [],
+  "nativeSize": [
+    64,
+    64
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      64,
+      64
+    ]
+  ],
+  "productionApproved": false,
+  "rarity": "COMMON",
+  "contentRect": [
+    8,
+    8,
+    48,
+    48
+  ],
+  "lockOffset": [
+    46,
+    46
+  ],
+  "quantityText": "runtime-bottom-right; move when locked",
+  "sha256": "7c6cb32ac5be05625503febc25193f999a39efbbc7807ed08050b20b1070f735"
+}

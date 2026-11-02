@@ -1,0 +1,64 @@
+{
+  "assetId": "ui_number_heal_7",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_number_heal_7_v001.png",
+  "frameWidth": 16,
+  "frameHeight": 24,
+  "columns": 5,
+  "rows": 1,
+  "frameCount": 5,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "pop",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "fps": 10,
+      "loop": false
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "popup",
+  "nineSlice": null,
+  "nativeSize": [
+    16,
+    24
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      16,
+      24
+    ]
+  ],
+  "completion": "hold-until-owner-removes",
+  "sha256": "6f581719b321e1ab4dfc683a18e90677dadcfc346d55f1c569729711e370359d",
+  "glyph": "7",
+  "style": "heal",
+  "advance": 12,
+  "inkHeight": 14,
+  "baseline": 20,
+  "motion": "readable -> rise 3px/flash -> settle; no scaling"
+}

@@ -1,0 +1,50 @@
+{
+  "assetId": "ui:command:auto",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_command_auto_v001.png",
+  "frameWidth": 24,
+  "frameHeight": 24,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "icon",
+  "nineSlice": null,
+  "paletteVariants": [],
+  "nativeSize": [
+    24,
+    24
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      24,
+      24
+    ]
+  ],
+  "productionApproved": false,
+  "semantic": "auto",
+  "hitArea": [
+    48,
+    48
+  ],
+  "text": "runtime",
+  "sha256": "8c1db8356013bf881963c9fa4211a569e2a4c47115e8a10bd07d8a9f0db5e052"
+}

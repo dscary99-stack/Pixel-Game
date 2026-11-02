@@ -1,0 +1,57 @@
+{
+  "assetId": "ui:window:title",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_window_title_v001.png",
+  "frameWidth": 48,
+  "frameHeight": 48,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "nine_slice",
+  "nineSlice": {
+    "left": 16,
+    "right": 16,
+    "top": 16,
+    "bottom": 16,
+    "minWidth": 33,
+    "minHeight": 33
+  },
+  "paletteVariants": [],
+  "nativeSize": [
+    48,
+    48
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      48,
+      48
+    ]
+  ],
+  "productionApproved": false,
+  "contentInsets": [
+    16,
+    12,
+    16,
+    12
+  ],
+  "sha256": "e888a045660f4d3295fa027d8d21e1fd186b8ecaaa0c50f8e39d2459645e8245"
+}

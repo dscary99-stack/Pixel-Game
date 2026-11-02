@@ -1,0 +1,81 @@
+{
+  "assetId": "ui_heal_burst",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_heal_burst_v002.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 6,
+  "rows": 1,
+  "frameCount": 6,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "play",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fps": 10,
+      "loop": false
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "heal",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hide",
+  "sha256": "76e67a3c7460b5bf4f97d9ebebff5d74b20d4a44053f5b0530c58c8b89fb6518",
+  "attachment": [
+    16,
+    24
+  ],
+  "sourceMaster": "heal-sheet-master.png",
+  "framing": {
+    "sourceGrid": [
+      3,
+      2
+    ],
+    "fixedCrop": [
+      1,
+      51,
+      490,
+      504
+    ],
+    "fixedOffset": [
+      1,
+      2
+    ],
+    "scale": 0.06134969325153374
+  }
+}

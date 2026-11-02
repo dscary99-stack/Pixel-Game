@@ -1,0 +1,46 @@
+{
+  "assetId": "ui_element_earth",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_element_earth_v001.png",
+  "frameWidth": 16,
+  "frameHeight": 16,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "element",
+  "nineSlice": null,
+  "nativeSize": [
+    16,
+    16
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      16,
+      16
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "131b962048b799330085964005305ef1c8a20ea294884ecc7090107c253a7012",
+  "contentId": "EARTH"
+}

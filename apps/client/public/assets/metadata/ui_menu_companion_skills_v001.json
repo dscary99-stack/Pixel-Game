@@ -1,0 +1,46 @@
+{
+  "assetId": "ui_menu_companion_skills",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_menu_companion_skills_v001.png",
+  "frameWidth": 24,
+  "frameHeight": 24,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "menu",
+  "nineSlice": null,
+  "nativeSize": [
+    24,
+    24
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      24,
+      24
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "f57a3c74e0e38935bf033ef6cf9f919a45cf2c9c50546141340a1c533dd9b87d",
+  "contentId": "companion_skills"
+}

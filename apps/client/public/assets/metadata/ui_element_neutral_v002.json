@@ -1,0 +1,48 @@
+{
+  "assetId": "ui_element_neutral",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_element_neutral_v002.png",
+  "frameWidth": 16,
+  "frameHeight": 16,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "element",
+  "nineSlice": null,
+  "nativeSize": [
+    16,
+    16
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      16,
+      16
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "dfa5e7d0b17350a44569e0f13ea7bf4dec1e5523ab83b59b7f3bba9351e158a0",
+  "contentId": "NEUTRAL",
+  "sourceMaster": "illustrated master family neutral; native modifiers in extras.py",
+  "framing": null
+}

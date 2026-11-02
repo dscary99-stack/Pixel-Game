@@ -1,7 +1,23 @@
 import { defineConfig } from "vite";
 
 // `?server` (empty) uses this proxy to reach `wrangler dev` on :8787 without CORS.
-const proxy = { "/battles": "http://127.0.0.1:8787" };
+const proxy = {
+  "/battles": "http://127.0.0.1:8787",
+  "/character": "http://127.0.0.1:8787",
+  "/town": "http://127.0.0.1:8787",
+  "/party": "http://127.0.0.1:8787",
+  "/quests": "http://127.0.0.1:8787",
+  "/journal": "http://127.0.0.1:8787",
+  "/frontier": "http://127.0.0.1:8787",
+  "/auth": "http://127.0.0.1:8787",
+  "/account": "http://127.0.0.1:8787",
+  "/market": "http://127.0.0.1:8787",
+  "/trade": "http://127.0.0.1:8787",
+  "/vault": "http://127.0.0.1:8787",
+  "/mail": "http://127.0.0.1:8787",
+  "/practice": "http://127.0.0.1:8787",
+  "/world": { target: "http://127.0.0.1:8787", ws: true },
+};
 
 export default defineConfig({
   build: { target: "es2022", chunkSizeWarningLimit: 2000 },

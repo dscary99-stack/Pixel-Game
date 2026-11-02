@@ -1,0 +1,65 @@
+{
+  "assetId": "ui_hit_water",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_hit_water_v001.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 6,
+  "rows": 1,
+  "frameCount": 6,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "play",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fps": 10,
+      "loop": false
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "hit",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hide",
+  "sha256": "b9183542798a3aeedf800c06e75d7e2f64c6817c435fdd3266148ff4cc4eec52",
+  "element": "WATER",
+  "contactFrame": 1,
+  "attachment": [
+    16,
+    16
+  ]
+}

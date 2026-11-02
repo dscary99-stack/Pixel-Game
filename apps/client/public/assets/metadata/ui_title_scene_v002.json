@@ -1,0 +1,63 @@
+{
+  "assetId": "ui_title_scene",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_title_scene_v002.png",
+  "frameWidth": 580,
+  "frameHeight": 540,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "title",
+  "nineSlice": null,
+  "nativeSize": [
+    580,
+    540
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      580,
+      540
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "3844a9e706e628094765cfccf2e43048d412a9da9edab71602c08ceefe7abc19",
+  "logo": "PIXEL GAME",
+  "logoStatus": "working project title; replace when approved",
+  "source": "native re-authoring inspired by art/ui/reference/title-concept-r2.png",
+  "layerOrder": 0,
+  "sourceMaster": "title-master.png + native original bitmap logo",
+  "framing": {
+    "fixedCrop": [
+      56,
+      63,
+      1257,
+      1178
+    ],
+    "scale": 0.39461883408071746,
+    "offset": [
+      53,
+      90
+    ]
+  }
+}

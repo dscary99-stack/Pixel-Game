@@ -1,0 +1,3278 @@
+[
+  {
+    "name": "ui_window_frame",
+    "url": "ui_window_frame-strip.png",
+    "width": 48,
+    "height": 48,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_window_background",
+    "url": "ui_window_background-strip.png",
+    "width": 48,
+    "height": 48,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_window_title",
+    "url": "ui_window_title-strip.png",
+    "width": 48,
+    "height": 48,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_button_normal",
+    "url": "ui_button_normal-strip.png",
+    "width": 64,
+    "height": 48,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_button_selected",
+    "url": "ui_button_selected-strip.png",
+    "width": 64,
+    "height": 48,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_button_primary",
+    "url": "ui_button_primary-strip.png",
+    "width": 64,
+    "height": 48,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_button_disabled",
+    "url": "ui_button_disabled-strip.png",
+    "width": 64,
+    "height": 48,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_button_danger",
+    "url": "ui_button_danger-strip.png",
+    "width": 64,
+    "height": 48,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_slot_48_common",
+    "url": "ui_slot_48_common-strip.png",
+    "width": 48,
+    "height": 48,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_slot_48_uncommon",
+    "url": "ui_slot_48_uncommon-strip.png",
+    "width": 48,
+    "height": 48,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_slot_48_rare",
+    "url": "ui_slot_48_rare-strip.png",
+    "width": 48,
+    "height": 48,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_slot_48_epic",
+    "url": "ui_slot_48_epic-strip.png",
+    "width": 48,
+    "height": 48,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_slot_48_legendary",
+    "url": "ui_slot_48_legendary-strip.png",
+    "width": 48,
+    "height": 48,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_slot_64_common",
+    "url": "ui_slot_64_common-strip.png",
+    "width": 64,
+    "height": 64,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_slot_64_uncommon",
+    "url": "ui_slot_64_uncommon-strip.png",
+    "width": 64,
+    "height": 64,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_slot_64_rare",
+    "url": "ui_slot_64_rare-strip.png",
+    "width": 64,
+    "height": 64,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_slot_64_epic",
+    "url": "ui_slot_64_epic-strip.png",
+    "width": 64,
+    "height": 64,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_slot_64_legendary",
+    "url": "ui_slot_64_legendary-strip.png",
+    "width": 64,
+    "height": 64,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_badge_lock",
+    "url": "ui_badge_lock-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_bar_track_h4",
+    "url": "ui_bar_track_h4-strip.png",
+    "width": 64,
+    "height": 4,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_bar_hp_ally_h4",
+    "url": "ui_bar_hp_ally_h4-strip.png",
+    "width": 64,
+    "height": 4,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_bar_mp_h4",
+    "url": "ui_bar_mp_h4-strip.png",
+    "width": 64,
+    "height": 4,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_bar_exp_h4",
+    "url": "ui_bar_exp_h4-strip.png",
+    "width": 64,
+    "height": 4,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_bar_hp_enemy_h4",
+    "url": "ui_bar_hp_enemy_h4-strip.png",
+    "width": 64,
+    "height": 4,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_bar_ascend_h4",
+    "url": "ui_bar_ascend_h4-strip.png",
+    "width": 64,
+    "height": 4,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_bar_track_h6",
+    "url": "ui_bar_track_h6-strip.png",
+    "width": 64,
+    "height": 6,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_bar_hp_ally_h6",
+    "url": "ui_bar_hp_ally_h6-strip.png",
+    "width": 64,
+    "height": 6,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_bar_mp_h6",
+    "url": "ui_bar_mp_h6-strip.png",
+    "width": 64,
+    "height": 6,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_bar_exp_h6",
+    "url": "ui_bar_exp_h6-strip.png",
+    "width": 64,
+    "height": 6,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_bar_hp_enemy_h6",
+    "url": "ui_bar_hp_enemy_h6-strip.png",
+    "width": 64,
+    "height": 6,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_bar_ascend_h6",
+    "url": "ui_bar_ascend_h6-strip.png",
+    "width": 64,
+    "height": 6,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_bar_track_h8",
+    "url": "ui_bar_track_h8-strip.png",
+    "width": 64,
+    "height": 8,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_bar_hp_ally_h8",
+    "url": "ui_bar_hp_ally_h8-strip.png",
+    "width": 64,
+    "height": 8,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_bar_mp_h8",
+    "url": "ui_bar_mp_h8-strip.png",
+    "width": 64,
+    "height": 8,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_bar_exp_h8",
+    "url": "ui_bar_exp_h8-strip.png",
+    "width": 64,
+    "height": 8,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_bar_hp_enemy_h8",
+    "url": "ui_bar_hp_enemy_h8-strip.png",
+    "width": 64,
+    "height": 8,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_bar_ascend_h8",
+    "url": "ui_bar_ascend_h8-strip.png",
+    "width": 64,
+    "height": 8,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_small_potion",
+    "url": "item_small_potion-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_command_potion",
+    "url": "ui_command_potion-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_command_skill",
+    "url": "ui_command_skill-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_hit_fire",
+    "url": "ui_hit_fire-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 6,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_hit_water",
+    "url": "ui_hit_water-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 6,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_hit_earth",
+    "url": "ui_hit_earth-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 6,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_hit_wind",
+    "url": "ui_hit_wind-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 6,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_hit_light",
+    "url": "ui_hit_light-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 6,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_hit_shadow",
+    "url": "ui_hit_shadow-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 6,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_hit_neutral",
+    "url": "ui_hit_neutral-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 6,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_heal_burst",
+    "url": "ui_heal_burst-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 6,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_command_guard",
+    "url": "ui_command_guard-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_crab_buckler",
+    "url": "item_crab_buckler-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_command_attack",
+    "url": "ui_command_attack-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_command_revive",
+    "url": "ui_command_revive-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_phoenix_feather",
+    "url": "item_phoenix_feather-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_command_flee",
+    "url": "ui_command_flee-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_command_capture",
+    "url": "ui_command_capture-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_inventory",
+    "url": "ui_menu_inventory-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_command_ascend",
+    "url": "ui_command_ascend-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_character",
+    "url": "ui_menu_character-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_companion",
+    "url": "ui_menu_companion-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_activities",
+    "url": "ui_menu_activities-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_social",
+    "url": "ui_menu_social-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_element_fire",
+    "url": "ui_element_fire-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_element_fire_loop",
+    "url": "ui_element_fire_loop-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_element_water",
+    "url": "ui_element_water-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_element_water_loop",
+    "url": "ui_element_water_loop-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_element_earth",
+    "url": "ui_element_earth-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_element_earth_loop",
+    "url": "ui_element_earth_loop-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_element_wind",
+    "url": "ui_element_wind-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_element_wind_loop",
+    "url": "ui_element_wind_loop-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_element_light",
+    "url": "ui_element_light-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_element_light_loop",
+    "url": "ui_element_light_loop-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_element_shadow",
+    "url": "ui_element_shadow-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_element_shadow_loop",
+    "url": "ui_element_shadow_loop-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_element_neutral",
+    "url": "ui_element_neutral-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_element_neutral_loop",
+    "url": "ui_element_neutral_loop-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_stun",
+    "url": "ui_status_stun-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_sleep",
+    "url": "ui_status_sleep-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_freeze",
+    "url": "ui_status_freeze-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_petrify",
+    "url": "ui_status_petrify-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_paralyze",
+    "url": "ui_status_paralyze-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_fear",
+    "url": "ui_status_fear-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_silence",
+    "url": "ui_status_silence-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_disarm",
+    "url": "ui_status_disarm-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_root",
+    "url": "ui_status_root-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_confuse",
+    "url": "ui_status_confuse-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_charm",
+    "url": "ui_status_charm-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_berserk",
+    "url": "ui_status_berserk-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_taunt",
+    "url": "ui_status_taunt-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_mini",
+    "url": "ui_status_mini-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_doom",
+    "url": "ui_status_doom-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_poison",
+    "url": "ui_status_poison-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_toxic",
+    "url": "ui_status_toxic-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_burn",
+    "url": "ui_status_burn-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_bleed",
+    "url": "ui_status_bleed-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_frostbite",
+    "url": "ui_status_frostbite-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_shock",
+    "url": "ui_status_shock-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_corrode",
+    "url": "ui_status_corrode-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_leech",
+    "url": "ui_status_leech-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_mana_burn",
+    "url": "ui_status_mana_burn-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_blind",
+    "url": "ui_status_blind-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_atk_down",
+    "url": "ui_status_atk_down-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_matk_down",
+    "url": "ui_status_matk_down-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_def_down",
+    "url": "ui_status_def_down-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_mdef_down",
+    "url": "ui_status_mdef_down-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_spd_down",
+    "url": "ui_status_spd_down-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_evasion_down",
+    "url": "ui_status_evasion_down-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_crit_down",
+    "url": "ui_status_crit_down-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_res_down",
+    "url": "ui_status_res_down-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_vulnerable",
+    "url": "ui_status_vulnerable-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_mark",
+    "url": "ui_status_mark-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_anti_heal",
+    "url": "ui_status_anti_heal-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_unbuffable",
+    "url": "ui_status_unbuffable-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_seal",
+    "url": "ui_status_seal-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_skill_lock",
+    "url": "ui_status_skill_lock-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_mp_cost_up",
+    "url": "ui_status_mp_cost_up-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_link",
+    "url": "ui_status_link-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_zombie",
+    "url": "ui_status_zombie-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_wet",
+    "url": "ui_status_wet-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_oil",
+    "url": "ui_status_oil-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_atk_up",
+    "url": "ui_status_atk_up-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_matk_up",
+    "url": "ui_status_matk_up-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_def_up",
+    "url": "ui_status_def_up-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_mdef_up",
+    "url": "ui_status_mdef_up-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_spd_up",
+    "url": "ui_status_spd_up-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_evasion_up",
+    "url": "ui_status_evasion_up-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_accuracy_up",
+    "url": "ui_status_accuracy_up-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_crit_up",
+    "url": "ui_status_crit_up-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_res_up",
+    "url": "ui_status_res_up-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_regen",
+    "url": "ui_status_regen-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_mp_regen",
+    "url": "ui_status_mp_regen-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_dmg_reduction",
+    "url": "ui_status_dmg_reduction-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_reflect",
+    "url": "ui_status_reflect-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_thorns",
+    "url": "ui_status_thorns-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_immunity",
+    "url": "ui_status_immunity-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_endure",
+    "url": "ui_status_endure-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_invincible",
+    "url": "ui_status_invincible-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_stealth",
+    "url": "ui_status_stealth-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_counter",
+    "url": "ui_status_counter-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_protect",
+    "url": "ui_status_protect-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_shield",
+    "url": "ui_status_shield-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_focus",
+    "url": "ui_status_focus-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_imbue",
+    "url": "ui_status_imbue-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_element_ward",
+    "url": "ui_status_element_ward-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_lifesteal_up",
+    "url": "ui_status_lifesteal_up-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_status_rage",
+    "url": "ui_status_rage-strip.png",
+    "width": 16,
+    "height": 16,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_menu_stats",
+    "url": "ui_menu_stats-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_equipment",
+    "url": "ui_menu_equipment-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_skill_tree",
+    "url": "ui_menu_skill_tree-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_class",
+    "url": "ui_menu_class-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_team",
+    "url": "ui_menu_team-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_companion_skills",
+    "url": "ui_menu_companion_skills-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_rebirth",
+    "url": "ui_menu_rebirth-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_shop",
+    "url": "ui_menu_shop-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_armory",
+    "url": "ui_menu_armory-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_craft",
+    "url": "ui_menu_craft-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_vault",
+    "url": "ui_menu_vault-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_mail",
+    "url": "ui_menu_mail-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_mail_new",
+    "url": "ui_menu_mail_new-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_menu_market",
+    "url": "ui_menu_market-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_quests",
+    "url": "ui_menu_quests-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_quests_new",
+    "url": "ui_menu_quests_new-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 4,
+    "fps": 8,
+    "loop": true
+  },
+  {
+    "name": "ui_menu_orders",
+    "url": "ui_menu_orders-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_secret_quests",
+    "url": "ui_menu_secret_quests-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_tower",
+    "url": "ui_menu_tower-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_practice",
+    "url": "ui_menu_practice-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_auto_hunt",
+    "url": "ui_menu_auto_hunt-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_party",
+    "url": "ui_menu_party-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_menu_journal",
+    "url": "ui_menu_journal-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_class_guardian",
+    "url": "ui_class_guardian-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_class_striker",
+    "url": "ui_class_striker-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_class_ranger",
+    "url": "ui_class_ranger-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_class_arcanist",
+    "url": "ui_class_arcanist-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_class_warden",
+    "url": "ui_class_warden-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_class_binder",
+    "url": "ui_class_binder-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_class_rogue",
+    "url": "ui_class_rogue-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_class_alchemist",
+    "url": "ui_class_alchemist-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_class_bard",
+    "url": "ui_class_bard-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_race_human",
+    "url": "ui_race_human-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_race_sylvan",
+    "url": "ui_race_sylvan-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_race_stonekin",
+    "url": "ui_race_stonekin-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_race_wildkin",
+    "url": "ui_race_wildkin-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_race_runeborn",
+    "url": "ui_race_runeborn-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_race_tideborn",
+    "url": "ui_race_tideborn-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_race_skyborn",
+    "url": "ui_race_skyborn-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_race_veilborn",
+    "url": "ui_race_veilborn-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_mana_potion",
+    "url": "item_mana_potion-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_cleansing_herb",
+    "url": "item_cleansing_herb-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_stat_reset_scroll",
+    "url": "item_stat_reset_scroll-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_skill_reset_scroll",
+    "url": "item_skill_reset_scroll-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_power_tonic",
+    "url": "item_power_tonic-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_war_drum_tonic",
+    "url": "item_war_drum_tonic-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_fire_flask",
+    "url": "item_fire_flask-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_thunder_bomb",
+    "url": "item_thunder_bomb-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_armor_crab_capture",
+    "url": "item_armor_crab_capture-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_ember_fox_capture",
+    "url": "item_ember_fox_capture-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_lantern_snail_capture",
+    "url": "item_lantern_snail_capture-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_supply_mole_capture",
+    "url": "item_supply_mole_capture-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_bell_bird_capture",
+    "url": "item_bell_bird_capture-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_crystal_crab_lord_capture",
+    "url": "item_crystal_crab_lord_capture-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_armor_crab_sigil",
+    "url": "item_armor_crab_sigil-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_ember_fox_sigil",
+    "url": "item_ember_fox_sigil-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_lantern_snail_sigil",
+    "url": "item_lantern_snail_sigil-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_supply_mole_sigil",
+    "url": "item_supply_mole_sigil-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_crystal_crab_lord_sigil",
+    "url": "item_crystal_crab_lord_sigil-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_bell_bird_sigil",
+    "url": "item_bell_bird_sigil-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_crab_shell",
+    "url": "item_crab_shell-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_fox_tail_ash",
+    "url": "item_fox_tail_ash-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_snail_glow_slime",
+    "url": "item_snail_glow_slime-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_mole_fur",
+    "url": "item_mole_fur-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_bell_feather",
+    "url": "item_bell_feather-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_crystal_shard",
+    "url": "item_crystal_shard-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_river_pebble",
+    "url": "item_river_pebble-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_rift_core",
+    "url": "item_rift_core-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_stone_t1",
+    "url": "item_refine_stone_t1-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_stone_t2",
+    "url": "item_refine_stone_t2-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_stone_t3",
+    "url": "item_refine_stone_t3-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_stone_t4",
+    "url": "item_refine_stone_t4-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_ward_t1_p6",
+    "url": "item_refine_ward_t1_p6-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_ward_t1_p7",
+    "url": "item_refine_ward_t1_p7-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_ward_t1_p8",
+    "url": "item_refine_ward_t1_p8-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_ward_t1_p9",
+    "url": "item_refine_ward_t1_p9-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_ward_t1_p10",
+    "url": "item_refine_ward_t1_p10-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_ward_t2_p6",
+    "url": "item_refine_ward_t2_p6-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_ward_t2_p7",
+    "url": "item_refine_ward_t2_p7-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_ward_t2_p8",
+    "url": "item_refine_ward_t2_p8-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_ward_t2_p9",
+    "url": "item_refine_ward_t2_p9-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_ward_t2_p10",
+    "url": "item_refine_ward_t2_p10-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_ward_t3_p6",
+    "url": "item_refine_ward_t3_p6-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_ward_t3_p7",
+    "url": "item_refine_ward_t3_p7-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_ward_t3_p8",
+    "url": "item_refine_ward_t3_p8-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_ward_t3_p9",
+    "url": "item_refine_ward_t3_p9-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_ward_t3_p10",
+    "url": "item_refine_ward_t3_p10-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_ward_t4_p6",
+    "url": "item_refine_ward_t4_p6-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_ward_t4_p7",
+    "url": "item_refine_ward_t4_p7-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_ward_t4_p8",
+    "url": "item_refine_ward_t4_p8-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_ward_t4_p9",
+    "url": "item_refine_ward_t4_p9-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_refine_ward_t4_p10",
+    "url": "item_refine_ward_t4_p10-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_elite_core_t1",
+    "url": "item_elite_core_t1-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_elite_core_t2",
+    "url": "item_elite_core_t2-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_elite_core_t3",
+    "url": "item_elite_core_t3-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_elite_core_t4",
+    "url": "item_elite_core_t4-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_wild_hide_t2",
+    "url": "item_wild_hide_t2-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_wild_gem_t2",
+    "url": "item_wild_gem_t2-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_wild_hide_t3",
+    "url": "item_wild_hide_t3-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_wild_gem_t3",
+    "url": "item_wild_gem_t3-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_wild_hide_t4",
+    "url": "item_wild_hide_t4-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_wild_gem_t4",
+    "url": "item_wild_gem_t4-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_wooden_sword",
+    "url": "item_wooden_sword-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_training_bow",
+    "url": "item_training_bow-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_apprentice_staff",
+    "url": "item_apprentice_staff-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_cloth_tunic",
+    "url": "item_cloth_tunic-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_mole_sandals",
+    "url": "item_mole_sandals-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_bell_feather_cap",
+    "url": "item_bell_feather_cap-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_glow_charm",
+    "url": "item_glow_charm-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_crystal_shell_plate",
+    "url": "item_crystal_shell_plate-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_ember_fang_dagger",
+    "url": "item_ember_fang_dagger-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_wand_1",
+    "url": "item_shop_wand_1-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_cap_1",
+    "url": "item_shop_cap_1-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_boots_1",
+    "url": "item_shop_boots_1-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_shield_1",
+    "url": "item_shop_shield_1-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_sword_10",
+    "url": "item_shop_sword_10-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_bow_10",
+    "url": "item_shop_bow_10-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_staff_10",
+    "url": "item_shop_staff_10-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_armor_10",
+    "url": "item_shop_armor_10-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_wand_10",
+    "url": "item_shop_wand_10-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_cap_10",
+    "url": "item_shop_cap_10-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_boots_10",
+    "url": "item_shop_boots_10-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_shield_10",
+    "url": "item_shop_shield_10-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_sword_20",
+    "url": "item_shop_sword_20-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_bow_20",
+    "url": "item_shop_bow_20-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_staff_20",
+    "url": "item_shop_staff_20-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_armor_20",
+    "url": "item_shop_armor_20-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_wand_20",
+    "url": "item_shop_wand_20-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_cap_20",
+    "url": "item_shop_cap_20-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_boots_20",
+    "url": "item_shop_boots_20-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_shield_20",
+    "url": "item_shop_shield_20-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_sword_30",
+    "url": "item_shop_sword_30-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_bow_30",
+    "url": "item_shop_bow_30-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_staff_30",
+    "url": "item_shop_staff_30-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_armor_30",
+    "url": "item_shop_armor_30-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_wand_30",
+    "url": "item_shop_wand_30-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_cap_30",
+    "url": "item_shop_cap_30-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_boots_30",
+    "url": "item_shop_boots_30-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_shield_30",
+    "url": "item_shop_shield_30-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_sword_40",
+    "url": "item_shop_sword_40-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_bow_40",
+    "url": "item_shop_bow_40-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_staff_40",
+    "url": "item_shop_staff_40-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_armor_40",
+    "url": "item_shop_armor_40-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_wand_40",
+    "url": "item_shop_wand_40-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_cap_40",
+    "url": "item_shop_cap_40-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_boots_40",
+    "url": "item_shop_boots_40-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_shop_shield_40",
+    "url": "item_shop_shield_40-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_armor_crab",
+    "url": "item_armor_crab-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_ember_fox",
+    "url": "item_ember_fox-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_lantern_snail",
+    "url": "item_lantern_snail-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_supply_mole",
+    "url": "item_supply_mole-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_crystal_crab_lord",
+    "url": "item_crystal_crab_lord-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "item_bell_bird",
+    "url": "item_bell_bird-strip.png",
+    "width": 32,
+    "height": 32,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_number_damage_0",
+    "url": "ui_number_damage_0-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_damage_1",
+    "url": "ui_number_damage_1-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_damage_2",
+    "url": "ui_number_damage_2-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_damage_3",
+    "url": "ui_number_damage_3-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_damage_4",
+    "url": "ui_number_damage_4-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_damage_5",
+    "url": "ui_number_damage_5-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_damage_6",
+    "url": "ui_number_damage_6-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_damage_7",
+    "url": "ui_number_damage_7-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_damage_8",
+    "url": "ui_number_damage_8-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_damage_9",
+    "url": "ui_number_damage_9-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_damage_plus",
+    "url": "ui_number_damage_plus-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_damage_minus",
+    "url": "ui_number_damage_minus-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_crit_0",
+    "url": "ui_number_crit_0-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_crit_1",
+    "url": "ui_number_crit_1-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_crit_2",
+    "url": "ui_number_crit_2-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_crit_3",
+    "url": "ui_number_crit_3-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_crit_4",
+    "url": "ui_number_crit_4-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_crit_5",
+    "url": "ui_number_crit_5-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_crit_6",
+    "url": "ui_number_crit_6-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_crit_7",
+    "url": "ui_number_crit_7-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_crit_8",
+    "url": "ui_number_crit_8-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_crit_9",
+    "url": "ui_number_crit_9-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_crit_plus",
+    "url": "ui_number_crit_plus-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_crit_minus",
+    "url": "ui_number_crit_minus-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_heal_0",
+    "url": "ui_number_heal_0-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_heal_1",
+    "url": "ui_number_heal_1-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_heal_2",
+    "url": "ui_number_heal_2-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_heal_3",
+    "url": "ui_number_heal_3-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_heal_4",
+    "url": "ui_number_heal_4-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_heal_5",
+    "url": "ui_number_heal_5-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_heal_6",
+    "url": "ui_number_heal_6-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_heal_7",
+    "url": "ui_number_heal_7-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_heal_8",
+    "url": "ui_number_heal_8-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_heal_9",
+    "url": "ui_number_heal_9-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_heal_plus",
+    "url": "ui_number_heal_plus-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_heal_minus",
+    "url": "ui_number_heal_minus-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_shield_0",
+    "url": "ui_number_shield_0-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_shield_1",
+    "url": "ui_number_shield_1-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_shield_2",
+    "url": "ui_number_shield_2-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_shield_3",
+    "url": "ui_number_shield_3-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_shield_4",
+    "url": "ui_number_shield_4-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_shield_5",
+    "url": "ui_number_shield_5-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_shield_6",
+    "url": "ui_number_shield_6-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_shield_7",
+    "url": "ui_number_shield_7-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_shield_8",
+    "url": "ui_number_shield_8-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_shield_9",
+    "url": "ui_number_shield_9-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_shield_plus",
+    "url": "ui_number_shield_plus-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_number_shield_minus",
+    "url": "ui_number_shield_minus-strip.png",
+    "width": 16,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_popup_dodge",
+    "url": "ui_popup_dodge-strip.png",
+    "width": 39,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_popup_miss",
+    "url": "ui_popup_miss-strip.png",
+    "width": 44,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_popup_critical",
+    "url": "ui_popup_critical-strip.png",
+    "width": 30,
+    "height": 24,
+    "count": 5,
+    "fps": 10,
+    "loop": false
+  },
+  {
+    "name": "ui_command_auto",
+    "url": "ui_command_auto-strip.png",
+    "width": 24,
+    "height": 24,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_target_selected_back",
+    "url": "ui_target_selected_back-strip.png",
+    "width": 60,
+    "height": 16,
+    "count": 6,
+    "fps": 10,
+    "loop": true
+  },
+  {
+    "name": "ui_target_selected_front",
+    "url": "ui_target_selected_front-strip.png",
+    "width": 60,
+    "height": 16,
+    "count": 6,
+    "fps": 10,
+    "loop": true
+  },
+  {
+    "name": "ui_target_turn_ally_back",
+    "url": "ui_target_turn_ally_back-strip.png",
+    "width": 60,
+    "height": 16,
+    "count": 6,
+    "fps": 10,
+    "loop": true
+  },
+  {
+    "name": "ui_target_turn_ally_front",
+    "url": "ui_target_turn_ally_front-strip.png",
+    "width": 60,
+    "height": 16,
+    "count": 6,
+    "fps": 10,
+    "loop": true
+  },
+  {
+    "name": "ui_target_turn_enemy_back",
+    "url": "ui_target_turn_enemy_back-strip.png",
+    "width": 60,
+    "height": 16,
+    "count": 6,
+    "fps": 10,
+    "loop": true
+  },
+  {
+    "name": "ui_target_turn_enemy_front",
+    "url": "ui_target_turn_enemy_front-strip.png",
+    "width": 60,
+    "height": 16,
+    "count": 6,
+    "fps": 10,
+    "loop": true
+  },
+  {
+    "name": "ui_target_arrow",
+    "url": "ui_target_arrow-strip.png",
+    "width": 60,
+    "height": 20,
+    "count": 6,
+    "fps": 10,
+    "loop": true
+  },
+  {
+    "name": "ui_bar_ascend_full_h4",
+    "url": "ui_bar_ascend_full_h4-strip.png",
+    "width": 64,
+    "height": 4,
+    "count": 6,
+    "fps": 10,
+    "loop": true
+  },
+  {
+    "name": "ui_bar_ascend_full_h6",
+    "url": "ui_bar_ascend_full_h6-strip.png",
+    "width": 64,
+    "height": 6,
+    "count": 6,
+    "fps": 10,
+    "loop": true
+  },
+  {
+    "name": "ui_bar_ascend_full_h8",
+    "url": "ui_bar_ascend_full_h8-strip.png",
+    "width": 64,
+    "height": 8,
+    "count": 6,
+    "fps": 10,
+    "loop": true
+  },
+  {
+    "name": "ui_ready_ascend",
+    "url": "ui_ready_ascend-strip.png",
+    "width": 56,
+    "height": 48,
+    "count": 6,
+    "fps": 10,
+    "loop": true
+  },
+  {
+    "name": "ui_ready_skill",
+    "url": "ui_ready_skill-strip.png",
+    "width": 56,
+    "height": 48,
+    "count": 6,
+    "fps": 10,
+    "loop": true
+  },
+  {
+    "name": "ui_title_scene",
+    "url": "ui_title_scene-strip.png",
+    "width": 580,
+    "height": 540,
+    "count": 1,
+    "fps": 0,
+    "loop": false
+  },
+  {
+    "name": "ui_title_sparkles",
+    "url": "ui_title_sparkles-strip.png",
+    "width": 580,
+    "height": 540,
+    "count": 6,
+    "fps": 8,
+    "loop": true
+  }
+]

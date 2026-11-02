@@ -1,0 +1,48 @@
+{
+  "assetId": "ui_class_binder",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_class_binder_v002.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "class",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "09c008656d9252a0421375c0af0252e6c2db40594af202aad095e7278469d398",
+  "contentId": "binder",
+  "sourceMaster": "illustrated master family chain; native modifiers in extras.py",
+  "framing": null
+}

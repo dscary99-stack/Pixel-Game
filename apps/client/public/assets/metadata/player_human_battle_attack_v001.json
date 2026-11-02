@@ -1,0 +1,65 @@
+{
+  "assetId": "player_human_battle_attack",
+  "version": 1,
+  "file": "/assets/sprites/characters/player_human_battle_attack_v001.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "columns": 6,
+  "rows": 1,
+  "frameCount": 6,
+  "origin": [
+    0.5,
+    1
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-ui-v002",
+  "animations": [
+    {
+      "name": "attack",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fps": 10,
+      "loop": false
+    }
+  ],
+  "groundOffset": 4,
+  "groundPoint": [
+    32,
+    60
+  ],
+  "hitPoint": [
+    32,
+    16
+  ],
+  "castPoint": [
+    50,
+    30
+  ],
+  "allowedFlip": {
+    "x": true,
+    "y": false
+  },
+  "facing": "right",
+  "shadowAsset": "shadow_small",
+  "artId": "art:human",
+  "contentGroup": "players",
+  "elementRendering": {
+    "mode": "external-vfx",
+    "allowedElements": []
+  },
+  "sourceAtlas": "human_battle",
+  "hitFrame": 3,
+  "events": [
+    {
+      "frame": 3,
+      "name": "hit"
+    }
+  ]
+}

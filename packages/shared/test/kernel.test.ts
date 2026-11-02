@@ -7,7 +7,6 @@ import {
   currentActor,
   publicView,
   validTargets,
-  withFixtureOverrides,
   type BattleContent,
   type BattleEvent,
   type BattleSetup,
@@ -15,7 +14,7 @@ import {
   type KernelResult,
   type RulesConfig,
 } from "../src/index";
-import { baseSetup, companion, content, fixtureRules, rules, speciesAtLevel } from "./fixtures";
+import { baseSetup, companion, content, fixtureRules, rules, speciesAtLevel, withCaptureProfile } from "./fixtures";
 
 const ok = (r: KernelResult) => {
   if (!r.ok) throw new Error(`${r.code}: ${r.message}`);
@@ -181,30 +180,29 @@ describe("actions", () => {
     expect(heal.heal).toBe(Math.min(150, before.stats.maxHp - before.hp));
   });
 
-  it("rejects a skill with a cooldown while O15 is open, and runs it with a fixture override", () => {
+  it("a skill with cooldown N used on the owner's turn T is ready again on its turn T+N (O15)", () => {
     const fox = { instance: companion("m1", "species:ember_fox", "FIRE"), row: "front" as const, slot: 0 };
     const setup = baseSetup({ companions: [fox] });
-    const findFoxTurn = (r: RulesConfig) => {
-      let s = ok(createBattle(r, c, setup)).state;
-      for (let i = 0; i < 20 && currentActor(s)?.unitId !== "ally:m1"; i++) s = ok(applyCommand(r, c, s, chooseAutoCommand(s)!, { source: "player" })).state;
+    const foxTurn = (s: BattleState) => {
+      for (let i = 0; i < 40 && s.status === "active" && currentActor(s)?.unitId !== "ally:m1"; i++) s = ok(applyCommand(rules, c, s, { type: "guard", actorId: currentActor(s)!.unitId }, { source: "player" })).state;
       return s;
     };
     const cmd = { type: "skill" as const, actorId: "ally:m1", skillId: "skill:fox_consume_mark", targetId: "e1" };
-    const s0 = findFoxTurn(rules);
-    expect(applyCommand(rules, c, s0, cmd, { source: "player" })).toMatchObject({ ok: false, code: "UNRESOLVED_RULE" });
-    const s1 = findFoxTurn(fixtureRules);
-    const r = ok(applyCommand(fixtureRules, c, s1, cmd, { source: "player" }));
-    const fox1 = r.state.units.find((u) => u.unitId === "ally:m1")!;
-    expect(fox1.mp).toBe(s1.units.find((u) => u.unitId === "ally:m1")!.mp - 10);
-  });
-
-  it("flee and revive stay UNRESOLVED_RULE until O15 is decided", () => {
-    const s = untilPlayerTurn(rules, c, ok(createBattle(rules, c, baseSetup({ bag: { "item:phoenix_feather": 1 } }))).state);
-    expect(applyCommand(rules, c, s, { type: "flee", actorId: "player" }, { source: "player" })).toMatchObject({ ok: false, code: "UNRESOLVED_RULE" });
-    expect(applyCommand(rules, c, s, { type: "item", actorId: "player", itemId: "item:phoenix_feather", targetId: "player" }, { source: "player" })).toMatchObject({
-      ok: false,
-      code: "UNRESOLVED_RULE",
-    });
+    const cd = c.skills.get(cmd.skillId)!.cooldown;
+    expect(cd).toBeGreaterThan(1);
+    let s = foxTurn(ok(createBattle(rules, c, setup)).state);
+    const before = s.units.find((u) => u.unitId === "ally:m1")!.mp;
+    s = ok(applyCommand(rules, c, s, cmd, { source: "player" })).state;
+    expect(s.units.find((u) => u.unitId === "ally:m1")!.mp).toBe(before - 10);
+    // Turns T+1 .. T+N-1: still cooling down (the counter drops at the start of each of its turns).
+    for (let k = 1; k < cd; k++) {
+      s = foxTurn(s);
+      expect(applyCommand(rules, c, s, cmd, { source: "player" })).toMatchObject({ ok: false, code: "ON_COOLDOWN" });
+      s = ok(applyCommand(rules, c, s, { type: "guard", actorId: "ally:m1" }, { source: "player" })).state;
+    }
+    s = foxTurn(s);
+    expect(s.units.find((u) => u.unitId === "ally:m1")!.cooldowns[cmd.skillId] ?? 0).toBe(0);
+    expect(applyCommand(rules, c, s, cmd, { source: "player" }).ok).toBe(true);
   });
 
   it("lets a unit be moved at most once per round", () => {
@@ -254,9 +252,11 @@ describe("capture (C08, C09, C15)", () => {
     expect(capture(fixtureRules, s, lv25.id, "auto")).toMatchObject({ ok: false, code: "AUTO_CAPTURE_FORBIDDEN" });
   });
 
-  it("is UNRESOLVED_RULE without the O07 rate table, before consuming the item", () => {
+  it("runs on the default rules now that O07 has a profile (capture-v1), and pins it in the fight", () => {
     const s = untilPlayerTurn(rules, c, ok(createBattle(rules, c, setupWith(lv25.id))).state);
-    expect(capture(rules, s, lv25.id)).toMatchObject({ ok: false, code: "UNRESOLVED_RULE" });
+    expect(s.captureProfile?.version).toBe("capture-v1");
+    const r = ok(capture(rules, s, lv25.id));
+    expect(r.events.find((e) => e.type === "CaptureResolved")).toMatchObject({ profileVersion: "capture-v1" });
   });
 
   it("needs an open capture window on bosses", () => {
@@ -269,17 +269,14 @@ describe("capture (C08, C09, C15)", () => {
   });
 
   it("success gives a Lv1 companion entitlement and no kill loot; failure uses the item once", () => {
-    const always = withFixtureOverrides(fixtureRules, {
-      captureRates: { rankBounds: { NORMAL: [1, 1], ELITE: [1, 1], BOSS: [1, 1] }, hpFactor: [{ maxHpRatio: 1, factor: 1 }] },
-    });
-    const never = withFixtureOverrides(fixtureRules, {
-      captureRates: { rankBounds: { NORMAL: [0, 0], ELITE: [0, 0], BOSS: [0, 0] }, hpFactor: [{ maxHpRatio: 1, factor: 1 }] },
-    });
+    const always = withCaptureProfile(fixtureRules, { rankBounds: { NORMAL: [1, 1], ELITE: [1, 1], BOSS: [1, 1] } });
+    const never = withCaptureProfile(fixtureRules, { rankBounds: { NORMAL: [0, 0], ELITE: [0, 0], BOSS: [0, 0] } });
     const sOk = untilPlayerTurn(always, c, ok(createBattle(always, c, setupWith(lv25.id))).state);
     const win = ok(capture(always, sOk, lv25.id));
     expect(win.state.status).toBe("victory");
+    // A capture gives the kill EXP of the target: the reference EXP at wild Lv25 (20 + 6·25 + 2·25²).
     expect(win.state.entitlements).toEqual([
-      { entitlementId: "battle:test:w:captured", kind: "capture", enemyUnitId: "w", speciesId: lv25.id, element: "EARTH", level: 1 },
+      { entitlementId: "battle:test:w:captured", kind: "capture", enemyUnitId: "w", speciesId: lv25.id, element: "EARTH", level: 1, exp: 1420, companionExp: {} },
     ]);
     expect(win.events.some((e) => e.type === "EnemyDefeated")).toBe(false);
 
@@ -303,8 +300,18 @@ describe("rewards and Auto Battle", () => {
     const { state, events } = autoToEnd(rules, c, ok(createBattle(rules, c, baseSetup({ companions: team }))).state);
     expect(state.status).toBe("victory");
     const ids = state.entitlements.map((e) => e.entitlementId);
-    expect(ids.sort()).toEqual(["battle:test:e1:defeated", "battle:test:e2:defeated"]);
-    expect(events.filter((e) => e.type === "RewardEntitled")).toHaveLength(2);
+    expect(ids.sort()).toEqual(["battle:test:all:result", "battle:test:e1:defeated", "battle:test:e2:defeated"]);
+    expect(events.filter((e) => e.type === "RewardEntitled")).toHaveLength(3);
+    // The won fight adds Bond and mastery (one per enemy resolved) for every companion that started it.
+    expect(state.entitlements.find((e) => e.kind === "fight_result")).toMatchObject({
+      companions: { m1: { bond: 2, mastery: 2 }, m2: { bond: 2, mastery: 2 }, m3: { bond: 2, mastery: 2 } },
+    });
+    // Every companion that started the fight has its own award; Lv30 companions get the full award
+    // from these low-level enemies (proposal §5).
+    for (const e of state.entitlements.filter((x) => x.kind !== "fight_result")) {
+      expect(e.exp).toBeGreaterThan(0);
+      expect(e.companionExp).toEqual({ m1: e.exp, m2: e.exp, m3: e.exp });
+    }
     const ended = events.at(-1)!;
     expect(ended.type).toBe("BattleEnded");
   });
@@ -336,5 +343,28 @@ describe("rewards and Auto Battle", () => {
   it("rejects commands after the battle is over", () => {
     const { state } = autoToEnd(rules, c, ok(createBattle(rules, c, baseSetup({ companions: team }))).state);
     expect(applyCommand(rules, c, state, { type: "guard", actorId: "player" }, { source: "player" })).toMatchObject({ ok: false, code: "BATTLE_OVER" });
+  });
+});
+
+describe("party bonus in a fight (P02)", () => {
+  it("is counted by the server at start and adds to EXP once; none without partners", async () => {
+    const { partyBonus } = await import("../src/index");
+    expect(partyBonus(rules, 0)).toEqual({ partners: 0, expPercent: 0, materialDropPercent: 0 });
+    expect(partyBonus(rules, 2)).toEqual({ partners: 2, expPercent: 10, materialDropPercent: 4 });
+    expect(partyBonus(rules, 7)).toEqual({ partners: 4, expPercent: 15, materialDropPercent: 6 });
+    const c = content();
+    const run = (bonus?: ReturnType<typeof partyBonus>) => {
+      let s = ok(createBattle(rules, c, baseSetup(bonus === undefined ? {} : { partyBonus: bonus }))).state;
+      for (let i = 0; i < 200 && s.status === "active"; i++) s = ok(applyCommand(rules, c, s, chooseAutoCommand(s)!, { source: "auto" })).state;
+      return s;
+    };
+    const plain = run();
+    const party = run(partyBonus(rules, 3));
+    expect(party.partyBonus?.expPercent).toBe(15);
+    // The loot rolls use the RNG too, so the two fights can part ways: compare the kills both made.
+    const byId = new Map(plain.entitlements.map((e) => [e.entitlementId, e.exp ?? 0]));
+    const shared = party.entitlements.filter((e) => byId.has(e.entitlementId));
+    expect(shared.length).toBeGreaterThan(0);
+    for (const e of shared) expect(e.exp ?? 0).toBe(Math.floor((byId.get(e.entitlementId)! * 115) / 100));
   });
 });

@@ -1,0 +1,1689 @@
+{
+  "version": "exp-proposal-1.0",
+  "date": "2026-10-03",
+  "status": "PROVISIONAL",
+  "scope": "player_base_level_only",
+  "max_level": 200,
+  "class_milestones_provisional": {
+    "class_2": 50,
+    "class_3": 120,
+    "race_awakening": 200
+  },
+  "reference": {
+    "normal_kills_per_hour": 120,
+    "average_normal_enemies_per_encounter": 3,
+    "average_total_cycle_seconds": 90,
+    "party_multiplier": 1.0,
+    "quest_xp": 0,
+    "xp_death_loss": 0,
+    "premium_multiplier": 1.0,
+    "auto_hunt_xp_multiplier": 1.0,
+    "normal_xp_formula": "20 + 6*M + 2*M*M; M is fixed species wild level, not player level",
+    "timing_is_estimate": true
+  },
+  "generator": {
+    "time_unit": "minutes",
+    "interpolation": "linear between adjacent anchors for source level L",
+    "anchors": [
+      {
+        "level": 1,
+        "minutes_to_next": 1
+      },
+      {
+        "level": 10,
+        "minutes_to_next": 4
+      },
+      {
+        "level": 25,
+        "minutes_to_next": 12
+      },
+      {
+        "level": 49,
+        "minutes_to_next": 40
+      },
+      {
+        "level": 50,
+        "minutes_to_next": 41
+      },
+      {
+        "level": 80,
+        "minutes_to_next": 90
+      },
+      {
+        "level": 119,
+        "minutes_to_next": 180
+      },
+      {
+        "level": 120,
+        "minutes_to_next": 185
+      },
+      {
+        "level": 150,
+        "minutes_to_next": 360
+      },
+      {
+        "level": 170,
+        "minutes_to_next": 600
+      },
+      {
+        "level": 190,
+        "minutes_to_next": 900
+      },
+      {
+        "level": 199,
+        "minutes_to_next": 1200
+      }
+    ],
+    "xp_formula": "round_half_up_to_10(time_minutes(L) * 120/60 * reference_normal_xp(L))"
+  },
+  "policy_notes": [
+    "The fixed species XP budget needs playtests; reference values do not rescale monsters with players or maps.",
+    "Do not use this curve for companion or Rebirth progression without a separate decision.",
+    "No reward quotas, stamina, offline gain, premium XP, or declining XP by hours played.",
+    "At level 200 use null for xp_to_next, never a zero-cost loop to level 201.",
+    "Store cumulative XP in a 64-bit integer; preserve idempotent reward grants.",
+    "Auto and party throughput are independent assumptions, not forced delays."
+  ],
+  "levels": [
+    {
+      "level": 1,
+      "xp_to_next": 60,
+      "cumulative_xp_to_reach_level": 0,
+      "reference_normal_xp_per_kill": 28,
+      "reference_minutes_to_next": 1.071429,
+      "reference_hours_to_reach_level": 0.0
+    },
+    {
+      "level": 2,
+      "xp_to_next": 110,
+      "cumulative_xp_to_reach_level": 60,
+      "reference_normal_xp_per_kill": 40,
+      "reference_minutes_to_next": 1.375,
+      "reference_hours_to_reach_level": 0.017857
+    },
+    {
+      "level": 3,
+      "xp_to_next": 190,
+      "cumulative_xp_to_reach_level": 170,
+      "reference_normal_xp_per_kill": 56,
+      "reference_minutes_to_next": 1.696429,
+      "reference_hours_to_reach_level": 0.040774
+    },
+    {
+      "level": 4,
+      "xp_to_next": 300,
+      "cumulative_xp_to_reach_level": 360,
+      "reference_normal_xp_per_kill": 76,
+      "reference_minutes_to_next": 1.973684,
+      "reference_hours_to_reach_level": 0.069048
+    },
+    {
+      "level": 5,
+      "xp_to_next": 470,
+      "cumulative_xp_to_reach_level": 660,
+      "reference_normal_xp_per_kill": 100,
+      "reference_minutes_to_next": 2.35,
+      "reference_hours_to_reach_level": 0.101942
+    },
+    {
+      "level": 6,
+      "xp_to_next": 680,
+      "cumulative_xp_to_reach_level": 1130,
+      "reference_normal_xp_per_kill": 128,
+      "reference_minutes_to_next": 2.65625,
+      "reference_hours_to_reach_level": 0.141109
+    },
+    {
+      "level": 7,
+      "xp_to_next": 960,
+      "cumulative_xp_to_reach_level": 1810,
+      "reference_normal_xp_per_kill": 160,
+      "reference_minutes_to_next": 3.0,
+      "reference_hours_to_reach_level": 0.18538
+    },
+    {
+      "level": 8,
+      "xp_to_next": 1310,
+      "cumulative_xp_to_reach_level": 2770,
+      "reference_normal_xp_per_kill": 196,
+      "reference_minutes_to_next": 3.341837,
+      "reference_hours_to_reach_level": 0.23538
+    },
+    {
+      "level": 9,
+      "xp_to_next": 1730,
+      "cumulative_xp_to_reach_level": 4080,
+      "reference_normal_xp_per_kill": 236,
+      "reference_minutes_to_next": 3.665254,
+      "reference_hours_to_reach_level": 0.291077
+    },
+    {
+      "level": 10,
+      "xp_to_next": 2240,
+      "cumulative_xp_to_reach_level": 5810,
+      "reference_normal_xp_per_kill": 280,
+      "reference_minutes_to_next": 4.0,
+      "reference_hours_to_reach_level": 0.352165
+    },
+    {
+      "level": 11,
+      "xp_to_next": 2970,
+      "cumulative_xp_to_reach_level": 8050,
+      "reference_normal_xp_per_kill": 328,
+      "reference_minutes_to_next": 4.527439,
+      "reference_hours_to_reach_level": 0.418831
+    },
+    {
+      "level": 12,
+      "xp_to_next": 3850,
+      "cumulative_xp_to_reach_level": 11020,
+      "reference_normal_xp_per_kill": 380,
+      "reference_minutes_to_next": 5.065789,
+      "reference_hours_to_reach_level": 0.494289
+    },
+    {
+      "level": 13,
+      "xp_to_next": 4880,
+      "cumulative_xp_to_reach_level": 14870,
+      "reference_normal_xp_per_kill": 436,
+      "reference_minutes_to_next": 5.59633,
+      "reference_hours_to_reach_level": 0.578719
+    },
+    {
+      "level": 14,
+      "xp_to_next": 6080,
+      "cumulative_xp_to_reach_level": 19750,
+      "reference_normal_xp_per_kill": 496,
+      "reference_minutes_to_next": 6.129032,
+      "reference_hours_to_reach_level": 0.671991
+    },
+    {
+      "level": 15,
+      "xp_to_next": 7470,
+      "cumulative_xp_to_reach_level": 25830,
+      "reference_normal_xp_per_kill": 560,
+      "reference_minutes_to_next": 6.669643,
+      "reference_hours_to_reach_level": 0.774141
+    },
+    {
+      "level": 16,
+      "xp_to_next": 9040,
+      "cumulative_xp_to_reach_level": 33300,
+      "reference_normal_xp_per_kill": 628,
+      "reference_minutes_to_next": 7.197452,
+      "reference_hours_to_reach_level": 0.885302
+    },
+    {
+      "level": 17,
+      "xp_to_next": 10830,
+      "cumulative_xp_to_reach_level": 42340,
+      "reference_normal_xp_per_kill": 700,
+      "reference_minutes_to_next": 7.735714,
+      "reference_hours_to_reach_level": 1.005259
+    },
+    {
+      "level": 18,
+      "xp_to_next": 12830,
+      "cumulative_xp_to_reach_level": 53170,
+      "reference_normal_xp_per_kill": 776,
+      "reference_minutes_to_next": 8.266753,
+      "reference_hours_to_reach_level": 1.134188
+    },
+    {
+      "level": 19,
+      "xp_to_next": 15070,
+      "cumulative_xp_to_reach_level": 66000,
+      "reference_normal_xp_per_kill": 856,
+      "reference_minutes_to_next": 8.80257,
+      "reference_hours_to_reach_level": 1.271967
+    },
+    {
+      "level": 20,
+      "xp_to_next": 17550,
+      "cumulative_xp_to_reach_level": 81070,
+      "reference_normal_xp_per_kill": 940,
+      "reference_minutes_to_next": 9.335106,
+      "reference_hours_to_reach_level": 1.418677
+    },
+    {
+      "level": 21,
+      "xp_to_next": 20290,
+      "cumulative_xp_to_reach_level": 98620,
+      "reference_normal_xp_per_kill": 1028,
+      "reference_minutes_to_next": 9.868677,
+      "reference_hours_to_reach_level": 1.574262
+    },
+    {
+      "level": 22,
+      "xp_to_next": 23300,
+      "cumulative_xp_to_reach_level": 118910,
+      "reference_normal_xp_per_kill": 1120,
+      "reference_minutes_to_next": 10.401786,
+      "reference_hours_to_reach_level": 1.73874
+    },
+    {
+      "level": 23,
+      "xp_to_next": 26590,
+      "cumulative_xp_to_reach_level": 142210,
+      "reference_normal_xp_per_kill": 1216,
+      "reference_minutes_to_next": 10.933388,
+      "reference_hours_to_reach_level": 1.912103
+    },
+    {
+      "level": 24,
+      "xp_to_next": 30180,
+      "cumulative_xp_to_reach_level": 168800,
+      "reference_normal_xp_per_kill": 1316,
+      "reference_minutes_to_next": 11.466565,
+      "reference_hours_to_reach_level": 2.094326
+    },
+    {
+      "level": 25,
+      "xp_to_next": 34080,
+      "cumulative_xp_to_reach_level": 198980,
+      "reference_normal_xp_per_kill": 1420,
+      "reference_minutes_to_next": 12.0,
+      "reference_hours_to_reach_level": 2.285435
+    },
+    {
+      "level": 26,
+      "xp_to_next": 40240,
+      "cumulative_xp_to_reach_level": 233060,
+      "reference_normal_xp_per_kill": 1528,
+      "reference_minutes_to_next": 13.167539,
+      "reference_hours_to_reach_level": 2.485435
+    },
+    {
+      "level": 27,
+      "xp_to_next": 47010,
+      "cumulative_xp_to_reach_level": 273300,
+      "reference_normal_xp_per_kill": 1640,
+      "reference_minutes_to_next": 14.332317,
+      "reference_hours_to_reach_level": 2.704894
+    },
+    {
+      "level": 28,
+      "xp_to_next": 54440,
+      "cumulative_xp_to_reach_level": 320310,
+      "reference_normal_xp_per_kill": 1756,
+      "reference_minutes_to_next": 15.501139,
+      "reference_hours_to_reach_level": 2.943766
+    },
+    {
+      "level": 29,
+      "xp_to_next": 62530,
+      "cumulative_xp_to_reach_level": 374750,
+      "reference_normal_xp_per_kill": 1876,
+      "reference_minutes_to_next": 16.665778,
+      "reference_hours_to_reach_level": 3.202119
+    },
+    {
+      "level": 30,
+      "xp_to_next": 71330,
+      "cumulative_xp_to_reach_level": 437280,
+      "reference_normal_xp_per_kill": 2000,
+      "reference_minutes_to_next": 17.8325,
+      "reference_hours_to_reach_level": 3.479882
+    },
+    {
+      "level": 31,
+      "xp_to_next": 80860,
+      "cumulative_xp_to_reach_level": 508610,
+      "reference_normal_xp_per_kill": 2128,
+      "reference_minutes_to_next": 18.99906,
+      "reference_hours_to_reach_level": 3.77709
+    },
+    {
+      "level": 32,
+      "xp_to_next": 91150,
+      "cumulative_xp_to_reach_level": 589470,
+      "reference_normal_xp_per_kill": 2260,
+      "reference_minutes_to_next": 20.165929,
+      "reference_hours_to_reach_level": 4.093741
+    },
+    {
+      "level": 33,
+      "xp_to_next": 102230,
+      "cumulative_xp_to_reach_level": 680620,
+      "reference_normal_xp_per_kill": 2396,
+      "reference_minutes_to_next": 21.333472,
+      "reference_hours_to_reach_level": 4.42984
+    },
+    {
+      "level": 34,
+      "xp_to_next": 114120,
+      "cumulative_xp_to_reach_level": 782850,
+      "reference_normal_xp_per_kill": 2536,
+      "reference_minutes_to_next": 22.5,
+      "reference_hours_to_reach_level": 4.785398
+    },
+    {
+      "level": 35,
+      "xp_to_next": 126850,
+      "cumulative_xp_to_reach_level": 896970,
+      "reference_normal_xp_per_kill": 2680,
+      "reference_minutes_to_next": 23.666045,
+      "reference_hours_to_reach_level": 5.160398
+    },
+    {
+      "level": 36,
+      "xp_to_next": 140460,
+      "cumulative_xp_to_reach_level": 1023820,
+      "reference_normal_xp_per_kill": 2828,
+      "reference_minutes_to_next": 24.833805,
+      "reference_hours_to_reach_level": 5.554832
+    },
+    {
+      "level": 37,
+      "xp_to_next": 154960,
+      "cumulative_xp_to_reach_level": 1164280,
+      "reference_normal_xp_per_kill": 2980,
+      "reference_minutes_to_next": 26.0,
+      "reference_hours_to_reach_level": 5.968729
+    },
+    {
+      "level": 38,
+      "xp_to_next": 170390,
+      "cumulative_xp_to_reach_level": 1319240,
+      "reference_normal_xp_per_kill": 3136,
+      "reference_minutes_to_next": 27.166773,
+      "reference_hours_to_reach_level": 6.402062
+    },
+    {
+      "level": 39,
+      "xp_to_next": 186770,
+      "cumulative_xp_to_reach_level": 1489630,
+      "reference_normal_xp_per_kill": 3296,
+      "reference_minutes_to_next": 28.332828,
+      "reference_hours_to_reach_level": 6.854841
+    },
+    {
+      "level": 40,
+      "xp_to_next": 204140,
+      "cumulative_xp_to_reach_level": 1676400,
+      "reference_normal_xp_per_kill": 3460,
+      "reference_minutes_to_next": 29.5,
+      "reference_hours_to_reach_level": 7.327055
+    },
+    {
+      "level": 41,
+      "xp_to_next": 222520,
+      "cumulative_xp_to_reach_level": 1880540,
+      "reference_normal_xp_per_kill": 3628,
+      "reference_minutes_to_next": 30.667034,
+      "reference_hours_to_reach_level": 7.818722
+    },
+    {
+      "level": 42,
+      "xp_to_next": 241930,
+      "cumulative_xp_to_reach_level": 2103060,
+      "reference_normal_xp_per_kill": 3800,
+      "reference_minutes_to_next": 31.832895,
+      "reference_hours_to_reach_level": 8.329839
+    },
+    {
+      "level": 43,
+      "xp_to_next": 262420,
+      "cumulative_xp_to_reach_level": 2344990,
+      "reference_normal_xp_per_kill": 3976,
+      "reference_minutes_to_next": 33.000503,
+      "reference_hours_to_reach_level": 8.860387
+    },
+    {
+      "level": 44,
+      "xp_to_next": 283990,
+      "cumulative_xp_to_reach_level": 2607410,
+      "reference_normal_xp_per_kill": 4156,
+      "reference_minutes_to_next": 34.166266,
+      "reference_hours_to_reach_level": 9.410396
+    },
+    {
+      "level": 45,
+      "xp_to_next": 306690,
+      "cumulative_xp_to_reach_level": 2891400,
+      "reference_normal_xp_per_kill": 4340,
+      "reference_minutes_to_next": 35.332949,
+      "reference_hours_to_reach_level": 9.979834
+    },
+    {
+      "level": 46,
+      "xp_to_next": 330540,
+      "cumulative_xp_to_reach_level": 3198090,
+      "reference_normal_xp_per_kill": 4528,
+      "reference_minutes_to_next": 36.499558,
+      "reference_hours_to_reach_level": 10.568716
+    },
+    {
+      "level": 47,
+      "xp_to_next": 355570,
+      "cumulative_xp_to_reach_level": 3528630,
+      "reference_normal_xp_per_kill": 4720,
+      "reference_minutes_to_next": 37.666314,
+      "reference_hours_to_reach_level": 11.177042
+    },
+    {
+      "level": 48,
+      "xp_to_next": 381810,
+      "cumulative_xp_to_reach_level": 3884200,
+      "reference_normal_xp_per_kill": 4916,
+      "reference_minutes_to_next": 38.833401,
+      "reference_hours_to_reach_level": 11.804814
+    },
+    {
+      "level": 49,
+      "xp_to_next": 409280,
+      "cumulative_xp_to_reach_level": 4266010,
+      "reference_normal_xp_per_kill": 5116,
+      "reference_minutes_to_next": 40.0,
+      "reference_hours_to_reach_level": 12.452037
+    },
+    {
+      "level": 50,
+      "xp_to_next": 436240,
+      "cumulative_xp_to_reach_level": 4675290,
+      "reference_normal_xp_per_kill": 5320,
+      "reference_minutes_to_next": 41.0,
+      "reference_hours_to_reach_level": 13.118704
+    },
+    {
+      "level": 51,
+      "xp_to_next": 471350,
+      "cumulative_xp_to_reach_level": 5111530,
+      "reference_normal_xp_per_kill": 5528,
+      "reference_minutes_to_next": 42.632959,
+      "reference_hours_to_reach_level": 13.802037
+    },
+    {
+      "level": 52,
+      "xp_to_next": 508180,
+      "cumulative_xp_to_reach_level": 5582880,
+      "reference_normal_xp_per_kill": 5740,
+      "reference_minutes_to_next": 44.266551,
+      "reference_hours_to_reach_level": 14.512587
+    },
+    {
+      "level": 53,
+      "xp_to_next": 546760,
+      "cumulative_xp_to_reach_level": 6091060,
+      "reference_normal_xp_per_kill": 5956,
+      "reference_minutes_to_next": 45.899933,
+      "reference_hours_to_reach_level": 15.250362
+    },
+    {
+      "level": 54,
+      "xp_to_next": 587130,
+      "cumulative_xp_to_reach_level": 6637820,
+      "reference_normal_xp_per_kill": 6176,
+      "reference_minutes_to_next": 47.533193,
+      "reference_hours_to_reach_level": 16.015361
+    },
+    {
+      "level": 55,
+      "xp_to_next": 629330,
+      "cumulative_xp_to_reach_level": 7224950,
+      "reference_normal_xp_per_kill": 6400,
+      "reference_minutes_to_next": 49.166406,
+      "reference_hours_to_reach_level": 16.807581
+    },
+    {
+      "level": 56,
+      "xp_to_next": 673400,
+      "cumulative_xp_to_reach_level": 7854280,
+      "reference_normal_xp_per_kill": 6628,
+      "reference_minutes_to_next": 50.799638,
+      "reference_hours_to_reach_level": 17.627021
+    },
+    {
+      "level": 57,
+      "xp_to_next": 719390,
+      "cumulative_xp_to_reach_level": 8527680,
+      "reference_normal_xp_per_kill": 6860,
+      "reference_minutes_to_next": 52.433673,
+      "reference_hours_to_reach_level": 18.473682
+    },
+    {
+      "level": 58,
+      "xp_to_next": 767310,
+      "cumulative_xp_to_reach_level": 9247070,
+      "reference_normal_xp_per_kill": 7096,
+      "reference_minutes_to_next": 54.066375,
+      "reference_hours_to_reach_level": 19.347576
+    },
+    {
+      "level": 59,
+      "xp_to_next": 817230,
+      "cumulative_xp_to_reach_level": 10014380,
+      "reference_normal_xp_per_kill": 7336,
+      "reference_minutes_to_next": 55.699973,
+      "reference_hours_to_reach_level": 20.248683
+    },
+    {
+      "level": 60,
+      "xp_to_next": 869170,
+      "cumulative_xp_to_reach_level": 10831610,
+      "reference_normal_xp_per_kill": 7580,
+      "reference_minutes_to_next": 57.333113,
+      "reference_hours_to_reach_level": 21.177016
+    },
+    {
+      "level": 61,
+      "xp_to_next": 923180,
+      "cumulative_xp_to_reach_level": 11700780,
+      "reference_normal_xp_per_kill": 7828,
+      "reference_minutes_to_next": 58.96653,
+      "reference_hours_to_reach_level": 22.132567
+    },
+    {
+      "level": 62,
+      "xp_to_next": 979300,
+      "cumulative_xp_to_reach_level": 12623960,
+      "reference_normal_xp_per_kill": 8080,
+      "reference_minutes_to_next": 60.600248,
+      "reference_hours_to_reach_level": 23.115343
+    },
+    {
+      "level": 63,
+      "xp_to_next": 1037550,
+      "cumulative_xp_to_reach_level": 13603260,
+      "reference_normal_xp_per_kill": 8336,
+      "reference_minutes_to_next": 62.233085,
+      "reference_hours_to_reach_level": 24.125347
+    },
+    {
+      "level": 64,
+      "xp_to_next": 1098000,
+      "cumulative_xp_to_reach_level": 14640810,
+      "reference_normal_xp_per_kill": 8596,
+      "reference_minutes_to_next": 63.866915,
+      "reference_hours_to_reach_level": 25.162565
+    },
+    {
+      "level": 65,
+      "xp_to_next": 1160660,
+      "cumulative_xp_to_reach_level": 15738810,
+      "reference_normal_xp_per_kill": 8860,
+      "reference_minutes_to_next": 65.5,
+      "reference_hours_to_reach_level": 26.227014
+    },
+    {
+      "level": 66,
+      "xp_to_next": 1225590,
+      "cumulative_xp_to_reach_level": 16899470,
+      "reference_normal_xp_per_kill": 9128,
+      "reference_minutes_to_next": 67.133545,
+      "reference_hours_to_reach_level": 27.31868
+    },
+    {
+      "level": 67,
+      "xp_to_next": 1292810,
+      "cumulative_xp_to_reach_level": 18125060,
+      "reference_normal_xp_per_kill": 9400,
+      "reference_minutes_to_next": 68.766489,
+      "reference_hours_to_reach_level": 28.437573
+    },
+    {
+      "level": 68,
+      "xp_to_next": 1362380,
+      "cumulative_xp_to_reach_level": 19417870,
+      "reference_normal_xp_per_kill": 9676,
+      "reference_minutes_to_next": 70.399959,
+      "reference_hours_to_reach_level": 29.583681
+    },
+    {
+      "level": 69,
+      "xp_to_next": 1434330,
+      "cumulative_xp_to_reach_level": 20780250,
+      "reference_normal_xp_per_kill": 9956,
+      "reference_minutes_to_next": 72.033447,
+      "reference_hours_to_reach_level": 30.757014
+    },
+    {
+      "level": 70,
+      "xp_to_next": 1508690,
+      "cumulative_xp_to_reach_level": 22214580,
+      "reference_normal_xp_per_kill": 10240,
+      "reference_minutes_to_next": 73.666504,
+      "reference_hours_to_reach_level": 31.957571
+    },
+    {
+      "level": 71,
+      "xp_to_next": 1585520,
+      "cumulative_xp_to_reach_level": 23723270,
+      "reference_normal_xp_per_kill": 10528,
+      "reference_minutes_to_next": 75.300152,
+      "reference_hours_to_reach_level": 33.185346
+    },
+    {
+      "level": 72,
+      "xp_to_next": 1664840,
+      "cumulative_xp_to_reach_level": 25308790,
+      "reference_normal_xp_per_kill": 10820,
+      "reference_minutes_to_next": 76.933457,
+      "reference_hours_to_reach_level": 34.440349
+    },
+    {
+      "level": 73,
+      "xp_to_next": 1746690,
+      "cumulative_xp_to_reach_level": 26973630,
+      "reference_normal_xp_per_kill": 11116,
+      "reference_minutes_to_next": 78.566481,
+      "reference_hours_to_reach_level": 35.722573
+    },
+    {
+      "level": 74,
+      "xp_to_next": 1831130,
+      "cumulative_xp_to_reach_level": 28720320,
+      "reference_normal_xp_per_kill": 11416,
+      "reference_minutes_to_next": 80.200158,
+      "reference_hours_to_reach_level": 37.032014
+    },
+    {
+      "level": 75,
+      "xp_to_next": 1918170,
+      "cumulative_xp_to_reach_level": 30551450,
+      "reference_normal_xp_per_kill": 11720,
+      "reference_minutes_to_next": 81.833191,
+      "reference_hours_to_reach_level": 38.368684
+    },
+    {
+      "level": 76,
+      "xp_to_next": 2007870,
+      "cumulative_xp_to_reach_level": 32469620,
+      "reference_normal_xp_per_kill": 12028,
+      "reference_minutes_to_next": 83.466495,
+      "reference_hours_to_reach_level": 39.73257
+    },
+    {
+      "level": 77,
+      "xp_to_next": 2100270,
+      "cumulative_xp_to_reach_level": 34477490,
+      "reference_normal_xp_per_kill": 12340,
+      "reference_minutes_to_next": 85.100081,
+      "reference_hours_to_reach_level": 41.123678
+    },
+    {
+      "level": 78,
+      "xp_to_next": 2195390,
+      "cumulative_xp_to_reach_level": 36577760,
+      "reference_normal_xp_per_kill": 12656,
+      "reference_minutes_to_next": 86.73317,
+      "reference_hours_to_reach_level": 42.542013
+    },
+    {
+      "level": 79,
+      "xp_to_next": 2293290,
+      "cumulative_xp_to_reach_level": 38773150,
+      "reference_normal_xp_per_kill": 12976,
+      "reference_minutes_to_next": 88.3666,
+      "reference_hours_to_reach_level": 43.987566
+    },
+    {
+      "level": 80,
+      "xp_to_next": 2394000,
+      "cumulative_xp_to_reach_level": 41066440,
+      "reference_normal_xp_per_kill": 13300,
+      "reference_minutes_to_next": 90.0,
+      "reference_hours_to_reach_level": 45.460343
+    },
+    {
+      "level": 81,
+      "xp_to_next": 2515940,
+      "cumulative_xp_to_reach_level": 43460440,
+      "reference_normal_xp_per_kill": 13628,
+      "reference_minutes_to_next": 92.307749,
+      "reference_hours_to_reach_level": 46.960343
+    },
+    {
+      "level": 82,
+      "xp_to_next": 2641660,
+      "cumulative_xp_to_reach_level": 45976380,
+      "reference_normal_xp_per_kill": 13960,
+      "reference_minutes_to_next": 94.61533,
+      "reference_hours_to_reach_level": 48.498805
+    },
+    {
+      "level": 83,
+      "xp_to_next": 2771220,
+      "cumulative_xp_to_reach_level": 48618040,
+      "reference_normal_xp_per_kill": 14296,
+      "reference_minutes_to_next": 96.922916,
+      "reference_hours_to_reach_level": 50.075727
+    },
+    {
+      "level": 84,
+      "xp_to_next": 2904680,
+      "cumulative_xp_to_reach_level": 51389260,
+      "reference_normal_xp_per_kill": 14636,
+      "reference_minutes_to_next": 99.230664,
+      "reference_hours_to_reach_level": 51.691109
+    },
+    {
+      "level": 85,
+      "xp_to_next": 3042090,
+      "cumulative_xp_to_reach_level": 54293940,
+      "reference_normal_xp_per_kill": 14980,
+      "reference_minutes_to_next": 101.538385,
+      "reference_hours_to_reach_level": 53.344954
+    },
+    {
+      "level": 86,
+      "xp_to_next": 3183510,
+      "cumulative_xp_to_reach_level": 57336030,
+      "reference_normal_xp_per_kill": 15328,
+      "reference_minutes_to_next": 103.846229,
+      "reference_hours_to_reach_level": 55.03726
+    },
+    {
+      "level": 87,
+      "xp_to_next": 3328980,
+      "cumulative_xp_to_reach_level": 60519540,
+      "reference_normal_xp_per_kill": 15680,
+      "reference_minutes_to_next": 106.153699,
+      "reference_hours_to_reach_level": 56.76803
+    },
+    {
+      "level": 88,
+      "xp_to_next": 3478580,
+      "cumulative_xp_to_reach_level": 63848520,
+      "reference_normal_xp_per_kill": 16036,
+      "reference_minutes_to_next": 108.461586,
+      "reference_hours_to_reach_level": 58.537259
+    },
+    {
+      "level": 89,
+      "xp_to_next": 3632340,
+      "cumulative_xp_to_reach_level": 67327100,
+      "reference_normal_xp_per_kill": 16396,
+      "reference_minutes_to_next": 110.76909,
+      "reference_hours_to_reach_level": 60.344952
+    },
+    {
+      "level": 90,
+      "xp_to_next": 3790340,
+      "cumulative_xp_to_reach_level": 70959440,
+      "reference_normal_xp_per_kill": 16760,
+      "reference_minutes_to_next": 113.076969,
+      "reference_hours_to_reach_level": 62.191103
+    },
+    {
+      "level": 91,
+      "xp_to_next": 3952620,
+      "cumulative_xp_to_reach_level": 74749780,
+      "reference_normal_xp_per_kill": 17128,
+      "reference_minutes_to_next": 115.38475,
+      "reference_hours_to_reach_level": 64.07572
+    },
+    {
+      "level": 92,
+      "xp_to_next": 4119230,
+      "cumulative_xp_to_reach_level": 78702400,
+      "reference_normal_xp_per_kill": 17500,
+      "reference_minutes_to_next": 117.692286,
+      "reference_hours_to_reach_level": 65.998799
+    },
+    {
+      "level": 93,
+      "xp_to_next": 4290240,
+      "cumulative_xp_to_reach_level": 82821630,
+      "reference_normal_xp_per_kill": 17876,
+      "reference_minutes_to_next": 120.0,
+      "reference_hours_to_reach_level": 67.960337
+    },
+    {
+      "level": 94,
+      "xp_to_next": 4465700,
+      "cumulative_xp_to_reach_level": 87111870,
+      "reference_normal_xp_per_kill": 18256,
+      "reference_minutes_to_next": 122.307734,
+      "reference_hours_to_reach_level": 69.960337
+    },
+    {
+      "level": 95,
+      "xp_to_next": 4645660,
+      "cumulative_xp_to_reach_level": 91577570,
+      "reference_normal_xp_per_kill": 18640,
+      "reference_minutes_to_next": 124.615343,
+      "reference_hours_to_reach_level": 71.998799
+    },
+    {
+      "level": 96,
+      "xp_to_next": 4830180,
+      "cumulative_xp_to_reach_level": 96223230,
+      "reference_normal_xp_per_kill": 19028,
+      "reference_minutes_to_next": 126.922956,
+      "reference_hours_to_reach_level": 74.075721
+    },
+    {
+      "level": 97,
+      "xp_to_next": 5019320,
+      "cumulative_xp_to_reach_level": 101053410,
+      "reference_normal_xp_per_kill": 19420,
+      "reference_minutes_to_next": 129.23069,
+      "reference_hours_to_reach_level": 76.191104
+    },
+    {
+      "level": 98,
+      "xp_to_next": 5213130,
+      "cumulative_xp_to_reach_level": 106072730,
+      "reference_normal_xp_per_kill": 19816,
+      "reference_minutes_to_next": 131.538403,
+      "reference_hours_to_reach_level": 78.344949
+    },
+    {
+      "level": 99,
+      "xp_to_next": 5411670,
+      "cumulative_xp_to_reach_level": 111285860,
+      "reference_normal_xp_per_kill": 20216,
+      "reference_minutes_to_next": 133.846211,
+      "reference_hours_to_reach_level": 80.537256
+    },
+    {
+      "level": 100,
+      "xp_to_next": 5614980,
+      "cumulative_xp_to_reach_level": 116697530,
+      "reference_normal_xp_per_kill": 20620,
+      "reference_minutes_to_next": 136.153734,
+      "reference_hours_to_reach_level": 82.768026
+    },
+    {
+      "level": 101,
+      "xp_to_next": 5823140,
+      "cumulative_xp_to_reach_level": 122312510,
+      "reference_normal_xp_per_kill": 21028,
+      "reference_minutes_to_next": 138.461575,
+      "reference_hours_to_reach_level": 85.037255
+    },
+    {
+      "level": 102,
+      "xp_to_next": 6036180,
+      "cumulative_xp_to_reach_level": 128135650,
+      "reference_normal_xp_per_kill": 21440,
+      "reference_minutes_to_next": 140.769123,
+      "reference_hours_to_reach_level": 87.344948
+    },
+    {
+      "level": 103,
+      "xp_to_next": 6254180,
+      "cumulative_xp_to_reach_level": 134171830,
+      "reference_normal_xp_per_kill": 21856,
+      "reference_minutes_to_next": 143.076958,
+      "reference_hours_to_reach_level": 89.6911
+    },
+    {
+      "level": 104,
+      "xp_to_next": 6477180,
+      "cumulative_xp_to_reach_level": 140426010,
+      "reference_normal_xp_per_kill": 22276,
+      "reference_minutes_to_next": 145.384719,
+      "reference_hours_to_reach_level": 92.075716
+    },
+    {
+      "level": 105,
+      "xp_to_next": 6705230,
+      "cumulative_xp_to_reach_level": 146903190,
+      "reference_normal_xp_per_kill": 22700,
+      "reference_minutes_to_next": 147.692291,
+      "reference_hours_to_reach_level": 94.498794
+    },
+    {
+      "level": 106,
+      "xp_to_next": 6938400,
+      "cumulative_xp_to_reach_level": 153608420,
+      "reference_normal_xp_per_kill": 23128,
+      "reference_minutes_to_next": 150.0,
+      "reference_hours_to_reach_level": 96.960332
+    },
+    {
+      "level": 107,
+      "xp_to_next": 7176740,
+      "cumulative_xp_to_reach_level": 160546820,
+      "reference_normal_xp_per_kill": 23560,
+      "reference_minutes_to_next": 152.307725,
+      "reference_hours_to_reach_level": 99.460332
+    },
+    {
+      "level": 108,
+      "xp_to_next": 7420300,
+      "cumulative_xp_to_reach_level": 167723560,
+      "reference_normal_xp_per_kill": 23996,
+      "reference_minutes_to_next": 154.615353,
+      "reference_hours_to_reach_level": 101.998794
+    },
+    {
+      "level": 109,
+      "xp_to_next": 7669140,
+      "cumulative_xp_to_reach_level": 175143860,
+      "reference_normal_xp_per_kill": 24436,
+      "reference_minutes_to_next": 156.922982,
+      "reference_hours_to_reach_level": 104.575717
+    },
+    {
+      "level": 110,
+      "xp_to_next": 7923320,
+      "cumulative_xp_to_reach_level": 182813000,
+      "reference_normal_xp_per_kill": 24880,
+      "reference_minutes_to_next": 159.230707,
+      "reference_hours_to_reach_level": 107.1911
+    },
+    {
+      "level": 111,
+      "xp_to_next": 8182890,
+      "cumulative_xp_to_reach_level": 190736320,
+      "reference_normal_xp_per_kill": 25328,
+      "reference_minutes_to_next": 161.538416,
+      "reference_hours_to_reach_level": 109.844945
+    },
+    {
+      "level": 112,
+      "xp_to_next": 8447910,
+      "cumulative_xp_to_reach_level": 198919210,
+      "reference_normal_xp_per_kill": 25780,
+      "reference_minutes_to_next": 163.846199,
+      "reference_hours_to_reach_level": 112.537252
+    },
+    {
+      "level": 113,
+      "xp_to_next": 8718420,
+      "cumulative_xp_to_reach_level": 207367120,
+      "reference_normal_xp_per_kill": 26236,
+      "reference_minutes_to_next": 166.153758,
+      "reference_hours_to_reach_level": 115.268022
+    },
+    {
+      "level": 114,
+      "xp_to_next": 8994500,
+      "cumulative_xp_to_reach_level": 216085540,
+      "reference_normal_xp_per_kill": 26696,
+      "reference_minutes_to_next": 168.461567,
+      "reference_hours_to_reach_level": 118.037251
+    },
+    {
+      "level": 115,
+      "xp_to_next": 9276180,
+      "cumulative_xp_to_reach_level": 225080040,
+      "reference_normal_xp_per_kill": 27160,
+      "reference_minutes_to_next": 170.769146,
+      "reference_hours_to_reach_level": 120.844944
+    },
+    {
+      "level": 116,
+      "xp_to_next": 9563540,
+      "cumulative_xp_to_reach_level": 234356220,
+      "reference_normal_xp_per_kill": 27628,
+      "reference_minutes_to_next": 173.076951,
+      "reference_hours_to_reach_level": 123.691097
+    },
+    {
+      "level": 117,
+      "xp_to_next": 9856620,
+      "cumulative_xp_to_reach_level": 243919760,
+      "reference_normal_xp_per_kill": 28100,
+      "reference_minutes_to_next": 175.384698,
+      "reference_hours_to_reach_level": 126.575712
+    },
+    {
+      "level": 118,
+      "xp_to_next": 10155470,
+      "cumulative_xp_to_reach_level": 253776380,
+      "reference_normal_xp_per_kill": 28576,
+      "reference_minutes_to_next": 177.692294,
+      "reference_hours_to_reach_level": 129.498791
+    },
+    {
+      "level": 119,
+      "xp_to_next": 10460160,
+      "cumulative_xp_to_reach_level": 263931850,
+      "reference_normal_xp_per_kill": 29056,
+      "reference_minutes_to_next": 180.0,
+      "reference_hours_to_reach_level": 132.460329
+    },
+    {
+      "level": 120,
+      "xp_to_next": 10929800,
+      "cumulative_xp_to_reach_level": 274392010,
+      "reference_normal_xp_per_kill": 29540,
+      "reference_minutes_to_next": 185.0,
+      "reference_hours_to_reach_level": 135.460329
+    },
+    {
+      "level": 121,
+      "xp_to_next": 11460690,
+      "cumulative_xp_to_reach_level": 285321810,
+      "reference_normal_xp_per_kill": 30028,
+      "reference_minutes_to_next": 190.833389,
+      "reference_hours_to_reach_level": 138.543662
+    },
+    {
+      "level": 122,
+      "xp_to_next": 12004530,
+      "cumulative_xp_to_reach_level": 296782500,
+      "reference_normal_xp_per_kill": 30520,
+      "reference_minutes_to_next": 196.666612,
+      "reference_hours_to_reach_level": 141.724219
+    },
+    {
+      "level": 123,
+      "xp_to_next": 12561480,
+      "cumulative_xp_to_reach_level": 308787030,
+      "reference_normal_xp_per_kill": 31016,
+      "reference_minutes_to_next": 202.5,
+      "reference_hours_to_reach_level": 145.001996
+    },
+    {
+      "level": 124,
+      "xp_to_next": 13131670,
+      "cumulative_xp_to_reach_level": 321348510,
+      "reference_normal_xp_per_kill": 31516,
+      "reference_minutes_to_next": 208.333386,
+      "reference_hours_to_reach_level": 148.376996
+    },
+    {
+      "level": 125,
+      "xp_to_next": 13715230,
+      "cumulative_xp_to_reach_level": 334480180,
+      "reference_normal_xp_per_kill": 32020,
+      "reference_minutes_to_next": 214.166615,
+      "reference_hours_to_reach_level": 151.849219
+    },
+    {
+      "level": 126,
+      "xp_to_next": 14312320,
+      "cumulative_xp_to_reach_level": 348195410,
+      "reference_normal_xp_per_kill": 32528,
+      "reference_minutes_to_next": 220.0,
+      "reference_hours_to_reach_level": 155.418662
+    },
+    {
+      "level": 127,
+      "xp_to_next": 14923070,
+      "cumulative_xp_to_reach_level": 362507730,
+      "reference_normal_xp_per_kill": 33040,
+      "reference_minutes_to_next": 225.833384,
+      "reference_hours_to_reach_level": 159.085329
+    },
+    {
+      "level": 128,
+      "xp_to_next": 15547610,
+      "cumulative_xp_to_reach_level": 377430800,
+      "reference_normal_xp_per_kill": 33556,
+      "reference_minutes_to_next": 231.666617,
+      "reference_hours_to_reach_level": 162.849219
+    },
+    {
+      "level": 129,
+      "xp_to_next": 16186100,
+      "cumulative_xp_to_reach_level": 392978410,
+      "reference_normal_xp_per_kill": 34076,
+      "reference_minutes_to_next": 237.5,
+      "reference_hours_to_reach_level": 166.710329
+    },
+    {
+      "level": 130,
+      "xp_to_next": 16838670,
+      "cumulative_xp_to_reach_level": 409164510,
+      "reference_normal_xp_per_kill": 34600,
+      "reference_minutes_to_next": 243.333382,
+      "reference_hours_to_reach_level": 170.668662
+    },
+    {
+      "level": 131,
+      "xp_to_next": 17505450,
+      "cumulative_xp_to_reach_level": 426003180,
+      "reference_normal_xp_per_kill": 35128,
+      "reference_minutes_to_next": 249.166619,
+      "reference_hours_to_reach_level": 174.724219
+    },
+    {
+      "level": 132,
+      "xp_to_next": 18186600,
+      "cumulative_xp_to_reach_level": 443508630,
+      "reference_normal_xp_per_kill": 35660,
+      "reference_minutes_to_next": 255.0,
+      "reference_hours_to_reach_level": 178.876996
+    },
+    {
+      "level": 133,
+      "xp_to_next": 18882250,
+      "cumulative_xp_to_reach_level": 461695230,
+      "reference_normal_xp_per_kill": 36196,
+      "reference_minutes_to_next": 260.833379,
+      "reference_hours_to_reach_level": 183.126996
+    },
+    {
+      "level": 134,
+      "xp_to_next": 19592530,
+      "cumulative_xp_to_reach_level": 480577480,
+      "reference_normal_xp_per_kill": 36736,
+      "reference_minutes_to_next": 266.666621,
+      "reference_hours_to_reach_level": 187.474219
+    },
+    {
+      "level": 135,
+      "xp_to_next": 20317600,
+      "cumulative_xp_to_reach_level": 500170010,
+      "reference_normal_xp_per_kill": 37280,
+      "reference_minutes_to_next": 272.5,
+      "reference_hours_to_reach_level": 191.918662
+    },
+    {
+      "level": 136,
+      "xp_to_next": 21057590,
+      "cumulative_xp_to_reach_level": 520487610,
+      "reference_normal_xp_per_kill": 37828,
+      "reference_minutes_to_next": 278.333377,
+      "reference_hours_to_reach_level": 196.460329
+    },
+    {
+      "level": 137,
+      "xp_to_next": 21812630,
+      "cumulative_xp_to_reach_level": 541545200,
+      "reference_normal_xp_per_kill": 38380,
+      "reference_minutes_to_next": 284.166623,
+      "reference_hours_to_reach_level": 201.099219
+    },
+    {
+      "level": 138,
+      "xp_to_next": 22582880,
+      "cumulative_xp_to_reach_level": 563357830,
+      "reference_normal_xp_per_kill": 38936,
+      "reference_minutes_to_next": 290.0,
+      "reference_hours_to_reach_level": 205.835329
+    },
+    {
+      "level": 139,
+      "xp_to_next": 23368470,
+      "cumulative_xp_to_reach_level": 585940710,
+      "reference_normal_xp_per_kill": 39496,
+      "reference_minutes_to_next": 295.833376,
+      "reference_hours_to_reach_level": 210.668662
+    },
+    {
+      "level": 140,
+      "xp_to_next": 24169530,
+      "cumulative_xp_to_reach_level": 609309180,
+      "reference_normal_xp_per_kill": 40060,
+      "reference_minutes_to_next": 301.666625,
+      "reference_hours_to_reach_level": 215.599219
+    },
+    {
+      "level": 141,
+      "xp_to_next": 24986220,
+      "cumulative_xp_to_reach_level": 633478710,
+      "reference_normal_xp_per_kill": 40628,
+      "reference_minutes_to_next": 307.5,
+      "reference_hours_to_reach_level": 220.626996
+    },
+    {
+      "level": 142,
+      "xp_to_next": 25818670,
+      "cumulative_xp_to_reach_level": 658464930,
+      "reference_normal_xp_per_kill": 41200,
+      "reference_minutes_to_next": 313.333374,
+      "reference_hours_to_reach_level": 225.751996
+    },
+    {
+      "level": 143,
+      "xp_to_next": 26667010,
+      "cumulative_xp_to_reach_level": 684283600,
+      "reference_normal_xp_per_kill": 41776,
+      "reference_minutes_to_next": 319.166627,
+      "reference_hours_to_reach_level": 230.974219
+    },
+    {
+      "level": 144,
+      "xp_to_next": 27531400,
+      "cumulative_xp_to_reach_level": 710950610,
+      "reference_normal_xp_per_kill": 42356,
+      "reference_minutes_to_next": 325.0,
+      "reference_hours_to_reach_level": 236.293662
+    },
+    {
+      "level": 145,
+      "xp_to_next": 28411970,
+      "cumulative_xp_to_reach_level": 738482010,
+      "reference_normal_xp_per_kill": 42940,
+      "reference_minutes_to_next": 330.833372,
+      "reference_hours_to_reach_level": 241.710329
+    },
+    {
+      "level": 146,
+      "xp_to_next": 29308850,
+      "cumulative_xp_to_reach_level": 766893980,
+      "reference_normal_xp_per_kill": 43528,
+      "reference_minutes_to_next": 336.666628,
+      "reference_hours_to_reach_level": 247.224219
+    },
+    {
+      "level": 147,
+      "xp_to_next": 30222200,
+      "cumulative_xp_to_reach_level": 796202830,
+      "reference_normal_xp_per_kill": 44120,
+      "reference_minutes_to_next": 342.5,
+      "reference_hours_to_reach_level": 252.835329
+    },
+    {
+      "level": 148,
+      "xp_to_next": 31152150,
+      "cumulative_xp_to_reach_level": 826425030,
+      "reference_normal_xp_per_kill": 44716,
+      "reference_minutes_to_next": 348.333371,
+      "reference_hours_to_reach_level": 258.543662
+    },
+    {
+      "level": 149,
+      "xp_to_next": 32098830,
+      "cumulative_xp_to_reach_level": 857577180,
+      "reference_normal_xp_per_kill": 45316,
+      "reference_minutes_to_next": 354.16663,
+      "reference_hours_to_reach_level": 264.349219
+    },
+    {
+      "level": 150,
+      "xp_to_next": 33062400,
+      "cumulative_xp_to_reach_level": 889676010,
+      "reference_normal_xp_per_kill": 45920,
+      "reference_minutes_to_next": 360.0,
+      "reference_hours_to_reach_level": 270.251996
+    },
+    {
+      "level": 151,
+      "xp_to_next": 34616830,
+      "cumulative_xp_to_reach_level": 922738410,
+      "reference_normal_xp_per_kill": 46528,
+      "reference_minutes_to_next": 371.999979,
+      "reference_hours_to_reach_level": 276.251996
+    },
+    {
+      "level": 152,
+      "xp_to_next": 36203520,
+      "cumulative_xp_to_reach_level": 957355240,
+      "reference_normal_xp_per_kill": 47140,
+      "reference_minutes_to_next": 384.0,
+      "reference_hours_to_reach_level": 282.451995
+    },
+    {
+      "level": 153,
+      "xp_to_next": 37822750,
+      "cumulative_xp_to_reach_level": 993558760,
+      "reference_normal_xp_per_kill": 47756,
+      "reference_minutes_to_next": 395.999979,
+      "reference_hours_to_reach_level": 288.851995
+    },
+    {
+      "level": 154,
+      "xp_to_next": 39474820,
+      "cumulative_xp_to_reach_level": 1031381510,
+      "reference_normal_xp_per_kill": 48376,
+      "reference_minutes_to_next": 408.000041,
+      "reference_hours_to_reach_level": 295.451995
+    },
+    {
+      "level": 155,
+      "xp_to_next": 41160000,
+      "cumulative_xp_to_reach_level": 1070856330,
+      "reference_normal_xp_per_kill": 49000,
+      "reference_minutes_to_next": 420.0,
+      "reference_hours_to_reach_level": 302.251996
+    },
+    {
+      "level": 156,
+      "xp_to_next": 42878590,
+      "cumulative_xp_to_reach_level": 1112016330,
+      "reference_normal_xp_per_kill": 49628,
+      "reference_minutes_to_next": 431.99998,
+      "reference_hours_to_reach_level": 309.251996
+    },
+    {
+      "level": 157,
+      "xp_to_next": 44630880,
+      "cumulative_xp_to_reach_level": 1154894920,
+      "reference_normal_xp_per_kill": 50260,
+      "reference_minutes_to_next": 444.0,
+      "reference_hours_to_reach_level": 316.451995
+    },
+    {
+      "level": 158,
+      "xp_to_next": 46417150,
+      "cumulative_xp_to_reach_level": 1199525800,
+      "reference_normal_xp_per_kill": 50896,
+      "reference_minutes_to_next": 455.99998,
+      "reference_hours_to_reach_level": 323.851995
+    },
+    {
+      "level": 159,
+      "xp_to_next": 48237700,
+      "cumulative_xp_to_reach_level": 1245942950,
+      "reference_normal_xp_per_kill": 51536,
+      "reference_minutes_to_next": 468.000039,
+      "reference_hours_to_reach_level": 331.451995
+    },
+    {
+      "level": 160,
+      "xp_to_next": 50092800,
+      "cumulative_xp_to_reach_level": 1294180650,
+      "reference_normal_xp_per_kill": 52180,
+      "reference_minutes_to_next": 480.0,
+      "reference_hours_to_reach_level": 339.251996
+    },
+    {
+      "level": 161,
+      "xp_to_next": 51982750,
+      "cumulative_xp_to_reach_level": 1344273450,
+      "reference_normal_xp_per_kill": 52828,
+      "reference_minutes_to_next": 491.999981,
+      "reference_hours_to_reach_level": 347.251996
+    },
+    {
+      "level": 162,
+      "xp_to_next": 53907840,
+      "cumulative_xp_to_reach_level": 1396256200,
+      "reference_normal_xp_per_kill": 53480,
+      "reference_minutes_to_next": 504.0,
+      "reference_hours_to_reach_level": 355.451995
+    },
+    {
+      "level": 163,
+      "xp_to_next": 55868350,
+      "cumulative_xp_to_reach_level": 1450164040,
+      "reference_normal_xp_per_kill": 54136,
+      "reference_minutes_to_next": 515.999982,
+      "reference_hours_to_reach_level": 363.851995
+    },
+    {
+      "level": 164,
+      "xp_to_next": 57864580,
+      "cumulative_xp_to_reach_level": 1506032390,
+      "reference_normal_xp_per_kill": 54796,
+      "reference_minutes_to_next": 528.000036,
+      "reference_hours_to_reach_level": 372.451995
+    },
+    {
+      "level": 165,
+      "xp_to_next": 59896800,
+      "cumulative_xp_to_reach_level": 1563896970,
+      "reference_normal_xp_per_kill": 55460,
+      "reference_minutes_to_next": 540.0,
+      "reference_hours_to_reach_level": 381.251996
+    },
+    {
+      "level": 166,
+      "xp_to_next": 61965310,
+      "cumulative_xp_to_reach_level": 1623793770,
+      "reference_normal_xp_per_kill": 56128,
+      "reference_minutes_to_next": 551.999982,
+      "reference_hours_to_reach_level": 390.251996
+    },
+    {
+      "level": 167,
+      "xp_to_next": 64070400,
+      "cumulative_xp_to_reach_level": 1685759080,
+      "reference_normal_xp_per_kill": 56800,
+      "reference_minutes_to_next": 564.0,
+      "reference_hours_to_reach_level": 399.451995
+    },
+    {
+      "level": 168,
+      "xp_to_next": 66212350,
+      "cumulative_xp_to_reach_level": 1749829480,
+      "reference_normal_xp_per_kill": 57476,
+      "reference_minutes_to_next": 575.999983,
+      "reference_hours_to_reach_level": 408.851995
+    },
+    {
+      "level": 169,
+      "xp_to_next": 68391460,
+      "cumulative_xp_to_reach_level": 1816041830,
+      "reference_normal_xp_per_kill": 58156,
+      "reference_minutes_to_next": 588.000034,
+      "reference_hours_to_reach_level": 418.451995
+    },
+    {
+      "level": 170,
+      "xp_to_next": 70608000,
+      "cumulative_xp_to_reach_level": 1884433290,
+      "reference_normal_xp_per_kill": 58840,
+      "reference_minutes_to_next": 600.0,
+      "reference_hours_to_reach_level": 428.251996
+    },
+    {
+      "level": 171,
+      "xp_to_next": 73219440,
+      "cumulative_xp_to_reach_level": 1955041290,
+      "reference_normal_xp_per_kill": 59528,
+      "reference_minutes_to_next": 615.0,
+      "reference_hours_to_reach_level": 438.251996
+    },
+    {
+      "level": 172,
+      "xp_to_next": 75877200,
+      "cumulative_xp_to_reach_level": 2028260730,
+      "reference_normal_xp_per_kill": 60220,
+      "reference_minutes_to_next": 630.0,
+      "reference_hours_to_reach_level": 448.501996
+    },
+    {
+      "level": 173,
+      "xp_to_next": 78581640,
+      "cumulative_xp_to_reach_level": 2104137930,
+      "reference_normal_xp_per_kill": 60916,
+      "reference_minutes_to_next": 645.0,
+      "reference_hours_to_reach_level": 459.001996
+    },
+    {
+      "level": 174,
+      "xp_to_next": 81333120,
+      "cumulative_xp_to_reach_level": 2182719570,
+      "reference_normal_xp_per_kill": 61616,
+      "reference_minutes_to_next": 660.0,
+      "reference_hours_to_reach_level": 469.751996
+    },
+    {
+      "level": 175,
+      "xp_to_next": 84132000,
+      "cumulative_xp_to_reach_level": 2264052690,
+      "reference_normal_xp_per_kill": 62320,
+      "reference_minutes_to_next": 675.0,
+      "reference_hours_to_reach_level": 480.751996
+    },
+    {
+      "level": 176,
+      "xp_to_next": 86978640,
+      "cumulative_xp_to_reach_level": 2348184690,
+      "reference_normal_xp_per_kill": 63028,
+      "reference_minutes_to_next": 690.0,
+      "reference_hours_to_reach_level": 492.001996
+    },
+    {
+      "level": 177,
+      "xp_to_next": 89873400,
+      "cumulative_xp_to_reach_level": 2435163330,
+      "reference_normal_xp_per_kill": 63740,
+      "reference_minutes_to_next": 705.0,
+      "reference_hours_to_reach_level": 503.501996
+    },
+    {
+      "level": 178,
+      "xp_to_next": 92816640,
+      "cumulative_xp_to_reach_level": 2525036730,
+      "reference_normal_xp_per_kill": 64456,
+      "reference_minutes_to_next": 720.0,
+      "reference_hours_to_reach_level": 515.251996
+    },
+    {
+      "level": 179,
+      "xp_to_next": 95808720,
+      "cumulative_xp_to_reach_level": 2617853370,
+      "reference_normal_xp_per_kill": 65176,
+      "reference_minutes_to_next": 735.0,
+      "reference_hours_to_reach_level": 527.251996
+    },
+    {
+      "level": 180,
+      "xp_to_next": 98850000,
+      "cumulative_xp_to_reach_level": 2713662090,
+      "reference_normal_xp_per_kill": 65900,
+      "reference_minutes_to_next": 750.0,
+      "reference_hours_to_reach_level": 539.501996
+    },
+    {
+      "level": 181,
+      "xp_to_next": 101940840,
+      "cumulative_xp_to_reach_level": 2812512090,
+      "reference_normal_xp_per_kill": 66628,
+      "reference_minutes_to_next": 765.0,
+      "reference_hours_to_reach_level": 552.001996
+    },
+    {
+      "level": 182,
+      "xp_to_next": 105081600,
+      "cumulative_xp_to_reach_level": 2914452930,
+      "reference_normal_xp_per_kill": 67360,
+      "reference_minutes_to_next": 780.0,
+      "reference_hours_to_reach_level": 564.751996
+    },
+    {
+      "level": 183,
+      "xp_to_next": 108272640,
+      "cumulative_xp_to_reach_level": 3019534530,
+      "reference_normal_xp_per_kill": 68096,
+      "reference_minutes_to_next": 795.0,
+      "reference_hours_to_reach_level": 577.751996
+    },
+    {
+      "level": 184,
+      "xp_to_next": 111514320,
+      "cumulative_xp_to_reach_level": 3127807170,
+      "reference_normal_xp_per_kill": 68836,
+      "reference_minutes_to_next": 810.0,
+      "reference_hours_to_reach_level": 591.001996
+    },
+    {
+      "level": 185,
+      "xp_to_next": 114807000,
+      "cumulative_xp_to_reach_level": 3239321490,
+      "reference_normal_xp_per_kill": 69580,
+      "reference_minutes_to_next": 825.0,
+      "reference_hours_to_reach_level": 604.501996
+    },
+    {
+      "level": 186,
+      "xp_to_next": 118151040,
+      "cumulative_xp_to_reach_level": 3354128490,
+      "reference_normal_xp_per_kill": 70328,
+      "reference_minutes_to_next": 840.0,
+      "reference_hours_to_reach_level": 618.251996
+    },
+    {
+      "level": 187,
+      "xp_to_next": 121546800,
+      "cumulative_xp_to_reach_level": 3472279530,
+      "reference_normal_xp_per_kill": 71080,
+      "reference_minutes_to_next": 855.0,
+      "reference_hours_to_reach_level": 632.251996
+    },
+    {
+      "level": 188,
+      "xp_to_next": 124994640,
+      "cumulative_xp_to_reach_level": 3593826330,
+      "reference_normal_xp_per_kill": 71836,
+      "reference_minutes_to_next": 870.0,
+      "reference_hours_to_reach_level": 646.501996
+    },
+    {
+      "level": 189,
+      "xp_to_next": 128494920,
+      "cumulative_xp_to_reach_level": 3718820970,
+      "reference_normal_xp_per_kill": 72596,
+      "reference_minutes_to_next": 885.0,
+      "reference_hours_to_reach_level": 661.001996
+    },
+    {
+      "level": 190,
+      "xp_to_next": 132048000,
+      "cumulative_xp_to_reach_level": 3847315890,
+      "reference_normal_xp_per_kill": 73360,
+      "reference_minutes_to_next": 900.0,
+      "reference_hours_to_reach_level": 675.751996
+    },
+    {
+      "level": 191,
+      "xp_to_next": 138372270,
+      "cumulative_xp_to_reach_level": 3979363890,
+      "reference_normal_xp_per_kill": 74128,
+      "reference_minutes_to_next": 933.333356,
+      "reference_hours_to_reach_level": 690.751996
+    },
+    {
+      "level": 192,
+      "xp_to_next": 144806670,
+      "cumulative_xp_to_reach_level": 4117736160,
+      "reference_normal_xp_per_kill": 74900,
+      "reference_minutes_to_next": 966.666689,
+      "reference_hours_to_reach_level": 706.307552
+    },
+    {
+      "level": 193,
+      "xp_to_next": 151352000,
+      "cumulative_xp_to_reach_level": 4262542830,
+      "reference_normal_xp_per_kill": 75676,
+      "reference_minutes_to_next": 1000.0,
+      "reference_hours_to_reach_level": 722.418663
+    },
+    {
+      "level": 194,
+      "xp_to_next": 158009070,
+      "cumulative_xp_to_reach_level": 4413894830,
+      "reference_normal_xp_per_kill": 76456,
+      "reference_minutes_to_next": 1033.333355,
+      "reference_hours_to_reach_level": 739.08533
+    },
+    {
+      "level": 195,
+      "xp_to_next": 164778670,
+      "cumulative_xp_to_reach_level": 4571903900,
+      "reference_normal_xp_per_kill": 77240,
+      "reference_minutes_to_next": 1066.666688,
+      "reference_hours_to_reach_level": 756.307552
+    },
+    {
+      "level": 196,
+      "xp_to_next": 171661600,
+      "cumulative_xp_to_reach_level": 4736682570,
+      "reference_normal_xp_per_kill": 78028,
+      "reference_minutes_to_next": 1100.0,
+      "reference_hours_to_reach_level": 774.085331
+    },
+    {
+      "level": 197,
+      "xp_to_next": 178658670,
+      "cumulative_xp_to_reach_level": 4908344170,
+      "reference_normal_xp_per_kill": 78820,
+      "reference_minutes_to_next": 1133.333354,
+      "reference_hours_to_reach_level": 792.418664
+    },
+    {
+      "level": 198,
+      "xp_to_next": 185770670,
+      "cumulative_xp_to_reach_level": 5087002840,
+      "reference_normal_xp_per_kill": 79616,
+      "reference_minutes_to_next": 1166.666688,
+      "reference_hours_to_reach_level": 811.307553
+    },
+    {
+      "level": 199,
+      "xp_to_next": 192998400,
+      "cumulative_xp_to_reach_level": 5272773510,
+      "reference_normal_xp_per_kill": 80416,
+      "reference_minutes_to_next": 1200.0,
+      "reference_hours_to_reach_level": 830.751998
+    },
+    {
+      "level": 200,
+      "xp_to_next": null,
+      "cumulative_xp_to_reach_level": 5465771910,
+      "reference_normal_xp_per_kill": 81220,
+      "reference_minutes_to_next": null,
+      "reference_hours_to_reach_level": 850.751998
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "assetId": "hair_01_front_world_walk_down",
+  "version": 1,
+  "file": "/assets/sprites/characters/hair_01_front_world_walk_down_v001.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "columns": 4,
+  "rows": 1,
+  "frameCount": 4,
+  "origin": [
+    0.5,
+    1
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-v002 + exact appearance keys",
+  "animations": [
+    {
+      "name": "walk",
+      "frames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "fps": 8,
+      "loop": true
+    }
+  ],
+  "groundOffset": 4,
+  "groundPoint": [
+    32,
+    60
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "facing": "down",
+  "sourceAtlas": "art/player-layers/source",
+  "padding": 0,
+  "spacing": 0,
+  "headOffset": [
+    0,
+    0
+  ],
+  "layer": "hair_front",
+  "recolorParts": [
+    "hair"
+  ],
+  "headRig": "human-v002-proof"
+}

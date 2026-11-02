@@ -1,0 +1,46 @@
+{
+  "assetId": "ui_menu_market",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_menu_market_v001.png",
+  "frameWidth": 24,
+  "frameHeight": 24,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "menu",
+  "nineSlice": null,
+  "nativeSize": [
+    24,
+    24
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      24,
+      24
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "132c3e3885e35d9f58dc62b4ca1f8b26c9fc425e56dd02a42d76b5c7d865de15",
+  "contentId": "market"
+}

@@ -1,0 +1,48 @@
+{
+  "assetId": "item_cloth_tunic",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/items/item_cloth_tunic_v001.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "item",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "3e99eca1ad2b9327313097001031bfd00fc469e65f5367aa4bf8f9bc48cdd234",
+  "contentId": "equip:cloth_tunic",
+  "contentGroup": "equipment",
+  "motif": "armor"
+}

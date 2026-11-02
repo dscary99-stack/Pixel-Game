@@ -1,0 +1,45 @@
+{
+  "assetId": "ui:window:background",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_window_background_v001.png",
+  "frameWidth": 48,
+  "frameHeight": 48,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "fill",
+  "nineSlice": null,
+  "paletteVariants": [],
+  "nativeSize": [
+    48,
+    48
+  ],
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      48,
+      48
+    ]
+  ],
+  "productionApproved": false,
+  "resize": "nearest-stretch",
+  "sha256": "1e3c9837365747aa87210601026162ae928fc4711fead058c49e0135fa7ab9dd"
+}

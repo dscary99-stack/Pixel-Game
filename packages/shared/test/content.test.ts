@@ -86,6 +86,7 @@ describe("sigil and loadout validators (chapter 12 validator 5)", () => {
     definitionId,
     ownerId: "acct:1",
     refineLevel: 0,
+    rarity: "COMMON",
     rolledAffixes: [],
     sigilSockets: sockets,
     lockState: "free",

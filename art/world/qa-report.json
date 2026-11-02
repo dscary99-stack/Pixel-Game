@@ -1,0 +1,7533 @@
+{
+  "status": "pass",
+  "assets": 173,
+  "frames": 879,
+  "animations": 162,
+  "npcCount": 14,
+  "paletteColors": 128,
+  "failures": [],
+  "warnings": [],
+  "entries": [
+    {
+      "asset": "mon_armor_crab_battle_idle",
+      "frames": 4,
+      "bounds": [
+        [
+          11,
+          18,
+          58,
+          60
+        ],
+        [
+          10,
+          18,
+          58,
+          60
+        ],
+        [
+          8,
+          18,
+          55,
+          60
+        ],
+        [
+          6,
+          18,
+          53,
+          60
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "fd34c2a5c741f55022929f2fe5c8d183dfda97c7cc4f2445d3ebbb1cb6c96919",
+      "errors": []
+    },
+    {
+      "asset": "mon_armor_crab_battle_hurt",
+      "frames": 2,
+      "bounds": [
+        [
+          6,
+          19,
+          55,
+          60
+        ],
+        [
+          6,
+          19,
+          52,
+          60
+        ]
+      ],
+      "uniqueFrames": 2,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "ef861e832509f0d21cbd6c490ac61ec3ac142c77b3de0b3233c33f9c5118426e",
+      "errors": []
+    },
+    {
+      "asset": "mon_armor_crab_battle_attack",
+      "frames": 6,
+      "bounds": [
+        [
+          5,
+          19,
+          58,
+          60
+        ],
+        [
+          5,
+          25,
+          56,
+          60
+        ],
+        [
+          6,
+          19,
+          59,
+          60
+        ],
+        [
+          5,
+          18,
+          63,
+          56
+        ],
+        [
+          5,
+          18,
+          62,
+          56
+        ],
+        [
+          6,
+          18,
+          59,
+          56
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "f492a4d0a4cbe79cf60a26ee92c0f5d13f750ac03c844070e362e91941b14306",
+      "errors": []
+    },
+    {
+      "asset": "mon_armor_crab_battle_cast",
+      "frames": 6,
+      "bounds": [
+        [
+          10,
+          14,
+          58,
+          57
+        ],
+        [
+          10,
+          14,
+          58,
+          56
+        ],
+        [
+          6,
+          13,
+          56,
+          56
+        ],
+        [
+          6,
+          13,
+          57,
+          57
+        ],
+        [
+          6,
+          16,
+          56,
+          57
+        ],
+        [
+          6,
+          15,
+          54,
+          57
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "b6c51a5f4b4e625777beb4f4d7912b1940958b19ee5c8fe6df952eba7fb72ef7",
+      "errors": []
+    },
+    {
+      "asset": "mon_armor_crab_battle_ko",
+      "frames": 4,
+      "bounds": [
+        [
+          10,
+          9,
+          58,
+          50
+        ],
+        [
+          12,
+          14,
+          58,
+          50
+        ],
+        [
+          6,
+          21,
+          58,
+          50
+        ],
+        [
+          6,
+          16,
+          58,
+          50
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "6c5b4ba1039751c032f31b4bf03e19e3173d9b0f5f562c7c0ebdf5611dcc3a2c",
+      "errors": []
+    },
+    {
+      "asset": "mon_armor_crab_world_walk_up",
+      "frames": 4,
+      "bounds": [
+        [
+          8,
+          16,
+          57,
+          59
+        ],
+        [
+          8,
+          16,
+          56,
+          59
+        ],
+        [
+          7,
+          16,
+          57,
+          59
+        ],
+        [
+          6,
+          16,
+          56,
+          59
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "5b961194a9fb15a795493b39c606f0b61cfa745e580fe8cdd687cfb2f279e302",
+      "errors": []
+    },
+    {
+      "asset": "mon_armor_crab_world_idle_up",
+      "frames": 4,
+      "bounds": [
+        [
+          7,
+          16,
+          57,
+          60
+        ],
+        [
+          7,
+          15,
+          57,
+          59
+        ],
+        [
+          7,
+          16,
+          57,
+          60
+        ],
+        [
+          7,
+          16,
+          57,
+          60
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "01c0853344e869b1f1e9d5793220c77e4cffafa837c95b6e589e136a0c6f5ec7",
+      "errors": []
+    },
+    {
+      "asset": "mon_armor_crab_world_walk_right",
+      "frames": 4,
+      "bounds": [
+        [
+          7,
+          12,
+          59,
+          55
+        ],
+        [
+          6,
+          12,
+          60,
+          54
+        ],
+        [
+          7,
+          12,
+          60,
+          55
+        ],
+        [
+          6,
+          12,
+          58,
+          55
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "f208c6c27ae3212a793b0d6ddbd22bf2775fb63a73da803cc3ff67f7d498d8aa",
+      "errors": []
+    },
+    {
+      "asset": "mon_armor_crab_world_idle_right",
+      "frames": 4,
+      "bounds": [
+        [
+          7,
+          12,
+          59,
+          55
+        ],
+        [
+          6,
+          10,
+          59,
+          54
+        ],
+        [
+          7,
+          12,
+          60,
+          55
+        ],
+        [
+          6,
+          12,
+          59,
+          55
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "2cc37c4f3f9135270341a153b5cca97d77396aa6a6aa538d9ceda5f55bac5e8a",
+      "errors": []
+    },
+    {
+      "asset": "mon_armor_crab_world_walk_down",
+      "frames": 4,
+      "bounds": [
+        [
+          7,
+          11,
+          57,
+          54
+        ],
+        [
+          8,
+          11,
+          56,
+          55
+        ],
+        [
+          7,
+          11,
+          57,
+          54
+        ],
+        [
+          8,
+          11,
+          57,
+          53
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "7362fc64fbbfe1cec1b8fe20e3417956ab49f44f0ba4080c0f23dc60d799a996",
+      "errors": []
+    },
+    {
+      "asset": "mon_armor_crab_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          7,
+          11,
+          57,
+          53
+        ],
+        [
+          7,
+          10,
+          57,
+          55
+        ],
+        [
+          7,
+          11,
+          57,
+          53
+        ],
+        [
+          7,
+          11,
+          57,
+          53
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "15a7adb9bd340a62860ff7d32175d97db421cf9de421aae7ada3e119b7d40ab5",
+      "errors": []
+    },
+    {
+      "asset": "mon_armor_crab_world_walk_left",
+      "frames": 4,
+      "bounds": [
+        [
+          7,
+          7,
+          58,
+          49
+        ],
+        [
+          5,
+          7,
+          58,
+          50
+        ],
+        [
+          5,
+          7,
+          58,
+          50
+        ],
+        [
+          5,
+          7,
+          58,
+          50
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "d3647ace098788199eb66245986a471daf43915cbdd7a51fd88bfd551b24374f",
+      "errors": []
+    },
+    {
+      "asset": "mon_armor_crab_world_idle_left",
+      "frames": 4,
+      "bounds": [
+        [
+          6,
+          7,
+          58,
+          49
+        ],
+        [
+          5,
+          6,
+          58,
+          49
+        ],
+        [
+          5,
+          7,
+          58,
+          50
+        ],
+        [
+          5,
+          7,
+          58,
+          49
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "1e2dbffa77cc73e52209fa59229f7b67f32d0e235644819cdb7dfdc963327a56",
+      "errors": []
+    },
+    {
+      "asset": "mon_ember_fox_battle_idle",
+      "frames": 4,
+      "bounds": [
+        [
+          9,
+          15,
+          55,
+          58
+        ],
+        [
+          9,
+          14,
+          56,
+          59
+        ],
+        [
+          9,
+          15,
+          56,
+          59
+        ],
+        [
+          9,
+          14,
+          55,
+          59
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "0dbc9dc7483302ce8749ee6c150ed3c4240731fa31a129a99fe9956839fd9a3a",
+      "errors": []
+    },
+    {
+      "asset": "mon_ember_fox_battle_hurt",
+      "frames": 2,
+      "bounds": [
+        [
+          9,
+          18,
+          54,
+          59
+        ],
+        [
+          9,
+          20,
+          55,
+          59
+        ]
+      ],
+      "uniqueFrames": 2,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "be4c57392a50c353ea9a7d8f64d349a7c409049b747507deb778cd551028cf7d",
+      "errors": []
+    },
+    {
+      "asset": "mon_ember_fox_battle_attack",
+      "frames": 6,
+      "bounds": [
+        [
+          7,
+          21,
+          52,
+          61
+        ],
+        [
+          6,
+          26,
+          58,
+          61
+        ],
+        [
+          10,
+          17,
+          58,
+          53
+        ],
+        [
+          5,
+          20,
+          62,
+          56
+        ],
+        [
+          6,
+          20,
+          61,
+          57
+        ],
+        [
+          8,
+          18,
+          58,
+          58
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "51632aa0ed97c5c50da5dae97210d7ee8e7b4442d46c03840d621cd36e7633a3",
+      "errors": []
+    },
+    {
+      "asset": "mon_ember_fox_battle_cast",
+      "frames": 6,
+      "bounds": [
+        [
+          9,
+          15,
+          55,
+          58
+        ],
+        [
+          12,
+          13,
+          58,
+          58
+        ],
+        [
+          9,
+          11,
+          57,
+          58
+        ],
+        [
+          10,
+          12,
+          57,
+          58
+        ],
+        [
+          11,
+          15,
+          57,
+          58
+        ],
+        [
+          9,
+          15,
+          55,
+          58
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "54279b7f614043b179bad5f756973e88af6e4bf90eb79ae568b64b6eaef8f14b",
+      "errors": []
+    },
+    {
+      "asset": "mon_ember_fox_battle_ko",
+      "frames": 4,
+      "bounds": [
+        [
+          13,
+          14,
+          58,
+          51
+        ],
+        [
+          6,
+          20,
+          58,
+          51
+        ],
+        [
+          10,
+          25,
+          58,
+          51
+        ],
+        [
+          10,
+          21,
+          57,
+          51
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "cf629448061d4d1a7ef4df5ed25cc822c7113fd522230b241478334baa49ed23",
+      "errors": []
+    },
+    {
+      "asset": "mon_ember_fox_world_walk_up",
+      "frames": 4,
+      "bounds": [
+        [
+          15,
+          10,
+          49,
+          58
+        ],
+        [
+          16,
+          10,
+          49,
+          58
+        ],
+        [
+          15,
+          10,
+          49,
+          58
+        ],
+        [
+          16,
+          10,
+          49,
+          58
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "e948ca4068c91e4a5a529de0b0bb3dc003e3dcc40f4535e50d9f94a2584c9875",
+      "errors": []
+    },
+    {
+      "asset": "mon_ember_fox_world_idle_up",
+      "frames": 4,
+      "bounds": [
+        [
+          15,
+          11,
+          49,
+          58
+        ],
+        [
+          15,
+          10,
+          50,
+          58
+        ],
+        [
+          14,
+          11,
+          49,
+          58
+        ],
+        [
+          15,
+          11,
+          50,
+          58
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "d0258feeeb57480f40342969394d0103f9537628db860e6ec47bde8e30495a89",
+      "errors": []
+    },
+    {
+      "asset": "mon_ember_fox_world_walk_right",
+      "frames": 4,
+      "bounds": [
+        [
+          7,
+          11,
+          59,
+          54
+        ],
+        [
+          6,
+          10,
+          60,
+          54
+        ],
+        [
+          8,
+          10,
+          60,
+          54
+        ],
+        [
+          4,
+          11,
+          60,
+          54
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "a95d5cfa4cbf83d727c1350817e205a90a7789bb9c4c862dd63cf99bbf9ec479",
+      "errors": []
+    },
+    {
+      "asset": "mon_ember_fox_world_idle_right",
+      "frames": 4,
+      "bounds": [
+        [
+          7,
+          11,
+          59,
+          54
+        ],
+        [
+          6,
+          10,
+          60,
+          54
+        ],
+        [
+          7,
+          10,
+          60,
+          54
+        ],
+        [
+          4,
+          10,
+          60,
+          54
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "e7764dbac6f4b4bfd6c795de59514f9bb80d7cf6253045778ff1ad347b77b8d3",
+      "errors": []
+    },
+    {
+      "asset": "mon_ember_fox_world_walk_down",
+      "frames": 4,
+      "bounds": [
+        [
+          15,
+          6,
+          52,
+          58
+        ],
+        [
+          14,
+          6,
+          52,
+          58
+        ],
+        [
+          13,
+          6,
+          51,
+          58
+        ],
+        [
+          12,
+          6,
+          50,
+          58
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "f15267f45f2707a06b7f3b52d3b1433a1ab276a49da941526978051a7cf46179",
+      "errors": []
+    },
+    {
+      "asset": "mon_ember_fox_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          15,
+          5,
+          52,
+          58
+        ],
+        [
+          14,
+          5,
+          52,
+          58
+        ],
+        [
+          13,
+          6,
+          51,
+          58
+        ],
+        [
+          12,
+          5,
+          50,
+          58
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "8a4357c03d75944d199ebc4ca6a90745def9e9fe4962ebcdfb8239e0473b5d3a",
+      "errors": []
+    },
+    {
+      "asset": "mon_ember_fox_world_walk_left",
+      "frames": 4,
+      "bounds": [
+        [
+          5,
+          10,
+          59,
+          53
+        ],
+        [
+          4,
+          10,
+          57,
+          53
+        ],
+        [
+          4,
+          10,
+          59,
+          54
+        ],
+        [
+          4,
+          10,
+          58,
+          53
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "dce908020cc7a387dfeed44a9795f976f927b94ce606f49107e4c7d5be1e4034",
+      "errors": []
+    },
+    {
+      "asset": "mon_ember_fox_world_idle_left",
+      "frames": 4,
+      "bounds": [
+        [
+          5,
+          10,
+          60,
+          53
+        ],
+        [
+          4,
+          10,
+          60,
+          54
+        ],
+        [
+          4,
+          10,
+          60,
+          54
+        ],
+        [
+          4,
+          10,
+          58,
+          53
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "894d5d981f17e57cafb000c23d51240f8fd19c4d39c561c5039757e3821ab375",
+      "errors": []
+    },
+    {
+      "asset": "mon_lantern_snail_battle_idle",
+      "frames": 4,
+      "bounds": [
+        [
+          11,
+          22,
+          57,
+          60
+        ],
+        [
+          11,
+          19,
+          56,
+          60
+        ],
+        [
+          9,
+          22,
+          53,
+          60
+        ],
+        [
+          6,
+          22,
+          53,
+          60
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "3941643d6616e7ae56616ab9bb32ec43e4fb86ebd32952c25076f9250a720ef9",
+      "errors": []
+    },
+    {
+      "asset": "mon_lantern_snail_battle_hurt",
+      "frames": 2,
+      "bounds": [
+        [
+          8,
+          19,
+          54,
+          60
+        ],
+        [
+          8,
+          22,
+          54,
+          60
+        ]
+      ],
+      "uniqueFrames": 2,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "7b32ded18842a4c5de6fbe485f36ceb2743171d90007c66c98b903033de7f726",
+      "errors": []
+    },
+    {
+      "asset": "mon_lantern_snail_battle_attack",
+      "frames": 6,
+      "bounds": [
+        [
+          16,
+          26,
+          60,
+          61
+        ],
+        [
+          11,
+          33,
+          56,
+          62
+        ],
+        [
+          8,
+          25,
+          50,
+          61
+        ],
+        [
+          4,
+          26,
+          62,
+          56
+        ],
+        [
+          3,
+          27,
+          56,
+          56
+        ],
+        [
+          8,
+          20,
+          53,
+          56
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "7821ddd2feae0fa0573e11bc3a00311f626d2e0a663a8c426a493ee583c19ecd",
+      "errors": []
+    },
+    {
+      "asset": "mon_lantern_snail_battle_cast",
+      "frames": 6,
+      "bounds": [
+        [
+          10,
+          14,
+          58,
+          54
+        ],
+        [
+          10,
+          14,
+          56,
+          54
+        ],
+        [
+          9,
+          8,
+          58,
+          54
+        ],
+        [
+          6,
+          8,
+          54,
+          54
+        ],
+        [
+          6,
+          16,
+          52,
+          54
+        ],
+        [
+          6,
+          15,
+          53,
+          54
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "7bc0d5ff17701ce60d6840b383e81e39a5e03d40e43349041f14ea801467b430",
+      "errors": []
+    },
+    {
+      "asset": "mon_lantern_snail_battle_ko",
+      "frames": 4,
+      "bounds": [
+        [
+          10,
+          9,
+          57,
+          47
+        ],
+        [
+          12,
+          15,
+          58,
+          47
+        ],
+        [
+          9,
+          15,
+          58,
+          47
+        ],
+        [
+          9,
+          17,
+          57,
+          47
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "5d997b718f109489d26901fb94ade36a5591067d21c728b5260ca269bc4b4e98",
+      "errors": []
+    },
+    {
+      "asset": "mon_lantern_snail_world_walk_up",
+      "frames": 4,
+      "bounds": [
+        [
+          15,
+          9,
+          49,
+          59
+        ],
+        [
+          15,
+          10,
+          49,
+          59
+        ],
+        [
+          15,
+          9,
+          48,
+          59
+        ],
+        [
+          15,
+          12,
+          48,
+          59
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "5358cecaa47fbe3d9e3e5e9b71c775a9206eb16e938a94f6a327e9a365c7f299",
+      "errors": []
+    },
+    {
+      "asset": "mon_lantern_snail_world_idle_up",
+      "frames": 4,
+      "bounds": [
+        [
+          15,
+          12,
+          50,
+          59
+        ],
+        [
+          14,
+          9,
+          50,
+          59
+        ],
+        [
+          15,
+          12,
+          50,
+          59
+        ],
+        [
+          14,
+          13,
+          50,
+          59
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "0874f291e13e0f4cd57092fc6a20eb7db1285e11dc2086b5b2fe74b274a9587a",
+      "errors": []
+    },
+    {
+      "asset": "mon_lantern_snail_world_walk_right",
+      "frames": 4,
+      "bounds": [
+        [
+          7,
+          11,
+          58,
+          56
+        ],
+        [
+          8,
+          14,
+          59,
+          55
+        ],
+        [
+          8,
+          11,
+          60,
+          56
+        ],
+        [
+          7,
+          14,
+          58,
+          55
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "4326aefd41251613536f57b216eb54566bf2785bf807ecfe61e5dfc9b6b0d58a",
+      "errors": []
+    },
+    {
+      "asset": "mon_lantern_snail_world_idle_right",
+      "frames": 4,
+      "bounds": [
+        [
+          7,
+          11,
+          59,
+          55
+        ],
+        [
+          7,
+          11,
+          59,
+          55
+        ],
+        [
+          7,
+          13,
+          59,
+          55
+        ],
+        [
+          7,
+          12,
+          57,
+          55
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "73cd8a8c9ed9c4c026630314aaa320624c73fba148f29b79cece470e77fb0afc",
+      "errors": []
+    },
+    {
+      "asset": "mon_lantern_snail_world_walk_down",
+      "frames": 4,
+      "bounds": [
+        [
+          13,
+          10,
+          51,
+          53
+        ],
+        [
+          14,
+          8,
+          50,
+          53
+        ],
+        [
+          13,
+          10,
+          51,
+          53
+        ],
+        [
+          14,
+          10,
+          51,
+          53
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "2c9d22e03c3f1934a0491362305a1e366c593f4d5b3ea8e53cf8ca097f6fb575",
+      "errors": []
+    },
+    {
+      "asset": "mon_lantern_snail_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          13,
+          11,
+          51,
+          53
+        ],
+        [
+          13,
+          6,
+          51,
+          53
+        ],
+        [
+          12,
+          11,
+          51,
+          53
+        ],
+        [
+          13,
+          11,
+          51,
+          53
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "d94d373c53205a7cb297abf353ad57cc550f5f1d91a1c3077ac313abbaeeb565",
+      "errors": []
+    },
+    {
+      "asset": "mon_lantern_snail_world_walk_left",
+      "frames": 4,
+      "bounds": [
+        [
+          6,
+          7,
+          58,
+          50
+        ],
+        [
+          5,
+          8,
+          56,
+          50
+        ],
+        [
+          5,
+          7,
+          57,
+          50
+        ],
+        [
+          5,
+          8,
+          56,
+          50
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "7590c584c608f6bd0b7295e06756731c7755efe4cac8f75ea171d31c9bfe2482",
+      "errors": []
+    },
+    {
+      "asset": "mon_lantern_snail_world_idle_left",
+      "frames": 4,
+      "bounds": [
+        [
+          7,
+          6,
+          58,
+          50
+        ],
+        [
+          7,
+          6,
+          58,
+          50
+        ],
+        [
+          8,
+          7,
+          59,
+          50
+        ],
+        [
+          7,
+          6,
+          57,
+          50
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "ca8d49d63f605cc9f77317227fbd4421f3dfc940ffc53b1d98de908826c82841",
+      "errors": []
+    },
+    {
+      "asset": "mon_supply_mole_battle_idle",
+      "frames": 4,
+      "bounds": [
+        [
+          10,
+          12,
+          53,
+          59
+        ],
+        [
+          11,
+          11,
+          55,
+          59
+        ],
+        [
+          9,
+          13,
+          52,
+          59
+        ],
+        [
+          9,
+          12,
+          52,
+          59
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "79061614544d7cb98b60528d9f0ee2d58282aeef8f6ea7acf24c89a820a007e5",
+      "errors": []
+    },
+    {
+      "asset": "mon_supply_mole_battle_hurt",
+      "frames": 2,
+      "bounds": [
+        [
+          10,
+          11,
+          55,
+          58
+        ],
+        [
+          12,
+          14,
+          54,
+          59
+        ]
+      ],
+      "uniqueFrames": 2,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "c2002adb3559b76e37cbec683ad7dd26ca243e36cb182c2587f2622f8c19213d",
+      "errors": []
+    },
+    {
+      "asset": "mon_supply_mole_battle_attack",
+      "frames": 6,
+      "bounds": [
+        [
+          8,
+          14,
+          50,
+          60
+        ],
+        [
+          9,
+          23,
+          54,
+          61
+        ],
+        [
+          8,
+          20,
+          54,
+          61
+        ],
+        [
+          8,
+          16,
+          60,
+          58
+        ],
+        [
+          5,
+          16,
+          62,
+          58
+        ],
+        [
+          10,
+          12,
+          54,
+          57
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "8c31c74c2044311e6c9fdfd4813a8e1a82ab121ca31a9f64b2008ebf6e075f42",
+      "errors": []
+    },
+    {
+      "asset": "mon_supply_mole_battle_cast",
+      "frames": 6,
+      "bounds": [
+        [
+          10,
+          11,
+          53,
+          58
+        ],
+        [
+          9,
+          14,
+          56,
+          58
+        ],
+        [
+          7,
+          12,
+          56,
+          58
+        ],
+        [
+          8,
+          15,
+          58,
+          58
+        ],
+        [
+          11,
+          16,
+          51,
+          58
+        ],
+        [
+          10,
+          11,
+          53,
+          58
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "320ae3af02d3d2ee81ae489df1ad796ad4c0c446c235d293eeb809fc8b2f6b61",
+      "errors": []
+    },
+    {
+      "asset": "mon_supply_mole_battle_ko",
+      "frames": 4,
+      "bounds": [
+        [
+          10,
+          10,
+          52,
+          52
+        ],
+        [
+          9,
+          15,
+          52,
+          52
+        ],
+        [
+          7,
+          22,
+          56,
+          51
+        ],
+        [
+          8,
+          24,
+          58,
+          51
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "0825559775e5c9e84e0edc1599b6c9bffd16918fa5efca042816938896bf1dd3",
+      "errors": []
+    },
+    {
+      "asset": "mon_supply_mole_world_walk_up",
+      "frames": 4,
+      "bounds": [
+        [
+          12,
+          12,
+          51,
+          58
+        ],
+        [
+          13,
+          12,
+          52,
+          57
+        ],
+        [
+          11,
+          12,
+          49,
+          58
+        ],
+        [
+          13,
+          12,
+          52,
+          57
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "20ccbc440a3961c6eccb4b84bc592ec4a61b16c23b08a80c61473cfc9fb669f4",
+      "errors": []
+    },
+    {
+      "asset": "mon_supply_mole_world_idle_up",
+      "frames": 4,
+      "bounds": [
+        [
+          11,
+          11,
+          52,
+          56
+        ],
+        [
+          11,
+          11,
+          53,
+          56
+        ],
+        [
+          11,
+          11,
+          52,
+          56
+        ],
+        [
+          11,
+          11,
+          52,
+          56
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "0df5606fcbeb149020a4050f3d56a27e021e1a3037e6c9f5ceeda8ca151c15e1",
+      "errors": []
+    },
+    {
+      "asset": "mon_supply_mole_world_walk_right",
+      "frames": 4,
+      "bounds": [
+        [
+          9,
+          11,
+          54,
+          56
+        ],
+        [
+          9,
+          10,
+          55,
+          56
+        ],
+        [
+          9,
+          11,
+          53,
+          56
+        ],
+        [
+          9,
+          10,
+          55,
+          56
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "79ad29822c59a9a036a377bec3a3b933e2ee56b6ad5005c42c6b3dd542ff9d1a",
+      "errors": []
+    },
+    {
+      "asset": "mon_supply_mole_world_idle_right",
+      "frames": 4,
+      "bounds": [
+        [
+          9,
+          10,
+          55,
+          57
+        ],
+        [
+          9,
+          9,
+          55,
+          56
+        ],
+        [
+          9,
+          10,
+          55,
+          57
+        ],
+        [
+          9,
+          10,
+          55,
+          57
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "1712b19118c1f114fe82ddb18a1f3a5854060b9ab9493e94bfc9c2b9f1e9649a",
+      "errors": []
+    },
+    {
+      "asset": "mon_supply_mole_world_walk_down",
+      "frames": 4,
+      "bounds": [
+        [
+          11,
+          7,
+          53,
+          53
+        ],
+        [
+          11,
+          7,
+          53,
+          53
+        ],
+        [
+          12,
+          7,
+          53,
+          53
+        ],
+        [
+          11,
+          7,
+          54,
+          53
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "ca9372424d94a53f78fb71e34d8db95981a96d467cde49b938a7742b3d9670c2",
+      "errors": []
+    },
+    {
+      "asset": "mon_supply_mole_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          10,
+          6,
+          53,
+          52
+        ],
+        [
+          11,
+          6,
+          54,
+          52
+        ],
+        [
+          10,
+          6,
+          54,
+          52
+        ],
+        [
+          11,
+          6,
+          54,
+          52
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "f4cc79dad9d25602a0d7c5da56fce870b4c6c7f275a315100c2f1802282190df",
+      "errors": []
+    },
+    {
+      "asset": "mon_supply_mole_world_walk_left",
+      "frames": 4,
+      "bounds": [
+        [
+          12,
+          7,
+          56,
+          52
+        ],
+        [
+          11,
+          7,
+          57,
+          52
+        ],
+        [
+          11,
+          7,
+          56,
+          52
+        ],
+        [
+          11,
+          7,
+          57,
+          52
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "9c3fdf02e247b0290a2a65af15132aa56ee88ceb7886094f4d8502fb6e5a62d4",
+      "errors": []
+    },
+    {
+      "asset": "mon_supply_mole_world_idle_left",
+      "frames": 4,
+      "bounds": [
+        [
+          11,
+          6,
+          56,
+          52
+        ],
+        [
+          11,
+          6,
+          57,
+          52
+        ],
+        [
+          11,
+          6,
+          57,
+          52
+        ],
+        [
+          11,
+          6,
+          56,
+          53
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "098c746ae53bf3e5d0914455e3126e78b68c58b12f2290c32831857414822a11",
+      "errors": []
+    },
+    {
+      "asset": "mon_bell_bird_battle_idle",
+      "frames": 4,
+      "bounds": [
+        [
+          11,
+          11,
+          51,
+          58
+        ],
+        [
+          9,
+          11,
+          55,
+          58
+        ],
+        [
+          10,
+          11,
+          51,
+          58
+        ],
+        [
+          8,
+          11,
+          49,
+          58
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "4d5b377f97cdeea477c4fac6e1603b779eab696a5941d2586b2f9761944d1a3b",
+      "errors": []
+    },
+    {
+      "asset": "mon_bell_bird_battle_hurt",
+      "frames": 2,
+      "bounds": [
+        [
+          9,
+          15,
+          54,
+          58
+        ],
+        [
+          12,
+          11,
+          52,
+          58
+        ]
+      ],
+      "uniqueFrames": 2,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "f6617028a2bff34c362fd9c25228b1a93ce63dbe5c63df114e84f9d68bf7e130",
+      "errors": []
+    },
+    {
+      "asset": "mon_bell_bird_battle_attack",
+      "frames": 6,
+      "bounds": [
+        [
+          11,
+          16,
+          50,
+          61
+        ],
+        [
+          9,
+          26,
+          54,
+          61
+        ],
+        [
+          10,
+          18,
+          56,
+          62
+        ],
+        [
+          10,
+          27,
+          59,
+          60
+        ],
+        [
+          6,
+          20,
+          59,
+          60
+        ],
+        [
+          12,
+          16,
+          50,
+          61
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "80c56f816667f14caad7c93994e31bbdfee2ec656b92677c3c03d37de1a463fb",
+      "errors": []
+    },
+    {
+      "asset": "mon_bell_bird_battle_cast",
+      "frames": 6,
+      "bounds": [
+        [
+          11,
+          13,
+          51,
+          58
+        ],
+        [
+          11,
+          13,
+          51,
+          58
+        ],
+        [
+          8,
+          13,
+          56,
+          59
+        ],
+        [
+          7,
+          13,
+          56,
+          59
+        ],
+        [
+          11,
+          13,
+          54,
+          59
+        ],
+        [
+          12,
+          13,
+          52,
+          58
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "68ee90254871d52eac66b3de3a86c04758976700377f02b86c52ac426ca23f63",
+      "errors": []
+    },
+    {
+      "asset": "mon_bell_bird_battle_ko",
+      "frames": 4,
+      "bounds": [
+        [
+          12,
+          11,
+          56,
+          53
+        ],
+        [
+          12,
+          14,
+          53,
+          53
+        ],
+        [
+          8,
+          20,
+          58,
+          51
+        ],
+        [
+          9,
+          24,
+          57,
+          50
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "ff9908a34829ae263c4d3dae64535aeae1cca16c2012813466b4a317df3954f1",
+      "errors": []
+    },
+    {
+      "asset": "mon_bell_bird_world_walk_up",
+      "frames": 4,
+      "bounds": [
+        [
+          10,
+          12,
+          49,
+          59
+        ],
+        [
+          9,
+          11,
+          53,
+          58
+        ],
+        [
+          11,
+          11,
+          53,
+          59
+        ],
+        [
+          11,
+          12,
+          53,
+          59
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "c16324d5d3c48629a8df8d22a84a4051b32cc2ae46ccce61e39723f203c8cd82",
+      "errors": []
+    },
+    {
+      "asset": "mon_bell_bird_world_idle_up",
+      "frames": 4,
+      "bounds": [
+        [
+          10,
+          12,
+          51,
+          60
+        ],
+        [
+          9,
+          12,
+          54,
+          60
+        ],
+        [
+          11,
+          12,
+          53,
+          60
+        ],
+        [
+          11,
+          12,
+          53,
+          60
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "853483479b8fa7b3c71ee1ff1be79e221fe2b59b6022e69bf18e14d0529f3fb5",
+      "errors": []
+    },
+    {
+      "asset": "mon_bell_bird_world_walk_right",
+      "frames": 4,
+      "bounds": [
+        [
+          11,
+          10,
+          55,
+          56
+        ],
+        [
+          12,
+          9,
+          54,
+          56
+        ],
+        [
+          11,
+          10,
+          54,
+          56
+        ],
+        [
+          10,
+          10,
+          54,
+          56
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "f4ef9731fd24db5f0e86ed3b5bc9cd2e1b01443f2957d992c4ba223040bca435",
+      "errors": []
+    },
+    {
+      "asset": "mon_bell_bird_world_idle_right",
+      "frames": 4,
+      "bounds": [
+        [
+          11,
+          10,
+          55,
+          57
+        ],
+        [
+          10,
+          10,
+          55,
+          57
+        ],
+        [
+          11,
+          10,
+          55,
+          57
+        ],
+        [
+          10,
+          10,
+          55,
+          56
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "13da16068eb4111660dc9d9cac46d332667b3e7a7f6240f49971caf5d9a15b29",
+      "errors": []
+    },
+    {
+      "asset": "mon_bell_bird_world_walk_down",
+      "frames": 4,
+      "bounds": [
+        [
+          11,
+          7,
+          54,
+          54
+        ],
+        [
+          8,
+          7,
+          56,
+          53
+        ],
+        [
+          10,
+          7,
+          54,
+          54
+        ],
+        [
+          11,
+          7,
+          53,
+          54
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "4bc9d301f6e32c1663581fd1ea5764b849b268a476edb4be98bc4877276f06f8",
+      "errors": []
+    },
+    {
+      "asset": "mon_bell_bird_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          10,
+          7,
+          54,
+          55
+        ],
+        [
+          8,
+          7,
+          56,
+          54
+        ],
+        [
+          10,
+          7,
+          54,
+          55
+        ],
+        [
+          11,
+          7,
+          54,
+          55
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "5b83d7fe67b033200d1ac9dce1c8d7bea19f37ad21af362f8afeecf5ec48d754",
+      "errors": []
+    },
+    {
+      "asset": "mon_bell_bird_world_walk_left",
+      "frames": 4,
+      "bounds": [
+        [
+          10,
+          5,
+          54,
+          52
+        ],
+        [
+          10,
+          5,
+          54,
+          52
+        ],
+        [
+          10,
+          5,
+          54,
+          52
+        ],
+        [
+          10,
+          5,
+          54,
+          52
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "c27d099e108cf938061363c23dc1657f9047bb6b2550d42b21f0a9527ae0ac97",
+      "errors": []
+    },
+    {
+      "asset": "mon_bell_bird_world_idle_left",
+      "frames": 4,
+      "bounds": [
+        [
+          10,
+          5,
+          54,
+          52
+        ],
+        [
+          9,
+          5,
+          55,
+          52
+        ],
+        [
+          9,
+          5,
+          54,
+          52
+        ],
+        [
+          9,
+          5,
+          55,
+          52
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "a39e695fd0afd3a7eebf2f5e15ff3b826b85883177af4991f9e3d4e3465aee0a",
+      "errors": []
+    },
+    {
+      "asset": "mon_crystal_crab_lord_battle_idle",
+      "frames": 4,
+      "bounds": [
+        [
+          16,
+          27,
+          116,
+          114
+        ],
+        [
+          18,
+          27,
+          116,
+          114
+        ],
+        [
+          18,
+          27,
+          116,
+          114
+        ],
+        [
+          16,
+          27,
+          112,
+          114
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "7cbe237e344f5838ba36d390db7953f47f7641a55709f847af3d35b5d092eb17",
+      "errors": []
+    },
+    {
+      "asset": "mon_crystal_crab_lord_battle_hurt",
+      "frames": 2,
+      "bounds": [
+        [
+          13,
+          27,
+          116,
+          114
+        ],
+        [
+          16,
+          28,
+          114,
+          114
+        ]
+      ],
+      "uniqueFrames": 2,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "b5b7bc8cffd574ac154df8e0f6bc1d017d63ac8ee12e2089303c540d705c059d",
+      "errors": []
+    },
+    {
+      "asset": "mon_crystal_crab_lord_battle_attack",
+      "frames": 6,
+      "bounds": [
+        [
+          19,
+          41,
+          114,
+          122
+        ],
+        [
+          19,
+          46,
+          112,
+          121
+        ],
+        [
+          22,
+          30,
+          112,
+          122
+        ],
+        [
+          15,
+          39,
+          122,
+          115
+        ],
+        [
+          13,
+          40,
+          125,
+          115
+        ],
+        [
+          18,
+          30,
+          115,
+          114
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "e1398ca989c556dc80f317c06f8a678553793c67306324d285495b35a43206be",
+      "errors": []
+    },
+    {
+      "asset": "mon_crystal_crab_lord_battle_cast",
+      "frames": 6,
+      "bounds": [
+        [
+          16,
+          27,
+          116,
+          114
+        ],
+        [
+          18,
+          27,
+          114,
+          114
+        ],
+        [
+          15,
+          23,
+          112,
+          115
+        ],
+        [
+          15,
+          16,
+          116,
+          115
+        ],
+        [
+          19,
+          27,
+          114,
+          115
+        ],
+        [
+          16,
+          27,
+          115,
+          115
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "38ee3c530118f88cb890140386a6cf4d3baaf6a2241b9f987ea5d544404bb63e",
+      "errors": []
+    },
+    {
+      "asset": "mon_crystal_crab_lord_battle_ko",
+      "frames": 4,
+      "bounds": [
+        [
+          16,
+          24,
+          116,
+          104
+        ],
+        [
+          15,
+          25,
+          115,
+          104
+        ],
+        [
+          15,
+          41,
+          116,
+          104
+        ],
+        [
+          15,
+          47,
+          116,
+          104
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "92af2fb0250d6dbbeb226e0d26e26813d3198b98dc1181bb8bca6a0059a66c7e",
+      "errors": []
+    },
+    {
+      "asset": "mon_crystal_crab_lord_world_walk_up",
+      "frames": 4,
+      "bounds": [
+        [
+          8,
+          16,
+          55,
+          57
+        ],
+        [
+          9,
+          16,
+          56,
+          57
+        ],
+        [
+          8,
+          16,
+          55,
+          57
+        ],
+        [
+          8,
+          16,
+          55,
+          57
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "d2251db7808c6d21620e4042125cf95f1058bc02e4c977370213ff31fb1fb128",
+      "errors": []
+    },
+    {
+      "asset": "mon_crystal_crab_lord_world_idle_up",
+      "frames": 4,
+      "bounds": [
+        [
+          8,
+          16,
+          56,
+          57
+        ],
+        [
+          8,
+          15,
+          56,
+          57
+        ],
+        [
+          8,
+          16,
+          56,
+          57
+        ],
+        [
+          8,
+          16,
+          56,
+          57
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "6a96b26d3241e059a33f98f2138c65d8bb15e93a379b778692594073893e368a",
+      "errors": []
+    },
+    {
+      "asset": "mon_crystal_crab_lord_world_walk_right",
+      "frames": 4,
+      "bounds": [
+        [
+          8,
+          11,
+          59,
+          54
+        ],
+        [
+          9,
+          10,
+          59,
+          54
+        ],
+        [
+          8,
+          10,
+          60,
+          54
+        ],
+        [
+          10,
+          10,
+          58,
+          53
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "34a44a2be5e0a6c3efc3ab24b60b7c423cd7de97b1f42cb5290325886376cb71",
+      "errors": []
+    },
+    {
+      "asset": "mon_crystal_crab_lord_world_idle_right",
+      "frames": 4,
+      "bounds": [
+        [
+          8,
+          10,
+          60,
+          54
+        ],
+        [
+          4,
+          10,
+          59,
+          54
+        ],
+        [
+          8,
+          10,
+          60,
+          54
+        ],
+        [
+          10,
+          10,
+          59,
+          53
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "8ed5168894dcfb6febcddc99bb5f6573e245cf17922053e26a12219515175f7f",
+      "errors": []
+    },
+    {
+      "asset": "mon_crystal_crab_lord_world_walk_down",
+      "frames": 4,
+      "bounds": [
+        [
+          8,
+          8,
+          56,
+          50
+        ],
+        [
+          8,
+          8,
+          56,
+          50
+        ],
+        [
+          8,
+          7,
+          57,
+          50
+        ],
+        [
+          8,
+          8,
+          56,
+          49
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "0df207c02307c9ff4db539d3a19d155076d4e2aa8f4ce01ca8a10431bbbdbf49",
+      "errors": []
+    },
+    {
+      "asset": "mon_crystal_crab_lord_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          7,
+          7,
+          57,
+          50
+        ],
+        [
+          7,
+          7,
+          57,
+          50
+        ],
+        [
+          7,
+          7,
+          57,
+          60
+        ],
+        [
+          7,
+          7,
+          57,
+          49
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "a65e74bbf1af5c4aa521e7e46c2c6f3b99a2e3420539a9211707e0fae3e15ba4",
+      "errors": []
+    },
+    {
+      "asset": "mon_crystal_crab_lord_world_walk_left",
+      "frames": 4,
+      "bounds": [
+        [
+          6,
+          4,
+          56,
+          47
+        ],
+        [
+          5,
+          4,
+          55,
+          47
+        ],
+        [
+          5,
+          4,
+          55,
+          47
+        ],
+        [
+          5,
+          4,
+          55,
+          47
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "334fc0e19aaab689a0dce9cbd153a5d753293ad238e4a42cc99ca5e9b5e20dfe",
+      "errors": []
+    },
+    {
+      "asset": "mon_crystal_crab_lord_world_idle_left",
+      "frames": 4,
+      "bounds": [
+        [
+          5,
+          4,
+          56,
+          47
+        ],
+        [
+          4,
+          4,
+          55,
+          47
+        ],
+        [
+          4,
+          4,
+          55,
+          47
+        ],
+        [
+          5,
+          4,
+          56,
+          47
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "cfc30575c3681dfe3406dabc8dfc115d7f3b32c122bac652f92b06afcaabfa50",
+      "errors": []
+    },
+    {
+      "asset": "player_human_battle_idle",
+      "frames": 4,
+      "bounds": [
+        [
+          15,
+          7,
+          55,
+          60
+        ],
+        [
+          16,
+          8,
+          55,
+          60
+        ],
+        [
+          14,
+          7,
+          53,
+          60
+        ],
+        [
+          13,
+          8,
+          52,
+          60
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "eadd0d3ea9ff650edce1ac512b579370361e5ad8976624b66abb36858763c63c",
+      "errors": []
+    },
+    {
+      "asset": "player_human_battle_hurt",
+      "frames": 2,
+      "bounds": [
+        [
+          11,
+          9,
+          58,
+          60
+        ],
+        [
+          12,
+          9,
+          54,
+          60
+        ]
+      ],
+      "uniqueFrames": 2,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "1b428a29efd20fbef2cf9434170399bcdd31b1d47dbb5645d267c2452c9509c2",
+      "errors": []
+    },
+    {
+      "asset": "player_human_battle_attack",
+      "frames": 6,
+      "bounds": [
+        [
+          14,
+          7,
+          55,
+          60
+        ],
+        [
+          9,
+          13,
+          55,
+          60
+        ],
+        [
+          10,
+          8,
+          54,
+          60
+        ],
+        [
+          12,
+          8,
+          60,
+          60
+        ],
+        [
+          13,
+          9,
+          55,
+          60
+        ],
+        [
+          11,
+          8,
+          51,
+          60
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "8ee687c982c9c7da17cf3ca2f97ab5c0c7343234e10a10d10ce9b4d2e09b93c8",
+      "errors": []
+    },
+    {
+      "asset": "player_human_battle_cast",
+      "frames": 6,
+      "bounds": [
+        [
+          14,
+          7,
+          54,
+          60
+        ],
+        [
+          12,
+          7,
+          52,
+          60
+        ],
+        [
+          13,
+          6,
+          57,
+          60
+        ],
+        [
+          11,
+          7,
+          60,
+          60
+        ],
+        [
+          12,
+          7,
+          53,
+          60
+        ],
+        [
+          11,
+          7,
+          51,
+          60
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "596fc8afbd9ae3dcef9fd3fc55bb551e7734c2699e2540066fa1ccf59d2ad3e4",
+      "errors": []
+    },
+    {
+      "asset": "player_human_battle_ko",
+      "frames": 4,
+      "bounds": [
+        [
+          14,
+          7,
+          59,
+          55
+        ],
+        [
+          14,
+          16,
+          60,
+          56
+        ],
+        [
+          5,
+          23,
+          59,
+          55
+        ],
+        [
+          8,
+          26,
+          60,
+          55
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "a6cdb578987d51e75d437a6f324f676f247bedd87e9690af9f697a495f949da3",
+      "errors": []
+    },
+    {
+      "asset": "player_human_world_walk_up",
+      "frames": 4,
+      "bounds": [
+        [
+          16,
+          8,
+          51,
+          59
+        ],
+        [
+          14,
+          8,
+          50,
+          59
+        ],
+        [
+          15,
+          8,
+          49,
+          59
+        ],
+        [
+          13,
+          8,
+          49,
+          59
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "b98abeed080bb5b33ba4583e66872c8b3a8a6d1d67caadaa58f1ea37884e5060",
+      "errors": []
+    },
+    {
+      "asset": "player_human_world_idle_up",
+      "frames": 4,
+      "bounds": [
+        [
+          16,
+          7,
+          52,
+          59
+        ],
+        [
+          14,
+          7,
+          50,
+          59
+        ],
+        [
+          15,
+          7,
+          50,
+          59
+        ],
+        [
+          13,
+          7,
+          49,
+          59
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "8e443e83d7bd97227cc5c2a6e52e786e9d10dc8a20667f86ad018ae6082f06cb",
+      "errors": []
+    },
+    {
+      "asset": "player_human_world_walk_right",
+      "frames": 4,
+      "bounds": [
+        [
+          13,
+          6,
+          52,
+          58
+        ],
+        [
+          12,
+          6,
+          52,
+          58
+        ],
+        [
+          11,
+          7,
+          51,
+          58
+        ],
+        [
+          12,
+          6,
+          51,
+          58
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "af4ad265cacdd0bc1d6f63ea27e1de0e83ec1ccf687f3c963295379d363bca0f",
+      "errors": []
+    },
+    {
+      "asset": "player_human_world_idle_right",
+      "frames": 4,
+      "bounds": [
+        [
+          13,
+          6,
+          52,
+          58
+        ],
+        [
+          12,
+          6,
+          52,
+          58
+        ],
+        [
+          12,
+          6,
+          51,
+          58
+        ],
+        [
+          12,
+          6,
+          51,
+          58
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "cb91e17e49bf4f8eca0d127d57aad82faa4196227cb78faa744dfb52e8516572",
+      "errors": []
+    },
+    {
+      "asset": "player_human_world_walk_down",
+      "frames": 4,
+      "bounds": [
+        [
+          17,
+          6,
+          51,
+          58
+        ],
+        [
+          16,
+          6,
+          50,
+          58
+        ],
+        [
+          15,
+          6,
+          49,
+          58
+        ],
+        [
+          15,
+          6,
+          49,
+          58
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "defef1b5aa03aa736a31e7302e14c62b27906b44d0e446f06213981ae24e06c3",
+      "errors": []
+    },
+    {
+      "asset": "player_human_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          16,
+          6,
+          53,
+          57
+        ],
+        [
+          15,
+          6,
+          52,
+          57
+        ],
+        [
+          15,
+          6,
+          50,
+          57
+        ],
+        [
+          16,
+          6,
+          51,
+          57
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "68afd1e91039debf81edabd9c93ddadc912539676b2f5c01e6dd073c84414c1f",
+      "errors": []
+    },
+    {
+      "asset": "player_human_world_walk_left",
+      "frames": 4,
+      "bounds": [
+        [
+          14,
+          5,
+          55,
+          56
+        ],
+        [
+          13,
+          5,
+          54,
+          56
+        ],
+        [
+          13,
+          5,
+          53,
+          56
+        ],
+        [
+          13,
+          5,
+          54,
+          56
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "74478080836970ee73f087cd8c809b9e615f1a1ee980c123b2fee6a0afc93061",
+      "errors": []
+    },
+    {
+      "asset": "player_human_world_idle_left",
+      "frames": 4,
+      "bounds": [
+        [
+          15,
+          5,
+          55,
+          56
+        ],
+        [
+          13,
+          5,
+          54,
+          56
+        ],
+        [
+          13,
+          5,
+          53,
+          56
+        ],
+        [
+          14,
+          5,
+          54,
+          56
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "93e388286499d94a27683c3d4f383375c6e955746be58e93c7cbf4700089fa29",
+      "errors": []
+    },
+    {
+      "asset": "npc_aunt_bua_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          21,
+          7,
+          55,
+          59
+        ],
+        [
+          15,
+          7,
+          48,
+          59
+        ],
+        [
+          21,
+          5,
+          55,
+          56
+        ],
+        [
+          14,
+          5,
+          48,
+          56
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "c973fcc1d0ba6fb8bdd9ff9d561e69c4f670eaf745ebc3972206432de5122067",
+      "errors": []
+    },
+    {
+      "asset": "npc_boon_harbor_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          14,
+          5,
+          56,
+          58
+        ],
+        [
+          15,
+          5,
+          53,
+          58
+        ],
+        [
+          14,
+          5,
+          56,
+          58
+        ],
+        [
+          13,
+          5,
+          55,
+          58
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "717838a4dfaaf7ac5efdcd6df39112bf20d29f346522020c2e68fd983977b804",
+      "errors": []
+    },
+    {
+      "asset": "npc_doc_ploy_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          19,
+          7,
+          48,
+          58
+        ],
+        [
+          16,
+          7,
+          46,
+          58
+        ],
+        [
+          18,
+          6,
+          48,
+          57
+        ],
+        [
+          16,
+          6,
+          46,
+          57
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "ed32ab33d37c00038b3103c0fd765ee6e3c2d3fc4febdc2cecf259b29b5925df",
+      "errors": []
+    },
+    {
+      "asset": "npc_elder_pim_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          20,
+          6,
+          47,
+          58
+        ],
+        [
+          20,
+          6,
+          47,
+          58
+        ],
+        [
+          20,
+          5,
+          47,
+          58
+        ],
+        [
+          20,
+          5,
+          47,
+          58
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "0f56eceb303dec94e6e6634e28077b1fe548a570e28aedc1f4a3a44bf302598d",
+      "errors": []
+    },
+    {
+      "asset": "npc_kru_ueang_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          19,
+          6,
+          49,
+          59
+        ],
+        [
+          18,
+          6,
+          49,
+          59
+        ],
+        [
+          19,
+          6,
+          49,
+          58
+        ],
+        [
+          18,
+          6,
+          49,
+          58
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "f6ee92ab282c3afa817df89fba37352bde0fc73c28e2a6902d515163f7a1e9f1",
+      "errors": []
+    },
+    {
+      "asset": "npc_nang_prae_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          21,
+          5,
+          50,
+          59
+        ],
+        [
+          16,
+          5,
+          46,
+          59
+        ],
+        [
+          21,
+          5,
+          50,
+          59
+        ],
+        [
+          17,
+          5,
+          46,
+          59
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "78b4e63b2a29d13c90ee1eedbff76b4a173648dfdc991045ba3bd769952f407d",
+      "errors": []
+    },
+    {
+      "asset": "npc_nong_min_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          21,
+          6,
+          48,
+          59
+        ],
+        [
+          21,
+          6,
+          47,
+          59
+        ],
+        [
+          21,
+          6,
+          48,
+          58
+        ],
+        [
+          21,
+          6,
+          48,
+          58
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "149d3ce9684ea4780d25312bd0cd79167c0b012a9cbbd20005ff10a67007c88f",
+      "errors": []
+    },
+    {
+      "asset": "npc_pi_kaew_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          22,
+          4,
+          50,
+          59
+        ],
+        [
+          18,
+          4,
+          45,
+          59
+        ],
+        [
+          22,
+          4,
+          50,
+          59
+        ],
+        [
+          18,
+          5,
+          46,
+          59
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "d9018b4deeb990b474d4b6b26abf5a3f3ae243a50c9b441cb5d5a29dadbc70d6",
+      "errors": []
+    },
+    {
+      "asset": "npc_pi_mek_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          17,
+          5,
+          51,
+          58
+        ],
+        [
+          17,
+          5,
+          51,
+          58
+        ],
+        [
+          17,
+          5,
+          51,
+          58
+        ],
+        [
+          17,
+          5,
+          51,
+          58
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "91d946fffc19640ce218df89cd6b6be2f2d7277a568856d691eeb5f9a036ee49",
+      "errors": []
+    },
+    {
+      "asset": "npc_rune_reader_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          19,
+          7,
+          51,
+          58
+        ],
+        [
+          14,
+          8,
+          45,
+          58
+        ],
+        [
+          19,
+          7,
+          51,
+          58
+        ],
+        [
+          14,
+          7,
+          46,
+          58
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "f31550c08759e8674a2b748dc80fe8cabe25c8659646b32484629f0a490ea7f9",
+      "errors": []
+    },
+    {
+      "asset": "npc_ta_sai_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          19,
+          7,
+          49,
+          59
+        ],
+        [
+          18,
+          7,
+          47,
+          59
+        ],
+        [
+          19,
+          6,
+          49,
+          58
+        ],
+        [
+          18,
+          6,
+          48,
+          58
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "c6f866b3652fe158dae11fd10c8e798cbb97e62b564c207bd6977d1009b67522",
+      "errors": []
+    },
+    {
+      "asset": "npc_uncle_han_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          16,
+          7,
+          53,
+          58
+        ],
+        [
+          16,
+          7,
+          52,
+          58
+        ],
+        [
+          16,
+          6,
+          53,
+          57
+        ],
+        [
+          16,
+          6,
+          53,
+          57
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "71c9f29190ecae53a934093351a978661d48f5a969ac8974779a40d3d0faafb0",
+      "errors": []
+    },
+    {
+      "asset": "npc_uncle_lek_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          18,
+          5,
+          50,
+          59
+        ],
+        [
+          18,
+          5,
+          50,
+          59
+        ],
+        [
+          18,
+          5,
+          50,
+          59
+        ],
+        [
+          18,
+          5,
+          50,
+          59
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "7fbe23a516fc313dc0448a881c12df8cce1e3564f660e60a58187dee15817649",
+      "errors": []
+    },
+    {
+      "asset": "npc_uncle_som_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          17,
+          8,
+          48,
+          58
+        ],
+        [
+          17,
+          8,
+          48,
+          58
+        ],
+        [
+          17,
+          8,
+          48,
+          58
+        ],
+        [
+          17,
+          8,
+          48,
+          58
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "4bdc78547e3eb77bb15ae805e8744a27bf440d8bfed7b501a225a6a0009d474e",
+      "errors": []
+    },
+    {
+      "asset": "shadow_small",
+      "frames": 1,
+      "bounds": [
+        [
+          1,
+          2,
+          39,
+          11
+        ]
+      ],
+      "uniqueFrames": 1,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "dcdf42664dfc294a566eefecaf4911818eb06bb7c4c1822692386e120074edbc",
+      "errors": []
+    },
+    {
+      "asset": "shadow_large",
+      "frames": 1,
+      "bounds": [
+        [
+          1,
+          2,
+          87,
+          23
+        ]
+      ],
+      "uniqueFrames": 1,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "ff36141ea8c4b469f0cd6d33b263d56ca0e52b29d0fb5d492af8ce808b35c564",
+      "errors": []
+    },
+    {
+      "asset": "tiles_dawn_town_base",
+      "frames": 96,
+      "bounds": [
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          4,
+          4,
+          28,
+          28
+        ],
+        [
+          4,
+          0,
+          28,
+          28
+        ],
+        [
+          4,
+          4,
+          32,
+          28
+        ],
+        [
+          4,
+          0,
+          32,
+          28
+        ],
+        [
+          4,
+          4,
+          28,
+          32
+        ],
+        [
+          4,
+          0,
+          28,
+          32
+        ],
+        [
+          4,
+          4,
+          32,
+          32
+        ],
+        [
+          4,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          4,
+          28,
+          28
+        ],
+        [
+          0,
+          0,
+          28,
+          28
+        ],
+        [
+          0,
+          4,
+          32,
+          28
+        ],
+        [
+          0,
+          0,
+          32,
+          28
+        ],
+        [
+          0,
+          4,
+          28,
+          32
+        ],
+        [
+          0,
+          0,
+          28,
+          32
+        ],
+        [
+          0,
+          4,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          4,
+          4,
+          28,
+          28
+        ],
+        [
+          4,
+          0,
+          28,
+          28
+        ],
+        [
+          4,
+          4,
+          32,
+          28
+        ],
+        [
+          4,
+          0,
+          32,
+          28
+        ],
+        [
+          4,
+          4,
+          28,
+          32
+        ],
+        [
+          4,
+          0,
+          28,
+          32
+        ],
+        [
+          4,
+          4,
+          32,
+          32
+        ],
+        [
+          4,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          4,
+          28,
+          28
+        ],
+        [
+          0,
+          0,
+          28,
+          28
+        ],
+        [
+          0,
+          4,
+          32,
+          28
+        ],
+        [
+          0,
+          0,
+          32,
+          28
+        ],
+        [
+          0,
+          4,
+          28,
+          32
+        ],
+        [
+          0,
+          0,
+          28,
+          32
+        ],
+        [
+          0,
+          4,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          4,
+          4,
+          28,
+          28
+        ],
+        [
+          4,
+          0,
+          28,
+          28
+        ],
+        [
+          4,
+          4,
+          32,
+          28
+        ],
+        [
+          4,
+          0,
+          32,
+          28
+        ],
+        [
+          4,
+          4,
+          28,
+          32
+        ],
+        [
+          4,
+          0,
+          28,
+          32
+        ],
+        [
+          4,
+          4,
+          32,
+          32
+        ],
+        [
+          4,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          4,
+          28,
+          28
+        ],
+        [
+          0,
+          0,
+          28,
+          28
+        ],
+        [
+          0,
+          4,
+          32,
+          28
+        ],
+        [
+          0,
+          0,
+          32,
+          28
+        ],
+        [
+          0,
+          4,
+          28,
+          32
+        ],
+        [
+          0,
+          0,
+          28,
+          32
+        ],
+        [
+          0,
+          4,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ]
+      ],
+      "uniqueFrames": 51,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "7cf2d77de0724f03c38e30a33afeef25171a12a3785dd579b7f6306e12060832",
+      "errors": []
+    },
+    {
+      "asset": "tiles_dawn_town_tree_upper",
+      "frames": 1,
+      "bounds": [
+        [
+          7,
+          10,
+          57,
+          48
+        ]
+      ],
+      "uniqueFrames": 1,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "311c5d1087efd2625b613b0defef751a50770b8276e519fd3df30be39b92fe83",
+      "errors": []
+    },
+    {
+      "asset": "tiles_dawn_town_wall_upper",
+      "frames": 1,
+      "bounds": [
+        [
+          0,
+          16,
+          32,
+          32
+        ]
+      ],
+      "uniqueFrames": 1,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "a90bb295473a6c59a9c46a4e4807934cce775f1198fffdd9e2774e59db9c0346",
+      "errors": []
+    },
+    {
+      "asset": "tiles_dawn_field_base",
+      "frames": 96,
+      "bounds": [
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          4,
+          4,
+          28,
+          28
+        ],
+        [
+          4,
+          0,
+          28,
+          28
+        ],
+        [
+          4,
+          4,
+          32,
+          28
+        ],
+        [
+          4,
+          0,
+          32,
+          28
+        ],
+        [
+          4,
+          4,
+          28,
+          32
+        ],
+        [
+          4,
+          0,
+          28,
+          32
+        ],
+        [
+          4,
+          4,
+          32,
+          32
+        ],
+        [
+          4,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          4,
+          28,
+          28
+        ],
+        [
+          0,
+          0,
+          28,
+          28
+        ],
+        [
+          0,
+          4,
+          32,
+          28
+        ],
+        [
+          0,
+          0,
+          32,
+          28
+        ],
+        [
+          0,
+          4,
+          28,
+          32
+        ],
+        [
+          0,
+          0,
+          28,
+          32
+        ],
+        [
+          0,
+          4,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          4,
+          4,
+          28,
+          28
+        ],
+        [
+          4,
+          0,
+          28,
+          28
+        ],
+        [
+          4,
+          4,
+          32,
+          28
+        ],
+        [
+          4,
+          0,
+          32,
+          28
+        ],
+        [
+          4,
+          4,
+          28,
+          32
+        ],
+        [
+          4,
+          0,
+          28,
+          32
+        ],
+        [
+          4,
+          4,
+          32,
+          32
+        ],
+        [
+          4,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          4,
+          28,
+          28
+        ],
+        [
+          0,
+          0,
+          28,
+          28
+        ],
+        [
+          0,
+          4,
+          32,
+          28
+        ],
+        [
+          0,
+          0,
+          32,
+          28
+        ],
+        [
+          0,
+          4,
+          28,
+          32
+        ],
+        [
+          0,
+          0,
+          28,
+          32
+        ],
+        [
+          0,
+          4,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          0,
+          0,
+          32,
+          30
+        ],
+        [
+          4,
+          4,
+          28,
+          28
+        ],
+        [
+          4,
+          0,
+          28,
+          28
+        ],
+        [
+          4,
+          4,
+          32,
+          28
+        ],
+        [
+          4,
+          0,
+          32,
+          28
+        ],
+        [
+          4,
+          4,
+          28,
+          32
+        ],
+        [
+          4,
+          0,
+          28,
+          32
+        ],
+        [
+          4,
+          4,
+          32,
+          32
+        ],
+        [
+          4,
+          0,
+          32,
+          32
+        ],
+        [
+          0,
+          4,
+          28,
+          28
+        ],
+        [
+          0,
+          0,
+          28,
+          28
+        ],
+        [
+          0,
+          4,
+          32,
+          28
+        ],
+        [
+          0,
+          0,
+          32,
+          28
+        ],
+        [
+          0,
+          4,
+          28,
+          32
+        ],
+        [
+          0,
+          0,
+          28,
+          32
+        ],
+        [
+          0,
+          4,
+          32,
+          32
+        ],
+        [
+          0,
+          0,
+          32,
+          32
+        ]
+      ],
+      "uniqueFrames": 51,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "7cf2d77de0724f03c38e30a33afeef25171a12a3785dd579b7f6306e12060832",
+      "errors": []
+    },
+    {
+      "asset": "tiles_dawn_field_tree_upper",
+      "frames": 1,
+      "bounds": [
+        [
+          7,
+          10,
+          57,
+          48
+        ]
+      ],
+      "uniqueFrames": 1,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "311c5d1087efd2625b613b0defef751a50770b8276e519fd3df30be39b92fe83",
+      "errors": []
+    },
+    {
+      "asset": "tiles_dawn_field_wall_upper",
+      "frames": 1,
+      "bounds": [
+        [
+          0,
+          16,
+          32,
+          32
+        ]
+      ],
+      "uniqueFrames": 1,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "a90bb295473a6c59a9c46a4e4807934cce775f1198fffdd9e2774e59db9c0346",
+      "errors": []
+    },
+    {
+      "asset": "portal_world_idle",
+      "frames": 4,
+      "bounds": [
+        [
+          1,
+          14,
+          31,
+          58
+        ],
+        [
+          1,
+          14,
+          31,
+          58
+        ],
+        [
+          1,
+          14,
+          31,
+          58
+        ],
+        [
+          1,
+          14,
+          31,
+          58
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "76dead308675b18fb19e5185751743862db660d02bd5655b060e3ea83a43517b",
+      "errors": []
+    },
+    {
+      "asset": "bg_dawn_field_battle",
+      "frames": 1,
+      "bounds": [
+        [
+          0,
+          0,
+          960,
+          540
+        ]
+      ],
+      "uniqueFrames": 1,
+      "alpha": [
+        255
+      ],
+      "sha256": "06c776de270de980b17b4bb579f0c349c2748b7104f570c8df9e7403eb0dd81b",
+      "errors": []
+    },
+    {
+      "asset": "bg_dawn_field_ambient",
+      "frames": 6,
+      "bounds": [
+        [
+          29,
+          30,
+          36,
+          35
+        ],
+        [
+          30,
+          29,
+          35,
+          34
+        ],
+        [
+          31,
+          28,
+          34,
+          33
+        ],
+        [
+          30,
+          28,
+          35,
+          33
+        ],
+        [
+          29,
+          29,
+          36,
+          34
+        ],
+        [
+          29,
+          30,
+          36,
+          35
+        ]
+      ],
+      "uniqueFrames": 5,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "e05d0c5a3f7d2205fa2cf9510fe2196255f443effa36d8b2e8be6b9fd70f8d48",
+      "errors": []
+    },
+    {
+      "asset": "bg_rift_tower_battle",
+      "frames": 1,
+      "bounds": [
+        [
+          0,
+          0,
+          960,
+          540
+        ]
+      ],
+      "uniqueFrames": 1,
+      "alpha": [
+        255
+      ],
+      "sha256": "801f4a4da00ac74cdc53b13db7a175da34dfd696c6b39e9f144abb8d43e60386",
+      "errors": []
+    },
+    {
+      "asset": "bg_rift_tower_ambient",
+      "frames": 6,
+      "bounds": [
+        [
+          32,
+          32,
+          33,
+          33
+        ],
+        [
+          31,
+          30,
+          34,
+          33
+        ],
+        [
+          30,
+          28,
+          35,
+          33
+        ],
+        [
+          31,
+          29,
+          34,
+          32
+        ],
+        [
+          32,
+          31,
+          33,
+          32
+        ],
+        [
+          32,
+          32,
+          33,
+          33
+        ]
+      ],
+      "uniqueFrames": 5,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "95359232e1736aeaf165d40cd6c2b961cc8330b08e759ddc4ea18a929e0c6a6a",
+      "errors": []
+    },
+    {
+      "asset": "bg_town_practice_battle",
+      "frames": 1,
+      "bounds": [
+        [
+          0,
+          0,
+          960,
+          540
+        ]
+      ],
+      "uniqueFrames": 1,
+      "alpha": [
+        255
+      ],
+      "sha256": "42b708f6e60b6955b26d9787b543a3bcd3cc5c49e9ad783cbdc234ac39f9ec89",
+      "errors": []
+    },
+    {
+      "asset": "bg_town_practice_ambient",
+      "frames": 6,
+      "bounds": [
+        [
+          32,
+          32,
+          33,
+          33
+        ],
+        [
+          31,
+          30,
+          34,
+          33
+        ],
+        [
+          30,
+          28,
+          35,
+          33
+        ],
+        [
+          31,
+          29,
+          34,
+          32
+        ],
+        [
+          32,
+          31,
+          33,
+          32
+        ],
+        [
+          32,
+          32,
+          33,
+          33
+        ]
+      ],
+      "uniqueFrames": 5,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "95359232e1736aeaf165d40cd6c2b961cc8330b08e759ddc4ea18a929e0c6a6a",
+      "errors": []
+    },
+    {
+      "asset": "player_human_battle_attack_physical_ranged",
+      "frames": 6,
+      "bounds": [
+        [
+          14,
+          13,
+          49,
+          55
+        ],
+        [
+          11,
+          13,
+          53,
+          55
+        ],
+        [
+          9,
+          13,
+          53,
+          55
+        ],
+        [
+          13,
+          10,
+          57,
+          52
+        ],
+        [
+          11,
+          10,
+          55,
+          52
+        ],
+        [
+          12,
+          10,
+          47,
+          52
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "73cb0a27c013b7e1f7dfc08b473efd3652f1ee41dd481f3377e41e665a8ea508",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_melee_battle_idle",
+      "frames": 4,
+      "bounds": [
+        [
+          24,
+          32,
+          36,
+          53
+        ],
+        [
+          24,
+          32,
+          36,
+          53
+        ],
+        [
+          24,
+          32,
+          36,
+          53
+        ],
+        [
+          24,
+          32,
+          36,
+          53
+        ]
+      ],
+      "uniqueFrames": 1,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "ac23ed1c9a3e5f8a6b75e30983dc057617ac1f332df04c7a4f48752181142d6b",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_melee_battle_hurt",
+      "frames": 2,
+      "bounds": [
+        [
+          19,
+          22,
+          29,
+          44
+        ],
+        [
+          25,
+          26,
+          35,
+          49
+        ]
+      ],
+      "uniqueFrames": 2,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "58b70fe018a07d4432d5603f362f909f8ec61095bd450d77c55f6addfdd3ea19",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_melee_battle_attack",
+      "frames": 6,
+      "bounds": [
+        [
+          25,
+          25,
+          35,
+          47
+        ],
+        [
+          22,
+          29,
+          32,
+          51
+        ],
+        [
+          2,
+          20,
+          21,
+          35
+        ],
+        [
+          49,
+          20,
+          59,
+          42
+        ],
+        [
+          46,
+          30,
+          60,
+          51
+        ],
+        [
+          25,
+          28,
+          37,
+          49
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "31276834a257982264baf083bf5f89941f5824b29c18bb54a2df1bf506bfed85",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_melee_battle_cast",
+      "frames": 6,
+      "bounds": [
+        [
+          27,
+          24,
+          37,
+          47
+        ],
+        [
+          32,
+          23,
+          42,
+          46
+        ],
+        [
+          48,
+          3,
+          58,
+          25
+        ],
+        [
+          49,
+          12,
+          59,
+          34
+        ],
+        [
+          30,
+          25,
+          41,
+          47
+        ],
+        [
+          21,
+          30,
+          33,
+          51
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "d3c3a03c322aa1fd26f1d9713a58d7ad2297e43d2a60cef29a166d1e0aec9c45",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_melee_battle_ko",
+      "frames": 4,
+      "bounds": [
+        [
+          22,
+          30,
+          36,
+          51
+        ],
+        [
+          27,
+          47,
+          49,
+          57
+        ],
+        [
+          34,
+          48,
+          57,
+          58
+        ],
+        [
+          35,
+          48,
+          58,
+          58
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "945079a3e1567e3accb24682e6fcbcb61f49da29332dd9c8a3f048fb672e688c",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_melee_world_walk_up",
+      "frames": 4,
+      "bounds": [
+        [
+          38,
+          24,
+          48,
+          47
+        ],
+        [
+          39,
+          22,
+          49,
+          45
+        ],
+        [
+          36,
+          27,
+          46,
+          49
+        ],
+        [
+          38,
+          24,
+          48,
+          47
+        ]
+      ],
+      "uniqueFrames": 3,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "e2fcb739bbf8905644b9246070ea3dc6030fd6bbccb8565f6bd25ae8f46fd3fb",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_melee_world_idle_up",
+      "frames": 4,
+      "bounds": [
+        [
+          38,
+          24,
+          48,
+          47
+        ],
+        [
+          38,
+          24,
+          48,
+          47
+        ],
+        [
+          38,
+          24,
+          48,
+          47
+        ],
+        [
+          38,
+          24,
+          48,
+          47
+        ]
+      ],
+      "uniqueFrames": 1,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "0d699adb834df6f04798e2fdcc9ad1004e8836a2373865b7f3a94c5cb9c003f8",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_melee_world_walk_right",
+      "frames": 4,
+      "bounds": [
+        [
+          22,
+          28,
+          32,
+          50
+        ],
+        [
+          38,
+          26,
+          49,
+          48
+        ],
+        [
+          23,
+          29,
+          35,
+          50
+        ],
+        [
+          22,
+          28,
+          32,
+          50
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "065b8edf06a8214bf6c3b4faa9e2f2b2468175628b9003a6769907bfa3ea98a5",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_melee_world_idle_right",
+      "frames": 4,
+      "bounds": [
+        [
+          22,
+          28,
+          32,
+          50
+        ],
+        [
+          22,
+          28,
+          32,
+          50
+        ],
+        [
+          22,
+          28,
+          32,
+          50
+        ],
+        [
+          22,
+          28,
+          32,
+          50
+        ]
+      ],
+      "uniqueFrames": 2,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "8b2a4029cb0ed63fba65e83710f9d017b231d42da9231ebf58a0cab7ba2d9129",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_melee_world_walk_down",
+      "frames": 4,
+      "bounds": [
+        [
+          18,
+          25,
+          28,
+          48
+        ],
+        [
+          20,
+          23,
+          30,
+          46
+        ],
+        [
+          16,
+          27,
+          27,
+          49
+        ],
+        [
+          18,
+          25,
+          28,
+          48
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "16cc7ab5d2f3e0d0de4e82040da0eab01eea664317b99241ac95d40965c82549",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_melee_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          18,
+          25,
+          28,
+          48
+        ],
+        [
+          18,
+          25,
+          28,
+          48
+        ],
+        [
+          18,
+          25,
+          28,
+          48
+        ],
+        [
+          18,
+          25,
+          28,
+          48
+        ]
+      ],
+      "uniqueFrames": 1,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "b81447953c841e13846a82bc1dfeb12509d3d2d1c9e8a4645e09fa098a1918cc",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_melee_world_walk_left",
+      "frames": 4,
+      "bounds": [
+        [
+          32,
+          28,
+          42,
+          50
+        ],
+        [
+          16,
+          26,
+          26,
+          48
+        ],
+        [
+          29,
+          29,
+          41,
+          50
+        ],
+        [
+          32,
+          28,
+          42,
+          50
+        ]
+      ],
+      "uniqueFrames": 3,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "7ec70a2dea7883c2903fa1a15a35bdeb550e4646133cf4c6f19e4298f50f2203",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_melee_world_idle_left",
+      "frames": 4,
+      "bounds": [
+        [
+          32,
+          28,
+          42,
+          50
+        ],
+        [
+          32,
+          28,
+          42,
+          50
+        ],
+        [
+          32,
+          28,
+          42,
+          50
+        ],
+        [
+          32,
+          28,
+          42,
+          50
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "351552d69957e65967e477858e8d40dd9d6d3e74fdd05406318bacd5cac6cb2d",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_ranged_battle_idle",
+      "frames": 4,
+      "bounds": [
+        [
+          24,
+          39,
+          38,
+          61
+        ],
+        [
+          24,
+          39,
+          38,
+          61
+        ],
+        [
+          24,
+          39,
+          38,
+          61
+        ],
+        [
+          24,
+          39,
+          38,
+          61
+        ]
+      ],
+      "uniqueFrames": 1,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "15900825e897ddc5574617bbecab359ee70b50352008ccf29d3f677ea80b4fb5",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_ranged_battle_hurt",
+      "frames": 2,
+      "bounds": [
+        [
+          23,
+          26,
+          35,
+          49
+        ],
+        [
+          27,
+          33,
+          38,
+          57
+        ]
+      ],
+      "uniqueFrames": 2,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "cf09d9969cc4053bae525e31f62b0df2cf2dc1b6af926e6290058f5eb4290512",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_ranged_battle_attack",
+      "frames": 6,
+      "bounds": [
+        [
+          44,
+          28,
+          52,
+          52
+        ],
+        [
+          53,
+          23,
+          61,
+          47
+        ],
+        [
+          53,
+          23,
+          61,
+          47
+        ],
+        [
+          53,
+          21,
+          61,
+          45
+        ],
+        [
+          53,
+          21,
+          61,
+          45
+        ],
+        [
+          44,
+          28,
+          52,
+          52
+        ]
+      ],
+      "uniqueFrames": 5,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "6be8b70f266abbc0fed8c875a6827f4e718989557a8c5d9d1dff9c1adc0b988c",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_ranged_battle_cast",
+      "frames": 6,
+      "bounds": [
+        [
+          29,
+          31,
+          40,
+          55
+        ],
+        [
+          36,
+          29,
+          44,
+          53
+        ],
+        [
+          53,
+          8,
+          61,
+          32
+        ],
+        [
+          54,
+          17,
+          62,
+          41
+        ],
+        [
+          31,
+          32,
+          44,
+          55
+        ],
+        [
+          21,
+          37,
+          35,
+          59
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "7411da477864fd090c5646bfde20282df8d5cb4e6883bd94ef964b2062215e0a",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_ranged_battle_ko",
+      "frames": 4,
+      "bounds": [
+        [
+          22,
+          38,
+          37,
+          60
+        ],
+        [
+          22,
+          51,
+          45,
+          63
+        ],
+        [
+          27,
+          52,
+          51,
+          60
+        ],
+        [
+          28,
+          52,
+          52,
+          60
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "8b57106b59a8c5a9acb90864e03ddce5ce9ad3580fabef6d291986f37adaf606",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_ranged_world_walk_up",
+      "frames": 4,
+      "bounds": [
+        [
+          42,
+          29,
+          53,
+          53
+        ],
+        [
+          43,
+          27,
+          54,
+          51
+        ],
+        [
+          40,
+          31,
+          52,
+          54
+        ],
+        [
+          42,
+          29,
+          53,
+          53
+        ]
+      ],
+      "uniqueFrames": 3,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "ece1264ded98a1b6f67073a9e54ae71bd9b045d27ad910829a3615a791dc48d2",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_ranged_world_idle_up",
+      "frames": 4,
+      "bounds": [
+        [
+          42,
+          29,
+          53,
+          53
+        ],
+        [
+          42,
+          29,
+          53,
+          53
+        ],
+        [
+          42,
+          29,
+          53,
+          53
+        ],
+        [
+          42,
+          29,
+          53,
+          53
+        ]
+      ],
+      "uniqueFrames": 2,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "28c891d89031782c4c7e8be62ef2090c948dfcc8424358264c5c6ceb2c96018b",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_ranged_world_walk_right",
+      "frames": 4,
+      "bounds": [
+        [
+          22,
+          36,
+          35,
+          59
+        ],
+        [
+          39,
+          33,
+          52,
+          56
+        ],
+        [
+          23,
+          36,
+          37,
+          58
+        ],
+        [
+          22,
+          36,
+          35,
+          59
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "0ab4ade7b9c844de102fe225bd5054008d375bf85cf641402f1b871a8a8483f6",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_ranged_world_idle_right",
+      "frames": 4,
+      "bounds": [
+        [
+          22,
+          36,
+          35,
+          59
+        ],
+        [
+          22,
+          36,
+          35,
+          59
+        ],
+        [
+          22,
+          36,
+          35,
+          59
+        ],
+        [
+          22,
+          36,
+          35,
+          59
+        ]
+      ],
+      "uniqueFrames": 2,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "b8fe79d9a0707d4c793c9a2aa7aa22e80dfa2746650aa7491b20334283a56041",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_ranged_world_walk_down",
+      "frames": 4,
+      "bounds": [
+        [
+          20,
+          32,
+          31,
+          56
+        ],
+        [
+          22,
+          30,
+          32,
+          54
+        ],
+        [
+          17,
+          34,
+          30,
+          57
+        ],
+        [
+          20,
+          32,
+          31,
+          56
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "c1cc902d58d5db2ba740a27d63c723ea40a0aef07895fb789d7c64ecc1d24696",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_ranged_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          20,
+          32,
+          31,
+          56
+        ],
+        [
+          20,
+          32,
+          31,
+          56
+        ],
+        [
+          20,
+          32,
+          31,
+          56
+        ],
+        [
+          20,
+          32,
+          31,
+          56
+        ]
+      ],
+      "uniqueFrames": 1,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "6ca7f010c2a9101d755787a35ea3f502ce9c5554fc5eb10f781ed3f1fa9270b5",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_ranged_world_walk_left",
+      "frames": 4,
+      "bounds": [
+        [
+          37,
+          32,
+          50,
+          54
+        ],
+        [
+          20,
+          30,
+          32,
+          53
+        ],
+        [
+          35,
+          32,
+          49,
+          54
+        ],
+        [
+          37,
+          32,
+          50,
+          54
+        ]
+      ],
+      "uniqueFrames": 3,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "31ee61c21f6eb91c53141f87693d5172763ee3808021fde62303d842f85d243b",
+      "errors": []
+    },
+    {
+      "asset": "weapon_physical_ranged_world_idle_left",
+      "frames": 4,
+      "bounds": [
+        [
+          37,
+          32,
+          50,
+          54
+        ],
+        [
+          37,
+          32,
+          50,
+          54
+        ],
+        [
+          37,
+          32,
+          50,
+          54
+        ],
+        [
+          37,
+          32,
+          50,
+          54
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "e9cd5c5aee931c612c86a114cb079e8bfc0599174d9837b7d67fc0deed1ec698",
+      "errors": []
+    },
+    {
+      "asset": "weapon_magic_battle_idle",
+      "frames": 4,
+      "bounds": [
+        [
+          24,
+          32,
+          37,
+          54
+        ],
+        [
+          24,
+          32,
+          37,
+          54
+        ],
+        [
+          24,
+          32,
+          37,
+          54
+        ],
+        [
+          24,
+          32,
+          37,
+          54
+        ]
+      ],
+      "uniqueFrames": 1,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "f49649aac970b31ef61153bf521d0774bf96c08cb66d9812b00f56c358f65907",
+      "errors": []
+    },
+    {
+      "asset": "weapon_magic_battle_hurt",
+      "frames": 2,
+      "bounds": [
+        [
+          18,
+          21,
+          28,
+          45
+        ],
+        [
+          27,
+          26,
+          36,
+          50
+        ]
+      ],
+      "uniqueFrames": 2,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "18bb3ab3cd814f908217eb5e71482b092afaa4fa609b15c438bda385fac707fd",
+      "errors": []
+    },
+    {
+      "asset": "weapon_magic_battle_attack",
+      "frames": 6,
+      "bounds": [
+        [
+          26,
+          25,
+          37,
+          48
+        ],
+        [
+          21,
+          28,
+          32,
+          51
+        ],
+        [
+          2,
+          19,
+          22,
+          35
+        ],
+        [
+          48,
+          19,
+          59,
+          42
+        ],
+        [
+          47,
+          31,
+          61,
+          51
+        ],
+        [
+          25,
+          28,
+          38,
+          50
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "a800629537776d272d4c37ff87145d5e49bd3ee9d98685c9bf5094fda2690cf3",
+      "errors": []
+    },
+    {
+      "asset": "weapon_magic_battle_cast",
+      "frames": 6,
+      "bounds": [
+        [
+          29,
+          24,
+          38,
+          48
+        ],
+        [
+          33,
+          23,
+          42,
+          47
+        ],
+        [
+          47,
+          2,
+          57,
+          26
+        ],
+        [
+          48,
+          11,
+          58,
+          35
+        ],
+        [
+          32,
+          25,
+          42,
+          48
+        ],
+        [
+          21,
+          30,
+          34,
+          52
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "928781c74dae10d1efe065eba99819ca521c5456c0f9bdeebb20c47b761ecc64",
+      "errors": []
+    },
+    {
+      "asset": "weapon_magic_battle_ko",
+      "frames": 4,
+      "bounds": [
+        [
+          23,
+          31,
+          37,
+          51
+        ],
+        [
+          26,
+          46,
+          50,
+          56
+        ],
+        [
+          33,
+          49,
+          57,
+          58
+        ],
+        [
+          34,
+          49,
+          58,
+          58
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "ef07992512b61c79d00994df44944a96257d5f92c16f5eec59b8e7d6f913d643",
+      "errors": []
+    },
+    {
+      "asset": "weapon_magic_world_walk_up",
+      "frames": 4,
+      "bounds": [
+        [
+          37,
+          24,
+          47,
+          48
+        ],
+        [
+          39,
+          22,
+          48,
+          46
+        ],
+        [
+          35,
+          26,
+          45,
+          50
+        ],
+        [
+          37,
+          24,
+          47,
+          48
+        ]
+      ],
+      "uniqueFrames": 3,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "57802695c2622255e169b68f85d784d881dc7461eaf4818d5addad6fb530e525",
+      "errors": []
+    },
+    {
+      "asset": "weapon_magic_world_idle_up",
+      "frames": 4,
+      "bounds": [
+        [
+          37,
+          24,
+          47,
+          48
+        ],
+        [
+          37,
+          24,
+          47,
+          48
+        ],
+        [
+          37,
+          24,
+          47,
+          48
+        ],
+        [
+          37,
+          24,
+          47,
+          48
+        ]
+      ],
+      "uniqueFrames": 2,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "59c61baf865a13b1fdbbdef253743523aed053c994576ba6abc2d79d1543f0b3",
+      "errors": []
+    },
+    {
+      "asset": "weapon_magic_world_walk_right",
+      "frames": 4,
+      "bounds": [
+        [
+          23,
+          28,
+          34,
+          51
+        ],
+        [
+          40,
+          26,
+          50,
+          49
+        ],
+        [
+          23,
+          29,
+          36,
+          51
+        ],
+        [
+          23,
+          28,
+          34,
+          51
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "fa57350298fbbfe5e9a1706273bea355d75149535d63997cd58cd953e73d5a68",
+      "errors": []
+    },
+    {
+      "asset": "weapon_magic_world_idle_right",
+      "frames": 4,
+      "bounds": [
+        [
+          23,
+          28,
+          34,
+          51
+        ],
+        [
+          23,
+          28,
+          34,
+          51
+        ],
+        [
+          23,
+          28,
+          34,
+          51
+        ],
+        [
+          23,
+          28,
+          34,
+          51
+        ]
+      ],
+      "uniqueFrames": 2,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "7432c348a3c5020e454095e0560217facb49898ed90dcebd4e64e0e1056b6d4d",
+      "errors": []
+    },
+    {
+      "asset": "weapon_magic_world_walk_down",
+      "frames": 4,
+      "bounds": [
+        [
+          20,
+          26,
+          30,
+          49
+        ],
+        [
+          22,
+          23,
+          31,
+          47
+        ],
+        [
+          18,
+          27,
+          28,
+          50
+        ],
+        [
+          20,
+          26,
+          30,
+          49
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "7f40004be7a7a70860dd8cd48f6aae9ae1a8e8c3c4d47b1def601eb6ba4a83e5",
+      "errors": []
+    },
+    {
+      "asset": "weapon_magic_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          20,
+          26,
+          30,
+          49
+        ],
+        [
+          20,
+          26,
+          30,
+          49
+        ],
+        [
+          20,
+          26,
+          30,
+          49
+        ],
+        [
+          20,
+          26,
+          30,
+          49
+        ]
+      ],
+      "uniqueFrames": 1,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "764db6ea2a7427bf346e46a2f2e7ad95a6540c4c855178f75619a44342c8f213",
+      "errors": []
+    },
+    {
+      "asset": "weapon_magic_world_walk_left",
+      "frames": 4,
+      "bounds": [
+        [
+          31,
+          27,
+          42,
+          50
+        ],
+        [
+          15,
+          25,
+          25,
+          49
+        ],
+        [
+          29,
+          28,
+          42,
+          50
+        ],
+        [
+          31,
+          27,
+          42,
+          50
+        ]
+      ],
+      "uniqueFrames": 3,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "571790c42b1a44789d7146786ed3ed936a26d3d828da80bdcb907f44f5cd0967",
+      "errors": []
+    },
+    {
+      "asset": "weapon_magic_world_idle_left",
+      "frames": 4,
+      "bounds": [
+        [
+          31,
+          27,
+          42,
+          50
+        ],
+        [
+          31,
+          27,
+          42,
+          50
+        ],
+        [
+          31,
+          27,
+          42,
+          50
+        ],
+        [
+          31,
+          27,
+          42,
+          50
+        ]
+      ],
+      "uniqueFrames": 3,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "3cdaf42009a964d2f751912a2ca97b146cbcac119c8a4161e081c77618deee21",
+      "errors": []
+    },
+    {
+      "asset": "weapon_support_battle_idle",
+      "frames": 4,
+      "bounds": [
+        [
+          24,
+          32,
+          39,
+          54
+        ],
+        [
+          24,
+          32,
+          39,
+          54
+        ],
+        [
+          24,
+          32,
+          39,
+          54
+        ],
+        [
+          24,
+          32,
+          39,
+          54
+        ]
+      ],
+      "uniqueFrames": 1,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "44234174b79f8307335dc8886c07e7b704ae881f78afdfeb5f9eb6f84664a736",
+      "errors": []
+    },
+    {
+      "asset": "weapon_support_battle_hurt",
+      "frames": 2,
+      "bounds": [
+        [
+          15,
+          23,
+          29,
+          45
+        ],
+        [
+          24,
+          28,
+          38,
+          50
+        ]
+      ],
+      "uniqueFrames": 2,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "5720a95ecb2a4ee96e626f7cad781e35153b14b6f9d93bc33de1bdad008e719a",
+      "errors": []
+    },
+    {
+      "asset": "weapon_support_battle_attack",
+      "frames": 6,
+      "bounds": [
+        [
+          25,
+          26,
+          39,
+          48
+        ],
+        [
+          18,
+          30,
+          32,
+          51
+        ],
+        [
+          2,
+          18,
+          22,
+          35
+        ],
+        [
+          45,
+          21,
+          59,
+          42
+        ],
+        [
+          46,
+          30,
+          62,
+          51
+        ],
+        [
+          25,
+          28,
+          40,
+          50
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "27dba73a22cb07d18fd8f08f72a1c46a995785835785f8bf62d280b626168bd9",
+      "errors": []
+    },
+    {
+      "asset": "weapon_support_battle_cast",
+      "frames": 6,
+      "bounds": [
+        [
+          26,
+          26,
+          40,
+          48
+        ],
+        [
+          30,
+          26,
+          44,
+          47
+        ],
+        [
+          44,
+          4,
+          58,
+          26
+        ],
+        [
+          45,
+          13,
+          59,
+          35
+        ],
+        [
+          30,
+          26,
+          44,
+          48
+        ],
+        [
+          21,
+          30,
+          36,
+          52
+        ]
+      ],
+      "uniqueFrames": 6,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "48413784908443b2060fc77d7aa4fab88d7ed7099c9487261d3ef11e27afb44c",
+      "errors": []
+    },
+    {
+      "asset": "weapon_support_battle_ko",
+      "frames": 4,
+      "bounds": [
+        [
+          22,
+          30,
+          38,
+          51
+        ],
+        [
+          26,
+          43,
+          48,
+          57
+        ],
+        [
+          33,
+          46,
+          54,
+          60
+        ],
+        [
+          34,
+          46,
+          55,
+          60
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "3c39cd3758bebeaf95bb1cd9924017a78b79a21c0aab4f52a04d37046fdb5598",
+      "errors": []
+    },
+    {
+      "asset": "weapon_support_world_walk_up",
+      "frames": 4,
+      "bounds": [
+        [
+          35,
+          26,
+          49,
+          48
+        ],
+        [
+          36,
+          24,
+          50,
+          46
+        ],
+        [
+          32,
+          28,
+          46,
+          50
+        ],
+        [
+          35,
+          26,
+          49,
+          48
+        ]
+      ],
+      "uniqueFrames": 3,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "66fbb30fc2c1b29985a99f08c0377e27226a18e31119ce3b5d23e49c18fe6176",
+      "errors": []
+    },
+    {
+      "asset": "weapon_support_world_idle_up",
+      "frames": 4,
+      "bounds": [
+        [
+          35,
+          26,
+          49,
+          48
+        ],
+        [
+          35,
+          26,
+          49,
+          48
+        ],
+        [
+          35,
+          26,
+          49,
+          48
+        ],
+        [
+          35,
+          26,
+          49,
+          48
+        ]
+      ],
+      "uniqueFrames": 1,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "2e86b53fc9c1054b71a47721725afd7ba65d7a42b60dd557433a6c5d42b119c1",
+      "errors": []
+    },
+    {
+      "asset": "weapon_support_world_walk_right",
+      "frames": 4,
+      "bounds": [
+        [
+          22,
+          29,
+          36,
+          51
+        ],
+        [
+          38,
+          27,
+          52,
+          49
+        ],
+        [
+          23,
+          29,
+          38,
+          51
+        ],
+        [
+          22,
+          29,
+          36,
+          51
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "9462e10063d2cb79728e88fbaf15e68ce8d5e07b84a97facec09979b73183809",
+      "errors": []
+    },
+    {
+      "asset": "weapon_support_world_idle_right",
+      "frames": 4,
+      "bounds": [
+        [
+          22,
+          29,
+          36,
+          51
+        ],
+        [
+          22,
+          29,
+          36,
+          51
+        ],
+        [
+          22,
+          29,
+          36,
+          51
+        ],
+        [
+          22,
+          29,
+          36,
+          51
+        ]
+      ],
+      "uniqueFrames": 2,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "d560f4aa42c8106820f97e36724e17cd6bcefbd581a7068224450dda03c18e40",
+      "errors": []
+    },
+    {
+      "asset": "weapon_support_world_walk_down",
+      "frames": 4,
+      "bounds": [
+        [
+          17,
+          27,
+          31,
+          49
+        ],
+        [
+          19,
+          25,
+          33,
+          47
+        ],
+        [
+          16,
+          28,
+          30,
+          50
+        ],
+        [
+          17,
+          27,
+          31,
+          49
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "980684be81eb627791dc8378697c95171f35a11c9449c4a38b9a18340eef5820",
+      "errors": []
+    },
+    {
+      "asset": "weapon_support_world_idle_down",
+      "frames": 4,
+      "bounds": [
+        [
+          17,
+          27,
+          31,
+          49
+        ],
+        [
+          17,
+          27,
+          31,
+          49
+        ],
+        [
+          17,
+          27,
+          31,
+          49
+        ],
+        [
+          17,
+          27,
+          31,
+          49
+        ]
+      ],
+      "uniqueFrames": 1,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "f7adebf4c89a1c4c9a9865174b62556f991e7f74798db13c5f18fd93701ef814",
+      "errors": []
+    },
+    {
+      "asset": "weapon_support_world_walk_left",
+      "frames": 4,
+      "bounds": [
+        [
+          28,
+          29,
+          42,
+          50
+        ],
+        [
+          12,
+          27,
+          26,
+          49
+        ],
+        [
+          26,
+          29,
+          42,
+          50
+        ],
+        [
+          28,
+          29,
+          42,
+          50
+        ]
+      ],
+      "uniqueFrames": 3,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "fd79a215d19fd9dcf37cbdb22050160daa4d824e51b649f846defe60a82d4c6a",
+      "errors": []
+    },
+    {
+      "asset": "weapon_support_world_idle_left",
+      "frames": 4,
+      "bounds": [
+        [
+          28,
+          29,
+          42,
+          50
+        ],
+        [
+          28,
+          29,
+          42,
+          50
+        ],
+        [
+          28,
+          29,
+          42,
+          50
+        ],
+        [
+          28,
+          29,
+          42,
+          50
+        ]
+      ],
+      "uniqueFrames": 4,
+      "alpha": [
+        0,
+        255
+      ],
+      "sha256": "71fef563a9c56146db16800e51b5ab9ad64f8161308e07b5a07ab422e364a7de",
+      "errors": []
+    }
+  ],
+  "visualReview": "Native contact sheets, 1x/2x map/battle proofs and synchronized layer GIFs; inspect before publication. Numeric pass is not style approval."
+}

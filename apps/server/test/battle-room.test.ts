@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { DEV_FIXTURE_RULES, PRODUCTION_RULES, exampleContentMaps, type BattleSetup, type CommandResponse } from "@pmrpg/shared";
 import { BattleRoom, MemoryStorage, RoomError } from "../src/battle-room";
-import { resolveAccount } from "../src/auth";
+
+/** A clock that moves 1 s per read, so Auto is never early in these tests. */
+const ticking = () => {
+  let t = 0;
+  return () => (t += 1000);
+};
 
 const content = exampleContentMaps();
 const OWNER = "acct:owner";
@@ -34,8 +39,8 @@ function setup(): BattleSetup {
 }
 
 async function newRoom(storage = new MemoryStorage()) {
-  const room = new BattleRoom(storage, DEV_FIXTURE_RULES, content, "dev");
-  await room.create(setup());
+  const room = new BattleRoom(storage, DEV_FIXTURE_RULES, content, "dev", ticking());
+  await room.create(setup(), "res:room");
   return { room, storage };
 }
 
@@ -54,7 +59,7 @@ const accepted = (r: CommandResponse) => {
 describe("BattleRoom (server authority)", () => {
   it("creates idempotently and keeps the RNG state private", async () => {
     const { room } = await newRoom();
-    const again = await room.create(setup());
+    const again = await room.create(setup(), "res:room");
     expect(again.state.battleId).toBe("battle:room");
     expect(JSON.stringify(await room.view(OWNER))).not.toContain('"rng"');
   });
@@ -136,31 +141,98 @@ describe("BattleRoom (server authority)", () => {
   });
 
   it("refuses to run with fixture rules outside dev (OPEN rules have no production default)", () => {
-    expect(() => new BattleRoom(new MemoryStorage(), DEV_FIXTURE_RULES, content, "production")).toThrow(RoomError);
+    // No rule is OPEN now; a rules set marked as carrying fixtures is still refused outside dev.
+    expect(() => new BattleRoom(new MemoryStorage(), { ...PRODUCTION_RULES, fixtureOverrides: ["someOpenRule"] }, content, "production")).toThrow(RoomError);
     expect(() => new BattleRoom(new MemoryStorage(), PRODUCTION_RULES, content, "production")).not.toThrow();
   });
 
-  it("returns UNRESOLVED_RULE for capture on production rules (O07 open)", async () => {
+  it("captures on production rules (capture-v1); a retry replays it and a stale version is refused, so nothing is caught twice", async () => {
     const room = new BattleRoom(new MemoryStorage(), PRODUCTION_RULES, content, "staging");
-    await room.create(setup());
+    await room.create(setup(), "res:room");
     const s = await room.view(OWNER);
     // Player SPD 120 beats both example enemies, so the player acts first.
     expect(await room.actor()).toBe("player");
-    const r = await room.command(OWNER, {
+    const cmd = {
       commandId: crypto.randomUUID(),
       sessionGeneration: 0,
       expectedStateVersion: s.stateVersion,
       command: { type: "capture", actorId: "player", targetId: "e1", itemId: "item:armor_crab_capture" },
-    });
-    expect(r).toMatchObject({ status: "rejected", reasonCode: "UNRESOLVED_RULE" });
+    };
+    const first = accepted(await room.command(OWNER, cmd));
+    const resolved = first.events.filter((e) => e.type === "CaptureResolved");
+    // Crab base 25%, full HP, no status: exactly the base, with the profile it was rolled under.
+    expect(resolved).toEqual([expect.objectContaining({ probability: 0.25, profileVersion: "capture-v1" })]);
+    const retry = accepted(await room.command(OWNER, cmd));
+    expect(retry.replayed).toBe(true);
+    expect(retry.events).toEqual(first.events);
+    const after = await room.view(OWNER);
+    expect(after.bag["item:armor_crab_capture"]).toBe(1);
+    const stale = await room.command(OWNER, { ...cmd, commandId: crypto.randomUUID() });
+    expect(stale).toMatchObject({ status: "rejected" });
+    expect((await room.view(OWNER)).bag["item:armor_crab_capture"]).toBe(1);
+    const caught = (await room.view(OWNER)).entitlements.filter((e) => e.kind === "capture");
+    expect(caught.length).toBeLessThanOrEqual(1);
   });
 });
 
-describe("Worker auth stub (O11 open)", () => {
-  const req = new Request("https://x/battles/b", { headers: { "x-dev-account": "acct:nut" } });
-  it("accepts the dev header only in dev with DEV_AUTH", () => {
-    expect(resolveAccount(req, { ENVIRONMENT: "dev", DEV_AUTH: "true" })).toBe("acct:nut");
-    expect(resolveAccount(req, { ENVIRONMENT: "dev" })).toBeNull();
-    expect(resolveAccount(req, { ENVIRONMENT: "production", DEV_AUTH: "true" })).toBeNull();
+describe("Auto Hunt autopilot (chapter 08)", () => {
+  it("does nothing until switched on, then plays one ally action per step to the end, with the same outbox", async () => {
+    const { room, storage } = await newRoom();
+    expect(await room.autopilotStep()).toBe("idle");
+    expect((await room.view(OWNER)).stateVersion).toBe(1);
+    await expect(room.setAutopilot("acct:other", true)).rejects.toBeInstanceOf(RoomError);
+    await room.setAutopilot(OWNER, true);
+    let steps = 0;
+    let r: string;
+    do {
+      const before = (await room.view(OWNER)).stateVersion;
+      r = await room.autopilotStep();
+      steps++;
+      // Exactly one command per step (enemy turns follow inside it, as for any command).
+      expect((await room.view(OWNER)).stateVersion).toBe(before + 1);
+    } while (r === "acted" && steps < 200);
+    expect(r).toBe("over");
+    expect(await room.autopilotStep()).toBe("over");
+    const state = await room.view(OWNER);
+    expect(state.status).not.toBe("active");
+    // Rewards and the settlement are queued exactly as for player commands.
+    expect(storage.data.has("out:2:settle")).toBe(true);
+    expect([...storage.data.keys()].filter((k) => k.startsWith("out:1:grant:")).length).toBe(state.entitlements.length);
+  });
+
+  it("uses only the allowed items, below the set HP, at most the set count per fight", async () => {
+    const { room } = await newRoom();
+    await room.setAutopilot(OWNER, true, { itemRules: [{ itemId: "item:small_potion", target: "self", hpBelowPercent: 95, maxPerFight: 2 }] });
+    for (let i = 0; i < 200 && (await room.autopilotStep()) === "acted"; i++);
+    const end = await room.view(OWNER);
+    expect(end.status).not.toBe("active");
+    expect(end.consumed).toEqual({ "item:small_potion": 2 });
+    // The capture item in the bag is never touched (C15).
+    expect(end.bag["item:armor_crab_capture"]).toBe(2);
+  });
+
+  it("Auto Battle from a page is held to the same cadence as Auto Hunt", async () => {
+    let t = 0;
+    const room = new BattleRoom(new MemoryStorage(), DEV_FIXTURE_RULES, content, "dev", () => t);
+    await room.create(setup(), "res:cadence");
+    const auto = async () => room.command(OWNER, { commandId: crypto.randomUUID(), sessionGeneration: 0, expectedStateVersion: (await room.view(OWNER)).stateVersion }, "auto");
+    accepted(await auto());
+    expect(await auto()).toMatchObject({ status: "rejected", reasonCode: "TOO_FAST" });
+    t += DEV_FIXTURE_RULES.provisional.autoBattleActionMs.value;
+    accepted(await auto());
+    // A player's own command is never held back.
+    accepted(await room.command(OWNER, potion((await room.view(OWNER)).stateVersion)));
+  });
+
+  it("switched off mid-fight stops at once and the player can take over", async () => {
+    const { room } = await newRoom();
+    await room.setAutopilot(OWNER, true);
+    expect(await room.autopilotStep()).toBe("acted");
+    await room.setAutopilot(OWNER, false);
+    const v = (await room.view(OWNER)).stateVersion;
+    expect(await room.autopilotStep()).toBe("idle");
+    expect((await room.view(OWNER)).stateVersion).toBe(v);
+    const gen = await room.claimSession(OWNER);
+    expect(accepted(await room.command(OWNER, potion(v, gen))).stateVersion).toBe(v + 1);
   });
 });

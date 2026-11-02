@@ -40,9 +40,25 @@ export type ErrorCode =
   | "BATTLE_OVER"
   | "INSUFFICIENT_RESOURCE"
   | "ON_COOLDOWN"
+  /** A silenced unit cannot use skills that cost MP. */
+  | "SILENCED"
+  /** Another status forbids this command (disarm, root, berserk, mini, skill lock). */
+  | "STATUS_BLOCKED"
+  /** A taunted unit must target the taunter. */
+  | "TAUNTED"
   | "AUTO_CAPTURE_FORBIDDEN"
+  /** The catcher's companion box is full (P26): nothing is spent. */
+  | "COMPANION_BOX_FULL"
+  /** No fleeing from this fight (a boss, or a monster whose flee value is 0). */
+  | "FLEE_FORBIDDEN"
+  /** The fallen ally has not been down a full turn yet (O15). */
+  | "REVIVE_NOT_READY"
+  /** Auto Battle asked again before the server's action cadence allows. */
+  | "TOO_FAST"
   | "SESSION_REVOKED"
-  | "FIXTURE_RULES_IN_PRODUCTION";
+  | "FIXTURE_RULES_IN_PRODUCTION"
+  // Battle reservation lifecycle (chapter 11 §3).
+  | "RESERVATION_RELEASED";
 
 export interface ValidationIssue {
   code: ErrorCode;
@@ -147,7 +163,7 @@ export function validateSigilSockets(
   return out;
 }
 
-const SLOT_FOR_CATEGORY: Record<EquipmentDefinition["category"], readonly EquipSlot[]> = {
+export const SLOT_FOR_CATEGORY: Record<EquipmentDefinition["category"], readonly EquipSlot[]> = {
   HEAD_TOP: ["HEAD_TOP"],
   HEAD_MID: ["HEAD_MID"],
   HEAD_LOW: ["HEAD_LOW"],
@@ -213,6 +229,33 @@ export function validateSpecies(
   const innate = skills.get(sp.innatePassiveId);
   if (innate !== undefined && innate.kind !== "passive") {
     out.push(issue("SPECIES_KIT_INVALID", `${sp.id} innate ${innate.id} must be passive`));
+  }
+  // Rebirth variants (chapter 04 §7): R1 and R3 swap two different skills of the 3, R2 the innate;
+  // each branch is a variant of the skill it replaces, of the same kind.
+  const stages = new Set<number>();
+  for (const v of sp.rebirthVariants ?? []) {
+    if (stages.has(v.stage)) out.push(issue("SPECIES_KIT_INVALID", `${sp.id} has two variant sets for Rebirth ${v.stage}`));
+    stages.add(v.stage);
+    const wantInnate = v.stage === 2;
+    if (wantInnate ? v.replaces !== sp.innatePassiveId : !sp.skillIds.includes(v.replaces)) {
+      out.push(issue("SPECIES_KIT_INVALID", `${sp.id} Rebirth ${v.stage} must replace ${wantInnate ? "the innate" : "one of its 3 skills"}`));
+    }
+    if (new Set(v.options.map((o) => o.branch)).size !== 2 || new Set(v.options.map((o) => o.skillId)).size !== 2) {
+      out.push(issue("SPECIES_KIT_INVALID", `${sp.id} Rebirth ${v.stage} needs two different branches A and B`));
+    }
+    const base = skills.get(v.replaces);
+    for (const o of v.options) {
+      const vs = skills.get(o.skillId);
+      if (vs === undefined) out.push(issue("MISSING_REFERENCE", `${sp.id} references missing variant ${o.skillId}`));
+      else if (vs.variantOf !== v.replaces || (base !== undefined && vs.kind !== base.kind)) {
+        out.push(issue("SPECIES_KIT_INVALID", `${o.skillId} must be a ${base?.kind ?? ""} variantOf ${v.replaces}`));
+      }
+    }
+  }
+  const r1 = sp.rebirthVariants?.find((v) => v.stage === 1);
+  const r3 = sp.rebirthVariants?.find((v) => v.stage === 3);
+  if (r1 !== undefined && r3 !== undefined && r1.replaces === r3.replaces) {
+    out.push(issue("SPECIES_KIT_INVALID", `${sp.id} Rebirth 1 and 3 must change different skills`));
   }
   const sigil = sigils.get(sp.sigilId);
   if (sigil === undefined) out.push(issue("MISSING_REFERENCE", `${sp.id} references missing sigil ${sp.sigilId}`));

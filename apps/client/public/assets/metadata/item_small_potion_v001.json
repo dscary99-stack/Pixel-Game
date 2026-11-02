@@ -1,0 +1,48 @@
+{
+  "assetId": "item_small_potion",
+  "version": 1,
+  "status": "grid_ready",
+  "file": "/assets/sprites/items/item_small_potion_v001.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "item",
+  "nineSlice": null,
+  "nativeSize": [
+    32,
+    32
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      32,
+      32
+    ]
+  ],
+  "completion": "hold",
+  "sha256": "b1f07e4b3326019f23ac2d80b8847ad7ce07bbac2501c9b339e4143966dc3944",
+  "contentId": "item:small_potion",
+  "contentGroup": "items",
+  "motif": "bottle"
+}

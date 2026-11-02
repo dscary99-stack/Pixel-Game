@@ -1,0 +1,26 @@
+{
+  "assetId": "tiles_dawn_town_wall_upper",
+  "version": 1,
+  "file": "/assets/sprites/tiles/tiles_dawn_town_wall_upper_v001.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 1,
+  "rows": 1,
+  "frameCount": 1,
+  "origin": [
+    0,
+    0
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-ui-v002",
+  "animations": [],
+  "tileOffset": [
+    0,
+    -32
+  ],
+  "layer": "occlusion",
+  "sortBy": "tileBottomY",
+  "companionBaseKind": "wall",
+  "contentId": "map:dawn_town"
+}

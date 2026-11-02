@@ -1,0 +1,1153 @@
+{
+  "armor_crab_battle": {
+    "source": "art/world/masters/armor_crab_battle.png",
+    "sourceSize": [
+      1536,
+      1024
+    ],
+    "sourceGrid": [
+      6,
+      4
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      52,
+      52
+    ],
+    "sourceGridYOffset": 12,
+    "offset": [
+      6,
+      8
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "armor_crab_attack_clean": {
+    "source": "art/world/masters/armor_crab_attack_clean.png",
+    "sourceSize": [
+      1536,
+      1024
+    ],
+    "sourceGrid": [
+      3,
+      2
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      64,
+      64
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      0,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "armor_crab_world": {
+    "source": "art/world/masters/armor_crab_world.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      4,
+      4
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "armor_crab_world_idle": {
+    "source": "art/world/masters/armor_crab_world_idle.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      4,
+      4
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "ember_fox_battle": {
+    "source": "art/world/masters/ember_fox_battle.png",
+    "sourceSize": [
+      1536,
+      1024
+    ],
+    "sourceGrid": [
+      6,
+      4
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      52,
+      52
+    ],
+    "sourceGridYOffset": 12,
+    "offset": [
+      6,
+      8
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "ember_fox_attack_clean": {
+    "source": "art/world/masters/ember_fox_attack_clean.png",
+    "sourceSize": [
+      1536,
+      1024
+    ],
+    "sourceGrid": [
+      3,
+      2
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      64,
+      64
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      0,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "ember_fox_world": {
+    "source": "art/world/masters/ember_fox_world.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      4,
+      4
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "ember_fox_world_idle": {
+    "source": "art/world/masters/ember_fox_world_idle.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      4,
+      4
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "lantern_snail_battle": {
+    "source": "art/world/masters/lantern_snail_battle.png",
+    "sourceSize": [
+      1536,
+      1024
+    ],
+    "sourceGrid": [
+      6,
+      4
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      52,
+      52
+    ],
+    "sourceGridYOffset": 12,
+    "offset": [
+      6,
+      8
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "lantern_snail_attack_clean": {
+    "source": "art/world/masters/lantern_snail_attack_clean.png",
+    "sourceSize": [
+      1536,
+      1024
+    ],
+    "sourceGrid": [
+      3,
+      2
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      64,
+      64
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      0,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128,
+    "sourceFrameXRegistration": {
+      "3": 64,
+      "4": 64
+    }
+  },
+  "lantern_snail_world": {
+    "source": "art/world/masters/lantern_snail_world.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      4,
+      4
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "lantern_snail_world_idle": {
+    "source": "art/world/masters/lantern_snail_world_idle.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      4,
+      4
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "supply_mole_battle": {
+    "source": "art/world/masters/supply_mole_battle.png",
+    "sourceSize": [
+      1536,
+      1024
+    ],
+    "sourceGrid": [
+      6,
+      4
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      52,
+      52
+    ],
+    "sourceGridYOffset": 12,
+    "offset": [
+      6,
+      8
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "supply_mole_attack_clean": {
+    "source": "art/world/masters/supply_mole_attack_clean.png",
+    "sourceSize": [
+      1536,
+      1024
+    ],
+    "sourceGrid": [
+      3,
+      2
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      64,
+      64
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      0,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128,
+    "sourceFrameXRegistration": {
+      "4": 24
+    }
+  },
+  "supply_mole_world": {
+    "source": "art/world/masters/supply_mole_world.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      4,
+      4
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "supply_mole_world_idle": {
+    "source": "art/world/masters/supply_mole_world_idle.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      4,
+      4
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "bell_bird_battle": {
+    "source": "art/world/masters/bell_bird_battle.png",
+    "sourceSize": [
+      1536,
+      1024
+    ],
+    "sourceGrid": [
+      6,
+      4
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      52,
+      52
+    ],
+    "sourceGridYOffset": 12,
+    "offset": [
+      6,
+      8
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "bell_bird_attack_clean": {
+    "source": "art/world/masters/bell_bird_attack_clean.png",
+    "sourceSize": [
+      1536,
+      1024
+    ],
+    "sourceGrid": [
+      3,
+      2
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      64,
+      64
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      0,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "bell_bird_world": {
+    "source": "art/world/masters/bell_bird_world.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      4,
+      4
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "bell_bird_world_idle": {
+    "source": "art/world/masters/bell_bird_world_idle.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      4,
+      4
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "crystal_crab_lord_battle": {
+    "source": "art/world/masters/crystal_crab_lord_battle.png",
+    "sourceSize": [
+      1536,
+      1024
+    ],
+    "sourceGrid": [
+      6,
+      4
+    ],
+    "nativeCell": [
+      128,
+      128
+    ],
+    "fixedCellExtent": [
+      104,
+      104
+    ],
+    "sourceGridYOffset": 12,
+    "offset": [
+      12,
+      16
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128,
+    "cleanup": {
+      "frame16": "remove disconnected previous-cell claw fragment at native x<=20; preserve body and cast particles"
+    }
+  },
+  "crystal_crab_lord_attack_clean": {
+    "source": "art/world/masters/crystal_crab_lord_attack_clean.png",
+    "sourceSize": [
+      1536,
+      1024
+    ],
+    "sourceGrid": [
+      3,
+      2
+    ],
+    "nativeCell": [
+      128,
+      128
+    ],
+    "fixedCellExtent": [
+      128,
+      128
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      0,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "crystal_crab_lord_world": {
+    "source": "art/world/masters/crystal_crab_lord_world.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      4,
+      4
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "crystal_crab_lord_world_idle": {
+    "source": "art/world/masters/crystal_crab_lord_world_idle.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      4,
+      4
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "human_battle": {
+    "source": "art/world/masters/human_battle.png",
+    "sourceSize": [
+      1536,
+      1024
+    ],
+    "sourceGrid": [
+      6,
+      4
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "human_world": {
+    "source": "art/world/masters/human_world.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      4,
+      4
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "human_world_idle": {
+    "source": "art/world/masters/human_world_idle.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      4,
+      4
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "npc_aunt_bua": {
+    "source": "art/world/masters/npc_aunt_bua.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      2,
+      2
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "npc_boon_harbor": {
+    "source": "art/world/masters/npc_boon_harbor.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      2,
+      2
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "npc_doc_ploy": {
+    "source": "art/world/masters/npc_doc_ploy.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      2,
+      2
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "npc_elder_pim": {
+    "source": "art/world/masters/npc_elder_pim.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      2,
+      2
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "npc_kru_ueang": {
+    "source": "art/world/masters/npc_kru_ueang.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      2,
+      2
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "npc_nang_prae": {
+    "source": "art/world/masters/npc_nang_prae.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      2,
+      2
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "npc_nong_min": {
+    "source": "art/world/masters/npc_nong_min.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      2,
+      2
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "npc_pi_kaew": {
+    "source": "art/world/masters/npc_pi_kaew.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      2,
+      2
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "npc_pi_mek": {
+    "source": "art/world/masters/npc_pi_mek.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      2,
+      2
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "npc_rune_reader": {
+    "source": "art/world/masters/npc_rune_reader.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      2,
+      2
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "npc_ta_sai": {
+    "source": "art/world/masters/npc_ta_sai.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      2,
+      2
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "npc_uncle_han": {
+    "source": "art/world/masters/npc_uncle_han.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      2,
+      2
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "npc_uncle_lek": {
+    "source": "art/world/masters/npc_uncle_lek.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      2,
+      2
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "npc_uncle_som": {
+    "source": "art/world/masters/npc_uncle_som.png",
+    "sourceSize": [
+      1254,
+      1254
+    ],
+    "sourceGrid": [
+      2,
+      2
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  },
+  "terrain_master": {
+    "sourceSize": [
+      1774,
+      887
+    ],
+    "sourceGrid": [
+      4,
+      2
+    ],
+    "sourceCellTopSeamRemoval": 12,
+    "nativeTiles": [
+      32,
+      32
+    ],
+    "upperTree": [
+      64,
+      64
+    ],
+    "upperWall": [
+      32,
+      32
+    ]
+  },
+  "terrain_quiet": {
+    "sourceSize": [
+      1774,
+      887
+    ],
+    "sourceGrid": [
+      4,
+      2
+    ],
+    "usedCells": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "nativeTextureModeFilter": 3,
+    "wallSourceYFraction": [
+      0.15,
+      0.87
+    ],
+    "wallExport": [
+      32,
+      48
+    ]
+  },
+  "human_ranged_attack": {
+    "source": "art/world/masters/human_ranged_attack.png",
+    "sourceSize": [
+      1536,
+      1024
+    ],
+    "sourceGrid": [
+      3,
+      2
+    ],
+    "nativeCell": [
+      64,
+      64
+    ],
+    "fixedCellExtent": [
+      56,
+      56
+    ],
+    "sourceGridYOffset": 0,
+    "offset": [
+      4,
+      4
+    ],
+    "resampling": "nearest; one transform for entire atlas",
+    "alphaThreshold": 128
+  }
+}

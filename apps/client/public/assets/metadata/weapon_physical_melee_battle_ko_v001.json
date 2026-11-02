@@ -1,0 +1,71 @@
+{
+  "assetId": "weapon_physical_melee_battle_ko",
+  "version": 1,
+  "file": "/assets/sprites/equipment/weapon_physical_melee_battle_ko_v001.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "columns": 4,
+  "rows": 1,
+  "frameCount": 4,
+  "origin": [
+    0.5,
+    1
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-ui-v002",
+  "animations": [
+    {
+      "name": "ko",
+      "frames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "fps": 8,
+      "loop": false
+    }
+  ],
+  "groundOffset": 4,
+  "groundPoint": [
+    32,
+    60
+  ],
+  "allowedFlip": {
+    "x": true,
+    "y": false
+  },
+  "facing": "right",
+  "bodyAsset": "player_human_battle_ko",
+  "weaponFamily": "physical_melee",
+  "layer": "equipment",
+  "sync": "same frame index as bodyAsset; no independent animation clock",
+  "gripPoints": [
+    [
+      26,
+      46
+    ],
+    [
+      32,
+      53
+    ],
+    [
+      39,
+      53
+    ],
+    [
+      40,
+      53
+    ]
+  ],
+  "gripAngles": [
+    -30,
+    -75,
+    -90,
+    -90
+  ],
+  "sourceAtlas": "weapon_master",
+  "holdLastFrame": true,
+  "gripMode": "released-to-ground after frame0"
+}

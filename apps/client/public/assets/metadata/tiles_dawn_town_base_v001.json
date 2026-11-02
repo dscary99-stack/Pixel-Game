@@ -1,0 +1,925 @@
+{
+  "assetId": "tiles_dawn_town_base",
+  "version": 1,
+  "file": "/assets/sprites/tiles/tiles_dawn_town_base_v001.png",
+  "frameWidth": 32,
+  "frameHeight": 32,
+  "columns": 96,
+  "rows": 1,
+  "frameCount": 96,
+  "origin": [
+    0,
+    0
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-ui-v002",
+  "animations": [],
+  "contentId": "map:dawn_town",
+  "tileWidth": 32,
+  "tileHeight": 32,
+  "tileEntries": [
+    {
+      "index": 0,
+      "kind": "ground",
+      "char": ".",
+      "neighborMask": 0,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 1,
+      "kind": "ground",
+      "char": ".",
+      "neighborMask": 1,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 2,
+      "kind": "ground",
+      "char": ".",
+      "neighborMask": 2,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 3,
+      "kind": "ground",
+      "char": ".",
+      "neighborMask": 3,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 4,
+      "kind": "ground",
+      "char": ".",
+      "neighborMask": 4,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 5,
+      "kind": "ground",
+      "char": ".",
+      "neighborMask": 5,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 6,
+      "kind": "ground",
+      "char": ".",
+      "neighborMask": 6,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 7,
+      "kind": "ground",
+      "char": ".",
+      "neighborMask": 7,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 8,
+      "kind": "ground",
+      "char": ".",
+      "neighborMask": 8,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 9,
+      "kind": "ground",
+      "char": ".",
+      "neighborMask": 9,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 10,
+      "kind": "ground",
+      "char": ".",
+      "neighborMask": 10,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 11,
+      "kind": "ground",
+      "char": ".",
+      "neighborMask": 11,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 12,
+      "kind": "ground",
+      "char": ".",
+      "neighborMask": 12,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 13,
+      "kind": "ground",
+      "char": ".",
+      "neighborMask": 13,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 14,
+      "kind": "ground",
+      "char": ".",
+      "neighborMask": 14,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 15,
+      "kind": "ground",
+      "char": ".",
+      "neighborMask": 15,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 16,
+      "kind": "grass",
+      "char": ",",
+      "neighborMask": 0,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 17,
+      "kind": "grass",
+      "char": ",",
+      "neighborMask": 1,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 18,
+      "kind": "grass",
+      "char": ",",
+      "neighborMask": 2,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 19,
+      "kind": "grass",
+      "char": ",",
+      "neighborMask": 3,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 20,
+      "kind": "grass",
+      "char": ",",
+      "neighborMask": 4,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 21,
+      "kind": "grass",
+      "char": ",",
+      "neighborMask": 5,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 22,
+      "kind": "grass",
+      "char": ",",
+      "neighborMask": 6,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 23,
+      "kind": "grass",
+      "char": ",",
+      "neighborMask": 7,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 24,
+      "kind": "grass",
+      "char": ",",
+      "neighborMask": 8,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 25,
+      "kind": "grass",
+      "char": ",",
+      "neighborMask": 9,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 26,
+      "kind": "grass",
+      "char": ",",
+      "neighborMask": 10,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 27,
+      "kind": "grass",
+      "char": ",",
+      "neighborMask": 11,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 28,
+      "kind": "grass",
+      "char": ",",
+      "neighborMask": 12,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 29,
+      "kind": "grass",
+      "char": ",",
+      "neighborMask": 13,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 30,
+      "kind": "grass",
+      "char": ",",
+      "neighborMask": 14,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 31,
+      "kind": "grass",
+      "char": ",",
+      "neighborMask": 15,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 32,
+      "kind": "road",
+      "char": "=",
+      "neighborMask": 0,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 33,
+      "kind": "road",
+      "char": "=",
+      "neighborMask": 1,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 34,
+      "kind": "road",
+      "char": "=",
+      "neighborMask": 2,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 35,
+      "kind": "road",
+      "char": "=",
+      "neighborMask": 3,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 36,
+      "kind": "road",
+      "char": "=",
+      "neighborMask": 4,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 37,
+      "kind": "road",
+      "char": "=",
+      "neighborMask": 5,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 38,
+      "kind": "road",
+      "char": "=",
+      "neighborMask": 6,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 39,
+      "kind": "road",
+      "char": "=",
+      "neighborMask": 7,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 40,
+      "kind": "road",
+      "char": "=",
+      "neighborMask": 8,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 41,
+      "kind": "road",
+      "char": "=",
+      "neighborMask": 9,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 42,
+      "kind": "road",
+      "char": "=",
+      "neighborMask": 10,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 43,
+      "kind": "road",
+      "char": "=",
+      "neighborMask": 11,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 44,
+      "kind": "road",
+      "char": "=",
+      "neighborMask": 12,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 45,
+      "kind": "road",
+      "char": "=",
+      "neighborMask": 13,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 46,
+      "kind": "road",
+      "char": "=",
+      "neighborMask": 14,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 47,
+      "kind": "road",
+      "char": "=",
+      "neighborMask": 15,
+      "walkable": true,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 48,
+      "kind": "wall",
+      "char": "#",
+      "neighborMask": 0,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 49,
+      "kind": "wall",
+      "char": "#",
+      "neighborMask": 1,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 50,
+      "kind": "wall",
+      "char": "#",
+      "neighborMask": 2,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 51,
+      "kind": "wall",
+      "char": "#",
+      "neighborMask": 3,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 52,
+      "kind": "wall",
+      "char": "#",
+      "neighborMask": 4,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 53,
+      "kind": "wall",
+      "char": "#",
+      "neighborMask": 5,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 54,
+      "kind": "wall",
+      "char": "#",
+      "neighborMask": 6,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 55,
+      "kind": "wall",
+      "char": "#",
+      "neighborMask": 7,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 56,
+      "kind": "wall",
+      "char": "#",
+      "neighborMask": 8,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 57,
+      "kind": "wall",
+      "char": "#",
+      "neighborMask": 9,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 58,
+      "kind": "wall",
+      "char": "#",
+      "neighborMask": 10,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 59,
+      "kind": "wall",
+      "char": "#",
+      "neighborMask": 11,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 60,
+      "kind": "wall",
+      "char": "#",
+      "neighborMask": 12,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 61,
+      "kind": "wall",
+      "char": "#",
+      "neighborMask": 13,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 62,
+      "kind": "wall",
+      "char": "#",
+      "neighborMask": 14,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 63,
+      "kind": "wall",
+      "char": "#",
+      "neighborMask": 15,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "ground"
+    },
+    {
+      "index": 64,
+      "kind": "tree",
+      "char": "T",
+      "neighborMask": 0,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 65,
+      "kind": "tree",
+      "char": "T",
+      "neighborMask": 1,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 66,
+      "kind": "tree",
+      "char": "T",
+      "neighborMask": 2,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 67,
+      "kind": "tree",
+      "char": "T",
+      "neighborMask": 3,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 68,
+      "kind": "tree",
+      "char": "T",
+      "neighborMask": 4,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 69,
+      "kind": "tree",
+      "char": "T",
+      "neighborMask": 5,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 70,
+      "kind": "tree",
+      "char": "T",
+      "neighborMask": 6,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 71,
+      "kind": "tree",
+      "char": "T",
+      "neighborMask": 7,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 72,
+      "kind": "tree",
+      "char": "T",
+      "neighborMask": 8,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 73,
+      "kind": "tree",
+      "char": "T",
+      "neighborMask": 9,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 74,
+      "kind": "tree",
+      "char": "T",
+      "neighborMask": 10,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 75,
+      "kind": "tree",
+      "char": "T",
+      "neighborMask": 11,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 76,
+      "kind": "tree",
+      "char": "T",
+      "neighborMask": 12,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 77,
+      "kind": "tree",
+      "char": "T",
+      "neighborMask": 13,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 78,
+      "kind": "tree",
+      "char": "T",
+      "neighborMask": 14,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 79,
+      "kind": "tree",
+      "char": "T",
+      "neighborMask": 15,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 80,
+      "kind": "water",
+      "char": "~",
+      "neighborMask": 0,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 81,
+      "kind": "water",
+      "char": "~",
+      "neighborMask": 1,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 82,
+      "kind": "water",
+      "char": "~",
+      "neighborMask": 2,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 83,
+      "kind": "water",
+      "char": "~",
+      "neighborMask": 3,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 84,
+      "kind": "water",
+      "char": "~",
+      "neighborMask": 4,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 85,
+      "kind": "water",
+      "char": "~",
+      "neighborMask": 5,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 86,
+      "kind": "water",
+      "char": "~",
+      "neighborMask": 6,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 87,
+      "kind": "water",
+      "char": "~",
+      "neighborMask": 7,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 88,
+      "kind": "water",
+      "char": "~",
+      "neighborMask": 8,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 89,
+      "kind": "water",
+      "char": "~",
+      "neighborMask": 9,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 90,
+      "kind": "water",
+      "char": "~",
+      "neighborMask": 10,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 91,
+      "kind": "water",
+      "char": "~",
+      "neighborMask": 11,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 92,
+      "kind": "water",
+      "char": "~",
+      "neighborMask": 12,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 93,
+      "kind": "water",
+      "char": "~",
+      "neighborMask": 13,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 94,
+      "kind": "water",
+      "char": "~",
+      "neighborMask": 14,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    },
+    {
+      "index": 95,
+      "kind": "water",
+      "char": "~",
+      "neighborMask": 15,
+      "walkable": false,
+      "layer": "base",
+      "underlay": "grass"
+    }
+  ],
+  "legend": {
+    ".": "ground",
+    ",": "grass",
+    "=": "road",
+    "#": "wall",
+    "T": "tree",
+    "~": "water"
+  },
+  "adjacency": {
+    "bits": {
+      "up": 1,
+      "right": 2,
+      "down": 4,
+      "left": 8
+    },
+    "match": "same TILE_LEGEND kind; outside map treated as same kind",
+    "indexFormula": "legendOrderIndex*16+neighborMask",
+    "legendOrder": [
+      "ground",
+      "grass",
+      "road",
+      "wall",
+      "tree",
+      "water"
+    ],
+    "underlayIndex": {
+      "ground": 15,
+      "grass": 31
+    },
+    "drawOrder": [
+      "underlay",
+      "base",
+      "actors sorted by groundY",
+      "upper layers sorted by tile groundY"
+    ]
+  },
+  "projection": "top-oblique",
+  "sourceAtlas": "terrain_master"
+}

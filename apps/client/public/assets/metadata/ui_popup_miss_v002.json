@@ -1,0 +1,62 @@
+{
+  "assetId": "ui_popup_miss",
+  "version": 2,
+  "status": "grid_ready",
+  "file": "/assets/sprites/ui/ui_popup_miss_v002.png",
+  "frameWidth": 44,
+  "frameHeight": 24,
+  "columns": 5,
+  "rows": 1,
+  "frameCount": 5,
+  "padding": 0,
+  "spacing": 0,
+  "origin": [
+    0,
+    0
+  ],
+  "groundOffset": 0,
+  "directions": [],
+  "layers": [
+    "ui"
+  ],
+  "shadowAsset": null,
+  "animations": [
+    {
+      "name": "pop",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "fps": 10,
+      "loop": false
+    }
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "kind": "popup",
+  "nineSlice": null,
+  "nativeSize": [
+    44,
+    24
+  ],
+  "staticFrame": 0,
+  "productionApproved": false,
+  "verifiedDisplaySizes": [],
+  "proofDisplaySizes": [
+    [
+      44,
+      24
+    ]
+  ],
+  "completion": "hold-until-owner-removes",
+  "sha256": "ff276093c2a76694cf091560938557bda52087a51d2fad57b5edd18ed7aa1789",
+  "text": "MISS",
+  "fontSource": "Windows Tahoma raster output; no font file distributed",
+  "sourceMaster": "original glyph geometry; new native enamel pop in extras.py",
+  "framing": null
+}
