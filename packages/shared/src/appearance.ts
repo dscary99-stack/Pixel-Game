@@ -35,13 +35,14 @@ export const APPEARANCE_KEYS = {
   trim: ["#5a5a64", "#8a8a96", "#c0c0cc"],
 } as const;
 
+/** Codex paints most skin with the middle key, so each ramp's middle is its main tone (proof 01, 11-02). */
 export const SKIN_TONES: ColorRamp[] = [
-  { id: "skin:01", name: { th: "ขาวอมชมพู" }, ramp: ["#b06a5a", "#e8a898", "#ffd8cc"] },
-  { id: "skin:02", name: { th: "ขาวเหลือง" }, ramp: ["#a8704a", "#e0ac80", "#fcd8b4"] },
-  { id: "skin:03", name: { th: "สองสี" }, ramp: ["#8a4f3a", "#c98a6a", "#f2c4a0"] },
-  { id: "skin:04", name: { th: "แทน" }, ramp: ["#6a3a28", "#a8684a", "#d89c74"] },
-  { id: "skin:05", name: { th: "คล้ำ" }, ramp: ["#45261c", "#7a4a34", "#a8704e"] },
-  { id: "skin:06", name: { th: "ซีดอมฟ้า" }, ramp: ["#6a6a8a", "#a8acc8", "#dce0f2"] },
+  { id: "skin:01", name: { th: "ขาวอมชมพู" }, ramp: ["#c47a6c", "#f8cfc0", "#fff0e8"] },
+  { id: "skin:02", name: { th: "ขาวเหลือง" }, ramp: ["#c08a5c", "#f6d0a8", "#fff0dc"] },
+  { id: "skin:03", name: { th: "สองสี" }, ramp: ["#a86a4c", "#e8b088", "#fcdcbc"] },
+  { id: "skin:04", name: { th: "แทน" }, ramp: ["#7e4a32", "#c48a62", "#e8b48a"] },
+  { id: "skin:05", name: { th: "คล้ำ" }, ramp: ["#4a2a1e", "#875a3e", "#b4805a"] },
+  { id: "skin:06", name: { th: "ซีดอมฟ้า" }, ramp: ["#7478a0", "#bcc2e0", "#e6eaf8"] },
 ];
 
 export const HAIR_COLORS: ColorRamp[] = [

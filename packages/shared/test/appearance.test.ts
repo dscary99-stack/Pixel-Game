@@ -47,7 +47,8 @@ describe("appearance (P38)", () => {
   it("recolours only the parts asked for, and only colours that change", () => {
     const look = { ...DEFAULT_APPEARANCE, hairColor: "haircolor:05", skin: "skin:03" };
     const m = recolorMap(["hair", "skin"], look, "FIRE");
-    expect(Object.keys(m)).toEqual([...APPEARANCE_KEYS.hair]);
+    expect(Object.keys(m)).toEqual([...APPEARANCE_KEYS.hair, ...APPEARANCE_KEYS.skin]);
+    expect(Object.keys(recolorMap(["hair"], { ...look, hairColor: "haircolor:07" }, "FIRE"))).toEqual([]);
     expect(m[APPEARANCE_KEYS.hair[0]]).toBe(HAIR_COLORS[4]!.ramp[0]);
     expect(Object.keys(recolorMap(["trim"], look, "WATER"))).toEqual([...APPEARANCE_KEYS.trim]);
   });
