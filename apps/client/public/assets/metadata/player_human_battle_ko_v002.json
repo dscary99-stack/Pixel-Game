@@ -1,0 +1,69 @@
+{
+  "assetId": "player_human_battle_ko",
+  "version": 2,
+  "file": "/assets/sprites/characters/player_human_battle_ko_v002.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "columns": 4,
+  "rows": 1,
+  "frameCount": 4,
+  "origin": [
+    0.5,
+    1
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-v002 + exact appearance keys",
+  "animations": [
+    {
+      "name": "ko",
+      "frames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "fps": 8,
+      "loop": false
+    }
+  ],
+  "groundOffset": 4,
+  "groundPoint": [
+    32,
+    60
+  ],
+  "hitPoint": [
+    32,
+    16
+  ],
+  "castPoint": [
+    50,
+    30
+  ],
+  "allowedFlip": {
+    "x": true,
+    "y": false
+  },
+  "facing": "right",
+  "shadowAsset": "shadow_small",
+  "artId": "art:human",
+  "contentGroup": "players",
+  "elementRendering": {
+    "mode": "external-vfx",
+    "allowedElements": []
+  },
+  "sourceAtlas": "art/player-layers/source",
+  "holdLastFrame": true,
+  "padding": 0,
+  "spacing": 0,
+  "headOffset": [
+    0,
+    0
+  ],
+  "layer": "body",
+  "recolorParts": [
+    "skin",
+    "trim"
+  ],
+  "headRig": "human-v002-proof"
+}

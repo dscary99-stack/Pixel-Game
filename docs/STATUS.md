@@ -1,5 +1,13 @@
 # สถานะงาน — Phase A + Battle settlement + Phase B (walking slice) + Phase C แรก (encounter) + Phase D แรก (ตัวละคร + อุปกรณ์ + Sigil/เหรียญ + EXP/เลเวล + Auto Hunt + การเติบโตคู่ใจ/Rebirth/ปาร์ตี้ + เลเวลสกิล/Bond + Rebirth variant + ระบบสถานะ + หอคอยรายสัปดาห์)
 
+## ตัวละครแบบซ้อนชั้น — Codex proof 01 (2 พ.ย. 2026)
+
+`codex/player-layers` จาก `682d3c0`: ส่ง human สีkey v002 + hair01 back/front และ face01 v001 ครบ14คลิปต่อชั้น รวม56 PNG /240 frame slots พร้อมmetadata/index; origin[0.5,1], groundOffset4, headOffset[0,0], ท่ายิงธนูแยกครบทุกชั้น และหน้าupโปร่งใส ฐานหัวโล้นไม่มีผม/หน้าเก่า รักษาท่าแขนขาและชั้นอาวุธเดิม สีkeyตรง §12 โดยไม่เปลี่ยนpaletteเดิม
+
+Native QA ผ่าน: alpha0/255, สีkeyตามชั้นและsemantic mask, หน้าอยู่ภายในหัว, ขอบcanvas, grid/index/timing/hitFrame/KO hold; `npm run check` ผ่าน มีproofไฟต์/โลก4ทิศ1×/2×, GIFและตารางผิว6×ผม10ที่ [preview](../art/player-layers/preview.html) และ [README](../art/player-layers/README.md) ตำแหน่งหัวรายเฟรมสำหรับเผ่าถัดไปอยู่ `art/player-layers/source/head-rig.json` ไม่แก้apps/*/srcหรือpackages ไม่merge/deploy
+
+รอผู้ใช้ดูproofตามลำดับส่งที่กำหนด ยังไม่เริ่มผม02–08, หน้า02–06 และฐานอีก7เผ่า; ไม่ถือว่าการผ่านQAเป็นการอนุมัติสไตล์แทนผู้ใช้
+
 ## ตัวละครแบบซ้อนชั้น: โครงก่อนภาพ — Claude (1 พ.ย. 2026)
 
 นัทถามว่าควรทำ asset ตัวละครแยกไหม (เลือกผม หน้า เผ่า ธาตุ) แล้วสั่ง "ร่างโครงก่อน ค่อยสร้างภาพ":

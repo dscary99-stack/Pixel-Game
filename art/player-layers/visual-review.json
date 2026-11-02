@@ -1,0 +1,20 @@
+{
+  "date": "2026-11-02",
+  "scope": "human v002, hair01 back/front, face01: 14 clips each",
+  "status": "proof_ready_for_user_review",
+  "nativeSizesInspected": [64],
+  "previewScales": [1, 2, 3],
+  "backgrounds": ["#14121c", "#d7cec5"],
+  "observations": [
+    "Bald base has no painted eyes, mouth or hair. Skin and scarf key masks are separate.",
+    "All head components share frame attachment and rotation. KO head was shifted toward the torso to close a visible gap.",
+    "Hair bangs were shortened upward to reveal face01 eyes. Rounded eye corners replace the first square-eye trial.",
+    "World left/right are separate exported clips; symmetric head components use mirrored view registration while body poses retain the original directional animation.",
+    "Up-facing face is intentionally transparent. Front cap covers the opaque bald skull in the renderer's fixed draw order.",
+    "60 skin/hair combinations preserve the outfit's gold and purple material colours; reserved keys are excluded from ordinary palette mapping."
+  ],
+  "runtimeCodeChanged": false,
+  "runtimeInteractionTested": false,
+  "npmRunCheck": "passed",
+  "remainingAfterUserApproval": ["hair02-08", "face02-06", "seven non-human race bases"]
+}
