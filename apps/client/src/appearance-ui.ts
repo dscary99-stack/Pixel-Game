@@ -127,9 +127,18 @@ export function appearancePicker(parent: HTMLElement, look: () => { raceId: stri
     });
     side.append(box);
   };
-  group("ทรงผม", HAIR_STYLES, "hair");
+  // Only styles Codex has drawn (art comes a few at a time, ART_HANDOFF §12); none drawn yet = all.
+  const drawn = (list: readonly AppearancePart[], key: (n: string) => string[]) => {
+    const have = list.filter((p) => key(p.id.split(":")[1]!).some((k) => assetMeta(k) !== undefined));
+    return have.length > 0 ? have : list;
+  };
+  const hairs = drawn(HAIR_STYLES, (n) => [`hair_${n}_front_battle_idle`, `hair_${n}_back_battle_idle`]);
+  const faces = drawn(FACES, (n) => [`face_${n}_battle_idle`]);
+  if (!hairs.some((p) => p.id === picked.hair)) picked.hair = hairs[0]!.id as Appearance["hair"];
+  if (!faces.some((p) => p.id === picked.face)) picked.face = faces[0]!.id as Appearance["face"];
+  group("ทรงผม", hairs, "hair");
   group("สีผม", HAIR_COLORS, "hairColor");
-  group("หน้า", FACES, "face");
+  group("หน้า", faces, "face");
   group("สีผิว", SKIN_TONES, "skin");
   group("สีตา", EYE_COLORS, "eye");
   void refresh().then(draw);
