@@ -617,3 +617,14 @@ O02–O04 นัทให้ Claude คิดเอง (3 ต.ค. 2026) ย้�
 ## ต่อชุดภาพ cute rebuild v002 — Claude, 1 พ.ย. 2026
 
 รวม `codex/ui-kit-cute-rebuild` (c9abf03, สร้างจาก 73d808e จึงไม่มีโค้ดต่อเกมของ 645c595; merge แล้วโค้ดยังอยู่ครบ). ไฟล์ภาพเป็น `_v002` ทั้ง 364 ชิ้น ชื่อ asset/ขนาด/แอนิเมชันเดิม: ตัวโหลดอ่าน metadata อยู่แล้วจึงใช้ v002 ทันที; แก้ `uiAssetUrl` ให้อ่าน URL จาก metadata (เดิม hardcode v001) และสร้าง CSS ของหน้าต่าง HTML ตอนใช้ครั้งแรก (หลังอ่าน metadata); หน้าสรุปผลไฟต์ใส่ไอคอนไอเทมในช่องของที่ได้. ตรวจ: `npm run check` ผ่าน; ภาพหน้าจอ ไฟต์ เมนู ร้าน สรุปผล เข้าสู่ระบบ ไม่มี error
+
+
+## Player layers — Codex rebuild v003 (3 พ.ย. 2026)
+
+- เปลี่ยน proof ที่ไม่ผ่านเป็น human v003 + ผม01–04 (back/front) + หน้า01–03 ครบ 14 คลิปต่อชั้น รวม 168 sheets / 720 frame slots
+- หัว/ผม/หน้าใช้ภาพ pose แยกจาก image generation แล้วจัดลง grid และสี key; เก็บ source, prompts, registration และ native cels ใน art/player-layers/rebuild-v003/
+- GIF ซ้อนชั้นครบทุกคู่ผม/หน้า ที่ 1× และ 4× รวม 336 ไฟล์ พร้อมตาราง 6 สีผิว × 10 สีผม
+- QA ขนาด, alpha, palette, key ownership รายชั้น, animation timing, ขอบภาพ, manifest ผ่าน; visual approval ยังเป็น needs_review
+- ผมด้านที่เห็นจากทิศ up อยู่ front render layer เพื่อไม่ให้ตัวฐานบังผมที่คลุมหลัง; metadata อธิบาย back layer โปร่งใส
+- npm run check ผ่าน (typecheck, 88 test files / 802 tests, client build, Worker dry-run); ไม่แก้ apps/*/src หรือ packages และไม่ merge
+- ยังไม่ทำผม05–08 หน้า04–06 และฐานอีก7เผ่า จนกว่าชุดนี้ผ่าน visual proof

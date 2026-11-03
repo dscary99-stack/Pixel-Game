@@ -1,0 +1,59 @@
+{
+  "assetId": "face_01_battle_hurt",
+  "version": 2,
+  "file": "/assets/sprites/characters/face_01_battle_hurt_v002.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "columns": 2,
+  "rows": 1,
+  "frameCount": 2,
+  "origin": [
+    0.5,
+    1
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-v002 + exact appearance keys",
+  "animations": [
+    {
+      "name": "hurt",
+      "frames": [
+        0,
+        1
+      ],
+      "fps": 8,
+      "loop": false
+    }
+  ],
+  "groundOffset": 4,
+  "groundPoint": [
+    32,
+    60
+  ],
+  "hitPoint": [
+    32,
+    16
+  ],
+  "castPoint": [
+    50,
+    30
+  ],
+  "allowedFlip": {
+    "x": true,
+    "y": false
+  },
+  "facing": "right",
+  "sourceAtlas": "art/player-layers/rebuild-v003/native-cels.zip",
+  "headOffset": [
+    0,
+    0
+  ],
+  "padding": 0,
+  "spacing": 0,
+  "layer": "face",
+  "headRig": "art/player-layers/source/head-rig.json",
+  "recolorParts": [
+    "skin",
+    "eye"
+  ]
+}

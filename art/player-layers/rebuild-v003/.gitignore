@@ -1,0 +1,8 @@
+__pycache__/
+staging/
+cels/
+source-cache/
+cel-drawings.json
+prepare_sources.py
+edge-review.png
+skin-mask-review.png

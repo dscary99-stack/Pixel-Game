@@ -1,0 +1,366 @@
+[
+  {
+    "sourceBox": [
+      13,
+      39,
+      224,
+      243
+    ],
+    "sourceScale": 1,
+    "translation": [
+      10,
+      -3
+    ]
+  },
+  {
+    "sourceBox": [
+      239,
+      39,
+      449,
+      244
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -216,
+      -4
+    ]
+  },
+  {
+    "sourceBox": [
+      468,
+      39,
+      674,
+      244
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -443,
+      -4
+    ]
+  },
+  {
+    "sourceBox": [
+      688,
+      39,
+      898,
+      244
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -665,
+      -4
+    ]
+  },
+  {
+    "sourceBox": [
+      917,
+      35,
+      1143,
+      244
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -902,
+      -4
+    ]
+  },
+  {
+    "sourceBox": [
+      1154,
+      38,
+      1366,
+      244
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -1132,
+      -4
+    ]
+  },
+  {
+    "sourceBox": [
+      10,
+      268,
+      222,
+      472
+    ],
+    "sourceScale": 1,
+    "translation": [
+      12,
+      -232
+    ]
+  },
+  {
+    "sourceBox": [
+      242,
+      269,
+      458,
+      476
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -222,
+      -236
+    ]
+  },
+  {
+    "sourceBox": [
+      471,
+      272,
+      687,
+      474
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -451,
+      -234
+    ]
+  },
+  {
+    "sourceBox": [
+      688,
+      272,
+      915,
+      476
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -673,
+      -236
+    ]
+  },
+  {
+    "sourceBox": [
+      918,
+      273,
+      1139,
+      473
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -900,
+      -233
+    ]
+  },
+  {
+    "sourceBox": [
+      1151,
+      269,
+      1362,
+      474
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -1128,
+      -234
+    ]
+  },
+  {
+    "sourceBox": [
+      10,
+      496,
+      226,
+      707
+    ],
+    "sourceScale": 1,
+    "translation": [
+      10,
+      -467
+    ]
+  },
+  {
+    "sourceBox": [
+      239,
+      496,
+      454,
+      707
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -218,
+      -467
+    ]
+  },
+  {
+    "sourceBox": [
+      460,
+      498,
+      680,
+      707
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -442,
+      -467
+    ]
+  },
+  {
+    "sourceBox": [
+      688,
+      498,
+      908,
+      707
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -670,
+      -467
+    ]
+  },
+  {
+    "sourceBox": [
+      917,
+      502,
+      1124,
+      708
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -892,
+      -468
+    ]
+  },
+  {
+    "sourceBox": [
+      1146,
+      498,
+      1362,
+      708
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -1126,
+      -468
+    ]
+  },
+  {
+    "sourceBox": [
+      11,
+      728,
+      226,
+      932
+    ],
+    "sourceScale": 1,
+    "translation": [
+      10,
+      -692
+    ]
+  },
+  {
+    "sourceBox": [
+      242,
+      731,
+      453,
+      931
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -219,
+      -691
+    ]
+  },
+  {
+    "sourceBox": [
+      464,
+      729,
+      673,
+      933
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -440,
+      -693
+    ]
+  },
+  {
+    "sourceBox": [
+      693,
+      728,
+      911,
+      933
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -674,
+      -693
+    ]
+  },
+  {
+    "sourceBox": [
+      917,
+      731,
+      1125,
+      934
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -893,
+      -694
+    ]
+  },
+  {
+    "sourceBox": [
+      1148,
+      729,
+      1361,
+      936
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -1126,
+      -696
+    ]
+  },
+  {
+    "sourceBox": [
+      18,
+      941,
+      226,
+      1132
+    ],
+    "sourceScale": 1,
+    "translation": [
+      6,
+      -892
+    ]
+  },
+  {
+    "sourceBox": [
+      256,
+      941,
+      458,
+      1131
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -229,
+      -891
+    ]
+  },
+  {
+    "sourceBox": [
+      493,
+      958,
+      685,
+      1128
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -461,
+      -888
+    ]
+  },
+  {
+    "sourceBox": [
+      717,
+      960,
+      916,
+      1128
+    ],
+    "sourceScale": 1,
+    "translation": [
+      -688,
+      -888
+    ]
+  }
+]

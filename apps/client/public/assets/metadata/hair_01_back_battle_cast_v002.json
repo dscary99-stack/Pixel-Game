@@ -1,0 +1,69 @@
+{
+  "assetId": "hair_01_back_battle_cast",
+  "version": 2,
+  "file": "/assets/sprites/characters/hair_01_back_battle_cast_v002.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "columns": 6,
+  "rows": 1,
+  "frameCount": 6,
+  "origin": [
+    0.5,
+    1
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-v002 + exact appearance keys",
+  "animations": [
+    {
+      "name": "cast",
+      "frames": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "fps": 10,
+      "loop": false
+    }
+  ],
+  "groundOffset": 4,
+  "groundPoint": [
+    32,
+    60
+  ],
+  "hitPoint": [
+    32,
+    16
+  ],
+  "castPoint": [
+    50,
+    30
+  ],
+  "allowedFlip": {
+    "x": true,
+    "y": false
+  },
+  "facing": "right",
+  "sourceAtlas": "art/player-layers/rebuild-v003/native-cels.zip",
+  "castFrame": 3,
+  "events": [
+    {
+      "frame": 3,
+      "name": "cast"
+    }
+  ],
+  "headOffset": [
+    0,
+    0
+  ],
+  "padding": 0,
+  "spacing": 0,
+  "layer": "hair_back",
+  "headRig": "art/player-layers/source/head-rig.json",
+  "recolorParts": [
+    "hair"
+  ]
+}

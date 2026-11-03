@@ -1,0 +1,52 @@
+{
+  "assetId": "hair_02_front_world_idle_left",
+  "version": 1,
+  "file": "/assets/sprites/characters/hair_02_front_world_idle_left_v001.png",
+  "frameWidth": 64,
+  "frameHeight": 64,
+  "columns": 4,
+  "rows": 1,
+  "frameCount": 4,
+  "origin": [
+    0.5,
+    1
+  ],
+  "status": "grid_ready",
+  "staticFrame": 0,
+  "palette": "cute-v002 + exact appearance keys",
+  "animations": [
+    {
+      "name": "idle",
+      "frames": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "fps": 6,
+      "loop": true
+    }
+  ],
+  "groundOffset": 4,
+  "groundPoint": [
+    32,
+    60
+  ],
+  "allowedFlip": {
+    "x": false,
+    "y": false
+  },
+  "facing": "left",
+  "sourceAtlas": "art/player-layers/rebuild-v003/native-cels.zip",
+  "headOffset": [
+    0,
+    0
+  ],
+  "padding": 0,
+  "spacing": 0,
+  "layer": "hair_front",
+  "headRig": "art/player-layers/source/head-rig.json",
+  "recolorParts": [
+    "hair"
+  ]
+}

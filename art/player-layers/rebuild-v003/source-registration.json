@@ -1,0 +1,6724 @@
+{
+  "scales": {
+    "battle1": 0.15,
+    "battle2": 0.1413157894736842,
+    "battle3": 0.22008196721311474,
+    "battle4": 0.22,
+    "battle-face2": 0.15,
+    "battle-face3": 0.1475274725274725,
+    "battle-bald": 0.15,
+    "world1": 0.24,
+    "world2": 0.2007272727272727,
+    "world3": 0.21436893203883495,
+    "world4": 0.20444444444444443,
+    "world-face2": 0.24533333333333332,
+    "world-face3": 0.21230769230769228,
+    "world-bald": 0.2
+  },
+  "frames": {
+    "battle_attack_physical_ranged_0": {
+      "sourceIndex": 12,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          21,
+          5
+        ],
+        "sourceSize": [
+          32,
+          32
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          26,
+          8
+        ],
+        "sourceSize": [
+          26,
+          28
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            21,
+            5
+          ],
+          "sourceSize": [
+            32,
+            32
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            23,
+            7
+          ],
+          "sourceSize": [
+            30,
+            30
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            14,
+            4
+          ],
+          "sourceSize": [
+            38,
+            32
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            14,
+            7
+          ],
+          "sourceSize": [
+            38,
+            33
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            21,
+            5
+          ],
+          "sourceSize": [
+            32,
+            32
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            21,
+            6
+          ],
+          "sourceSize": [
+            32,
+            32
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            21,
+            5
+          ],
+          "sourceSize": [
+            32,
+            32
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_attack_physical_ranged_1": {
+      "sourceIndex": 13,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          20,
+          5
+        ],
+        "sourceSize": [
+          32,
+          32
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          24,
+          9
+        ],
+        "sourceSize": [
+          25,
+          28
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            20,
+            5
+          ],
+          "sourceSize": [
+            32,
+            32
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            20,
+            8
+          ],
+          "sourceSize": [
+            31,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            13,
+            4
+          ],
+          "sourceSize": [
+            38,
+            32
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            13,
+            6
+          ],
+          "sourceSize": [
+            39,
+            33
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            20,
+            5
+          ],
+          "sourceSize": [
+            32,
+            32
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            20,
+            5
+          ],
+          "sourceSize": [
+            32,
+            32
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            20,
+            5
+          ],
+          "sourceSize": [
+            32,
+            32
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_attack_physical_ranged_2": {
+      "sourceIndex": 14,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          16,
+          6
+        ],
+        "sourceSize": [
+          33,
+          31
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          20,
+          9
+        ],
+        "sourceSize": [
+          26,
+          28
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            16,
+            6
+          ],
+          "sourceSize": [
+            33,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            18,
+            7
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            9,
+            4
+          ],
+          "sourceSize": [
+            39,
+            33
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            7,
+            7
+          ],
+          "sourceSize": [
+            42,
+            33
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            16,
+            6
+          ],
+          "sourceSize": [
+            33,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            16,
+            6
+          ],
+          "sourceSize": [
+            33,
+            32
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            17,
+            6
+          ],
+          "sourceSize": [
+            32,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_attack_physical_ranged_3": {
+      "sourceIndex": 15,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          20,
+          4
+        ],
+        "sourceSize": [
+          33,
+          31
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          26,
+          6
+        ],
+        "sourceSize": [
+          26,
+          28
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            20,
+            4
+          ],
+          "sourceSize": [
+            33,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            22,
+            6
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            13,
+            2
+          ],
+          "sourceSize": [
+            39,
+            32
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            12,
+            4
+          ],
+          "sourceSize": [
+            40,
+            33
+          ],
+          "alignment": "eye highlights"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            20,
+            4
+          ],
+          "sourceSize": [
+            33,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            20,
+            3
+          ],
+          "sourceSize": [
+            33,
+            32
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            21,
+            5
+          ],
+          "sourceSize": [
+            33,
+            31
+          ],
+          "alignment": "eye highlights"
+        }
+      }
+    },
+    "battle_attack_physical_ranged_4": {
+      "sourceIndex": 16,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          16,
+          5
+        ],
+        "sourceSize": [
+          31,
+          31
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          20,
+          8
+        ],
+        "sourceSize": [
+          28,
+          28
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            16,
+            5
+          ],
+          "sourceSize": [
+            31,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            16,
+            7
+          ],
+          "sourceSize": [
+            30,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            8,
+            7
+          ],
+          "sourceSize": [
+            38,
+            31
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            10,
+            6
+          ],
+          "sourceSize": [
+            38,
+            33
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            16,
+            5
+          ],
+          "sourceSize": [
+            31,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            16,
+            7
+          ],
+          "sourceSize": [
+            31,
+            31
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            16,
+            5
+          ],
+          "sourceSize": [
+            31,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_attack_physical_ranged_5": {
+      "sourceIndex": 17,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          18,
+          3
+        ],
+        "sourceSize": [
+          32,
+          32
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          24,
+          6
+        ],
+        "sourceSize": [
+          25,
+          28
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            18,
+            3
+          ],
+          "sourceSize": [
+            32,
+            32
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            20,
+            5
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            10,
+            3
+          ],
+          "sourceSize": [
+            38,
+            31
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            8,
+            5
+          ],
+          "sourceSize": [
+            41,
+            33
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            18,
+            3
+          ],
+          "sourceSize": [
+            32,
+            32
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            19,
+            3
+          ],
+          "sourceSize": [
+            32,
+            32
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            19,
+            4
+          ],
+          "sourceSize": [
+            32,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_attack_0": {
+      "sourceIndex": 6,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          23,
+          7
+        ],
+        "sourceSize": [
+          32,
+          31
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          27,
+          11
+        ],
+        "sourceSize": [
+          26,
+          28
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            23,
+            7
+          ],
+          "sourceSize": [
+            32,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            24,
+            9
+          ],
+          "sourceSize": [
+            30,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            13,
+            6
+          ],
+          "sourceSize": [
+            40,
+            31
+          ],
+          "alignment": "eye highlights"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            16,
+            8
+          ],
+          "sourceSize": [
+            38,
+            33
+          ],
+          "alignment": "eye highlights"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            23,
+            7
+          ],
+          "sourceSize": [
+            32,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            23,
+            8
+          ],
+          "sourceSize": [
+            32,
+            31
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            23,
+            8
+          ],
+          "sourceSize": [
+            32,
+            30
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_attack_1": {
+      "sourceIndex": 7,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          24,
+          10
+        ],
+        "sourceSize": [
+          32,
+          31
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          29,
+          13
+        ],
+        "sourceSize": [
+          25,
+          28
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            24,
+            10
+          ],
+          "sourceSize": [
+            32,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            25,
+            12
+          ],
+          "sourceSize": [
+            31,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            13,
+            9
+          ],
+          "sourceSize": [
+            42,
+            32
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            15,
+            12
+          ],
+          "sourceSize": [
+            40,
+            32
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            24,
+            10
+          ],
+          "sourceSize": [
+            32,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            23,
+            10
+          ],
+          "sourceSize": [
+            33,
+            32
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            25,
+            10
+          ],
+          "sourceSize": [
+            32,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_attack_2": {
+      "sourceIndex": 8,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          22,
+          7
+        ],
+        "sourceSize": [
+          32,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          27,
+          9
+        ],
+        "sourceSize": [
+          25,
+          28
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            22,
+            7
+          ],
+          "sourceSize": [
+            32,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            24,
+            8
+          ],
+          "sourceSize": [
+            31,
+            29
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            12,
+            6
+          ],
+          "sourceSize": [
+            42,
+            31
+          ],
+          "alignment": "eye highlights"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            14,
+            8
+          ],
+          "sourceSize": [
+            40,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            22,
+            7
+          ],
+          "sourceSize": [
+            32,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            22,
+            7
+          ],
+          "sourceSize": [
+            32,
+            31
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            22,
+            7
+          ],
+          "sourceSize": [
+            32,
+            30
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_attack_3": {
+      "sourceIndex": 9,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          21,
+          7
+        ],
+        "sourceSize": [
+          34,
+          31
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          26,
+          10
+        ],
+        "sourceSize": [
+          26,
+          28
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            21,
+            7
+          ],
+          "sourceSize": [
+            34,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            23,
+            9
+          ],
+          "sourceSize": [
+            31,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            12,
+            9
+          ],
+          "sourceSize": [
+            42,
+            29
+          ],
+          "alignment": "eye highlights"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            14,
+            8
+          ],
+          "sourceSize": [
+            40,
+            32
+          ],
+          "alignment": "eye highlights"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            21,
+            7
+          ],
+          "sourceSize": [
+            34,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            21,
+            8
+          ],
+          "sourceSize": [
+            34,
+            31
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            21,
+            7
+          ],
+          "sourceSize": [
+            34,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_attack_4": {
+      "sourceIndex": 10,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          22,
+          9
+        ],
+        "sourceSize": [
+          33,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          22,
+          11
+        ],
+        "sourceSize": [
+          26,
+          28
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            22,
+            9
+          ],
+          "sourceSize": [
+            33,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            22,
+            11
+          ],
+          "sourceSize": [
+            30,
+            28
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            24,
+            7
+          ],
+          "sourceSize": [
+            38,
+            31
+          ],
+          "alignment": "eye highlights"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            24,
+            10
+          ],
+          "sourceSize": [
+            39,
+            32
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            22,
+            9
+          ],
+          "sourceSize": [
+            33,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            22,
+            9
+          ],
+          "sourceSize": [
+            33,
+            30
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            22,
+            10
+          ],
+          "sourceSize": [
+            33,
+            30
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_attack_5": {
+      "sourceIndex": 11,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          18,
+          7
+        ],
+        "sourceSize": [
+          32,
+          31
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          22,
+          10
+        ],
+        "sourceSize": [
+          26,
+          28
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            18,
+            7
+          ],
+          "sourceSize": [
+            32,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            19,
+            9
+          ],
+          "sourceSize": [
+            30,
+            29
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            9,
+            6
+          ],
+          "sourceSize": [
+            40,
+            31
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            12,
+            8
+          ],
+          "sourceSize": [
+            37,
+            32
+          ],
+          "alignment": "eye highlights"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            18,
+            7
+          ],
+          "sourceSize": [
+            32,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            18,
+            7
+          ],
+          "sourceSize": [
+            32,
+            31
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            19,
+            7
+          ],
+          "sourceSize": [
+            31,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_cast_0": {
+      "sourceIndex": 18,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          22,
+          6
+        ],
+        "sourceSize": [
+          32,
+          31
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          26,
+          9
+        ],
+        "sourceSize": [
+          26,
+          28
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            22,
+            6
+          ],
+          "sourceSize": [
+            32,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            23,
+            7
+          ],
+          "sourceSize": [
+            30,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            15,
+            5
+          ],
+          "sourceSize": [
+            37,
+            31
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            15,
+            6
+          ],
+          "sourceSize": [
+            39,
+            33
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            22,
+            6
+          ],
+          "sourceSize": [
+            32,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            21,
+            6
+          ],
+          "sourceSize": [
+            33,
+            31
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            23,
+            7
+          ],
+          "sourceSize": [
+            32,
+            30
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_cast_1": {
+      "sourceIndex": 19,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          22,
+          8
+        ],
+        "sourceSize": [
+          32,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          23,
+          10
+        ],
+        "sourceSize": [
+          27,
+          28
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            22,
+            8
+          ],
+          "sourceSize": [
+            32,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            22,
+            10
+          ],
+          "sourceSize": [
+            30,
+            28
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            13,
+            6
+          ],
+          "sourceSize": [
+            41,
+            31
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            12,
+            9
+          ],
+          "sourceSize": [
+            40,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            22,
+            8
+          ],
+          "sourceSize": [
+            32,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            22,
+            8
+          ],
+          "sourceSize": [
+            32,
+            30
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            23,
+            8
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_cast_2": {
+      "sourceIndex": 20,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          14,
+          7
+        ],
+        "sourceSize": [
+          31,
+          31
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          18,
+          10
+        ],
+        "sourceSize": [
+          27,
+          28
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            14,
+            7
+          ],
+          "sourceSize": [
+            31,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            15,
+            8
+          ],
+          "sourceSize": [
+            29,
+            28
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            6,
+            6
+          ],
+          "sourceSize": [
+            39,
+            33
+          ],
+          "alignment": "eye highlights"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            7,
+            6
+          ],
+          "sourceSize": [
+            40,
+            33
+          ],
+          "alignment": "eye highlights"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            14,
+            7
+          ],
+          "sourceSize": [
+            31,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            14,
+            8
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            14,
+            8
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "eye highlights"
+        }
+      }
+    },
+    "battle_cast_3": {
+      "sourceIndex": 21,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          16,
+          8
+        ],
+        "sourceSize": [
+          33,
+          31
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          20,
+          11
+        ],
+        "sourceSize": [
+          26,
+          28
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            16,
+            8
+          ],
+          "sourceSize": [
+            33,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            17,
+            10
+          ],
+          "sourceSize": [
+            31,
+            28
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            7,
+            8
+          ],
+          "sourceSize": [
+            41,
+            30
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            6,
+            8
+          ],
+          "sourceSize": [
+            42,
+            32
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            16,
+            8
+          ],
+          "sourceSize": [
+            33,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            16,
+            8
+          ],
+          "sourceSize": [
+            33,
+            31
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            17,
+            8
+          ],
+          "sourceSize": [
+            32,
+            30
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_cast_4": {
+      "sourceIndex": 22,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          18,
+          8
+        ],
+        "sourceSize": [
+          31,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          20,
+          10
+        ],
+        "sourceSize": [
+          28,
+          28
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            18,
+            8
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            18,
+            10
+          ],
+          "sourceSize": [
+            30,
+            28
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            13,
+            8
+          ],
+          "sourceSize": [
+            36,
+            33
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            14,
+            8
+          ],
+          "sourceSize": [
+            35,
+            33
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            18,
+            8
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            18,
+            8
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            18,
+            8
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_cast_5": {
+      "sourceIndex": 23,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          19,
+          6
+        ],
+        "sourceSize": [
+          32,
+          31
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          24,
+          10
+        ],
+        "sourceSize": [
+          26,
+          28
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            19,
+            6
+          ],
+          "sourceSize": [
+            32,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            20,
+            7
+          ],
+          "sourceSize": [
+            30,
+            29
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            10,
+            5
+          ],
+          "sourceSize": [
+            39,
+            32
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            10,
+            6
+          ],
+          "sourceSize": [
+            39,
+            32
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            19,
+            6
+          ],
+          "sourceSize": [
+            32,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            18,
+            6
+          ],
+          "sourceSize": [
+            32,
+            31
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            20,
+            6
+          ],
+          "sourceSize": [
+            31,
+            31
+          ],
+          "alignment": "eye highlights"
+        }
+      }
+    },
+    "battle_hurt_0": {
+      "sourceIndex": 4,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          25,
+          8
+        ],
+        "sourceSize": [
+          34,
+          31
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          28,
+          13
+        ],
+        "sourceSize": [
+          28,
+          27
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            25,
+            8
+          ],
+          "sourceSize": [
+            34,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            27,
+            10
+          ],
+          "sourceSize": [
+            32,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            12,
+            9
+          ],
+          "sourceSize": [
+            45,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            20,
+            9
+          ],
+          "sourceSize": [
+            39,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            25,
+            8
+          ],
+          "sourceSize": [
+            34,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            25,
+            7
+          ],
+          "sourceSize": [
+            34,
+            32
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            25,
+            8
+          ],
+          "sourceSize": [
+            33,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_hurt_1": {
+      "sourceIndex": 5,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          22,
+          7
+        ],
+        "sourceSize": [
+          32,
+          31
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          26,
+          12
+        ],
+        "sourceSize": [
+          26,
+          27
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            22,
+            7
+          ],
+          "sourceSize": [
+            32,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            24,
+            9
+          ],
+          "sourceSize": [
+            29,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            13,
+            9
+          ],
+          "sourceSize": [
+            39,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            14,
+            9
+          ],
+          "sourceSize": [
+            39,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            22,
+            7
+          ],
+          "sourceSize": [
+            32,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            22,
+            7
+          ],
+          "sourceSize": [
+            32,
+            31
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            22,
+            7
+          ],
+          "sourceSize": [
+            31,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_idle_0": {
+      "sourceIndex": 0,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          25,
+          7
+        ],
+        "sourceSize": [
+          32,
+          31
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          28,
+          12
+        ],
+        "sourceSize": [
+          26,
+          27
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            25,
+            7
+          ],
+          "sourceSize": [
+            32,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            26,
+            9
+          ],
+          "sourceSize": [
+            29,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            17,
+            8
+          ],
+          "sourceSize": [
+            36,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            19,
+            10
+          ],
+          "sourceSize": [
+            35,
+            31
+          ],
+          "alignment": "eye highlights"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            25,
+            7
+          ],
+          "sourceSize": [
+            32,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            25,
+            7
+          ],
+          "sourceSize": [
+            32,
+            31
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            25,
+            7
+          ],
+          "sourceSize": [
+            32,
+            31
+          ],
+          "alignment": "eye highlights"
+        }
+      }
+    },
+    "battle_idle_1": {
+      "sourceIndex": 1,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          24,
+          7
+        ],
+        "sourceSize": [
+          32,
+          31
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          28,
+          12
+        ],
+        "sourceSize": [
+          26,
+          27
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            24,
+            7
+          ],
+          "sourceSize": [
+            32,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            25,
+            9
+          ],
+          "sourceSize": [
+            30,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            17,
+            9
+          ],
+          "sourceSize": [
+            36,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            17,
+            9
+          ],
+          "sourceSize": [
+            37,
+            30
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            24,
+            7
+          ],
+          "sourceSize": [
+            32,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            24,
+            7
+          ],
+          "sourceSize": [
+            32,
+            31
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            24,
+            6
+          ],
+          "sourceSize": [
+            32,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_idle_2": {
+      "sourceIndex": 2,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          22,
+          7
+        ],
+        "sourceSize": [
+          31,
+          31
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          24,
+          12
+        ],
+        "sourceSize": [
+          26,
+          27
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            22,
+            7
+          ],
+          "sourceSize": [
+            31,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            22,
+            9
+          ],
+          "sourceSize": [
+            30,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            14,
+            8
+          ],
+          "sourceSize": [
+            38,
+            30
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            15,
+            9
+          ],
+          "sourceSize": [
+            36,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            22,
+            7
+          ],
+          "sourceSize": [
+            31,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            22,
+            7
+          ],
+          "sourceSize": [
+            31,
+            31
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            22,
+            7
+          ],
+          "sourceSize": [
+            31,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_idle_3": {
+      "sourceIndex": 3,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          18,
+          7
+        ],
+        "sourceSize": [
+          32,
+          31
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          22,
+          12
+        ],
+        "sourceSize": [
+          26,
+          27
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            18,
+            7
+          ],
+          "sourceSize": [
+            32,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            20,
+            8
+          ],
+          "sourceSize": [
+            30,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            11,
+            10
+          ],
+          "sourceSize": [
+            38,
+            29
+          ],
+          "alignment": "eye highlights"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            12,
+            9
+          ],
+          "sourceSize": [
+            38,
+            31
+          ],
+          "alignment": "eye highlights"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            18,
+            7
+          ],
+          "sourceSize": [
+            32,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            19,
+            7
+          ],
+          "sourceSize": [
+            32,
+            31
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            18,
+            8
+          ],
+          "sourceSize": [
+            32,
+            31
+          ],
+          "alignment": "eye highlights"
+        }
+      }
+    },
+    "battle_ko_0": {
+      "sourceIndex": 24,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          28,
+          10
+        ],
+        "sourceSize": [
+          31,
+          29
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          31,
+          14
+        ],
+        "sourceSize": [
+          25,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            28,
+            10
+          ],
+          "sourceSize": [
+            31,
+            29
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            29,
+            12
+          ],
+          "sourceSize": [
+            29,
+            26
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            18,
+            9
+          ],
+          "sourceSize": [
+            39,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            17,
+            10
+          ],
+          "sourceSize": [
+            42,
+            28
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            28,
+            10
+          ],
+          "sourceSize": [
+            31,
+            29
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            28,
+            10
+          ],
+          "sourceSize": [
+            31,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            28,
+            10
+          ],
+          "sourceSize": [
+            31,
+            29
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_ko_1": {
+      "sourceIndex": 25,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          30,
+          20
+        ],
+        "sourceSize": [
+          30,
+          28
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          34,
+          23
+        ],
+        "sourceSize": [
+          26,
+          25
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            30,
+            20
+          ],
+          "sourceSize": [
+            30,
+            28
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            30,
+            22
+          ],
+          "sourceSize": [
+            30,
+            26
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            20,
+            19
+          ],
+          "sourceSize": [
+            41,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            18,
+            21
+          ],
+          "sourceSize": [
+            43,
+            27
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            30,
+            20
+          ],
+          "sourceSize": [
+            30,
+            28
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            30,
+            20
+          ],
+          "sourceSize": [
+            30,
+            28
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            30,
+            20
+          ],
+          "sourceSize": [
+            30,
+            28
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_ko_2": {
+      "sourceIndex": 26,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          26,
+          29
+        ],
+        "sourceSize": [
+          29,
+          26
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          24,
+          31
+        ],
+        "sourceSize": [
+          27,
+          24
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            26,
+            29
+          ],
+          "sourceSize": [
+            29,
+            26
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            26,
+            31
+          ],
+          "sourceSize": [
+            27,
+            24
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            17,
+            27
+          ],
+          "sourceSize": [
+            43,
+            28
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            12,
+            28
+          ],
+          "sourceSize": [
+            44,
+            28
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            26,
+            29
+          ],
+          "sourceSize": [
+            29,
+            26
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            26,
+            30
+          ],
+          "sourceSize": [
+            29,
+            26
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            26,
+            29
+          ],
+          "sourceSize": [
+            29,
+            26
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "battle_ko_3": {
+      "sourceIndex": 27,
+      "base": {
+        "scale": 0.15,
+        "translation": [
+          28,
+          31
+        ],
+        "sourceSize": [
+          30,
+          25
+        ]
+      },
+      "bald": {
+        "scale": 0.15,
+        "translation": [
+          22,
+          33
+        ],
+        "sourceSize": [
+          30,
+          23
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            28,
+            31
+          ],
+          "sourceSize": [
+            30,
+            25
+          ]
+        },
+        "2": {
+          "scale": 0.1413157894736842,
+          "translation": [
+            28,
+            33
+          ],
+          "sourceSize": [
+            31,
+            23
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.22008196721311474,
+          "translation": [
+            18,
+            29
+          ],
+          "sourceSize": [
+            44,
+            27
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.22,
+          "translation": [
+            16,
+            29
+          ],
+          "sourceSize": [
+            46,
+            27
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.15,
+          "translation": [
+            28,
+            31
+          ],
+          "sourceSize": [
+            30,
+            25
+          ]
+        },
+        "2": {
+          "scale": 0.15,
+          "translation": [
+            28,
+            31
+          ],
+          "sourceSize": [
+            30,
+            25
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.1475274725274725,
+          "translation": [
+            28,
+            31
+          ],
+          "sourceSize": [
+            29,
+            25
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "world_idle_down_0": {
+      "sourceIndex": 0,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          18,
+          6
+        ],
+        "sourceSize": [
+          30,
+          29
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          20,
+          8
+        ],
+        "sourceSize": [
+          26,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            18,
+            6
+          ],
+          "sourceSize": [
+            30,
+            29
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            20,
+            12
+          ],
+          "sourceSize": [
+            26,
+            24
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            18,
+            3
+          ],
+          "sourceSize": [
+            34,
+            33
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            18,
+            8
+          ],
+          "sourceSize": [
+            31,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            18,
+            6
+          ],
+          "sourceSize": [
+            30,
+            29
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            19,
+            6
+          ],
+          "sourceSize": [
+            30,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            19,
+            6
+          ],
+          "sourceSize": [
+            30,
+            28
+          ],
+          "alignment": "eye highlights"
+        }
+      }
+    },
+    "world_idle_down_1": {
+      "sourceIndex": 1,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          17,
+          5
+        ],
+        "sourceSize": [
+          30,
+          29
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          20,
+          7
+        ],
+        "sourceSize": [
+          26,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            5
+          ],
+          "sourceSize": [
+            30,
+            29
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            18,
+            12
+          ],
+          "sourceSize": [
+            27,
+            24
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            17,
+            2
+          ],
+          "sourceSize": [
+            35,
+            33
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            17,
+            8
+          ],
+          "sourceSize": [
+            31,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            5
+          ],
+          "sourceSize": [
+            30,
+            29
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            18,
+            6
+          ],
+          "sourceSize": [
+            30,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            18,
+            6
+          ],
+          "sourceSize": [
+            30,
+            28
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "world_idle_down_2": {
+      "sourceIndex": 2,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          16,
+          6
+        ],
+        "sourceSize": [
+          30,
+          29
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          18,
+          8
+        ],
+        "sourceSize": [
+          26,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            16,
+            6
+          ],
+          "sourceSize": [
+            30,
+            29
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            16,
+            12
+          ],
+          "sourceSize": [
+            27,
+            24
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            16,
+            3
+          ],
+          "sourceSize": [
+            34,
+            33
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            16,
+            9
+          ],
+          "sourceSize": [
+            31,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            16,
+            6
+          ],
+          "sourceSize": [
+            30,
+            29
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            16,
+            7
+          ],
+          "sourceSize": [
+            30,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            16,
+            7
+          ],
+          "sourceSize": [
+            30,
+            28
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "world_idle_down_3": {
+      "sourceIndex": 3,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          17,
+          5
+        ],
+        "sourceSize": [
+          30,
+          29
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          18,
+          7
+        ],
+        "sourceSize": [
+          26,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            5
+          ],
+          "sourceSize": [
+            30,
+            29
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            18,
+            12
+          ],
+          "sourceSize": [
+            26,
+            24
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            16,
+            3
+          ],
+          "sourceSize": [
+            34,
+            32
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            16,
+            8
+          ],
+          "sourceSize": [
+            31,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            5
+          ],
+          "sourceSize": [
+            30,
+            29
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            17,
+            6
+          ],
+          "sourceSize": [
+            30,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            17,
+            6
+          ],
+          "sourceSize": [
+            30,
+            28
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "world_idle_left_0": {
+      "sourceIndex": 8,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          16,
+          3
+        ],
+        "sourceSize": [
+          32,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          21,
+          6
+        ],
+        "sourceSize": [
+          24,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            16,
+            3
+          ],
+          "sourceSize": [
+            32,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            19,
+            7
+          ],
+          "sourceSize": [
+            28,
+            26
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            18,
+            3
+          ],
+          "sourceSize": [
+            38,
+            31
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            19,
+            6
+          ],
+          "sourceSize": [
+            32,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            16,
+            3
+          ],
+          "sourceSize": [
+            32,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            17,
+            3
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            17,
+            4
+          ],
+          "sourceSize": [
+            32,
+            29
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "world_idle_left_1": {
+      "sourceIndex": 9,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          15,
+          4
+        ],
+        "sourceSize": [
+          31,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          20,
+          8
+        ],
+        "sourceSize": [
+          24,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            15,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            17,
+            8
+          ],
+          "sourceSize": [
+            28,
+            26
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            15,
+            3
+          ],
+          "sourceSize": [
+            39,
+            31
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            18,
+            6
+          ],
+          "sourceSize": [
+            32,
+            32
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            15,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            15,
+            3
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            15,
+            4
+          ],
+          "sourceSize": [
+            32,
+            29
+          ],
+          "alignment": "eye highlights"
+        }
+      }
+    },
+    "world_idle_left_2": {
+      "sourceIndex": 10,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          15,
+          3
+        ],
+        "sourceSize": [
+          31,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          20,
+          6
+        ],
+        "sourceSize": [
+          24,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            15,
+            3
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            17,
+            7
+          ],
+          "sourceSize": [
+            28,
+            26
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            16,
+            2
+          ],
+          "sourceSize": [
+            39,
+            32
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            18,
+            6
+          ],
+          "sourceSize": [
+            33,
+            32
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            15,
+            3
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            15,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            16,
+            5
+          ],
+          "sourceSize": [
+            32,
+            29
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "world_idle_left_3": {
+      "sourceIndex": 11,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          15,
+          3
+        ],
+        "sourceSize": [
+          31,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          19,
+          6
+        ],
+        "sourceSize": [
+          24,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            15,
+            3
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            17,
+            7
+          ],
+          "sourceSize": [
+            28,
+            26
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            16,
+            2
+          ],
+          "sourceSize": [
+            39,
+            31
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            18,
+            6
+          ],
+          "sourceSize": [
+            32,
+            32
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            15,
+            3
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            16,
+            3
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            16,
+            4
+          ],
+          "sourceSize": [
+            31,
+            29
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "world_idle_right_0": {
+      "sourceIndex": 16,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          19,
+          4
+        ],
+        "sourceSize": [
+          32,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          22,
+          8
+        ],
+        "sourceSize": [
+          24,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            19,
+            4
+          ],
+          "sourceSize": [
+            32,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            20,
+            8
+          ],
+          "sourceSize": [
+            30,
+            26
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            10,
+            3
+          ],
+          "sourceSize": [
+            41,
+            32
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            16,
+            7
+          ],
+          "sourceSize": [
+            33,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            19,
+            4
+          ],
+          "sourceSize": [
+            32,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            19,
+            4
+          ],
+          "sourceSize": [
+            32,
+            30
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            19,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "world_idle_right_1": {
+      "sourceIndex": 17,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          19,
+          4
+        ],
+        "sourceSize": [
+          32,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          22,
+          8
+        ],
+        "sourceSize": [
+          24,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            19,
+            4
+          ],
+          "sourceSize": [
+            32,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            20,
+            8
+          ],
+          "sourceSize": [
+            30,
+            26
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            10,
+            3
+          ],
+          "sourceSize": [
+            41,
+            32
+          ],
+          "alignment": "eye highlights"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            15,
+            7
+          ],
+          "sourceSize": [
+            33,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            19,
+            4
+          ],
+          "sourceSize": [
+            32,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            19,
+            4
+          ],
+          "sourceSize": [
+            32,
+            30
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            20,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "eye highlights"
+        }
+      }
+    },
+    "world_idle_right_2": {
+      "sourceIndex": 18,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          18,
+          4
+        ],
+        "sourceSize": [
+          32,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          22,
+          8
+        ],
+        "sourceSize": [
+          24,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            18,
+            4
+          ],
+          "sourceSize": [
+            32,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            19,
+            8
+          ],
+          "sourceSize": [
+            30,
+            26
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            11,
+            3
+          ],
+          "sourceSize": [
+            39,
+            32
+          ],
+          "alignment": "eye highlights"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            16,
+            7
+          ],
+          "sourceSize": [
+            33,
+            32
+          ],
+          "alignment": "eye highlights"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            18,
+            4
+          ],
+          "sourceSize": [
+            32,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            18,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            18,
+            5
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "world_idle_right_3": {
+      "sourceIndex": 19,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          17,
+          4
+        ],
+        "sourceSize": [
+          32,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          20,
+          8
+        ],
+        "sourceSize": [
+          24,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            4
+          ],
+          "sourceSize": [
+            32,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            18,
+            8
+          ],
+          "sourceSize": [
+            29,
+            26
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            8,
+            2
+          ],
+          "sourceSize": [
+            41,
+            32
+          ],
+          "alignment": "eye highlights"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            14,
+            7
+          ],
+          "sourceSize": [
+            33,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            4
+          ],
+          "sourceSize": [
+            32,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            18,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            18,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "eye highlights"
+        }
+      }
+    },
+    "world_idle_up_0": {
+      "sourceIndex": 24,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          19,
+          4
+        ],
+        "sourceSize": [
+          31,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          22,
+          8
+        ],
+        "sourceSize": [
+          26,
+          25
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            19,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            21,
+            8
+          ],
+          "sourceSize": [
+            27,
+            25
+          ],
+          "alignment": "lower skin attachment"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            20,
+            1
+          ],
+          "sourceSize": [
+            31,
+            34
+          ],
+          "alignment": "lower skin attachment"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            19,
+            2
+          ],
+          "sourceSize": [
+            31,
+            31
+          ],
+          "alignment": "lower skin attachment"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            19,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24,
+          "translation": [
+            19,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "3": {
+          "scale": 0.24,
+          "translation": [
+            19,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        }
+      }
+    },
+    "world_idle_up_1": {
+      "sourceIndex": 25,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          17,
+          4
+        ],
+        "sourceSize": [
+          31,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          19,
+          8
+        ],
+        "sourceSize": [
+          26,
+          25
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            19,
+            8
+          ],
+          "sourceSize": [
+            27,
+            25
+          ],
+          "alignment": "lower skin attachment"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            18,
+            1
+          ],
+          "sourceSize": [
+            32,
+            34
+          ],
+          "alignment": "lower skin attachment"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            17,
+            2
+          ],
+          "sourceSize": [
+            31,
+            31
+          ],
+          "alignment": "lower skin attachment"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "3": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        }
+      }
+    },
+    "world_idle_up_2": {
+      "sourceIndex": 26,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          17,
+          4
+        ],
+        "sourceSize": [
+          31,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          20,
+          8
+        ],
+        "sourceSize": [
+          26,
+          25
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            19,
+            8
+          ],
+          "sourceSize": [
+            27,
+            25
+          ],
+          "alignment": "lower skin attachment"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            17,
+            1
+          ],
+          "sourceSize": [
+            33,
+            34
+          ],
+          "alignment": "lower skin attachment"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            17,
+            2
+          ],
+          "sourceSize": [
+            31,
+            31
+          ],
+          "alignment": "lower skin attachment"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "3": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        }
+      }
+    },
+    "world_idle_up_3": {
+      "sourceIndex": 27,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          16,
+          4
+        ],
+        "sourceSize": [
+          31,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          18,
+          8
+        ],
+        "sourceSize": [
+          26,
+          25
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            16,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            18,
+            8
+          ],
+          "sourceSize": [
+            27,
+            25
+          ],
+          "alignment": "lower skin attachment"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            16,
+            1
+          ],
+          "sourceSize": [
+            31,
+            34
+          ],
+          "alignment": "lower skin attachment"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            16,
+            2
+          ],
+          "sourceSize": [
+            31,
+            31
+          ],
+          "alignment": "lower skin attachment"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            16,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24,
+          "translation": [
+            16,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "3": {
+          "scale": 0.24,
+          "translation": [
+            16,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        }
+      }
+    },
+    "world_walk_down_0": {
+      "sourceIndex": 4,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          17,
+          6
+        ],
+        "sourceSize": [
+          31,
+          29
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          19,
+          7
+        ],
+        "sourceSize": [
+          26,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            6
+          ],
+          "sourceSize": [
+            31,
+            29
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            19,
+            12
+          ],
+          "sourceSize": [
+            26,
+            24
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            17,
+            3
+          ],
+          "sourceSize": [
+            35,
+            32
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            17,
+            8
+          ],
+          "sourceSize": [
+            32,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            6
+          ],
+          "sourceSize": [
+            31,
+            29
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            17,
+            6
+          ],
+          "sourceSize": [
+            31,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            18,
+            6
+          ],
+          "sourceSize": [
+            30,
+            28
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "world_walk_down_1": {
+      "sourceIndex": 5,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          16,
+          5
+        ],
+        "sourceSize": [
+          30,
+          29
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          18,
+          7
+        ],
+        "sourceSize": [
+          26,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            16,
+            5
+          ],
+          "sourceSize": [
+            30,
+            29
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            18,
+            12
+          ],
+          "sourceSize": [
+            26,
+            24
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            16,
+            2
+          ],
+          "sourceSize": [
+            35,
+            32
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            16,
+            8
+          ],
+          "sourceSize": [
+            31,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            16,
+            5
+          ],
+          "sourceSize": [
+            30,
+            29
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            17,
+            6
+          ],
+          "sourceSize": [
+            30,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            16,
+            6
+          ],
+          "sourceSize": [
+            30,
+            28
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "world_walk_down_2": {
+      "sourceIndex": 6,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          16,
+          5
+        ],
+        "sourceSize": [
+          30,
+          29
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          19,
+          7
+        ],
+        "sourceSize": [
+          26,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            16,
+            5
+          ],
+          "sourceSize": [
+            30,
+            29
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            17,
+            12
+          ],
+          "sourceSize": [
+            27,
+            24
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            17,
+            2
+          ],
+          "sourceSize": [
+            34,
+            33
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            15,
+            8
+          ],
+          "sourceSize": [
+            32,
+            31
+          ],
+          "alignment": "eye highlights"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            16,
+            5
+          ],
+          "sourceSize": [
+            30,
+            29
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            17,
+            6
+          ],
+          "sourceSize": [
+            31,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            17,
+            6
+          ],
+          "sourceSize": [
+            30,
+            28
+          ],
+          "alignment": "eye highlights"
+        }
+      }
+    },
+    "world_walk_down_3": {
+      "sourceIndex": 7,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          17,
+          6
+        ],
+        "sourceSize": [
+          30,
+          29
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          18,
+          8
+        ],
+        "sourceSize": [
+          26,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            6
+          ],
+          "sourceSize": [
+            30,
+            29
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            18,
+            11
+          ],
+          "sourceSize": [
+            26,
+            24
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            16,
+            3
+          ],
+          "sourceSize": [
+            34,
+            33
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            16,
+            8
+          ],
+          "sourceSize": [
+            31,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            6
+          ],
+          "sourceSize": [
+            30,
+            29
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            17,
+            6
+          ],
+          "sourceSize": [
+            30,
+            29
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            18,
+            6
+          ],
+          "sourceSize": [
+            30,
+            28
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "world_walk_left_0": {
+      "sourceIndex": 12,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          18,
+          3
+        ],
+        "sourceSize": [
+          31,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          22,
+          6
+        ],
+        "sourceSize": [
+          24,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            18,
+            3
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            20,
+            7
+          ],
+          "sourceSize": [
+            28,
+            26
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            18,
+            3
+          ],
+          "sourceSize": [
+            40,
+            31
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            20,
+            6
+          ],
+          "sourceSize": [
+            32,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            18,
+            3
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            18,
+            3
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            18,
+            4
+          ],
+          "sourceSize": [
+            32,
+            29
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "world_walk_left_1": {
+      "sourceIndex": 13,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          17,
+          3
+        ],
+        "sourceSize": [
+          30,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          20,
+          6
+        ],
+        "sourceSize": [
+          24,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            3
+          ],
+          "sourceSize": [
+            30,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            18,
+            7
+          ],
+          "sourceSize": [
+            28,
+            26
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            17,
+            2
+          ],
+          "sourceSize": [
+            39,
+            32
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            18,
+            6
+          ],
+          "sourceSize": [
+            32,
+            32
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            3
+          ],
+          "sourceSize": [
+            30,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            17,
+            3
+          ],
+          "sourceSize": [
+            30,
+            30
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            17,
+            4
+          ],
+          "sourceSize": [
+            31,
+            29
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "world_walk_left_2": {
+      "sourceIndex": 14,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          15,
+          3
+        ],
+        "sourceSize": [
+          31,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          20,
+          6
+        ],
+        "sourceSize": [
+          24,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            15,
+            3
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            17,
+            7
+          ],
+          "sourceSize": [
+            28,
+            26
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            16,
+            2
+          ],
+          "sourceSize": [
+            40,
+            31
+          ],
+          "alignment": "eye highlights"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            18,
+            6
+          ],
+          "sourceSize": [
+            32,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            15,
+            3
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            15,
+            3
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            15,
+            4
+          ],
+          "sourceSize": [
+            32,
+            29
+          ],
+          "alignment": "eye highlights"
+        }
+      }
+    },
+    "world_walk_left_3": {
+      "sourceIndex": 15,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          16,
+          3
+        ],
+        "sourceSize": [
+          31,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          20,
+          6
+        ],
+        "sourceSize": [
+          24,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            16,
+            3
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            18,
+            7
+          ],
+          "sourceSize": [
+            28,
+            26
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            17,
+            3
+          ],
+          "sourceSize": [
+            39,
+            32
+          ],
+          "alignment": "skin centroid"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            18,
+            6
+          ],
+          "sourceSize": [
+            33,
+            32
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            16,
+            3
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            17,
+            3
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            16,
+            4
+          ],
+          "sourceSize": [
+            31,
+            29
+          ],
+          "alignment": "skin centroid"
+        }
+      }
+    },
+    "world_walk_right_0": {
+      "sourceIndex": 20,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          19,
+          3
+        ],
+        "sourceSize": [
+          32,
+          31
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          22,
+          7
+        ],
+        "sourceSize": [
+          24,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            19,
+            3
+          ],
+          "sourceSize": [
+            32,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            20,
+            7
+          ],
+          "sourceSize": [
+            29,
+            26
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            10,
+            2
+          ],
+          "sourceSize": [
+            41,
+            32
+          ],
+          "alignment": "eye highlights"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            16,
+            8
+          ],
+          "sourceSize": [
+            33,
+            31
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            19,
+            3
+          ],
+          "sourceSize": [
+            32,
+            31
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            20,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            20,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "eye highlights"
+        }
+      }
+    },
+    "world_walk_right_1": {
+      "sourceIndex": 21,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          19,
+          4
+        ],
+        "sourceSize": [
+          32,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          22,
+          8
+        ],
+        "sourceSize": [
+          24,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            19,
+            4
+          ],
+          "sourceSize": [
+            32,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            20,
+            7
+          ],
+          "sourceSize": [
+            29,
+            26
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            11,
+            2
+          ],
+          "sourceSize": [
+            40,
+            32
+          ],
+          "alignment": "eye highlights"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            17,
+            6
+          ],
+          "sourceSize": [
+            33,
+            32
+          ],
+          "alignment": "eye highlights"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            19,
+            4
+          ],
+          "sourceSize": [
+            32,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            19,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            20,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "eye highlights"
+        }
+      }
+    },
+    "world_walk_right_2": {
+      "sourceIndex": 22,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          18,
+          4
+        ],
+        "sourceSize": [
+          32,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          20,
+          8
+        ],
+        "sourceSize": [
+          24,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            18,
+            4
+          ],
+          "sourceSize": [
+            32,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            19,
+            8
+          ],
+          "sourceSize": [
+            30,
+            26
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            9,
+            2
+          ],
+          "sourceSize": [
+            41,
+            32
+          ],
+          "alignment": "eye highlights"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            13,
+            7
+          ],
+          "sourceSize": [
+            33,
+            32
+          ],
+          "alignment": "skin centroid"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            18,
+            4
+          ],
+          "sourceSize": [
+            32,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            19,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            19,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "eye highlights"
+        }
+      }
+    },
+    "world_walk_right_3": {
+      "sourceIndex": 23,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          19,
+          4
+        ],
+        "sourceSize": [
+          31,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          22,
+          8
+        ],
+        "sourceSize": [
+          24,
+          26
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            19,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            19,
+            8
+          ],
+          "sourceSize": [
+            29,
+            26
+          ],
+          "alignment": "eye highlights"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            9,
+            2
+          ],
+          "sourceSize": [
+            41,
+            32
+          ],
+          "alignment": "eye highlights"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            16,
+            6
+          ],
+          "sourceSize": [
+            33,
+            32
+          ],
+          "alignment": "eye highlights"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            19,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24533333333333332,
+          "translation": [
+            19,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "skin centroid"
+        },
+        "3": {
+          "scale": 0.21230769230769228,
+          "translation": [
+            19,
+            4
+          ],
+          "sourceSize": [
+            31,
+            30
+          ],
+          "alignment": "eye highlights"
+        }
+      }
+    },
+    "world_walk_up_0": {
+      "sourceIndex": 28,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          20,
+          4
+        ],
+        "sourceSize": [
+          30,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          22,
+          9
+        ],
+        "sourceSize": [
+          26,
+          25
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            20,
+            4
+          ],
+          "sourceSize": [
+            30,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            22,
+            8
+          ],
+          "sourceSize": [
+            27,
+            25
+          ],
+          "alignment": "lower skin attachment"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            20,
+            2
+          ],
+          "sourceSize": [
+            31,
+            34
+          ],
+          "alignment": "lower skin attachment"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            20,
+            2
+          ],
+          "sourceSize": [
+            30,
+            31
+          ],
+          "alignment": "lower skin attachment"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            20,
+            4
+          ],
+          "sourceSize": [
+            30,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24,
+          "translation": [
+            20,
+            4
+          ],
+          "sourceSize": [
+            30,
+            30
+          ]
+        },
+        "3": {
+          "scale": 0.24,
+          "translation": [
+            20,
+            4
+          ],
+          "sourceSize": [
+            30,
+            30
+          ]
+        }
+      }
+    },
+    "world_walk_up_1": {
+      "sourceIndex": 29,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          18,
+          4
+        ],
+        "sourceSize": [
+          30,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          20,
+          8
+        ],
+        "sourceSize": [
+          26,
+          25
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            18,
+            4
+          ],
+          "sourceSize": [
+            30,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            20,
+            8
+          ],
+          "sourceSize": [
+            27,
+            25
+          ],
+          "alignment": "lower skin attachment"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            18,
+            1
+          ],
+          "sourceSize": [
+            32,
+            34
+          ],
+          "alignment": "lower skin attachment"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            18,
+            2
+          ],
+          "sourceSize": [
+            31,
+            31
+          ],
+          "alignment": "lower skin attachment"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            18,
+            4
+          ],
+          "sourceSize": [
+            30,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24,
+          "translation": [
+            18,
+            4
+          ],
+          "sourceSize": [
+            30,
+            30
+          ]
+        },
+        "3": {
+          "scale": 0.24,
+          "translation": [
+            18,
+            4
+          ],
+          "sourceSize": [
+            30,
+            30
+          ]
+        }
+      }
+    },
+    "world_walk_up_2": {
+      "sourceIndex": 30,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          18,
+          4
+        ],
+        "sourceSize": [
+          30,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          20,
+          9
+        ],
+        "sourceSize": [
+          26,
+          25
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            18,
+            4
+          ],
+          "sourceSize": [
+            30,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            20,
+            8
+          ],
+          "sourceSize": [
+            27,
+            25
+          ],
+          "alignment": "lower skin attachment"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            18,
+            2
+          ],
+          "sourceSize": [
+            32,
+            34
+          ],
+          "alignment": "lower skin attachment"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            18,
+            2
+          ],
+          "sourceSize": [
+            31,
+            31
+          ],
+          "alignment": "lower skin attachment"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            18,
+            4
+          ],
+          "sourceSize": [
+            30,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24,
+          "translation": [
+            18,
+            4
+          ],
+          "sourceSize": [
+            30,
+            30
+          ]
+        },
+        "3": {
+          "scale": 0.24,
+          "translation": [
+            18,
+            4
+          ],
+          "sourceSize": [
+            30,
+            30
+          ]
+        }
+      }
+    },
+    "world_walk_up_3": {
+      "sourceIndex": 31,
+      "base": {
+        "scale": 0.24,
+        "translation": [
+          17,
+          4
+        ],
+        "sourceSize": [
+          30,
+          30
+        ]
+      },
+      "bald": {
+        "scale": 0.2,
+        "translation": [
+          19,
+          9
+        ],
+        "sourceSize": [
+          26,
+          25
+        ],
+        "alignment": "lower skin attachment"
+      },
+      "styles": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            4
+          ],
+          "sourceSize": [
+            30,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.2007272727272727,
+          "translation": [
+            18,
+            8
+          ],
+          "sourceSize": [
+            27,
+            25
+          ],
+          "alignment": "lower skin attachment"
+        },
+        "3": {
+          "scale": 0.21436893203883495,
+          "translation": [
+            17,
+            2
+          ],
+          "sourceSize": [
+            32,
+            34
+          ],
+          "alignment": "lower skin attachment"
+        },
+        "4": {
+          "scale": 0.20444444444444443,
+          "translation": [
+            16,
+            2
+          ],
+          "sourceSize": [
+            31,
+            31
+          ],
+          "alignment": "lower skin attachment"
+        }
+      },
+      "faces": {
+        "1": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            4
+          ],
+          "sourceSize": [
+            30,
+            30
+          ]
+        },
+        "2": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            4
+          ],
+          "sourceSize": [
+            30,
+            30
+          ]
+        },
+        "3": {
+          "scale": 0.24,
+          "translation": [
+            17,
+            4
+          ],
+          "sourceSize": [
+            30,
+            30
+          ]
+        }
+      }
+    }
+  }
+}

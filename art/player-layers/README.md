@@ -1,3 +1,5 @@
+> Proof 01 was rejected for visual quality. See [rebuild v003](rebuild-v003/README.md) and [new preview](rebuild-v003/preview.html). The content below is retained as history.
+
 # Player layers — proof 01
 
 2 พ.ย. 2026 · branch `codex/player-layers` · base `682d3c0`

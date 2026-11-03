@@ -1,0 +1,418 @@
+[
+  {
+    "sourceBox": [
+      41,
+      840,
+      246,
+      1039
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -15,
+      -799
+    ]
+  },
+  {
+    "sourceBox": [
+      300,
+      840,
+      507,
+      1039
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -275,
+      -799
+    ]
+  },
+  {
+    "sourceBox": [
+      559,
+      840,
+      766,
+      1039
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -534,
+      -799
+    ]
+  },
+  {
+    "sourceBox": [
+      817,
+      840,
+      1021,
+      1039
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -791,
+      -799
+    ]
+  },
+  {
+    "sourceBox": [
+      1061,
+      838,
+      1272,
+      1036
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -1038,
+      -796
+    ]
+  },
+  {
+    "sourceBox": [
+      1320,
+      838,
+      1523,
+      1035
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -1293,
+      -795
+    ]
+  },
+  {
+    "sourceBox": [
+      1581,
+      837,
+      1787,
+      1035
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -1556,
+      -795
+    ]
+  },
+  {
+    "sourceBox": [
+      1846,
+      837,
+      2049,
+      1035
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -1819,
+      -795
+    ]
+  },
+  {
+    "sourceBox": [
+      43,
+      1079,
+      261,
+      1287
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -24,
+      -1047
+    ]
+  },
+  {
+    "sourceBox": [
+      299,
+      1081,
+      513,
+      1287
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -278,
+      -1047
+    ]
+  },
+  {
+    "sourceBox": [
+      558,
+      1081,
+      772,
+      1287
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -537,
+      -1047
+    ]
+  },
+  {
+    "sourceBox": [
+      818,
+      1081,
+      1031,
+      1287
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -796,
+      -1047
+    ]
+  },
+  {
+    "sourceBox": [
+      1067,
+      1079,
+      1279,
+      1284
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -1045,
+      -1044
+    ]
+  },
+  {
+    "sourceBox": [
+      1318,
+      1079,
+      1526,
+      1284
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -1294,
+      -1044
+    ]
+  },
+  {
+    "sourceBox": [
+      1576,
+      1079,
+      1787,
+      1284
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -1553,
+      -1044
+    ]
+  },
+  {
+    "sourceBox": [
+      1826,
+      1081,
+      2038,
+      1284
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -1804,
+      -1044
+    ]
+  },
+  {
+    "sourceBox": [
+      36,
+      1317,
+      256,
+      1525
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -18,
+      -1285
+    ]
+  },
+  {
+    "sourceBox": [
+      295,
+      1318,
+      518,
+      1526
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -278,
+      -1286
+    ]
+  },
+  {
+    "sourceBox": [
+      554,
+      1318,
+      775,
+      1526
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -536,
+      -1286
+    ]
+  },
+  {
+    "sourceBox": [
+      812,
+      1317,
+      1031,
+      1526
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -793,
+      -1286
+    ]
+  },
+  {
+    "sourceBox": [
+      1063,
+      1313,
+      1280,
+      1525
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -1043,
+      -1285
+    ]
+  },
+  {
+    "sourceBox": [
+      1320,
+      1313,
+      1538,
+      1523
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -1301,
+      -1283
+    ]
+  },
+  {
+    "sourceBox": [
+      1584,
+      1317,
+      1802,
+      1525
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -1565,
+      -1285
+    ]
+  },
+  {
+    "sourceBox": [
+      1840,
+      1315,
+      2056,
+      1523
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -1820,
+      -1283
+    ]
+  },
+  {
+    "sourceBox": [
+      36,
+      1567,
+      247,
+      1772
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -13,
+      -1532
+    ]
+  },
+  {
+    "sourceBox": [
+      299,
+      1569,
+      510,
+      1772
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -276,
+      -1532
+    ]
+  },
+  {
+    "sourceBox": [
+      553,
+      1569,
+      766,
+      1772
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -531,
+      -1532
+    ]
+  },
+  {
+    "sourceBox": [
+      812,
+      1569,
+      1023,
+      1772
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -789,
+      -1532
+    ]
+  },
+  {
+    "sourceBox": [
+      1066,
+      1559,
+      1275,
+      1765
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -1042,
+      -1525
+    ]
+  },
+  {
+    "sourceBox": [
+      1325,
+      1559,
+      1533,
+      1765
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -1301,
+      -1525
+    ]
+  },
+  {
+    "sourceBox": [
+      1576,
+      1554,
+      1785,
+      1762
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -1552,
+      -1522
+    ]
+  },
+  {
+    "sourceBox": [
+      1836,
+      1558,
+      2046,
+      1765
+    ],
+    "sourceScale": 1.65,
+    "translation": [
+      -1813,
+      -1525
+    ]
+  }
+]
